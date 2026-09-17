@@ -1,0 +1,95 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BookingWidget from '../../components/BookingWidget.tsx';
+import { getCollection } from 'astro:content';
+import { getCatalogItem } from '../../lib/catalog';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const tours = await getCollection('tours');
+  return tours.map((tour) => ({ params: { slug: tour.slug }, props: { tour } }));
+}
+
+const { tour } = Astro.props;
+const { Content } = await tour.render();
+const catalogItem = getCatalogItem(tour.data.tourId);
+
+const tripJsonLd = catalogItem
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'TouristTrip',
+      name: tour.data.title,
+      description: tour.data.summary,
+      offers: {
+        '@type': 'Offer',
+        price: catalogItem.amount,
+        priceCurrency: catalogItem.currency,
+      },
+    }
+  : null;
+---
+<BaseLayout title={`${tour.data.title} — IWIS Global`} description={tour.data.summary}>
+  {tripJsonLd && <script type="application/ld+json" set:html={JSON.stringify(tripJsonLd)} />}
+
+  <section class="max-w-5xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-10">
+    <div class="md:col-span-2">
+      <h1 class="text-3xl font-serif font-semibold mb-2">{tour.data.title}</h1>
+      <p class="text-stone-600 mb-6">{tour.data.summary}</p>
+
+      <div class="flex gap-6 text-sm text-stone-500 mb-8">
+        <span>{tour.data.durationLabel}</span>
+        <span>From {tour.data.startPoint}</span>
+      </div>
+
+      {tour.data.highlights.length > 0 && (
+        <div class="mb-8">
+          <h2 class="text-lg font-semibold mb-2">Highlights</h2>
+          <ul class="list-disc list-inside text-stone-700 space-y-1">
+            {tour.data.highlights.map((h: string) => <li>{h}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {tour.data.itinerary.length > 0 && (
+        <div class="mb-8">
+          <h2 class="text-lg font-semibold mb-2">Itinerary</h2>
+          <ol class="space-y-2">
+            {tour.data.itinerary.map((step: { time: string; activity: string }) => (
+              <li class="flex gap-3 text-sm">
+                <span class="font-medium w-20 shrink-0">{step.time}</span>
+                <span class="text-stone-700">{step.activity}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      <div class="prose prose-stone max-w-none mb-8">
+        <Content />
+      </div>
+
+      {tour.data.includes.length > 0 && (
+        <div class="mb-4">
+          <h2 class="text-lg font-semibold mb-2">Includes</h2>
+          <ul class="list-disc list-inside text-stone-700 space-y-1">
+            {tour.data.includes.map((i: string) => <li>{i}</li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+
+    <div>
+      {catalogItem && (
+        <BookingWidget
+          client:load
+          tourId={tour.data.tourId}
+          tourTitle={tour.data.title}
+          pricePerTraveler={catalogItem.amount}
+          currency={catalogItem.currency}
+          addOns={catalogItem.addOns ?? []}
+        />
+      )}
+    </div>
+  </section>
+</BaseLayout>

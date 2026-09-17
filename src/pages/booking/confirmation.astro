@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export const prerender = false;
+
+const paymentId = Astro.url.searchParams.get('payment_id');
+---
+<BaseLayout title="Booking Confirmed — IWIS Global">
+  <section class="max-w-2xl mx-auto px-6 py-24 text-center">
+    <h1 class="text-3xl font-serif font-semibold mb-4">Your booking is confirmed</h1>
+    {paymentId ? (
+      <p class="text-stone-600">
+        Payment reference <span class="font-mono">{paymentId}</span>. A confirmation with your itinerary
+        details will be sent to the email you provided.
+      </p>
+    ) : (
+      <p class="text-stone-600">We couldn't find a payment reference for this page. If you just completed a booking, check your email for confirmation.</p>
+    )}
+    <a href="/tours" class="inline-block mt-8 rounded bg-amber-800 text-white px-6 py-3 font-medium">
+      Browse more tours
+    </a>
+  </section>
+</BaseLayout>
