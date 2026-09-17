@@ -1,61 +1,59 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BookingWidget from '../../components/BookingWidget.tsx';
-import { getCollection } from 'astro:content';
-import { getCatalogItem } from '../../lib/catalog';
+import { getTourBySlug } from '../../lib/tours';
+import { resolveEnv } from '../../lib/env';
 
-export const prerender = true;
+export const prerender = false;
 
-export async function getStaticPaths() {
-  const tours = await getCollection('tours');
-  return tours.map((tour) => ({ params: { slug: tour.slug }, props: { tour } }));
+const env = resolveEnv(Astro.locals);
+const { slug } = Astro.params;
+const tour = env.DB && slug ? await getTourBySlug(env.DB, slug) : null;
+
+if (!tour || tour.status !== 'published') {
+  return Astro.redirect('/tours');
 }
 
-const { tour } = Astro.props;
-const { Content } = await tour.render();
-const catalogItem = getCatalogItem(tour.data.tourId);
-
-const tripJsonLd = catalogItem
-  ? {
-      '@context': 'https://schema.org',
-      '@type': 'TouristTrip',
-      name: tour.data.title,
-      description: tour.data.summary,
-      offers: {
-        '@type': 'Offer',
-        price: catalogItem.amount,
-        priceCurrency: catalogItem.currency,
-      },
-    }
-  : null;
+const tripJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TouristTrip',
+  name: tour.title,
+  description: tour.summary,
+  offers: {
+    '@type': 'Offer',
+    price: tour.amount,
+    priceCurrency: tour.currency,
+  },
+};
 ---
-<BaseLayout title={`${tour.data.title} — IWIS Global`} description={tour.data.summary}>
-  {tripJsonLd && <script type="application/ld+json" set:html={JSON.stringify(tripJsonLd)} />}
+<BaseLayout title={`${tour.title} — IWIS Global`} description={tour.summary}>
+  <script type="application/ld+json" set:html={JSON.stringify(tripJsonLd)} />
 
   <section class="max-w-5xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-10">
     <div class="md:col-span-2">
-      <h1 class="text-3xl font-serif font-semibold mb-2">{tour.data.title}</h1>
-      <p class="text-stone-600 mb-6">{tour.data.summary}</p>
+      {tour.image && <img src={tour.image} alt={tour.title} class="w-full rounded-xl mb-6 object-cover max-h-80" />}
+      <h1 class="text-3xl font-serif font-semibold mb-2">{tour.title}</h1>
+      <p class="text-stone-600 mb-6">{tour.summary}</p>
 
       <div class="flex gap-6 text-sm text-stone-500 mb-8">
-        <span>{tour.data.durationLabel}</span>
-        <span>From {tour.data.startPoint}</span>
+        <span>{tour.durationLabel}</span>
+        <span>From {tour.startPoint}</span>
       </div>
 
-      {tour.data.highlights.length > 0 && (
+      {tour.highlights.length > 0 && (
         <div class="mb-8">
           <h2 class="text-lg font-semibold mb-2">Highlights</h2>
           <ul class="list-disc list-inside text-stone-700 space-y-1">
-            {tour.data.highlights.map((h: string) => <li>{h}</li>)}
+            {tour.highlights.map((h) => <li>{h}</li>)}
           </ul>
         </div>
       )}
 
-      {tour.data.itinerary.length > 0 && (
+      {tour.itinerary.length > 0 && (
         <div class="mb-8">
           <h2 class="text-lg font-semibold mb-2">Itinerary</h2>
           <ol class="space-y-2">
-            {tour.data.itinerary.map((step: { time: string; activity: string }) => (
+            {tour.itinerary.map((step) => (
               <li class="flex gap-3 text-sm">
                 <span class="font-medium w-20 shrink-0">{step.time}</span>
                 <span class="text-stone-700">{step.activity}</span>
@@ -65,31 +63,31 @@ const tripJsonLd = catalogItem
         </div>
       )}
 
-      <div class="prose prose-stone max-w-none mb-8">
-        <Content />
-      </div>
+      {tour.description && (
+        <div class="prose prose-stone max-w-none mb-8 whitespace-pre-line">
+          {tour.description}
+        </div>
+      )}
 
-      {tour.data.includes.length > 0 && (
+      {tour.includes.length > 0 && (
         <div class="mb-4">
           <h2 class="text-lg font-semibold mb-2">Includes</h2>
           <ul class="list-disc list-inside text-stone-700 space-y-1">
-            {tour.data.includes.map((i: string) => <li>{i}</li>)}
+            {tour.includes.map((i) => <li>{i}</li>)}
           </ul>
         </div>
       )}
     </div>
 
     <div>
-      {catalogItem && (
-        <BookingWidget
-          client:load
-          tourId={tour.data.tourId}
-          tourTitle={tour.data.title}
-          pricePerTraveler={catalogItem.amount}
-          currency={catalogItem.currency}
-          addOns={catalogItem.addOns ?? []}
-        />
-      )}
+      <BookingWidget
+        client:load
+        tourId={tour.id}
+        tourTitle={tour.title}
+        pricePerTraveler={tour.amount}
+        currency={tour.currency}
+        addOns={tour.addOns}
+      />
     </div>
   </section>
 </BaseLayout>

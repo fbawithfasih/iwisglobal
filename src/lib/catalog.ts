@@ -1,9 +1,10 @@
-// Server-side source of truth for what each tour (and its add-ons) costs.
+// Pure pricing types/helpers shared by the DB-backed catalog (src/lib/tours.ts).
 //
-// Both /api/create-order and /api/verify-payment rely on this so the
-// charged amount is NEVER taken from the client. The browser only sends a
-// tourId (and optional addOnIds) — the server looks up the canonical price
-// here and creates the payment-provider order with that amount.
+// Both /api/create-order and /api/verify-payment ultimately rely on
+// getCatalogItem() in tours.ts so the charged amount is NEVER taken from the
+// client. The browser only sends a tourId (and optional addOnIds) — the
+// server looks up the canonical price in D1 and creates the payment-provider
+// order with that amount.
 
 export interface AddOn {
   id: string;
@@ -15,21 +16,6 @@ export interface CatalogItem {
   amount: number; // major currency units, per traveler
   currency: string;
   addOns?: AddOn[];
-}
-
-export const CATALOG: Record<string, CatalogItem> = {
-  SAME_DAY_AGRA_DELHI: {
-    amount: 4999,
-    currency: 'INR',
-    addOns: [
-      { id: 'ART_GALLERY_STOP', name: 'Art gallery & souvenir stop', amount: 500 },
-    ],
-  },
-};
-
-export function getCatalogItem(tourId: unknown): CatalogItem | null {
-  if (typeof tourId !== 'string') return null;
-  return CATALOG[tourId] ?? null;
 }
 
 export function getAddOn(item: CatalogItem, addOnId: string): AddOn | null {

@@ -1,0 +1,77 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { listTours, setTourStatus } from '../../../lib/tours';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB;
+
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  const id = String(form.get('tourId') ?? '');
+  const status = String(form.get('status') ?? '') as 'published' | 'draft';
+  if (id && (status === 'published' || status === 'draft')) {
+    await setTourStatus(db, id, status);
+  }
+  return Astro.redirect('/admin/tours');
+}
+
+const tours = db ? await listTours(db) : [];
+---
+<AdminLayout title="Tours">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Tours</h1>
+    <a href="/admin/tours/new" class="rounded bg-amber-800 text-white px-4 py-2 text-sm">+ New Tour</a>
+  </div>
+
+  {tours.length === 0 ? (
+    <p class="text-stone-500">No tours yet.</p>
+  ) : (
+    <div class="bg-white rounded-xl border border-stone-200 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-stone-50 text-left">
+          <tr>
+            <th class="px-4 py-2">Title</th>
+            <th class="px-4 py-2">Price</th>
+            <th class="px-4 py-2">Featured</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {tours.map((t) => (
+            <tr class="border-t border-stone-100">
+              <td class="px-4 py-2">
+                <a href={`/admin/tours/${t.id}/edit`} class="text-amber-800 hover:underline">{t.title}</a>
+              </td>
+              <td class="px-4 py-2">{t.currency} {t.amount.toLocaleString('en-IN')}</td>
+              <td class="px-4 py-2">{t.featured ? 'Yes' : '—'}</td>
+              <td class="px-4 py-2">
+                <span class={`px-2 py-0.5 rounded text-xs ${t.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>
+                  {t.status}
+                </span>
+              </td>
+              <td class="px-4 py-2 flex items-center gap-3">
+                <a href={`/admin/tours/${t.id}/edit`} class="text-stone-500 hover:underline">Edit</a>
+                <form method="POST">
+                  <input type="hidden" name="tourId" value={t.id} />
+                  <input type="hidden" name="status" value={t.status === 'published' ? 'draft' : 'published'} />
+                  <button type="submit" class="text-stone-500 hover:underline">
+                    {t.status === 'published' ? 'Unpublish' : 'Publish'}
+                  </button>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</AdminLayout>

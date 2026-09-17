@@ -1,4 +1,5 @@
-import { getCatalogItem, computeTotal } from '../catalog';
+import { computeTotal } from '../catalog';
+import { getCatalogItem } from '../tours';
 import type { BookingRequest, OrderResult, VerifyRequest, VerifiedBooking, PaymentProvider } from './index';
 
 function getCreds(env: Record<string, unknown>) {
@@ -24,7 +25,7 @@ async function hmacSha256Hex(secret: string, message: string): Promise<string> {
 
 export const razorpayProvider: PaymentProvider = {
   async createOrder(req: BookingRequest, env: Record<string, unknown>): Promise<OrderResult> {
-    const item = getCatalogItem(req.tourId);
+    const item = await getCatalogItem(env.DB as any, req.tourId, { onlyPublished: true });
     if (!item) throw new Error('Unknown or missing tour');
     if (!req.travelers || req.travelers < 1) throw new Error('At least one traveler is required');
 

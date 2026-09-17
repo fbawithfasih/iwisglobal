@@ -1,0 +1,129 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../../lib/env';
+import { isAdminAuthenticated } from '../../../../lib/requireAdmin';
+import { getTourById, updateTour, replaceAddOns } from '../../../../lib/tours';
+import { parseLines, parseItinerary, parseAddOns, formatLines, formatItinerary, formatAddOns } from '../../../../lib/tourForm';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB;
+const { id } = Astro.params;
+if (!db || !id) return Astro.redirect('/admin/tours');
+
+let error: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const title = String(form.get('title') ?? '').trim();
+  const amount = Number(form.get('amount') ?? 0);
+
+  if (!title || !amount || amount <= 0) {
+    error = 'Title and a valid price are required.';
+  } else {
+    await updateTour(db, id, {
+      title,
+      summary: String(form.get('summary') ?? ''),
+      description: String(form.get('description') ?? ''),
+      durationLabel: String(form.get('durationLabel') ?? ''),
+      startPoint: String(form.get('startPoint') ?? ''),
+      amount,
+      currency: String(form.get('currency') ?? 'INR'),
+      highlights: parseLines(String(form.get('highlights') ?? '')),
+      itinerary: parseItinerary(String(form.get('itinerary') ?? '')),
+      includes: parseLines(String(form.get('includes') ?? '')),
+      excludes: parseLines(String(form.get('excludes') ?? '')),
+      image: String(form.get('image') ?? '').trim(),
+      featured: form.get('featured') === 'on',
+    });
+    await replaceAddOns(db, id, parseAddOns(String(form.get('addOns') ?? '')));
+    return Astro.redirect(`/admin/tours/${id}/edit?saved=1`);
+  }
+}
+
+const tour = await getTourById(db, id);
+if (!tour) return Astro.redirect('/admin/tours');
+const saved = Astro.url.searchParams.get('saved') === '1';
+---
+<AdminLayout title={`Edit ${tour.title}`}>
+  <a href="/admin/tours" class="text-sm text-stone-500 hover:underline">&larr; Back to tours</a>
+  <div class="flex items-center justify-between mt-2 mb-6">
+    <h1 class="text-2xl font-semibold">Edit tour</h1>
+    <span class={`px-2 py-0.5 rounded text-xs ${tour.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>
+      {tour.status}
+    </span>
+  </div>
+
+  {saved && <p class="text-green-700 text-sm mb-4">Saved.</p>}
+  {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
+
+  <p class="text-stone-500 text-sm mb-4">
+    Tour ID: <span class="font-mono">{tour.id}</span> · Slug: <span class="font-mono">{tour.slug}</span> ·
+    Live at <a href={`/tours/${tour.slug}`} class="text-amber-800 hover:underline" target="_blank">/tours/{tour.slug}</a>
+  </p>
+
+  <form method="POST" class="bg-white rounded-xl border border-stone-200 p-6 space-y-4 max-w-2xl text-sm">
+    <div>
+      <label class="block text-stone-500 mb-1">Title *</label>
+      <input name="title" required value={tour.title} class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Summary</label>
+      <textarea name="summary" rows="2" class="w-full rounded border border-stone-300 px-3 py-2">{tour.summary}</textarea>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-stone-500 mb-1">Price per traveler *</label>
+        <input type="number" name="amount" min="1" required value={tour.amount} class="w-full rounded border border-stone-300 px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-stone-500 mb-1">Currency</label>
+        <input name="currency" value={tour.currency} class="w-full rounded border border-stone-300 px-3 py-2" />
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-stone-500 mb-1">Duration label</label>
+        <input name="durationLabel" value={tour.durationLabel} class="w-full rounded border border-stone-300 px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-stone-500 mb-1">Start point</label>
+        <input name="startPoint" value={tour.startPoint} class="w-full rounded border border-stone-300 px-3 py-2" />
+      </div>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Image URL</label>
+      <input name="image" value={tour.image} class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Highlights (one per line)</label>
+      <textarea name="highlights" rows="4" class="w-full rounded border border-stone-300 px-3 py-2">{formatLines(tour.highlights)}</textarea>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Itinerary (one step per line: "Time | Activity")</label>
+      <textarea name="itinerary" rows="5" class="w-full rounded border border-stone-300 px-3 py-2">{formatItinerary(tour.itinerary)}</textarea>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Includes (one per line)</label>
+      <textarea name="includes" rows="3" class="w-full rounded border border-stone-300 px-3 py-2">{formatLines(tour.includes)}</textarea>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Excludes (one per line)</label>
+      <textarea name="excludes" rows="3" class="w-full rounded border border-stone-300 px-3 py-2">{formatLines(tour.excludes)}</textarea>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Add-ons (one per line: "Name | Price")</label>
+      <textarea name="addOns" rows="3" class="w-full rounded border border-stone-300 px-3 py-2">{formatAddOns(tour.addOns)}</textarea>
+    </div>
+    <label class="flex items-center gap-2">
+      <input type="checkbox" name="featured" checked={tour.featured} />
+      Featured on homepage
+    </label>
+    <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2">Save changes</button>
+  </form>
+</AdminLayout>

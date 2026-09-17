@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { razorpayProvider } from '../../lib/payments/razorpay';
-import { getCatalogItem, computeTotal } from '../../lib/catalog';
+import { computeTotal } from '../../lib/catalog';
+import { getCatalogItem } from '../../lib/tours';
 import { insertBooking } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
 
@@ -32,7 +33,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       env
     );
 
-    const item = getCatalogItem(verified.tourId);
+    const item = await getCatalogItem(env.DB, verified.tourId, { onlyPublished: false });
     if (!item) {
       return new Response(JSON.stringify({ error: 'Booking references an unknown tour' }), {
         status: 400,
