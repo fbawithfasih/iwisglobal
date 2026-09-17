@@ -6,6 +6,7 @@ import { resolveEnv } from '../../../../lib/env';
 import { isAdminAuthenticated } from '../../../../lib/requireAdmin';
 import { getTourById, updateTour, replaceAddOns } from '../../../../lib/tours';
 import { parseLines, parseItinerary, parseAddOns, formatLines, formatItinerary, formatAddOns } from '../../../../lib/tourForm';
+import { uploadTourImage } from '../../../../lib/images';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -26,23 +27,36 @@ if (Astro.request.method === 'POST') {
   if (!title || !amount || amount <= 0) {
     error = 'Title and a valid price are required.';
   } else {
-    await updateTour(db, id, {
-      title,
-      summary: String(form.get('summary') ?? ''),
-      description: String(form.get('description') ?? ''),
-      durationLabel: String(form.get('durationLabel') ?? ''),
-      startPoint: String(form.get('startPoint') ?? ''),
-      amount,
-      currency: String(form.get('currency') ?? 'INR'),
-      highlights: parseLines(String(form.get('highlights') ?? '')),
-      itinerary: parseItinerary(String(form.get('itinerary') ?? '')),
-      includes: parseLines(String(form.get('includes') ?? '')),
-      excludes: parseLines(String(form.get('excludes') ?? '')),
-      image: String(form.get('image') ?? '').trim(),
-      featured: form.get('featured') === 'on',
-    });
-    await replaceAddOns(db, id, parseAddOns(String(form.get('addOns') ?? '')));
-    return Astro.redirect(`/admin/tours/${id}/edit?saved=1`);
+    try {
+      const imageFile = form.get('imageFile');
+      const existing = await getTourById(db, id);
+      let image = String(form.get('image') ?? '').trim() || existing?.image || '';
+      if (imageFile instanceof File && imageFile.size > 0) {
+        if (!env.IMAGES) throw new Error('Image storage is not configured yet.');
+        const uploaded = await uploadTourImage(env.IMAGES, imageFile);
+        image = uploaded.url;
+      }
+
+      await updateTour(db, id, {
+        title,
+        summary: String(form.get('summary') ?? ''),
+        description: String(form.get('description') ?? ''),
+        durationLabel: String(form.get('durationLabel') ?? ''),
+        startPoint: String(form.get('startPoint') ?? ''),
+        amount,
+        currency: String(form.get('currency') ?? 'INR'),
+        highlights: parseLines(String(form.get('highlights') ?? '')),
+        itinerary: parseItinerary(String(form.get('itinerary') ?? '')),
+        includes: parseLines(String(form.get('includes') ?? '')),
+        excludes: parseLines(String(form.get('excludes') ?? '')),
+        image,
+        featured: form.get('featured') === 'on',
+      });
+      await replaceAddOns(db, id, parseAddOns(String(form.get('addOns') ?? '')));
+      return Astro.redirect(`/admin/tours/${id}/edit?saved=1`);
+    } catch (err: any) {
+      error = err?.message || 'Failed to save tour.';
+    }
   }
 }
 
@@ -67,7 +81,7 @@ const saved = Astro.url.searchParams.get('saved') === '1';
     Live at <a href={`/tours/${tour.slug}`} class="text-amber-800 hover:underline" target="_blank">/tours/{tour.slug}</a>
   </p>
 
-  <form method="POST" class="bg-white rounded-xl border border-stone-200 p-6 space-y-4 max-w-2xl text-sm">
+  <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-stone-200 p-6 space-y-4 max-w-2xl text-sm">
     <div>
       <label class="block text-stone-500 mb-1">Title *</label>
       <input name="title" required value={tour.title} class="w-full rounded border border-stone-300 px-3 py-2" />
@@ -97,7 +111,18 @@ const saved = Astro.url.searchParams.get('saved') === '1';
       </div>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Image URL</label>
+      <label class="block text-stone-500 mb-1">Current image</label>
+      {tour.image ? (
+        <img src={tour.image} alt="" class="w-40 h-28 object-cover rounded border border-stone-200 mb-2" />
+      ) : (
+        <p class="text-stone-400 text-xs mb-2">No image set.</p>
+      )}
+      <label class="block text-stone-500 mb-1">Upload new image (replaces current)</label>
+      <input type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
+      <p class="text-xs text-stone-400 mt-1">JPEG/PNG/WebP/GIF, up to 5MB. Leave blank to keep the current image.</p>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Image URL (only used if no new file is uploaded above)</label>
       <input name="image" value={tour.image} class="w-full rounded border border-stone-300 px-3 py-2" />
     </div>
     <div>

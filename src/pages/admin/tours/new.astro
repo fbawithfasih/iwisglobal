@@ -6,6 +6,7 @@ import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { createTour, replaceAddOns } from '../../../lib/tours';
 import { parseLines, parseItinerary, parseAddOns } from '../../../lib/tourForm';
+import { uploadTourImage } from '../../../lib/images';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -23,24 +24,36 @@ if (Astro.request.method === 'POST' && db) {
   if (!title || !amount || amount <= 0) {
     error = 'Title and a valid price are required.';
   } else {
-    const id = await createTour(db, {
-      title,
-      summary: String(form.get('summary') ?? ''),
-      description: String(form.get('description') ?? ''),
-      durationLabel: String(form.get('durationLabel') ?? ''),
-      startPoint: String(form.get('startPoint') ?? ''),
-      amount,
-      currency: String(form.get('currency') ?? 'INR'),
-      highlights: parseLines(String(form.get('highlights') ?? '')),
-      itinerary: parseItinerary(String(form.get('itinerary') ?? '')),
-      includes: parseLines(String(form.get('includes') ?? '')),
-      excludes: parseLines(String(form.get('excludes') ?? '')),
-      image: String(form.get('image') ?? '').trim(),
-      featured: form.get('featured') === 'on',
-    });
-    const addOns = parseAddOns(String(form.get('addOns') ?? ''));
-    if (addOns.length > 0) await replaceAddOns(db, id, addOns);
-    return Astro.redirect(`/admin/tours/${id}/edit`);
+    try {
+      const imageFile = form.get('imageFile');
+      let image = String(form.get('image') ?? '').trim();
+      if (imageFile instanceof File && imageFile.size > 0) {
+        if (!env.IMAGES) throw new Error('Image storage is not configured yet.');
+        const uploaded = await uploadTourImage(env.IMAGES, imageFile);
+        image = uploaded.url;
+      }
+
+      const id = await createTour(db, {
+        title,
+        summary: String(form.get('summary') ?? ''),
+        description: String(form.get('description') ?? ''),
+        durationLabel: String(form.get('durationLabel') ?? ''),
+        startPoint: String(form.get('startPoint') ?? ''),
+        amount,
+        currency: String(form.get('currency') ?? 'INR'),
+        highlights: parseLines(String(form.get('highlights') ?? '')),
+        itinerary: parseItinerary(String(form.get('itinerary') ?? '')),
+        includes: parseLines(String(form.get('includes') ?? '')),
+        excludes: parseLines(String(form.get('excludes') ?? '')),
+        image,
+        featured: form.get('featured') === 'on',
+      });
+      const addOns = parseAddOns(String(form.get('addOns') ?? ''));
+      if (addOns.length > 0) await replaceAddOns(db, id, addOns);
+      return Astro.redirect(`/admin/tours/${id}/edit`);
+    } catch (err: any) {
+      error = err?.message || 'Failed to create tour.';
+    }
   }
 }
 ---
@@ -50,7 +63,7 @@ if (Astro.request.method === 'POST' && db) {
 
   {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
 
-  <form method="POST" class="bg-white rounded-xl border border-stone-200 p-6 space-y-4 max-w-2xl text-sm">
+  <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-stone-200 p-6 space-y-4 max-w-2xl text-sm">
     <div>
       <label class="block text-stone-500 mb-1">Title *</label>
       <input name="title" required class="w-full rounded border border-stone-300 px-3 py-2" placeholder="e.g. Sunset Agra Fort & Taj Mahal Tour" />
@@ -80,7 +93,12 @@ if (Astro.request.method === 'POST' && db) {
       </div>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Image URL</label>
+      <label class="block text-stone-500 mb-1">Upload image</label>
+      <input type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
+      <p class="text-xs text-stone-400 mt-1">JPEG/PNG/WebP/GIF, up to 5MB. Or paste a URL below instead.</p>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Image URL (used only if no file is uploaded above)</label>
       <input name="image" placeholder="https://…" class="w-full rounded border border-stone-300 px-3 py-2" />
     </div>
     <div>

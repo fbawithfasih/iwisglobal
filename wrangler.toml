@@ -6,3 +6,7 @@ pages_build_output_dir = "dist"
 binding = "DB"
 database_name = "iwisglobal-bookings"
 database_id = "71733870-0326-4760-b9f6-9c0513a7ce10"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "iwisglobal-images"
