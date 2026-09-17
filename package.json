@@ -11,7 +11,7 @@
   "dependencies": {
     "@astrojs/cloudflare": "^11.2.0",
     "@astrojs/react": "^3.6.2",
-    "@astrojs/sitemap": "^3.2.1",
+    "@astrojs/sitemap": "3.2.1",
     "@astrojs/tailwind": "^5.1.1",
     "astro": "^4.15.12",
     "react": "^18.3.1",
