@@ -59,6 +59,15 @@ const orgJsonLd = {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-stone-50 text-stone-900 antialiased">
+    <header class="border-b border-stone-200 bg-white">
+      <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2.5">
+          <img src="/logo.png" alt="IWIS Global" class="h-9 w-9 object-contain" />
+          <span class="text-lg font-semibold tracking-tight">IWIS Global</span>
+        </a>
+        <a href="/tours" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">Tours</a>
+      </div>
+    </header>
     <slot />
   </body>
 </html>
