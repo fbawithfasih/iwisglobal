@@ -1,0 +1,111 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { getBookingById, updateBookingStatus, updateBookingItinerary, addBookingNote, listBookingNotes } from '../../../lib/crm';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB;
+const { id } = Astro.params;
+
+if (!db || !id) return Astro.redirect('/admin');
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = String(form.get('_action') ?? '');
+
+  if (action === 'status') {
+    await updateBookingStatus(db, id, String(form.get('status') ?? ''));
+  } else if (action === 'itinerary') {
+    await updateBookingItinerary(db, id, {
+      pickupTime: String(form.get('pickupTime') ?? ''),
+      guideAssigned: String(form.get('guideAssigned') ?? ''),
+      vehicle: String(form.get('vehicle') ?? ''),
+    });
+  } else if (action === 'note') {
+    const note = String(form.get('note') ?? '').trim();
+    if (note) await addBookingNote(db, id, note);
+  }
+  return Astro.redirect(`/admin/bookings/${id}`);
+}
+
+const booking = await getBookingById(db, id);
+if (!booking) return Astro.redirect('/admin');
+const notes = await listBookingNotes(db, id);
+---
+<AdminLayout title={`Booking ${booking.id}`}>
+  <a href="/admin" class="text-sm text-stone-500 hover:underline">&larr; Back to bookings</a>
+  <h1 class="text-2xl font-semibold mt-2 mb-6">{booking.traveler_name} — {booking.tour_id}</h1>
+
+  <div class="grid md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-2 text-sm">
+      <h2 class="font-semibold mb-2">Booking details</h2>
+      <p><span class="text-stone-500">Date:</span> {booking.travel_date}</p>
+      <p><span class="text-stone-500">Travelers:</span> {booking.travelers}</p>
+      <p><span class="text-stone-500">Add-ons:</span> {booking.add_on_ids || '—'}</p>
+      <p><span class="text-stone-500">Email:</span> {booking.traveler_email}</p>
+      <p><span class="text-stone-500">Phone:</span> {booking.traveler_phone}</p>
+      <p><span class="text-stone-500">Amount:</span> {booking.currency} {(booking.amount_paid / 100).toLocaleString('en-IN')}</p>
+      <p><span class="text-stone-500">Source:</span> {booking.source}</p>
+      <p><span class="text-stone-500">Payment ID:</span> {booking.payment_id}</p>
+      <p><span class="text-stone-500">Booked on:</span> {booking.created_at}</p>
+
+      <form method="POST" class="pt-4 flex items-center gap-2">
+        <input type="hidden" name="_action" value="status" />
+        <select name="status" class="rounded border border-stone-300 px-2 py-1">
+          <option value="confirmed" selected={booking.status === 'confirmed'}>Confirmed</option>
+          <option value="completed" selected={booking.status === 'completed'}>Completed</option>
+          <option value="cancelled" selected={booking.status === 'cancelled'}>Cancelled</option>
+        </select>
+        <button type="submit" class="rounded bg-amber-800 text-white px-3 py-1 text-sm">Update status</button>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-3 text-sm">
+      <h2 class="font-semibold mb-2">Itinerary / logistics</h2>
+      <form method="POST" class="space-y-3">
+        <input type="hidden" name="_action" value="itinerary" />
+        <div>
+          <label class="block text-stone-500 mb-1">Pickup time</label>
+          <input name="pickupTime" value={booking.pickup_time} class="w-full rounded border border-stone-300 px-3 py-2" placeholder="e.g. 5:30 AM" />
+        </div>
+        <div>
+          <label class="block text-stone-500 mb-1">Guide assigned</label>
+          <input name="guideAssigned" value={booking.guide_assigned} class="w-full rounded border border-stone-300 px-3 py-2" />
+        </div>
+        <div>
+          <label class="block text-stone-500 mb-1">Vehicle</label>
+          <input name="vehicle" value={booking.vehicle} class="w-full rounded border border-stone-300 px-3 py-2" placeholder="e.g. Innova, plate no." />
+        </div>
+        <button type="submit" class="rounded bg-amber-800 text-white px-3 py-1 text-sm">Save itinerary</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-stone-200 p-6 mt-6 text-sm">
+    <h2 class="font-semibold mb-3">Notes</h2>
+    <form method="POST" class="flex gap-2 mb-4">
+      <input type="hidden" name="_action" value="note" />
+      <input name="note" placeholder="Add a note…" class="flex-1 rounded border border-stone-300 px-3 py-2" required />
+      <button type="submit" class="rounded bg-amber-800 text-white px-3 py-1">Add</button>
+    </form>
+    {notes.length === 0 ? (
+      <p class="text-stone-500">No notes yet.</p>
+    ) : (
+      <ul class="space-y-2">
+        {notes.map((n) => (
+          <li class="border-t border-stone-100 pt-2">
+            <p>{n.note}</p>
+            <p class="text-xs text-stone-400">{n.created_at}</p>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</AdminLayout>

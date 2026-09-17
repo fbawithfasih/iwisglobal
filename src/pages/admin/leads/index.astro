@@ -1,0 +1,106 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { listLeads, insertLead, updateLeadStatus } from '../../../lib/crm';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB;
+
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  const action = String(form.get('_action') ?? '');
+
+  if (action === 'add') {
+    const name = String(form.get('name') ?? '').trim();
+    if (name) {
+      await insertLead(db, {
+        name,
+        email: String(form.get('email') ?? ''),
+        phone: String(form.get('phone') ?? ''),
+        message: String(form.get('message') ?? ''),
+        tourInterest: String(form.get('tourInterest') ?? ''),
+      });
+    }
+  } else if (action === 'status') {
+    const id = String(form.get('leadId') ?? '');
+    const status = String(form.get('status') ?? '');
+    if (id && status) await updateLeadStatus(db, id, status);
+  }
+  return Astro.redirect('/admin/leads');
+}
+
+const leads = db ? await listLeads(db) : [];
+---
+<AdminLayout title="Leads">
+  <h1 class="text-2xl font-semibold mb-6">Leads</h1>
+
+  <details class="bg-white rounded-xl border border-stone-200 p-6 mb-6 text-sm">
+    <summary class="font-semibold cursor-pointer">+ Add a lead</summary>
+    <form method="POST" class="grid md:grid-cols-2 gap-3 mt-4">
+      <input type="hidden" name="_action" value="add" />
+      <input name="name" placeholder="Name" required class="rounded border border-stone-300 px-3 py-2" />
+      <input name="email" type="email" placeholder="Email" class="rounded border border-stone-300 px-3 py-2" />
+      <input name="phone" placeholder="Phone" class="rounded border border-stone-300 px-3 py-2" />
+      <input name="tourInterest" placeholder="Tour interest" class="rounded border border-stone-300 px-3 py-2" />
+      <textarea name="message" placeholder="Message / notes" class="rounded border border-stone-300 px-3 py-2 md:col-span-2"></textarea>
+      <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2 md:col-span-2">Add lead</button>
+    </form>
+  </details>
+
+  {leads.length === 0 ? (
+    <p class="text-stone-500">No leads yet.</p>
+  ) : (
+    <div class="bg-white rounded-xl border border-stone-200 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-stone-50 text-left">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Contact</th>
+            <th class="px-4 py-2">Tour interest</th>
+            <th class="px-4 py-2">Message</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {leads.map((l) => (
+            <tr class="border-t border-stone-100 align-top">
+              <td class="px-4 py-2">{l.name}</td>
+              <td class="px-4 py-2">{l.email}{l.email && l.phone ? ' / ' : ''}{l.phone}</td>
+              <td class="px-4 py-2">{l.tour_interest}</td>
+              <td class="px-4 py-2 max-w-xs">{l.message}</td>
+              <td class="px-4 py-2">
+                <span class={`px-2 py-0.5 rounded text-xs ${
+                  l.status === 'converted' ? 'bg-green-100 text-green-800' :
+                  l.status === 'lost' ? 'bg-red-100 text-red-800' :
+                  l.status === 'contacted' ? 'bg-blue-100 text-blue-800' :
+                  'bg-stone-100 text-stone-700'
+                }`}>{l.status}</span>
+              </td>
+              <td class="px-4 py-2">
+                <form method="POST" class="flex items-center gap-1">
+                  <input type="hidden" name="_action" value="status" />
+                  <input type="hidden" name="leadId" value={l.id} />
+                  <select name="status" class="rounded border border-stone-300 px-1 py-0.5 text-xs">
+                    <option value="new" selected={l.status === 'new'}>New</option>
+                    <option value="contacted" selected={l.status === 'contacted'}>Contacted</option>
+                    <option value="converted" selected={l.status === 'converted'}>Converted</option>
+                    <option value="lost" selected={l.status === 'lost'}>Lost</option>
+                  </select>
+                  <button type="submit" class="text-amber-800 text-xs hover:underline">Save</button>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</AdminLayout>

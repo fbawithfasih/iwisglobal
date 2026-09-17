@@ -1,0 +1,63 @@
+---
+export const prerender = false;
+
+import { verifyPassword, createSessionToken } from '../../lib/adminAuth';
+import { resolveEnv } from '../../lib/env';
+import { ADMIN_COOKIE } from '../../lib/requireAdmin';
+
+let error: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const password = String(form.get('password') ?? '');
+  const env = resolveEnv(Astro.locals);
+
+  if (!env.ADMIN_PASSWORD_SALT || !env.ADMIN_PASSWORD_HASH || !env.ADMIN_SESSION_SECRET) {
+    error = 'Admin login is not configured yet.';
+  } else {
+    const valid = await verifyPassword(password, env.ADMIN_PASSWORD_SALT, env.ADMIN_PASSWORD_HASH);
+    if (valid) {
+      const token = await createSessionToken(env.ADMIN_SESSION_SECRET);
+      Astro.cookies.set(ADMIN_COOKIE, token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/admin',
+        maxAge: 60 * 60 * 12,
+      });
+      return Astro.redirect('/admin');
+    }
+    error = 'Incorrect password.';
+  }
+}
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin Login — IWIS Global</title>
+    <style is:global>
+      @tailwind base;
+      @tailwind components;
+      @tailwind utilities;
+    </style>
+  </head>
+  <body class="bg-stone-100 min-h-screen flex items-center justify-center">
+    <form method="POST" class="bg-white rounded-xl border border-stone-200 p-8 w-full max-w-sm space-y-4">
+      <h1 class="text-xl font-semibold">IWIS Admin Login</h1>
+      {error && <p class="text-red-600 text-sm">{error}</p>}
+      <input
+        type="password"
+        name="password"
+        placeholder="Password"
+        required
+        class="w-full rounded border border-stone-300 px-3 py-2"
+      />
+      <button type="submit" class="w-full rounded bg-amber-800 text-white py-2 font-medium">
+        Log in
+      </button>
+    </form>
+  </body>
+</html>

@@ -1,0 +1,85 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { insertManualBooking } from '../../../lib/crm';
+import { getCatalogItem, computeTotal } from '../../../lib/catalog';
+import { getCollection } from 'astro:content';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB;
+const tours = await getCollection('tours');
+let error: string | null = null;
+
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  const tourId = String(form.get('tourId') ?? '');
+  const travelDate = String(form.get('travelDate') ?? '');
+  const travelers = Number(form.get('travelers') ?? 0);
+  const travelerName = String(form.get('travelerName') ?? '');
+  const travelerEmail = String(form.get('travelerEmail') ?? '');
+  const travelerPhone = String(form.get('travelerPhone') ?? '');
+
+  const item = getCatalogItem(tourId);
+  if (!item || !travelDate || travelers < 1 || !travelerName) {
+    error = 'Please fill in all required fields with a valid tour.';
+  } else {
+    const amountPaid = Math.round(computeTotal(item, travelers, []) * 100);
+    const id = await insertManualBooking(db, {
+      tourId,
+      travelDate,
+      travelers,
+      addOnIds: [],
+      travelerName,
+      travelerEmail,
+      travelerPhone,
+      amountPaid,
+      currency: item.currency,
+    });
+    return Astro.redirect(`/admin/bookings/${id}`);
+  }
+}
+---
+<AdminLayout title="New Manual Booking">
+  <a href="/admin" class="text-sm text-stone-500 hover:underline">&larr; Back to bookings</a>
+  <h1 class="text-2xl font-semibold mt-2 mb-6">New manual booking</h1>
+  <p class="text-stone-500 text-sm mb-6">For phone/WhatsApp inquiries booked outside the website. No payment is processed here.</p>
+
+  {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
+
+  <form method="POST" class="bg-white rounded-xl border border-stone-200 p-6 space-y-4 max-w-lg text-sm">
+    <div>
+      <label class="block text-stone-500 mb-1">Tour</label>
+      <select name="tourId" required class="w-full rounded border border-stone-300 px-3 py-2">
+        {tours.map((t) => <option value={t.data.tourId}>{t.data.title}</option>)}
+      </select>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Travel date</label>
+      <input type="date" name="travelDate" required class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Travelers</label>
+      <input type="number" name="travelers" min="1" value="2" required class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Traveler name</label>
+      <input name="travelerName" required class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Email</label>
+      <input type="email" name="travelerEmail" class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Phone</label>
+      <input name="travelerPhone" class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2">Create booking</button>
+  </form>
+</AdminLayout>

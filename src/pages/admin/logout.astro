@@ -1,0 +1,10 @@
+---
+export const prerender = false;
+import { ADMIN_COOKIE } from '../../lib/requireAdmin';
+
+if (Astro.request.method === 'POST') {
+  Astro.cookies.delete(ADMIN_COOKIE, { path: '/admin' });
+  return Astro.redirect('/admin/login');
+}
+return Astro.redirect('/admin');
+---
