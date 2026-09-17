@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BookingWidget from '../../components/BookingWidget.tsx';
 import { getTourBySlug } from '../../lib/tours';
+import { getAvailability } from '../../lib/availability';
 import { resolveEnv } from '../../lib/env';
 
 export const prerender = false;
@@ -13,6 +14,8 @@ const tour = env.DB && slug ? await getTourBySlug(env.DB, slug) : null;
 if (!tour || tour.status !== 'published') {
   return Astro.redirect('/tours');
 }
+
+const availability = getAvailability();
 
 const tripJsonLd = {
   '@context': 'https://schema.org',
@@ -29,15 +32,38 @@ const tripJsonLd = {
 <BaseLayout title={`${tour.title} — IWIS Global`} description={tour.summary}>
   <script type="application/ld+json" set:html={JSON.stringify(tripJsonLd)} />
 
-  <section class="max-w-5xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-10">
+  <section class="max-w-5xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-10 items-start">
     <div class="md:col-span-2">
       {tour.image && <img src={tour.image} alt={tour.title} class="w-full rounded-xl mb-6 object-cover max-h-80" />}
       <h1 class="text-3xl font-serif font-semibold mb-2">{tour.title}</h1>
-      <p class="text-stone-600 mb-6">{tour.summary}</p>
+      <p class="text-stone-600 mb-4">{tour.summary}</p>
+
+      <div class="flex flex-wrap gap-2 mb-6">
+        <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-brand-50 text-brand-800">
+          ✓ Free cancellation until 24h before
+        </span>
+        <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-brand-50 text-brand-800">
+          ✓ Instant confirmation
+        </span>
+        {tour.pickupIncluded && (
+          <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-brand-50 text-brand-800">
+            ✓ Hotel pickup included
+          </span>
+        )}
+        {tour.privateTour && (
+          <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-brand-50 text-brand-800">
+            ✓ Private tour
+          </span>
+        )}
+        <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-accent-50 text-accent-700">
+          {availability.label}
+        </span>
+      </div>
 
       <div class="flex gap-6 text-sm text-stone-500 mb-8">
         <span>{tour.durationLabel}</span>
         <span>From {tour.startPoint}</span>
+        {tour.guideLanguage && <span>{tour.guideLanguage} guide</span>}
       </div>
 
       {tour.highlights.length > 0 && (
@@ -77,9 +103,18 @@ const tripJsonLd = {
           </ul>
         </div>
       )}
+
+      {tour.excludes.length > 0 && (
+        <div class="mb-4">
+          <h2 class="text-lg font-semibold mb-2">Not included</h2>
+          <ul class="list-disc list-inside text-stone-700 space-y-1">
+            {tour.excludes.map((e) => <li>{e}</li>)}
+          </ul>
+        </div>
+      )}
     </div>
 
-    <div>
+    <div class="md:sticky md:top-24 self-start">
       <BookingWidget
         client:load
         tourId={tour.id}
@@ -87,6 +122,8 @@ const tripJsonLd = {
         pricePerTraveler={tour.amount}
         currency={tour.currency}
         addOns={tour.addOns}
+        minDate={availability.minBookableDate}
+        availabilityLabel={availability.label}
       />
     </div>
   </section>

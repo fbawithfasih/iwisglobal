@@ -1,0 +1,48 @@
+---
+import { getAvailability } from '../lib/availability';
+import type { ParsedTour } from '../lib/tours';
+
+interface Props {
+  tour: ParsedTour;
+}
+
+const { tour } = Astro.props;
+const availability = getAvailability();
+---
+<a
+  href={`/tours/${tour.slug}`}
+  class="block rounded-xl border border-stone-200 bg-white overflow-hidden hover:shadow-lg transition"
+>
+  <div class="aspect-[4/3] bg-brand-50">
+    {tour.image ? (
+      <img src={tour.image} alt={tour.title} class="w-full h-full object-cover" />
+    ) : (
+      <div class="w-full h-full flex items-center justify-center text-brand-300 text-sm">No image yet</div>
+    )}
+  </div>
+
+  <div class="p-5">
+    <h3 class="text-lg font-semibold mb-2">{tour.title}</h3>
+
+    <div class="flex flex-wrap gap-1.5 mb-3">
+      <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-50 text-brand-800">Instant confirmation</span>
+      <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-50 text-brand-800">Free cancellation</span>
+      <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-accent-50 text-accent-700">{availability.label}</span>
+    </div>
+
+    <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500 mb-4">
+      <span>{tour.durationLabel}</span>
+      {tour.pickupIncluded && <span>· Hotel pickup</span>}
+      {tour.privateTour && <span>· Private tour</span>}
+      {tour.guideLanguage && <span>· {tour.guideLanguage} guide</span>}
+    </div>
+
+    <div class="flex items-center justify-between">
+      <div>
+        <span class="text-xs text-stone-500">From</span>
+        <p class="text-lg font-semibold text-stone-900">{tour.currency} {tour.amount.toLocaleString('en-IN')}<span class="text-xs font-normal text-stone-500">/person</span></p>
+      </div>
+      <span class="text-sm font-medium text-brand-800">Check availability →</span>
+    </div>
+  </div>
+</a>

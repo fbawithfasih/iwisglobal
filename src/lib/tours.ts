@@ -21,6 +21,9 @@ export interface TourRow {
   image: string;
   featured: number;
   status: string;
+  guide_language: string;
+  pickup_included: number;
+  private_tour: number;
   created_at: string;
   updated_at: string;
 }
@@ -47,6 +50,9 @@ export interface ParsedTour {
   image: string;
   featured: boolean;
   status: string;
+  guideLanguage: string;
+  pickupIncluded: boolean;
+  privateTour: boolean;
   createdAt: string;
   updatedAt: string;
   addOns: AddOn[];
@@ -86,6 +92,9 @@ async function parseTour(db: D1Like, row: TourRow): Promise<ParsedTour> {
     image: row.image,
     featured: !!row.featured,
     status: row.status,
+    guideLanguage: row.guide_language,
+    pickupIncluded: !!row.pickup_included,
+    privateTour: !!row.private_tour,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     addOns: await loadAddOns(db, row.id),
@@ -177,6 +186,9 @@ export interface TourInput {
   excludes: string[];
   image: string;
   featured: boolean;
+  guideLanguage: string;
+  pickupIncluded: boolean;
+  privateTour: boolean;
 }
 
 export async function createTour(db: D1Like, input: TourInput): Promise<string> {
@@ -186,8 +198,9 @@ export async function createTour(db: D1Like, input: TourInput): Promise<string> 
     .prepare(
       `INSERT INTO tours
         (id, slug, title, summary, description, duration_label, start_point, amount, currency,
-         highlights, itinerary, includes, excludes, image, featured, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, ?)`
+         highlights, itinerary, includes, excludes, image, featured, guide_language,
+         pickup_included, private_tour, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, ?)`
     )
     .bind(
       id,
@@ -205,6 +218,9 @@ export async function createTour(db: D1Like, input: TourInput): Promise<string> 
       JSON.stringify(input.excludes),
       input.image,
       input.featured ? 1 : 0,
+      input.guideLanguage,
+      input.pickupIncluded ? 1 : 0,
+      input.privateTour ? 1 : 0,
       now,
       now
     )
@@ -218,7 +234,8 @@ export async function updateTour(db: D1Like, id: string, input: TourInput): Prom
       `UPDATE tours SET
          title = ?, summary = ?, description = ?, duration_label = ?, start_point = ?,
          amount = ?, currency = ?, highlights = ?, itinerary = ?, includes = ?, excludes = ?,
-         image = ?, featured = ?, updated_at = ?
+         image = ?, featured = ?, guide_language = ?, pickup_included = ?, private_tour = ?,
+         updated_at = ?
        WHERE id = ?`
     )
     .bind(
@@ -235,6 +252,9 @@ export async function updateTour(db: D1Like, id: string, input: TourInput): Prom
       JSON.stringify(input.excludes),
       input.image,
       input.featured ? 1 : 0,
+      input.guideLanguage,
+      input.pickupIncluded ? 1 : 0,
+      input.privateTour ? 1 : 0,
       new Date().toISOString(),
       id
     )

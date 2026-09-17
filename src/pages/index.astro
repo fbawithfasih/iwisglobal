@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import TourCard from '../components/TourCard.astro';
 import { listTours } from '../lib/tours';
 import { resolveEnv } from '../lib/env';
 
@@ -16,7 +17,7 @@ const tours = env.DB ? (await listTours(env.DB, { status: 'published' })).filter
       Delhi, multi-day itineraries, and curated stops at local art galleries. Book online, pay securely,
       arrive prepared.
     </p>
-    <a href="/tours" class="inline-block rounded bg-amber-800 text-white px-6 py-3 font-medium">
+    <a href="/tours" class="inline-block rounded bg-brand-800 hover:bg-brand-900 text-white px-6 py-3 font-medium transition">
       Browse tours
     </a>
   </section>
@@ -24,13 +25,7 @@ const tours = env.DB ? (await listTours(env.DB, { status: 'published' })).filter
   <section class="max-w-5xl mx-auto px-6 pb-20">
     <h2 class="text-2xl font-serif font-semibold mb-6">Featured tours</h2>
     <div class="grid md:grid-cols-2 gap-6">
-      {tours.map((tour) => (
-        <a href={`/tours/${tour.slug}`} class="block rounded-xl border border-stone-200 p-6 hover:shadow-md transition">
-          <h3 class="text-xl font-semibold mb-2">{tour.title}</h3>
-          <p class="text-stone-600 text-sm mb-3">{tour.summary}</p>
-          <span class="text-sm text-amber-800 font-medium">{tour.durationLabel}</span>
-        </a>
-      ))}
+      {tours.map((tour) => <TourCard tour={tour} />)}
     </div>
   </section>
 </BaseLayout>

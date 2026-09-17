@@ -18,10 +18,12 @@ interface BookingWidgetProps {
   pricePerTraveler: number;
   currency: string;
   addOns: AddOnOption[];
+  minDate: string;
+  availabilityLabel?: string;
 }
 
-export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, currency, addOns }: BookingWidgetProps) {
-  const [date, setDate] = useState('');
+export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, currency, addOns, minDate, availabilityLabel }: BookingWidgetProps) {
+  const [date, setDate] = useState(minDate);
   const [travelers, setTravelers] = useState(2);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [name, setName] = useState('');
@@ -119,7 +121,7 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
         },
         modal: { ondismiss: () => setLoading(false) },
         prefill: { name, email, contact: phone },
-        theme: { color: '#b45309' },
+        theme: { color: '#6d28d9' },
       };
 
       const rzp = new window.Razorpay(options);
@@ -140,15 +142,17 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
   }
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm space-y-4">
+    <div className="rounded-xl border border-brand-100 bg-white p-6 shadow-sm space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1">Travel date</label>
         <input
           type="date"
           value={date}
+          min={minDate}
           onChange={(e) => setDate(e.target.value)}
           className="w-full rounded border border-stone-300 px-3 py-2"
         />
+        {availabilityLabel && <p className="text-xs text-accent-600 mt-1">{availabilityLabel}</p>}
       </div>
 
       <div>
@@ -210,10 +214,15 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
       <button
         onClick={handleBook}
         disabled={loading}
-        className="w-full rounded bg-amber-800 text-white py-3 font-medium disabled:opacity-60"
+        className="w-full rounded bg-brand-800 hover:bg-brand-900 text-white py-3 font-medium disabled:opacity-60 transition"
       >
         {loading ? 'Processing…' : 'Book & Pay'}
       </button>
+
+      <div className="text-xs text-stone-500 space-y-0.5">
+        <p>✓ Free cancellation up to 24 hours before your tour</p>
+        <p>✓ Instant confirmation</p>
+      </div>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
     </div>

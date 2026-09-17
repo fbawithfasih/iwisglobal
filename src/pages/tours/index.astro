@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import TourCard from '../../components/TourCard.astro';
 import { listTours } from '../../lib/tours';
 import { resolveEnv } from '../../lib/env';
 
@@ -12,16 +13,7 @@ const tours = env.DB ? await listTours(env.DB, { status: 'published' }) : [];
   <section class="max-w-5xl mx-auto px-6 py-16">
     <h1 class="text-3xl font-serif font-semibold mb-8">All tours</h1>
     <div class="grid md:grid-cols-2 gap-6">
-      {tours.map((tour) => (
-        <a href={`/tours/${tour.slug}`} class="block rounded-xl border border-stone-200 p-6 hover:shadow-md transition">
-          <h2 class="text-xl font-semibold mb-2">{tour.title}</h2>
-          <p class="text-stone-600 text-sm mb-3">{tour.summary}</p>
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-amber-800 font-medium">{tour.durationLabel}</span>
-            <span class="text-stone-500">From {tour.startPoint}</span>
-          </div>
-        </a>
-      ))}
+      {tours.map((tour) => <TourCard tour={tour} />)}
     </div>
   </section>
 </BaseLayout>

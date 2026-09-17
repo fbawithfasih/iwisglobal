@@ -47,6 +47,9 @@ if (Astro.request.method === 'POST' && db) {
         excludes: parseLines(String(form.get('excludes') ?? '')),
         image,
         featured: form.get('featured') === 'on',
+        guideLanguage: String(form.get('guideLanguage') ?? 'English').trim() || 'English',
+        pickupIncluded: form.get('pickupIncluded') === 'on',
+        privateTour: form.get('privateTour') === 'on',
       });
       const addOns = parseAddOns(String(form.get('addOns') ?? ''));
       if (addOns.length > 0) await replaceAddOns(db, id, addOns);
@@ -121,6 +124,18 @@ if (Astro.request.method === 'POST' && db) {
       <label class="block text-stone-500 mb-1">Add-ons (one per line: "Name | Price")</label>
       <textarea name="addOns" rows="3" class="w-full rounded border border-stone-300 px-3 py-2" placeholder="Art gallery & souvenir stop | 500"></textarea>
     </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Guide language</label>
+      <input name="guideLanguage" value="English" class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <label class="flex items-center gap-2">
+      <input type="checkbox" name="pickupIncluded" />
+      Hotel pickup included
+    </label>
+    <label class="flex items-center gap-2">
+      <input type="checkbox" name="privateTour" />
+      Private tour (not a shared/group tour)
+    </label>
     <label class="flex items-center gap-2">
       <input type="checkbox" name="featured" />
       Featured on homepage

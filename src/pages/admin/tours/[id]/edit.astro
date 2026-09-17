@@ -51,6 +51,9 @@ if (Astro.request.method === 'POST') {
         excludes: parseLines(String(form.get('excludes') ?? '')),
         image,
         featured: form.get('featured') === 'on',
+        guideLanguage: String(form.get('guideLanguage') ?? 'English').trim() || 'English',
+        pickupIncluded: form.get('pickupIncluded') === 'on',
+        privateTour: form.get('privateTour') === 'on',
       });
       await replaceAddOns(db, id, parseAddOns(String(form.get('addOns') ?? '')));
       return Astro.redirect(`/admin/tours/${id}/edit?saved=1`);
@@ -145,6 +148,18 @@ const saved = Astro.url.searchParams.get('saved') === '1';
       <label class="block text-stone-500 mb-1">Add-ons (one per line: "Name | Price")</label>
       <textarea name="addOns" rows="3" class="w-full rounded border border-stone-300 px-3 py-2">{formatAddOns(tour.addOns)}</textarea>
     </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Guide language</label>
+      <input name="guideLanguage" value={tour.guideLanguage} class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <label class="flex items-center gap-2">
+      <input type="checkbox" name="pickupIncluded" checked={tour.pickupIncluded} />
+      Hotel pickup included
+    </label>
+    <label class="flex items-center gap-2">
+      <input type="checkbox" name="privateTour" checked={tour.privateTour} />
+      Private tour (not a shared/group tour)
+    </label>
     <label class="flex items-center gap-2">
       <input type="checkbox" name="featured" checked={tour.featured} />
       Featured on homepage
