@@ -20,6 +20,8 @@ if (Astro.request.method === 'POST' && db) {
   const form = await Astro.request.formData();
   const title = String(form.get('title') ?? '').trim();
   const amount = Number(form.get('amount') ?? 0);
+  const usdAmountRaw = String(form.get('usdAmount') ?? '').trim();
+  const usdAmount = usdAmountRaw !== '' ? Number(usdAmountRaw) : null;
 
   if (!title || !amount || amount <= 0) {
     error = 'Title and a valid price are required.';
@@ -40,6 +42,7 @@ if (Astro.request.method === 'POST' && db) {
         durationLabel: String(form.get('durationLabel') ?? ''),
         startPoint: String(form.get('startPoint') ?? ''),
         amount,
+        usdAmount: usdAmount != null && Number.isFinite(usdAmount) ? usdAmount : null,
         currency: String(form.get('currency') ?? 'INR'),
         highlights: parseLines(String(form.get('highlights') ?? '')),
         itinerary: parseItinerary(String(form.get('itinerary') ?? '')),
@@ -77,14 +80,15 @@ if (Astro.request.method === 'POST' && db) {
     </div>
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block text-stone-500 mb-1">Price per traveler *</label>
+        <label class="block text-stone-500 mb-1">Price per traveler (INR) *</label>
         <input type="number" name="amount" min="1" required class="w-full rounded border border-stone-300 px-3 py-2" />
       </div>
       <div>
-        <label class="block text-stone-500 mb-1">Currency</label>
-        <input name="currency" value="INR" class="w-full rounded border border-stone-300 px-3 py-2" />
+        <label class="block text-stone-500 mb-1">Price per traveler (USD, optional)</label>
+        <input type="number" name="usdAmount" min="1" class="w-full rounded border border-stone-300 px-3 py-2" placeholder="Leave blank to hide USD for this tour" />
       </div>
     </div>
+    <input type="hidden" name="currency" value="INR" />
     <div class="grid grid-cols-2 gap-4">
       <div>
         <label class="block text-stone-500 mb-1">Duration label</label>
@@ -121,8 +125,8 @@ if (Astro.request.method === 'POST' && db) {
       <textarea name="excludes" rows="3" class="w-full rounded border border-stone-300 px-3 py-2"></textarea>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Add-ons (one per line: "Name | Price")</label>
-      <textarea name="addOns" rows="3" class="w-full rounded border border-stone-300 px-3 py-2" placeholder="Art gallery & souvenir stop | 500"></textarea>
+      <label class="block text-stone-500 mb-1">Add-ons (one per line: "Name | INR price | USD price (optional)")</label>
+      <textarea name="addOns" rows="3" class="w-full rounded border border-stone-300 px-3 py-2" placeholder="Art gallery & souvenir stop | 500 | 6"></textarea>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Guide language</label>

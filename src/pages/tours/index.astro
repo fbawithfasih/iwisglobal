@@ -1,19 +1,29 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import TourCard from '../../components/TourCard.astro';
+import CurrencyToggle from '../../components/CurrencyToggle.astro';
 import { listTours } from '../../lib/tours';
 import { resolveEnv } from '../../lib/env';
+import { resolveCurrency } from '../../lib/currency';
 
 export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
 const tours = env.DB ? await listTours(env.DB, { status: 'published' }) : [];
+
+const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
+if (Astro.url.searchParams.get('currency')) {
+  Astro.cookies.set('currency', currency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+}
 ---
 <BaseLayout title="Agra Tours — IWIS Global" description="Browse private, professionally guided Agra tours: same-day trips from Delhi and multi-day itineraries.">
   <section class="max-w-5xl mx-auto px-6 py-16">
-    <h1 class="text-3xl font-serif font-semibold mb-8">All tours</h1>
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-serif font-semibold">All tours</h1>
+      <CurrencyToggle currency={currency} />
+    </div>
     <div class="grid md:grid-cols-2 gap-6">
-      {tours.map((tour) => <TourCard tour={tour} />)}
+      {tours.map((tour) => <TourCard tour={tour} currency={currency} />)}
     </div>
   </section>
 </BaseLayout>

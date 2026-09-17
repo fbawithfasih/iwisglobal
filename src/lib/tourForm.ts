@@ -39,17 +39,23 @@ function slugAddOnId(name: string, index: number): string {
   return base ? `${base}_${index}` : `ADDON_${index}`;
 }
 
-// One add-on per line: "Art gallery & souvenir stop | 500"
+// One add-on per line: "Art gallery & souvenir stop | 500 | 6" (USD segment optional)
 export function parseAddOns(text: string): AddOn[] {
   return parseLines(text)
     .map((line, index) => {
-      const [name, amountStr] = line.split('|');
+      const [name, amountStr, usdStr] = line.split('|');
       const amount = Number((amountStr ?? '').trim());
-      return { id: slugAddOnId((name ?? '').trim(), index), name: (name ?? '').trim(), amount: Number.isFinite(amount) ? amount : 0 };
+      const usdAmount = usdStr != null && usdStr.trim() !== '' ? Number(usdStr.trim()) : null;
+      return {
+        id: slugAddOnId((name ?? '').trim(), index),
+        name: (name ?? '').trim(),
+        amount: Number.isFinite(amount) ? amount : 0,
+        usdAmount: usdAmount != null && Number.isFinite(usdAmount) ? usdAmount : null,
+      };
     })
     .filter((a) => a.name);
 }
 
 export function formatAddOns(addOns: AddOn[]): string {
-  return addOns.map((a) => `${a.name} | ${a.amount}`).join('\n');
+  return addOns.map((a) => `${a.name} | ${a.amount}${a.usdAmount != null ? ` | ${a.usdAmount}` : ''}`).join('\n');
 }

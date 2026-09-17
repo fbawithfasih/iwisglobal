@@ -33,7 +33,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       env
     );
 
-    const item = await getCatalogItem(env.DB, verified.tourId, { onlyPublished: false });
+    const item = await getCatalogItem(env.DB, verified.tourId, { onlyPublished: false, currency: verified.currency });
     if (!item) {
       return new Response(JSON.stringify({ error: 'Booking references an unknown tour' }), {
         status: 400,

@@ -1,13 +1,20 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TourCard from '../components/TourCard.astro';
+import CurrencyToggle from '../components/CurrencyToggle.astro';
 import { listTours } from '../lib/tours';
 import { resolveEnv } from '../lib/env';
+import { resolveCurrency } from '../lib/currency';
 
 export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
 const tours = env.DB ? (await listTours(env.DB, { status: 'published' })).filter((t) => t.featured) : [];
+
+const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
+if (Astro.url.searchParams.get('currency')) {
+  Astro.cookies.set('currency', currency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+}
 ---
 <BaseLayout title="IWIS Global — Private Taj Mahal & Agra Tours, Booked Online">
   <section class="max-w-3xl mx-auto px-6 py-20 text-center">
@@ -23,9 +30,12 @@ const tours = env.DB ? (await listTours(env.DB, { status: 'published' })).filter
   </section>
 
   <section class="max-w-5xl mx-auto px-6 pb-20">
-    <h2 class="text-2xl font-serif font-semibold mb-6">Featured tours</h2>
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-serif font-semibold">Featured tours</h2>
+      <CurrencyToggle currency={currency} />
+    </div>
     <div class="grid md:grid-cols-2 gap-6">
-      {tours.map((tour) => <TourCard tour={tour} />)}
+      {tours.map((tour) => <TourCard tour={tour} currency={currency} />)}
     </div>
   </section>
 </BaseLayout>

@@ -3,6 +3,7 @@
 
 import type { D1Like } from './db';
 import type { CatalogItem, AddOn } from './catalog';
+import { resolvePrice, type Currency } from './currency';
 
 export interface TourRow {
   id: string;
@@ -13,6 +14,7 @@ export interface TourRow {
   duration_label: string;
   start_point: string;
   amount: number;
+  usd_amount: number | null;
   currency: string;
   highlights: string;
   itinerary: string;
@@ -42,6 +44,7 @@ export interface ParsedTour {
   durationLabel: string;
   startPoint: string;
   amount: number;
+  usdAmount: number | null;
   currency: string;
   highlights: string[];
   itinerary: ItineraryStep[];
@@ -68,7 +71,7 @@ function safeJsonParse<T>(json: string, fallback: T): T {
 
 async function loadAddOns(db: D1Like, tourId: string): Promise<AddOn[]> {
   const { results } = await db
-    .prepare(`SELECT id, name, amount FROM tour_addons WHERE tour_id = ? ORDER BY created_at ASC`)
+    .prepare(`SELECT id, name, amount, usd_amount as usdAmount FROM tour_addons WHERE tour_id = ? ORDER BY created_at ASC`)
     .bind(tourId)
     .all<AddOn>();
   return results;
@@ -84,6 +87,7 @@ async function parseTour(db: D1Like, row: TourRow): Promise<ParsedTour> {
     durationLabel: row.duration_label,
     startPoint: row.start_point,
     amount: row.amount,
+    usdAmount: row.usd_amount,
     currency: row.currency,
     highlights: safeJsonParse(row.highlights, []),
     itinerary: safeJsonParse(row.itinerary, []),
@@ -131,15 +135,28 @@ export async function getTourBySlug(db: D1Like, slug: string): Promise<ParsedTou
 export async function getCatalogItem(
   db: D1Like,
   tourId: unknown,
-  opts: { onlyPublished?: boolean } = {}
+  opts: { onlyPublished?: boolean; currency?: Currency } = {}
 ): Promise<CatalogItem | null> {
   if (typeof tourId !== 'string') return null;
   const onlyPublished = opts.onlyPublished ?? true;
   const row = onlyPublished
-    ? await db.prepare(`SELECT amount, currency FROM tours WHERE id = ? AND status = 'published'`).bind(tourId).first<{ amount: number; currency: string }>()
-    : await db.prepare(`SELECT amount, currency FROM tours WHERE id = ?`).bind(tourId).first<{ amount: number; currency: string }>();
+    ? await db.prepare(`SELECT amount, usd_amount, currency FROM tours WHERE id = ? AND status = 'published'`).bind(tourId).first<{ amount: number; usd_amount: number | null; currency: string }>()
+    : await db.prepare(`SELECT amount, usd_amount, currency FROM tours WHERE id = ?`).bind(tourId).first<{ amount: number; usd_amount: number | null; currency: string }>();
   if (!row) return null;
-  return { amount: row.amount, currency: row.currency, addOns: await loadAddOns(db, tourId) };
+
+  const requested = opts.currency ?? 'INR';
+  const resolved = resolvePrice({ amount: row.amount, usdAmount: row.usd_amount }, requested);
+  const allAddOns = await loadAddOns(db, tourId);
+  // Add-ons must match the resolved currency exactly — never mix currencies
+  // in one order. An add-on without a USD price is simply unavailable when
+  // paying in USD, rather than silently charging it in INR alongside a USD
+  // total.
+  const addOns =
+    resolved.currency === 'USD'
+      ? allAddOns.filter((a) => a.usdAmount != null).map((a) => ({ id: a.id, name: a.name, amount: a.usdAmount as number }))
+      : allAddOns.map((a) => ({ id: a.id, name: a.name, amount: a.amount }));
+
+  return { amount: resolved.amount, currency: resolved.currency, addOns };
 }
 
 function slugify(title: string): string {
@@ -179,6 +196,7 @@ export interface TourInput {
   durationLabel: string;
   startPoint: string;
   amount: number;
+  usdAmount: number | null;
   currency: string;
   highlights: string[];
   itinerary: ItineraryStep[];
@@ -197,10 +215,10 @@ export async function createTour(db: D1Like, input: TourInput): Promise<string> 
   await db
     .prepare(
       `INSERT INTO tours
-        (id, slug, title, summary, description, duration_label, start_point, amount, currency,
+        (id, slug, title, summary, description, duration_label, start_point, amount, usd_amount, currency,
          highlights, itinerary, includes, excludes, image, featured, guide_language,
          pickup_included, private_tour, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, ?)`
     )
     .bind(
       id,
@@ -211,6 +229,7 @@ export async function createTour(db: D1Like, input: TourInput): Promise<string> 
       input.durationLabel,
       input.startPoint,
       input.amount,
+      input.usdAmount,
       input.currency,
       JSON.stringify(input.highlights),
       JSON.stringify(input.itinerary),
@@ -233,7 +252,7 @@ export async function updateTour(db: D1Like, id: string, input: TourInput): Prom
     .prepare(
       `UPDATE tours SET
          title = ?, summary = ?, description = ?, duration_label = ?, start_point = ?,
-         amount = ?, currency = ?, highlights = ?, itinerary = ?, includes = ?, excludes = ?,
+         amount = ?, usd_amount = ?, currency = ?, highlights = ?, itinerary = ?, includes = ?, excludes = ?,
          image = ?, featured = ?, guide_language = ?, pickup_included = ?, private_tour = ?,
          updated_at = ?
        WHERE id = ?`
@@ -245,6 +264,7 @@ export async function updateTour(db: D1Like, id: string, input: TourInput): Prom
       input.durationLabel,
       input.startPoint,
       input.amount,
+      input.usdAmount,
       input.currency,
       JSON.stringify(input.highlights),
       JSON.stringify(input.itinerary),
@@ -270,8 +290,8 @@ export async function replaceAddOns(db: D1Like, tourId: string, addOns: AddOn[])
   const now = new Date().toISOString();
   for (const addOn of addOns) {
     await db
-      .prepare(`INSERT INTO tour_addons (id, tour_id, name, amount, created_at) VALUES (?, ?, ?, ?, ?)`)
-      .bind(addOn.id, tourId, addOn.name, addOn.amount, now)
+      .prepare(`INSERT INTO tour_addons (id, tour_id, name, amount, usd_amount, created_at) VALUES (?, ?, ?, ?, ?, ?)`)
+      .bind(addOn.id, tourId, addOn.name, addOn.amount, addOn.usdAmount ?? null, now)
       .run();
   }
 }

@@ -8,6 +8,7 @@ export interface BookingRequest {
   date: string; // ISO date (YYYY-MM-DD)
   travelers: number;
   addOnIds: string[];
+  currency?: 'INR' | 'USD';
   receipt?: string;
 }
 
@@ -31,6 +32,7 @@ export interface VerifiedBooking {
   date: string;
   travelers: number;
   addOnIds: string[];
+  currency: 'INR' | 'USD';
 }
 
 export interface PaymentProvider {

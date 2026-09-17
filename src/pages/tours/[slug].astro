@@ -1,9 +1,11 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BookingWidget from '../../components/BookingWidget.tsx';
+import CurrencyToggle from '../../components/CurrencyToggle.astro';
 import { getTourBySlug } from '../../lib/tours';
 import { getAvailability } from '../../lib/availability';
 import { resolveEnv } from '../../lib/env';
+import { resolveCurrency, resolvePrice, resolveAddOns, CURRENCY_SYMBOLS } from '../../lib/currency';
 
 export const prerender = false;
 
@@ -16,6 +18,13 @@ if (!tour || tour.status !== 'published') {
 }
 
 const availability = getAvailability();
+
+const requestedCurrency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
+if (Astro.url.searchParams.get('currency')) {
+  Astro.cookies.set('currency', requestedCurrency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+}
+const price = resolvePrice(tour, requestedCurrency);
+const resolvedAddOns = resolveAddOns(tour.addOns, price.currency);
 
 const tripJsonLd = {
   '@context': 'https://schema.org',
@@ -35,7 +44,15 @@ const tripJsonLd = {
   <section class="max-w-5xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-10 items-start">
     <div class="md:col-span-2">
       {tour.image && <img src={tour.image} alt={tour.title} class="w-full rounded-xl mb-6 object-cover max-h-80" />}
-      <h1 class="text-3xl font-serif font-semibold mb-2">{tour.title}</h1>
+      <div class="flex items-start justify-between gap-4 mb-2">
+        <h1 class="text-3xl font-serif font-semibold">{tour.title}</h1>
+        <div class="text-right shrink-0">
+          <CurrencyToggle currency={requestedCurrency} />
+          {requestedCurrency === 'USD' && price.currency === 'INR' && (
+            <p class="text-xs text-stone-400 mt-1">USD price not set for this tour — showing INR</p>
+          )}
+        </div>
+      </div>
       <p class="text-stone-600 mb-4">{tour.summary}</p>
 
       <div class="flex flex-wrap gap-2 mb-6">
@@ -60,11 +77,16 @@ const tripJsonLd = {
         </span>
       </div>
 
-      <div class="flex gap-6 text-sm text-stone-500 mb-8">
+      <div class="flex gap-6 text-sm text-stone-500 mb-4">
         <span>{tour.durationLabel}</span>
         <span>From {tour.startPoint}</span>
         {tour.guideLanguage && <span>{tour.guideLanguage} guide</span>}
       </div>
+
+      <p class="text-2xl font-semibold text-stone-900 mb-8">
+        From {CURRENCY_SYMBOLS[price.currency]}{price.amount.toLocaleString(price.currency === 'USD' ? 'en-US' : 'en-IN')}
+        <span class="text-sm font-normal text-stone-500">/person</span>
+      </p>
 
       {tour.highlights.length > 0 && (
         <div class="mb-8">
@@ -119,9 +141,9 @@ const tripJsonLd = {
         client:load
         tourId={tour.id}
         tourTitle={tour.title}
-        pricePerTraveler={tour.amount}
-        currency={tour.currency}
-        addOns={tour.addOns}
+        pricePerTraveler={price.amount}
+        currency={price.currency}
+        addOns={resolvedAddOns}
         minDate={availability.minBookableDate}
         availabilityLabel={availability.label}
       />

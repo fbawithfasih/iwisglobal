@@ -25,7 +25,7 @@ async function hmacSha256Hex(secret: string, message: string): Promise<string> {
 
 export const razorpayProvider: PaymentProvider = {
   async createOrder(req: BookingRequest, env: Record<string, unknown>): Promise<OrderResult> {
-    const item = await getCatalogItem(env.DB as any, req.tourId, { onlyPublished: true });
+    const item = await getCatalogItem(env.DB as any, req.tourId, { onlyPublished: true, currency: req.currency });
     if (!item) throw new Error('Unknown or missing tour');
     if (!req.travelers || req.travelers < 1) throw new Error('At least one traveler is required');
 
@@ -56,6 +56,7 @@ export const razorpayProvider: PaymentProvider = {
           date: req.date,
           travelers: String(req.travelers),
           addOnIds: (req.addOnIds ?? []).join(','),
+          currency: item.currency,
         },
       }),
     });
@@ -110,6 +111,7 @@ export const razorpayProvider: PaymentProvider = {
       date: notes.date,
       travelers: Number(notes.travelers ?? 1),
       addOnIds: notes.addOnIds ? String(notes.addOnIds).split(',').filter(Boolean) : [],
+      currency: notes.currency === 'USD' ? 'USD' : 'INR',
     };
   },
 };

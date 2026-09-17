@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 
 declare global {
   interface Window {
@@ -16,7 +17,7 @@ interface BookingWidgetProps {
   tourId: string;
   tourTitle: string;
   pricePerTraveler: number;
-  currency: string;
+  currency: Currency;
   addOns: AddOnOption[];
   minDate: string;
   availabilityLabel?: string;
@@ -74,6 +75,7 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
           date,
           travelers,
           addOnIds: selectedAddOns,
+          currency,
           receipt: `rcpt_${Date.now()}`,
         }),
       });
@@ -177,7 +179,7 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
                 checked={selectedAddOns.includes(addOn.id)}
                 onChange={() => toggleAddOn(addOn.id)}
               />
-              {addOn.name} (+{currency} {addOn.amount})
+              {addOn.name} (+{CURRENCY_SYMBOLS[currency]}{addOn.amount})
             </label>
           ))}
         </div>
@@ -208,7 +210,7 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
       </div>
 
       <div className="text-lg font-semibold">
-        Total: {currency} {total.toLocaleString('en-IN')}
+        Total: {CURRENCY_SYMBOLS[currency]}{total.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}
       </div>
 
       <button

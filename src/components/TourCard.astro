@@ -1,13 +1,16 @@
 ---
 import { getAvailability } from '../lib/availability';
+import { resolvePrice, CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import type { ParsedTour } from '../lib/tours';
 
 interface Props {
   tour: ParsedTour;
+  currency: Currency;
 }
 
-const { tour } = Astro.props;
+const { tour, currency } = Astro.props;
 const availability = getAvailability();
+const price = resolvePrice(tour, currency);
 ---
 <a
   href={`/tours/${tour.slug}`}
@@ -40,7 +43,7 @@ const availability = getAvailability();
     <div class="flex items-center justify-between">
       <div>
         <span class="text-xs text-stone-500">From</span>
-        <p class="text-lg font-semibold text-stone-900">{tour.currency} {tour.amount.toLocaleString('en-IN')}<span class="text-xs font-normal text-stone-500">/person</span></p>
+        <p class="text-lg font-semibold text-stone-900">{CURRENCY_SYMBOLS[price.currency]}{price.amount.toLocaleString(price.currency === 'USD' ? 'en-US' : 'en-IN')}<span class="text-xs font-normal text-stone-500">/person</span></p>
       </div>
       <span class="text-sm font-medium text-brand-800">Check availability →</span>
     </div>

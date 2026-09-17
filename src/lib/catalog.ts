@@ -9,7 +9,8 @@
 export interface AddOn {
   id: string;
   name: string;
-  amount: number; // major currency units (e.g. rupees)
+  amount: number; // major currency units (e.g. rupees), already resolved to the catalog item's currency
+  usdAmount?: number | null; // raw USD price as set by the admin, before currency resolution
 }
 
 export interface CatalogItem {

@@ -23,6 +23,8 @@ if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   const title = String(form.get('title') ?? '').trim();
   const amount = Number(form.get('amount') ?? 0);
+  const usdAmountRaw = String(form.get('usdAmount') ?? '').trim();
+  const usdAmount = usdAmountRaw !== '' ? Number(usdAmountRaw) : null;
 
   if (!title || !amount || amount <= 0) {
     error = 'Title and a valid price are required.';
@@ -44,6 +46,7 @@ if (Astro.request.method === 'POST') {
         durationLabel: String(form.get('durationLabel') ?? ''),
         startPoint: String(form.get('startPoint') ?? ''),
         amount,
+        usdAmount: usdAmount != null && Number.isFinite(usdAmount) ? usdAmount : null,
         currency: String(form.get('currency') ?? 'INR'),
         highlights: parseLines(String(form.get('highlights') ?? '')),
         itinerary: parseItinerary(String(form.get('itinerary') ?? '')),
@@ -95,14 +98,15 @@ const saved = Astro.url.searchParams.get('saved') === '1';
     </div>
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block text-stone-500 mb-1">Price per traveler *</label>
+        <label class="block text-stone-500 mb-1">Price per traveler (INR) *</label>
         <input type="number" name="amount" min="1" required value={tour.amount} class="w-full rounded border border-stone-300 px-3 py-2" />
       </div>
       <div>
-        <label class="block text-stone-500 mb-1">Currency</label>
-        <input name="currency" value={tour.currency} class="w-full rounded border border-stone-300 px-3 py-2" />
+        <label class="block text-stone-500 mb-1">Price per traveler (USD, optional)</label>
+        <input type="number" name="usdAmount" min="1" value={tour.usdAmount ?? ''} class="w-full rounded border border-stone-300 px-3 py-2" placeholder="Leave blank to hide USD for this tour" />
       </div>
     </div>
+    <input type="hidden" name="currency" value={tour.currency} />
     <div class="grid grid-cols-2 gap-4">
       <div>
         <label class="block text-stone-500 mb-1">Duration label</label>
@@ -145,7 +149,7 @@ const saved = Astro.url.searchParams.get('saved') === '1';
       <textarea name="excludes" rows="3" class="w-full rounded border border-stone-300 px-3 py-2">{formatLines(tour.excludes)}</textarea>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Add-ons (one per line: "Name | Price")</label>
+      <label class="block text-stone-500 mb-1">Add-ons (one per line: "Name | INR price | USD price (optional)")</label>
       <textarea name="addOns" rows="3" class="w-full rounded border border-stone-300 px-3 py-2">{formatAddOns(tour.addOns)}</textarea>
     </div>
     <div>
