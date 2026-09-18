@@ -1,10 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TourCard from '../components/TourCard.astro';
-import CurrencyToggle from '../components/CurrencyToggle.astro';
 import { listTours } from '../lib/tours';
 import { resolveEnv } from '../lib/env';
 import { resolveCurrency } from '../lib/currency';
+import { resolveLocale } from '../lib/i18n';
+import { getDictionary } from '../i18n/dictionaries';
 
 export const prerender = false;
 
@@ -15,6 +16,9 @@ const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('curr
 if (Astro.url.searchParams.get('currency')) {
   Astro.cookies.set('currency', currency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
 }
+
+const locale = resolveLocale(Astro.url.searchParams, Astro.cookies.get('lang')?.value);
+const t = getDictionary(locale);
 ---
 <BaseLayout title="IWIS Global — Private Taj Mahal & Agra Tours, Booked Online">
   <section class="relative isolate">
@@ -29,17 +33,16 @@ if (Astro.url.searchParams.get('currency')) {
     </div>
     <div class="max-w-3xl mx-auto px-6 py-36 md:py-52 text-center">
       <h1 class="text-4xl md:text-5xl font-serif font-semibold mb-4 text-white">
-        The Taj Mahal, curated just for you.
+        {t.hero.title}
       </h1>
       <p class="text-lg text-white/90 mb-8">
-        Private, professionally guided Agra tours for international travelers — same-day trips from Delhi,
-        multi-day itineraries, and curated stops at local art galleries.
+        {t.hero.subtitle}
       </p>
       <a
         href="/tours"
         class="inline-flex items-center justify-between gap-4 w-full max-w-md mx-auto bg-white rounded-full pl-6 pr-2 py-2 shadow-lg hover:shadow-xl transition"
       >
-        <span class="text-stone-500 text-sm">Search tours in Agra</span>
+        <span class="text-stone-500 text-sm">{t.hero.searchPlaceholder}</span>
         <span class="flex items-center justify-center h-11 w-11 rounded-full bg-brand-800 text-white shrink-0">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
             <circle cx="11" cy="11" r="7"></circle>
@@ -58,41 +61,38 @@ if (Astro.url.searchParams.get('currency')) {
           <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           <path d="M3 13h18"></path>
         </svg>
-        <p class="font-semibold mb-1">Curated, not crowded</p>
-        <p class="text-sm text-stone-600">Small, private tours — not another crowded bus circuit.</p>
+        <p class="font-semibold mb-1">{t.trust.curatedTitle}</p>
+        <p class="text-sm text-stone-600">{t.trust.curatedDesc}</p>
       </div>
       <div>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 mb-2 text-brand-700" aria-hidden="true">
           <rect x="3" y="5" width="18" height="16" rx="2"></rect>
           <path d="M16 3v4M8 3v4M3 10h18"></path>
         </svg>
-        <p class="font-semibold mb-1">Book anytime</p>
-        <p class="text-sm text-stone-600">Same-day until 9 PM IST, or plan ahead — your call.</p>
+        <p class="font-semibold mb-1">{t.trust.bookTitle}</p>
+        <p class="text-sm text-stone-600">{t.trust.bookDesc}</p>
       </div>
       <div>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 mb-2 text-brand-700" aria-hidden="true">
           <rect x="2" y="5" width="20" height="14" rx="2"></rect>
           <path d="M2 10h20"></path>
         </svg>
-        <p class="font-semibold mb-1">Transparent pricing</p>
-        <p class="text-sm text-stone-600">No hidden fees. The price you see is what you pay.</p>
+        <p class="font-semibold mb-1">{t.trust.pricingTitle}</p>
+        <p class="text-sm text-stone-600">{t.trust.pricingDesc}</p>
       </div>
       <div>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 mb-2 text-brand-700" aria-hidden="true">
           <path d="M9 12l2 2 4-4"></path>
           <circle cx="12" cy="12" r="9"></circle>
         </svg>
-        <p class="font-semibold mb-1">Our promise</p>
-        <p class="text-sm text-stone-600">Free cancellation until 24h before, instant confirmation.</p>
+        <p class="font-semibold mb-1">{t.trust.promiseTitle}</p>
+        <p class="text-sm text-stone-600">{t.trust.promiseDesc}</p>
       </div>
     </div>
   </section>
 
   <section class="max-w-5xl mx-auto px-6 py-16">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-serif font-semibold">Handpicked Agra experiences</h2>
-      <CurrencyToggle currency={currency} />
-    </div>
+    <h2 class="text-2xl font-serif font-semibold mb-6">Handpicked Agra experiences</h2>
     <div class="grid md:grid-cols-2 gap-6">
       {tours.map((tour) => <TourCard tour={tour} currency={currency} />)}
     </div>

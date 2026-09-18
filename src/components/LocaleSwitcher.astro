@@ -1,0 +1,139 @@
+---
+// Combined language + currency switcher (Headout-style tabbed dropdown).
+// Self-contained: resolves its own locale/currency from the request rather
+// than taking them as props, so BaseLayout can drop it in without every
+// page needing to thread state through.
+import { resolveLocale, LOCALES } from '../lib/i18n';
+import { resolveCurrency, type Currency } from '../lib/currency';
+import { getDictionary } from '../i18n/dictionaries';
+
+const locale = resolveLocale(Astro.url.searchParams, Astro.cookies.get('lang')?.value);
+const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
+const t = getDictionary(locale);
+
+const CURRENCIES: { code: Currency; symbol: string; label: string }[] = [
+  { code: 'INR', symbol: '₹', label: 'Indian Rupee' },
+  { code: 'USD', symbol: '$', label: 'US Dollar' },
+];
+
+function hrefFor(param: string, value: string): string {
+  const url = new URL(Astro.url);
+  url.searchParams.set(param, value);
+  return url.pathname + '?' + url.searchParams.toString();
+}
+---
+
+<div class="relative" id="locale-switcher">
+  <button
+    type="button"
+    id="locale-switcher-trigger"
+    class="flex items-center gap-1.5 text-sm font-medium text-stone-600 hover:text-brand-800 transition"
+    aria-haspopup="true"
+    aria-expanded="false"
+    aria-controls="locale-switcher-panel"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-4 w-4" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+    </svg>
+    <span>{locale.toUpperCase()}</span>
+    <span class="text-stone-300">|</span>
+    <span>{currency}</span>
+  </button>
+
+  <div
+    id="locale-switcher-panel"
+    role="dialog"
+    class="hidden absolute right-0 mt-2 w-[320px] sm:w-[400px] rounded-xl border border-stone-200 bg-white shadow-xl z-50 p-5"
+  >
+    <div class="flex items-center gap-6 border-b border-stone-200 mb-4 text-sm font-medium">
+      <button type="button" data-tab="language" class="locale-tab pb-3 -mb-px border-b-2 border-brand-800 text-brand-800" aria-selected="true">
+        {t.switcher.language}
+      </button>
+      <button type="button" data-tab="currency" class="locale-tab pb-3 -mb-px border-b-2 border-transparent text-stone-500" aria-selected="false">
+        {t.switcher.currency}
+      </button>
+    </div>
+
+    <div data-panel="language" class="grid grid-cols-2 gap-2">
+      {LOCALES.map((l) => (
+        <a
+          href={hrefFor('lang', l.code)}
+          class={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition ${l.code === locale ? 'bg-brand-50 text-brand-800' : 'hover:bg-stone-50'}`}
+        >
+          <span>
+            <span class="block font-medium">{l.nativeLabel}</span>
+            <span class="block text-xs text-stone-500">{l.label}</span>
+          </span>
+          {l.code === locale && (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 shrink-0 text-brand-800" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          )}
+        </a>
+      ))}
+    </div>
+
+    <div data-panel="currency" class="hidden grid grid-cols-2 gap-2">
+      {CURRENCIES.map((c) => (
+        <a
+          href={hrefFor('currency', c.code)}
+          class={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition ${c.code === currency ? 'bg-brand-50 text-brand-800' : 'hover:bg-stone-50'}`}
+        >
+          <span class="font-medium">{c.code} {c.symbol}</span>
+          <span class="block text-xs text-stone-500">{c.label}</span>
+          {c.code === currency && (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 shrink-0 text-brand-800" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          )}
+        </a>
+      ))}
+    </div>
+  </div>
+</div>
+
+<script>
+  const root = document.getElementById('locale-switcher');
+  const trigger = document.getElementById('locale-switcher-trigger');
+  const panel = document.getElementById('locale-switcher-panel');
+  if (root && trigger && panel) {
+    const closePanel = () => {
+      panel.classList.add('hidden');
+      trigger.setAttribute('aria-expanded', 'false');
+    };
+    const openPanel = () => {
+      panel.classList.remove('hidden');
+      trigger.setAttribute('aria-expanded', 'true');
+    };
+
+    trigger.addEventListener('click', () => {
+      panel.classList.contains('hidden') ? openPanel() : closePanel();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!root.contains(e.target as Node)) closePanel();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePanel();
+    });
+
+    root.querySelectorAll<HTMLButtonElement>('.locale-tab').forEach((tabBtn) => {
+      tabBtn.addEventListener('click', () => {
+        root.querySelectorAll<HTMLButtonElement>('.locale-tab').forEach((btn) => {
+          const active = btn === tabBtn;
+          btn.classList.toggle('border-brand-800', active);
+          btn.classList.toggle('text-brand-800', active);
+          btn.classList.toggle('border-transparent', !active);
+          btn.classList.toggle('text-stone-500', !active);
+          btn.setAttribute('aria-selected', String(active));
+        });
+        const targetName = tabBtn.dataset.tab;
+        root.querySelectorAll<HTMLElement>('[data-panel]').forEach((p) => {
+          p.classList.toggle('hidden', p.dataset.panel !== targetName);
+        });
+      });
+    });
+  }
+</script>
