@@ -18,8 +18,13 @@ if (Astro.url.searchParams.get('currency')) {
 ---
 <BaseLayout title="IWIS Global — Private Taj Mahal & Agra Tours, Booked Online">
   <section class="relative isolate">
-    <div class="absolute inset-0 -z-10">
-      <img src="/hero-taj-mahal.jpg" alt="The Taj Mahal at sunrise" class="w-full h-full object-cover object-[center_35%]" />
+    <div class="absolute inset-0 -z-10 overflow-hidden hero-frame" id="hero-frame">
+      <img
+        id="hero-img"
+        src="/hero-taj-mahal.jpg"
+        alt="The Taj Mahal at sunrise"
+        class="w-full h-full object-cover object-[center_35%] hero-img"
+      />
       <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10"></div>
     </div>
     <div class="max-w-3xl mx-auto px-6 py-36 md:py-52 text-center">
@@ -93,3 +98,52 @@ if (Astro.url.searchParams.get('currency')) {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  /* Slow ambient zoom on the frame; the image itself is scaled up slightly
+     (see .hero-img below) so mouse-parallax translation never exposes an
+     edge. Two separate elements (frame vs. image) so the continuous
+     keyframe animation and the JS-driven parallax transform never fight
+     over the same `transform` property. */
+  .hero-frame {
+    animation: hero-zoom 24s ease-in-out infinite alternate;
+  }
+  .hero-img {
+    transform: scale(1.08);
+    transition: transform 0.2s ease-out;
+  }
+  @keyframes hero-zoom {
+    from { transform: scale(1); }
+    to { transform: scale(1.05); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-frame {
+      animation: none;
+    }
+    .hero-img {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  const frame = document.getElementById('hero-frame');
+  const img = document.getElementById('hero-img') as HTMLImageElement | null;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Desktop-only enhancement: a hover/mousemove parallax on the hero photo.
+  // Skipped entirely under reduced-motion, and harmless on touch devices
+  // (no mousemove events fire there, so the image just sits still).
+  if (frame && img && !reduceMotion) {
+    const maxShiftPx = 16;
+    frame.addEventListener('mousemove', (e) => {
+      const rect = frame.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      img.style.transform = `scale(1.08) translate(${(-x * maxShiftPx * 2).toFixed(1)}px, ${(-y * maxShiftPx * 2).toFixed(1)}px)`;
+    });
+    frame.addEventListener('mouseleave', () => {
+      img.style.transform = '';
+    });
+  }
+</script>
