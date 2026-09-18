@@ -38,4 +38,9 @@ export interface VerifiedBooking {
 export interface PaymentProvider {
   createOrder(req: BookingRequest, env: Record<string, unknown>): Promise<OrderResult>;
   verifyPayment(req: VerifyRequest, env: Record<string, unknown>): Promise<VerifiedBooking>;
+  // Full refund for a payment that was captured but couldn't be honored
+  // (e.g. the date sold out to a concurrent booking between payment and
+  // capacity check). Throws on failure — callers must surface that to
+  // support rather than silently losing track of the refund.
+  refundPayment(paymentId: string, env: Record<string, unknown>): Promise<void>;
 }

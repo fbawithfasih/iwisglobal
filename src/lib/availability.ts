@@ -52,3 +52,21 @@ export function getAvailability(now: Date = new Date()): AvailabilityInfo {
     label: 'Book tomorrow',
   };
 }
+
+// Strict "YYYY-MM-DD" check that also rejects calendar-invalid dates (e.g.
+// "2026-02-30", which `new Date(...)` would otherwise silently roll over
+// into March).
+export function isValidDateString(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
+// Server-side re-check of the same rule the date picker's `min` attribute
+// expresses client-side: a caller can't book a past date or a same-day slot
+// after the 9 PM IST cutoff by posting directly to the booking API.
+export function isBookableDate(value: string, now: Date = new Date()): boolean {
+  if (!isValidDateString(value)) return false;
+  return value >= getAvailability(now).minBookableDate;
+}

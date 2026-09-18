@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { razorpayProvider } from '../../lib/payments/razorpay';
 import { computeTotal } from '../../lib/catalog';
 import { getCatalogItem } from '../../lib/tours';
-import { insertBooking } from '../../lib/db';
+import { insertVerifiedBooking, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
 
 export const prerender = false;
@@ -45,20 +45,42 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const db = env.DB;
     if (db) {
-      await insertBooking(db, {
-        id: `bk_${verified.paymentId}`,
-        paymentId: verified.paymentId,
-        orderId: verified.orderId,
-        tourId: verified.tourId,
-        travelDate: verified.date,
-        travelers: verified.travelers,
-        addOnIds: verified.addOnIds,
-        travelerName: travelerName || '',
-        travelerEmail: travelerEmail || '',
-        travelerPhone: travelerPhone || '',
-        amountPaid,
-        currency: item.currency,
-      });
+      const outcome = await insertVerifiedBooking(
+        db,
+        {
+          id: `bk_${verified.paymentId}`,
+          paymentId: verified.paymentId,
+          orderId: verified.orderId,
+          tourId: verified.tourId,
+          travelDate: verified.date,
+          travelers: verified.travelers,
+          addOnIds: verified.addOnIds,
+          travelerName: travelerName || '',
+          travelerEmail: travelerEmail || '',
+          travelerPhone: travelerPhone || '',
+          amountPaid,
+          currency: item.currency,
+        },
+        MAX_TRAVELERS_PER_DATE
+      );
+
+      if (outcome === 'capacity_exceeded') {
+        let refunded = false;
+        try {
+          await razorpayProvider.refundPayment(verified.paymentId, env);
+          refunded = true;
+        } catch (refundError) {
+          console.error('verify-payment refund error:', refundError);
+        }
+        return new Response(
+          JSON.stringify({
+            error: refunded
+              ? 'This date just sold out while your payment was processing. You have been fully refunded — please choose another date.'
+              : 'This date just sold out while your payment was processing. Please contact support for a refund.',
+          }),
+          { status: 409, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     return new Response(

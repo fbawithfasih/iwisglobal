@@ -4,19 +4,27 @@ export const prerender = false;
 import { verifyPassword, createSessionToken } from '../../lib/adminAuth';
 import { resolveEnv } from '../../lib/env';
 import { ADMIN_COOKIE } from '../../lib/requireAdmin';
+import { checkLoginLock, recordFailedLogin, clearLoginAttempts } from '../../lib/loginAttempts';
 
 let error: string | null = null;
+const env = resolveEnv(Astro.locals);
+const db = env.DB;
+// Cloudflare sets this on every request; falls back to a shared bucket in
+// local dev where it's absent, which is fine since dev has no real attacker.
+const ip = Astro.request.headers.get('cf-connecting-ip') ?? 'unknown';
 
 if (Astro.request.method === 'POST') {
-  const form = await Astro.request.formData();
-  const password = String(form.get('password') ?? '');
-  const env = resolveEnv(Astro.locals);
-
-  if (!env.ADMIN_PASSWORD_SALT || !env.ADMIN_PASSWORD_HASH || !env.ADMIN_SESSION_SECRET) {
+  const lockedForMs = db ? await checkLoginLock(db, ip) : null;
+  if (lockedForMs) {
+    error = `Too many failed attempts. Try again in ${Math.ceil(lockedForMs / 60000)} minute(s).`;
+  } else if (!env.ADMIN_PASSWORD_SALT || !env.ADMIN_PASSWORD_HASH || !env.ADMIN_SESSION_SECRET) {
     error = 'Admin login is not configured yet.';
   } else {
+    const form = await Astro.request.formData();
+    const password = String(form.get('password') ?? '');
     const valid = await verifyPassword(password, env.ADMIN_PASSWORD_SALT, env.ADMIN_PASSWORD_HASH);
     if (valid) {
+      if (db) await clearLoginAttempts(db, ip);
       const token = await createSessionToken(env.ADMIN_SESSION_SECRET);
       Astro.cookies.set(ADMIN_COOKIE, token, {
         httpOnly: true,
@@ -27,6 +35,7 @@ if (Astro.request.method === 'POST') {
       });
       return Astro.redirect('/admin');
     }
+    if (db) await recordFailedLogin(db, ip);
     error = 'Incorrect password.';
   }
 }

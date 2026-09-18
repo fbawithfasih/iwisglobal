@@ -114,4 +114,21 @@ export const razorpayProvider: PaymentProvider = {
       currency: notes.currency === 'USD' ? 'USD' : 'INR',
     };
   },
+
+  async refundPayment(paymentId: string, env: Record<string, unknown>): Promise<void> {
+    const { keyId, keySecret } = getCreds(env);
+    if (!keyId || !keySecret) throw new Error('Payment gateway is misconfigured. Please contact support.');
+
+    const auth = btoa(`${keyId}:${keySecret}`);
+    const res = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}/refund`, {
+      method: 'POST',
+      headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}), // no amount specified = full refund
+    });
+
+    if (!res.ok) {
+      const err: any = await res.json().catch(() => null);
+      throw new Error(err?.error?.description || 'Refund failed');
+    }
+  },
 };

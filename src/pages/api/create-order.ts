@@ -1,13 +1,16 @@
 import type { APIRoute } from 'astro';
 import { razorpayProvider } from '../../lib/payments/razorpay';
-import { travelersBookedOn } from '../../lib/db';
+import { travelersBookedOn, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
+import { isBookableDate } from '../../lib/availability';
 
 export const prerender = false;
 
-// Same-day Agra tour: one vehicle/guide slot per date. Keep this simple cap
-// rather than a full availability calendar for Phase 1.
-const MAX_TRAVELERS_PER_DATE = 12;
+// This is a fast-fail UX check only, so an obviously-sold-out date doesn't
+// even reach checkout. It's still subject to a TOCTOU race against other
+// concurrent orders — the authoritative, race-proof enforcement happens at
+// insertVerifiedBooking() in verify-payment.ts, which refunds the payment if
+// the date sold out between order creation and payment completion.
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
@@ -15,6 +18,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     if (!tourId || !date || !travelers) {
       return new Response(JSON.stringify({ error: 'Missing tourId, date, or travelers' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Re-checks the same rule the date picker's `min` attribute expresses
+    // client-side — a raw API call can't book a past date or a same-day
+    // slot after the 9 PM IST cutoff.
+    if (typeof date !== 'string' || !isBookableDate(date)) {
+      return new Response(JSON.stringify({ error: 'Please choose a valid, bookable travel date.' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
