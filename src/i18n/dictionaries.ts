@@ -32,6 +32,12 @@ export interface Dictionary {
     language: string;
     currency: string;
   };
+  recommendations: {
+    title: string;
+  };
+  thingsToDo: {
+    title: string;
+  };
 }
 
 const en: Dictionary = {
@@ -53,6 +59,8 @@ const en: Dictionary = {
     promiseDesc: 'Free cancellation until 24h before, instant confirmation.',
   },
   switcher: { language: 'Language', currency: 'Currency' },
+  recommendations: { title: 'IWIS Top Recommendations' },
+  thingsToDo: { title: 'Top things to do in Agra' },
 };
 
 const es: Dictionary = {
@@ -74,6 +82,8 @@ const es: Dictionary = {
     promiseDesc: 'Cancelación gratuita hasta 24 horas antes, confirmación instantánea.',
   },
   switcher: { language: 'Idioma', currency: 'Moneda' },
+  recommendations: { title: 'Las mejores recomendaciones de IWIS' },
+  thingsToDo: { title: 'Las mejores cosas que hacer en Agra' },
 };
 
 const fr: Dictionary = {
@@ -95,6 +105,8 @@ const fr: Dictionary = {
     promiseDesc: "Annulation gratuite jusqu'à 24h avant, confirmation instantanée.",
   },
   switcher: { language: 'Langue', currency: 'Devise' },
+  recommendations: { title: "Les meilleures recommandations d'IWIS" },
+  thingsToDo: { title: 'Les meilleures choses à faire à Agra' },
 };
 
 const de: Dictionary = {
@@ -116,6 +128,8 @@ const de: Dictionary = {
     promiseDesc: 'Kostenlose Stornierung bis 24 Stunden vorher, sofortige Bestätigung.',
   },
   switcher: { language: 'Sprache', currency: 'Währung' },
+  recommendations: { title: 'IWIS Top-Empfehlungen' },
+  thingsToDo: { title: 'Top-Aktivitäten in Agra' },
 };
 
 const dictionaries: Record<Locale, Dictionary> = { en, es, fr, de };

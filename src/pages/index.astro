@@ -19,6 +19,45 @@ if (Astro.url.searchParams.get('currency')) {
 
 const locale = resolveLocale(Astro.url.searchParams, Astro.cookies.get('lang')?.value);
 const t = getDictionary(locale);
+
+// Informational "things to do" content, not separate bookable products —
+// IWIS currently sells one combined tour, so these link to /tours rather
+// than implying each landmark is its own purchasable listing. Only the
+// Taj Mahal card has a real photo (the hero image); the rest use the same
+// "No image yet" placeholder TourCard.astro already uses for tours without
+// a photo, rather than a fabricated stock image.
+const AGRA_HIGHLIGHTS: { name: string; description: string; image: string | null }[] = [
+  {
+    name: 'Taj Mahal',
+    description: 'The white marble mausoleum built by Emperor Shah Jahan — a UNESCO World Heritage Site and the centerpiece of every Agra visit.',
+    image: '/hero-taj-mahal.jpg',
+  },
+  {
+    name: 'Agra Fort',
+    description: 'A UNESCO-listed red sandstone Mughal fortress on the banks of the Yamuna, once the seat of the Mughal emperors.',
+    image: null,
+  },
+  {
+    name: 'Fatehpur Sikri',
+    description: 'A UNESCO World Heritage ghost city built by Emperor Akbar as his short-lived capital, about 40km from Agra.',
+    image: null,
+  },
+  {
+    name: 'Mehtab Bagh',
+    description: 'A Mughal garden directly across the river from the Taj Mahal, known for sunset views of the monument.',
+    image: null,
+  },
+  {
+    name: "Itmad-ud-Daulah's Tomb",
+    description: 'Known as the "Baby Taj," this marble tomb is considered a design precursor to the Taj Mahal.',
+    image: null,
+  },
+  {
+    name: 'Agra marble-inlay workshops',
+    description: 'Local ateliers practicing pietra dura, the marble-inlay craft used to decorate the Taj Mahal itself.',
+    image: null,
+  },
+];
 ---
 <BaseLayout title="IWIS Global — Private Taj Mahal & Agra Tours, Booked Online">
   <section class="relative isolate">
@@ -92,12 +131,101 @@ const t = getDictionary(locale);
   </section>
 
   <section class="max-w-5xl mx-auto px-6 py-16">
-    <h2 class="text-2xl font-serif font-semibold mb-6">Handpicked Agra experiences</h2>
-    <div class="grid md:grid-cols-2 gap-6">
-      {tours.map((tour) => <TourCard tour={tour} currency={currency} />)}
+    <div data-carousel>
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-serif font-semibold">{t.recommendations.title}</h2>
+        <div class="flex items-center gap-2">
+          <button type="button" data-carousel-prev aria-label="Previous" class="h-9 w-9 rounded-full border border-stone-300 flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <button type="button" data-carousel-next aria-label="Next" class="h-9 w-9 rounded-full border border-stone-300 flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div data-carousel-row class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-6 px-6 carousel-row">
+        {tours.map((tour) => (
+          <div class="w-80 sm:w-96 shrink-0 snap-start">
+            <TourCard tour={tour} currency={currency} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 pb-16">
+    <div data-carousel>
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-serif font-semibold">{t.thingsToDo.title}</h2>
+        <div class="flex items-center gap-2">
+          <button type="button" data-carousel-prev aria-label="Previous" class="h-9 w-9 rounded-full border border-stone-300 flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <button type="button" data-carousel-next aria-label="Next" class="h-9 w-9 rounded-full border border-stone-300 flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div data-carousel-row class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-6 px-6 carousel-row">
+        {AGRA_HIGHLIGHTS.map((item) => (
+          <a href="/tours" class="w-64 sm:w-72 shrink-0 snap-start block rounded-xl border border-stone-200 bg-white overflow-hidden hover:shadow-lg transition">
+            <div class="aspect-[4/3] bg-brand-50">
+              {item.image ? (
+                <img src={item.image} alt={item.name} class="w-full h-full object-cover" />
+              ) : (
+                <div class="w-full h-full flex items-center justify-center text-brand-300 text-sm">No image yet</div>
+              )}
+            </div>
+            <div class="p-4">
+              <p class="font-semibold mb-1">{item.name}</p>
+              <p class="text-sm text-stone-600">{item.description}</p>
+            </div>
+          </a>
+        ))}
+      </div>
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .carousel-row {
+    scrollbar-width: none;
+  }
+  .carousel-row::-webkit-scrollbar {
+    display: none;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((carousel) => {
+    const row = carousel.querySelector<HTMLElement>('[data-carousel-row]');
+    const prevBtn = carousel.querySelector<HTMLButtonElement>('[data-carousel-prev]');
+    const nextBtn = carousel.querySelector<HTMLButtonElement>('[data-carousel-next]');
+    if (!row || !prevBtn || !nextBtn) return;
+
+    const updateButtons = () => {
+      prevBtn.disabled = row.scrollLeft <= 4;
+      nextBtn.disabled = row.scrollLeft >= row.scrollWidth - row.clientWidth - 4;
+    };
+    const scrollByCard = (direction: number) => {
+      const card = row.firstElementChild as HTMLElement | null;
+      const amount = (card?.offsetWidth ?? 320) + 24; // card width + gap-6
+      row.scrollBy({ left: direction * amount, behavior: 'smooth' });
+    };
+    prevBtn.addEventListener('click', () => scrollByCard(-1));
+    nextBtn.addEventListener('click', () => scrollByCard(1));
+    row.addEventListener('scroll', updateButtons, { passive: true });
+    updateButtons();
+  });
+</script>
 
 <style>
   /* Slow ambient zoom on the frame; the image itself is scaled up slightly
