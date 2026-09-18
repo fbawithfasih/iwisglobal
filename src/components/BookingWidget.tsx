@@ -173,11 +173,12 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
         <div>
           <label className="block text-sm font-medium mb-1">Add-ons</label>
           {addOns.map((addOn) => (
-            <label key={addOn.id} className="flex items-center gap-2 text-sm py-1">
+            <label key={addOn.id} className="flex items-center gap-2 text-sm py-2">
               <input
                 type="checkbox"
                 checked={selectedAddOns.includes(addOn.id)}
                 onChange={() => toggleAddOn(addOn.id)}
+                className="h-4 w-4"
               />
               {addOn.name} (+{CURRENCY_SYMBOLS[currency]}{addOn.amount})
             </label>
@@ -186,27 +187,39 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
       )}
 
       <div className="grid grid-cols-1 gap-3">
-        <input
-          type="text"
-          placeholder="Full name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full rounded border border-stone-300 px-3 py-2"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded border border-stone-300 px-3 py-2"
-        />
-        <input
-          type="tel"
-          placeholder="Phone (with country code)"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="w-full rounded border border-stone-300 px-3 py-2"
-        />
+        <div>
+          <label htmlFor="traveler-name" className="block text-sm font-medium mb-1">Full name</label>
+          <input
+            id="traveler-name"
+            type="text"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full rounded border border-stone-300 px-3 py-2"
+          />
+        </div>
+        <div>
+          <label htmlFor="traveler-email" className="block text-sm font-medium mb-1">Email</label>
+          <input
+            id="traveler-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded border border-stone-300 px-3 py-2"
+          />
+        </div>
+        <div>
+          <label htmlFor="traveler-phone" className="block text-sm font-medium mb-1">Phone (with country code)</label>
+          <input
+            id="traveler-phone"
+            type="tel"
+            autoComplete="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full rounded border border-stone-300 px-3 py-2"
+          />
+        </div>
       </div>
 
       <div className="text-lg font-semibold">
@@ -226,7 +239,11 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
         <p>✓ Instant confirmation</p>
       </div>
 
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && (
+        <p role="alert" aria-live="polite" className="text-red-600 text-sm">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

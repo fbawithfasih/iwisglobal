@@ -16,7 +16,7 @@ const paymentId = Astro.url.searchParams.get('payment_id');
     ) : (
       <p class="text-stone-600">We couldn't find a payment reference for this page. If you just completed a booking, check your email for confirmation.</p>
     )}
-    <a href="/tours" class="inline-block mt-8 rounded bg-amber-800 text-white px-6 py-3 font-medium">
+    <a href="/tours" class="inline-block mt-8 rounded bg-brand-800 hover:bg-brand-900 text-white px-6 py-3 font-medium transition">
       Browse more tours
     </a>
   </section>

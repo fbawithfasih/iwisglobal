@@ -3,6 +3,13 @@ interface Props {
   title: string;
 }
 const { title } = Astro.props;
+
+const path = Astro.url.pathname;
+const navLinkClass = (active: boolean) =>
+  active ? 'text-white font-semibold' : 'text-stone-300 hover:text-white transition';
+const isBookings = path === '/admin' || path.startsWith('/admin/bookings/');
+const isTours = path.startsWith('/admin/tours');
+const isLeads = path.startsWith('/admin/leads');
 ---
 <!doctype html>
 <html lang="en">
@@ -19,13 +26,13 @@ const { title } = Astro.props;
   </head>
   <body class="bg-stone-100 text-stone-900 min-h-screen">
     <nav class="bg-stone-900 text-stone-100 px-6 py-3 flex items-center gap-6 text-sm">
-      <a href="/admin" class="font-semibold">IWIS Admin</a>
-      <a href="/admin" class="hover:underline">Bookings</a>
-      <a href="/admin/tours" class="hover:underline">Tours</a>
-      <a href="/admin/leads" class="hover:underline">Leads</a>
-      <a href="/admin/bookings/new" class="hover:underline">+ Manual Booking</a>
+      <a href="/admin" class="font-semibold text-white">IWIS Admin</a>
+      <a href="/admin" aria-current={isBookings ? 'page' : undefined} class={navLinkClass(isBookings)}>Bookings</a>
+      <a href="/admin/tours" aria-current={isTours ? 'page' : undefined} class={navLinkClass(isTours)}>Tours</a>
+      <a href="/admin/leads" aria-current={isLeads ? 'page' : undefined} class={navLinkClass(isLeads)}>Leads</a>
+      <a href="/admin/bookings/new" class="text-stone-300 hover:text-white transition">+ Manual Booking</a>
       <form method="POST" action="/admin/logout" class="ml-auto">
-        <button type="submit" class="hover:underline">Log out</button>
+        <button type="submit" class="text-stone-300 hover:text-white transition cursor-pointer">Log out</button>
       </form>
     </nav>
     <main class="max-w-6xl mx-auto px-6 py-8">
