@@ -1,7 +1,10 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-export const prerender = true;
+// Was prerender = true (static) — flipped to per-request now that
+// BaseLayout's nav reflects live sign-in state via Astro.cookies, which
+// only resolves per-request, not at build time.
+export const prerender = false;
 
 interface FaqItem {
   id: string;

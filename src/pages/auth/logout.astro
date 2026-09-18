@@ -1,0 +1,10 @@
+---
+export const prerender = false;
+import { CUSTOMER_COOKIE } from '../../lib/requireCustomer';
+
+if (Astro.request.method === 'POST') {
+  Astro.cookies.delete(CUSTOMER_COOKIE, { path: '/' });
+  return Astro.redirect('/');
+}
+return Astro.redirect('/');
+---

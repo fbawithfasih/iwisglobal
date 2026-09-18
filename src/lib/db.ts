@@ -48,6 +48,10 @@ export interface BookingRecord {
   travelerPhone: string;
   amountPaid: number;
   currency: string;
+  // Set only when the buyer was signed in (Google/Apple SSO — see
+  // customerAuth.ts) at the time of booking, so it shows up on their "My
+  // Bookings" page. Guest checkout leaves this null, same as today.
+  customerId?: string | null;
 }
 
 export type InsertBookingOutcome = 'inserted' | 'duplicate' | 'capacity_exceeded';
@@ -75,8 +79,8 @@ export async function insertVerifiedBooking(
       .prepare(
         `INSERT INTO bookings
           (id, payment_id, order_id, tour_id, travel_date, travelers, add_on_ids,
-           traveler_name, traveler_email, traveler_phone, amount_paid, currency, created_at)
-         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+           traveler_name, traveler_email, traveler_phone, amount_paid, currency, created_at, customer_id)
+         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
          WHERE (SELECT COALESCE(SUM(travelers), 0) FROM bookings WHERE tour_id = ? AND travel_date = ?) + ? <= ?`
       )
       .bind(
@@ -93,6 +97,7 @@ export async function insertVerifiedBooking(
         booking.amountPaid,
         booking.currency,
         new Date().toISOString(),
+        booking.customerId ?? null,
         booking.tourId,
         booking.travelDate,
         booking.travelers,

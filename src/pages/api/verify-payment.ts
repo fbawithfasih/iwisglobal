@@ -4,10 +4,11 @@ import { computeTotal } from '../../lib/catalog';
 import { getCatalogItem } from '../../lib/tours';
 import { insertVerifiedBooking, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
+import { getSessionCustomerId } from '../../lib/requireCustomer';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, locals, cookies }) => {
   try {
     const body = await request.json();
     const {
@@ -45,6 +46,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const db = env.DB;
     if (db) {
+      const customerId = await getSessionCustomerId(cookies, env.CUSTOMER_SESSION_SECRET);
       const outcome = await insertVerifiedBooking(
         db,
         {
@@ -60,6 +62,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           travelerPhone: travelerPhone || '',
           amountPaid,
           currency: item.currency,
+          customerId,
         },
         MAX_TRAVELERS_PER_DATE
       );

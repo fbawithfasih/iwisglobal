@@ -1,4 +1,7 @@
 ---
+import { resolveEnv } from '../lib/env';
+import { getSessionCustomerId } from '../lib/requireCustomer';
+
 interface Props {
   title: string;
   description?: string;
@@ -12,6 +15,9 @@ const {
 } = Astro.props;
 const canonicalURL = Astro.site ? new URL(Astro.url.pathname, Astro.site) : Astro.url.pathname;
 const ogImageURL = Astro.site ? new URL(image, Astro.site).toString() : image;
+
+const env = resolveEnv(Astro.locals);
+const isSignedIn = !!(await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET));
 const orgJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'TravelAgency',
@@ -68,6 +74,16 @@ const orgJsonLd = {
         <nav class="flex items-center gap-6">
           <a href="/tours" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">Tours</a>
           <a href="/help" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">Help</a>
+          {isSignedIn ? (
+            <>
+              <a href="/account/bookings" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">My Bookings</a>
+              <form method="POST" action="/auth/logout">
+                <button type="submit" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition cursor-pointer">Sign out</button>
+              </form>
+            </>
+          ) : (
+            <a href="/login" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">Sign in</a>
+          )}
         </nav>
       </div>
     </header>
