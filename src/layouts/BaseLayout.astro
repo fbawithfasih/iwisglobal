@@ -59,8 +59,8 @@ const orgJsonLd = {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-stone-50 text-stone-900 antialiased">
-    <header class="border-b border-stone-200 bg-white">
-      <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+    <header id="site-header" class="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur-sm transition-[box-shadow,height] duration-200">
+      <div class="site-header-inner max-w-5xl mx-auto px-6 h-16 flex items-center justify-between transition-[height] duration-200">
         <a href="/" class="flex items-center gap-2.5">
           <img src="/logo.png" alt="IWIS Global" class="h-9 w-9 object-contain" />
           <span class="text-lg font-semibold tracking-tight">IWIS Global</span>
@@ -95,4 +95,21 @@ const orgJsonLd = {
   html {
     scroll-behavior: smooth;
   }
+  #site-header.is-scrolled {
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  }
+  #site-header.is-scrolled .site-header-inner {
+    height: 3.25rem;
+  }
 </style>
+
+<script>
+  const header = document.getElementById('site-header');
+  if (header) {
+    const updateScrolled = () => {
+      header.classList.toggle('is-scrolled', window.scrollY > 12);
+    };
+    updateScrolled();
+    window.addEventListener('scroll', updateScrolled, { passive: true });
+  }
+</script>
