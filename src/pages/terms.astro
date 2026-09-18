@@ -1,0 +1,85 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Dynamic (not prerendered) because BaseLayout's nav/footer depend on
+// live per-request session and locale state via Astro.cookies.
+export const prerender = false;
+
+const lastUpdated = '19 September 2026';
+---
+
+<BaseLayout title="Terms of Service — IWIS Global" description="The terms that apply when you book a tour with IWIS Global.">
+  <section class="max-w-2xl mx-auto px-6 py-16">
+    <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-8">
+      This page is a starting draft covering this business's actual booking, payment, and cancellation
+      practices. It has not been reviewed by a lawyer — please have it reviewed, particularly the liability
+      and governing-law sections, before relying on it as binding legal terms.
+    </p>
+
+    <h1 class="text-3xl font-serif font-semibold mb-1">Terms of Service</h1>
+    <p class="text-sm text-stone-500 mb-6">Last updated: {lastUpdated}</p>
+
+    <p class="text-stone-700 mb-6">
+      These terms apply when you book a tour through this website, operated by IWIS Global ("we", "us"). By
+      booking a tour, you agree to them.
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">Booking and payment</h2>
+    <ul class="list-disc list-inside text-stone-700 space-y-1 mb-6">
+      <li>The price shown on the tour page at checkout — including any add-ons you select — is the price you pay. There are no hidden fees.</li>
+      <li>Payments are processed securely by Razorpay. Prices are quoted in Indian Rupees (INR), with US Dollar (USD) pricing available for tours where we've set a USD rate.</li>
+      <li>Your booking is confirmed once payment succeeds; you'll receive confirmation immediately.</li>
+      <li>You don't need to create an account to book — an account is only needed if you want to view your booking history.</li>
+    </ul>
+
+    <h2 class="text-lg font-semibold mb-2">Same-day bookings</h2>
+    <p class="text-stone-700 mb-6">
+      Same-day tours can be booked until 9 PM India Standard Time (IST) the night before, to allow time to
+      arrange your vehicle and guide. After that cutoff, the earliest available date is the next day.
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">Cancellations</h2>
+    <p class="text-stone-700 mb-6">
+      You can cancel for a full refund up to 24 hours before your tour's scheduled start time. To cancel,
+      contact us using the details below.
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">Your responsibilities</h2>
+    <ul class="list-disc list-inside text-stone-700 space-y-1 mb-6">
+      <li>Provide accurate traveler details (name, contact information, number of travelers) at the time of booking.</li>
+      <li>Arrive at the agreed pickup point and time — tours may not be able to wait for late arrivals.</li>
+      <li>Carry valid ID and any tickets/permits required for the sites visited (e.g. the Taj Mahal), where applicable.</li>
+    </ul>
+
+    <h2 class="text-lg font-semibold mb-2">Changes and disruptions</h2>
+    <p class="text-stone-700 mb-6">
+      Tours may occasionally be affected by circumstances outside our control — site closures, weather,
+      traffic, or local restrictions. Where this happens, we'll work with you to reschedule or resolve the
+      issue; we are not responsible for losses caused by such circumstances beyond our control.
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">Accounts</h2>
+    <p class="text-stone-700 mb-6">
+      Signing in with Google or Apple is optional and only used to show you your own booking history. You're
+      responsible for keeping access to your Google/Apple account secure, since that's how you sign in here.
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">Changes to these terms</h2>
+    <p class="text-stone-700 mb-6">
+      We may update these terms from time to time; the "last updated" date above reflects the most recent
+      change. Continuing to use the site after an update means you accept the revised terms.
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">Governing law</h2>
+    <p class="text-stone-700 mb-6">
+      These terms are governed by the laws of India, where this business operates.
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">Contact us</h2>
+    <p class="text-stone-700">
+      Questions about these terms, or to cancel a booking, contact us at
+      <a href="mailto:bookings@iwisglobal.com" class="text-brand-800 hover:underline">bookings@iwisglobal.com</a> or via
+      <a href="https://wa.me/916399226633" target="_blank" rel="noopener noreferrer" class="text-brand-800 hover:underline">WhatsApp</a>.
+    </p>
+  </section>
+</BaseLayout>

@@ -99,6 +99,16 @@ const orgJsonLd = {
     </header>
     <slot />
 
+    <footer class="border-t border-stone-200 bg-white">
+      <div class="max-w-5xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-stone-500">
+        <p>&copy; {new Date().getFullYear()} IWIS Global</p>
+        <div class="flex items-center gap-6">
+          <a href="/privacy" class="hover:text-brand-800 transition">Privacy Policy</a>
+          <a href="/terms" class="hover:text-brand-800 transition">Terms of Service</a>
+        </div>
+      </div>
+    </footer>
+
     <a
       href="https://wa.me/916399226633?text=Hi!%20I'd%20like%20to%20know%20more%20about%20your%20Agra%20tours."
       target="_blank"
