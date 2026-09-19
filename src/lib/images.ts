@@ -18,7 +18,7 @@ export interface UploadResult {
   url: string;
 }
 
-export async function uploadTourImage(r2: R2Like, file: File): Promise<UploadResult> {
+async function uploadImage(r2: R2Like, file: File, folder: string): Promise<UploadResult> {
   if (!ALLOWED_TYPES.has(file.type)) {
     throw new Error('Unsupported image type. Use JPEG, PNG, WebP, or GIF.');
   }
@@ -27,10 +27,18 @@ export async function uploadTourImage(r2: R2Like, file: File): Promise<UploadRes
   }
 
   const ext = file.type.split('/')[1] === 'jpeg' ? 'jpg' : file.type.split('/')[1];
-  const key = `tours/${crypto.randomUUID()}.${ext}`;
+  const key = `${folder}/${crypto.randomUUID()}.${ext}`;
   const buffer = await file.arrayBuffer();
 
   await r2.put(key, buffer, { httpMetadata: { contentType: file.type } });
 
   return { url: `/images/${key}` };
+}
+
+export function uploadTourImage(r2: R2Like, file: File): Promise<UploadResult> {
+  return uploadImage(r2, file, 'tours');
+}
+
+export function uploadAgraHighlightImage(r2: R2Like, file: File): Promise<UploadResult> {
+  return uploadImage(r2, file, 'agra-highlights');
 }

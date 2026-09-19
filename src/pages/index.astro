@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TourCard from '../components/TourCard.astro';
 import { listTours } from '../lib/tours';
+import { listAgraHighlights } from '../lib/agraHighlights';
 import { resolveEnv } from '../lib/env';
 import { resolveCurrency } from '../lib/currency';
 import { resolveLocale } from '../lib/i18n';
@@ -22,42 +23,11 @@ const t = getDictionary(locale);
 
 // Informational "things to do" content, not separate bookable products —
 // IWIS currently sells one combined tour, so these link to /tours rather
-// than implying each landmark is its own purchasable listing. Only the
-// Taj Mahal card has a real photo (the hero image); the rest use the same
-// "No image yet" placeholder TourCard.astro already uses for tours without
-// a photo, rather than a fabricated stock image.
-const AGRA_HIGHLIGHTS: { name: string; description: string; image: string | null }[] = [
-  {
-    name: 'Taj Mahal',
-    description: 'The white marble mausoleum built by Emperor Shah Jahan — a UNESCO World Heritage Site and the centerpiece of every Agra visit.',
-    image: '/hero-taj-mahal.jpg',
-  },
-  {
-    name: 'Agra Fort',
-    description: 'A UNESCO-listed red sandstone Mughal fortress on the banks of the Yamuna, once the seat of the Mughal emperors.',
-    image: null,
-  },
-  {
-    name: 'Fatehpur Sikri',
-    description: 'A UNESCO World Heritage ghost city built by Emperor Akbar as his short-lived capital, about 40km from Agra.',
-    image: null,
-  },
-  {
-    name: 'Mehtab Bagh',
-    description: 'A Mughal garden directly across the river from the Taj Mahal, known for sunset views of the monument.',
-    image: null,
-  },
-  {
-    name: "Itmad-ud-Daulah's Tomb",
-    description: 'Known as the "Baby Taj," this marble tomb is considered a design precursor to the Taj Mahal.',
-    image: null,
-  },
-  {
-    name: 'Agra marble-inlay workshops',
-    description: 'Local ateliers practicing pietra dura, the marble-inlay craft used to decorate the Taj Mahal itself.',
-    image: null,
-  },
-];
+// than implying each landmark is its own purchasable listing. Managed from
+// /admin/agra-highlights (src/lib/agraHighlights.ts); a card without an
+// uploaded image falls back to the same "No image yet" placeholder
+// TourCard.astro uses for tours without a photo.
+const AGRA_HIGHLIGHTS = env.DB ? await listAgraHighlights(env.DB) : [];
 ---
 <BaseLayout title="IWIS Global — Private Taj Mahal & Agra Tours, Booked Online">
   <section class="relative isolate">

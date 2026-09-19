@@ -1,0 +1,113 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../../lib/env';
+import { isAdminAuthenticated } from '../../../../lib/requireAdmin';
+import { getAgraHighlightById, updateAgraHighlight, deleteAgraHighlight } from '../../../../lib/agraHighlights';
+import { uploadAgraHighlightImage } from '../../../../lib/images';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB;
+const { id } = Astro.params;
+if (!db || !id) return Astro.redirect('/admin/agra-highlights');
+
+let error: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+
+  if (form.get('_action') === 'delete') {
+    await deleteAgraHighlight(db, id);
+    return Astro.redirect('/admin/agra-highlights');
+  }
+
+  const name = String(form.get('name') ?? '').trim();
+  const description = String(form.get('description') ?? '').trim();
+  const sortOrder = Number(form.get('sortOrder') ?? 0);
+
+  if (!name) {
+    error = 'Name is required.';
+  } else {
+    try {
+      const imageFile = form.get('imageFile');
+      const existing = await getAgraHighlightById(db, id);
+      let image = String(form.get('image') ?? '').trim() || existing?.image || '';
+      if (imageFile instanceof File && imageFile.size > 0) {
+        if (!env.IMAGES) throw new Error('Image storage is not configured yet.');
+        const uploaded = await uploadAgraHighlightImage(env.IMAGES, imageFile);
+        image = uploaded.url;
+      }
+
+      await updateAgraHighlight(db, id, {
+        name,
+        description,
+        image,
+        sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
+      });
+      return Astro.redirect('/admin/agra-highlights');
+    } catch (err: any) {
+      error = err?.message || 'Failed to update item.';
+    }
+  }
+}
+
+const highlight = await getAgraHighlightById(db, id);
+if (!highlight) return Astro.redirect('/admin/agra-highlights');
+---
+<AdminLayout title={`Edit ${highlight.name}`}>
+  <a href="/admin/agra-highlights" class="text-sm text-stone-500 hover:underline">&larr; Back to Agra highlights</a>
+  <h1 class="text-2xl font-semibold mt-2 mb-6">Edit "thing to do" card</h1>
+
+  {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
+
+  <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-stone-200 p-6 space-y-4 max-w-xl text-sm">
+    <div>
+      <label class="block text-stone-500 mb-1">Name *</label>
+      <input name="name" required value={highlight.name} class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Description</label>
+      <textarea name="description" rows="3" class="w-full rounded border border-stone-300 px-3 py-2">{highlight.description}</textarea>
+    </div>
+    {highlight.image && (
+      <div>
+        <label class="block text-stone-500 mb-1">Current image</label>
+        <img src={highlight.image} alt={highlight.name} class="w-48 aspect-[4/3] object-cover rounded border border-stone-200" />
+      </div>
+    )}
+    <div>
+      <label class="block text-stone-500 mb-1">Upload new image</label>
+      <input type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
+      <p class="text-xs text-stone-500 mt-1">
+        Recommended: <strong>1200 × 900px (4:3 ratio)</strong> — matches the card frame on the homepage exactly, so nothing gets cropped oddly. JPEG/PNG/WebP/GIF, up to 5MB. Leave blank to keep the current image.
+      </p>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Image URL (used only if a new file isn't uploaded above)</label>
+      <input name="image" placeholder="https://…" class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Sort order (lower numbers show first)</label>
+      <input type="number" name="sortOrder" value={highlight.sortOrder} class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2">Save changes</button>
+  </form>
+
+  <form method="POST" class="mt-4 max-w-xl">
+    <input type="hidden" name="_action" value="delete" />
+    <button type="submit" class="text-sm text-red-600 hover:underline" data-confirm="delete">Delete this card</button>
+  </form>
+</AdminLayout>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-confirm="delete"]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      if (!confirm('Delete this card? This cannot be undone.')) e.preventDefault();
+    });
+  });
+</script>

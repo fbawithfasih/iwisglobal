@@ -1,0 +1,62 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { listAgraHighlights } from '../../../lib/agraHighlights';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB;
+const highlights = db ? await listAgraHighlights(db) : [];
+---
+<AdminLayout title="Top things to do in Agra">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold">Top things to do in Agra</h1>
+    <a href="/admin/agra-highlights/new" class="rounded bg-amber-800 text-white px-4 py-2 text-sm">+ New card</a>
+  </div>
+  <p class="text-sm text-stone-500 mb-6">Shown as a carousel on the homepage. Lower sort order shows first.</p>
+
+  {highlights.length === 0 ? (
+    <p class="text-stone-500">No cards yet.</p>
+  ) : (
+    <div class="bg-white rounded-xl border border-stone-200 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-stone-50 text-left">
+          <tr>
+            <th class="px-4 py-2">Image</th>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Description</th>
+            <th class="px-4 py-2">Order</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {highlights.map((h) => (
+            <tr class="border-t border-stone-100">
+              <td class="px-4 py-2">
+                {h.image ? (
+                  <img src={h.image} alt={h.name} class="w-16 aspect-[4/3] object-cover rounded" />
+                ) : (
+                  <div class="w-16 aspect-[4/3] rounded bg-stone-100 flex items-center justify-center text-[10px] text-stone-400">No image</div>
+                )}
+              </td>
+              <td class="px-4 py-2">
+                <a href={`/admin/agra-highlights/${h.id}/edit`} class="text-amber-800 hover:underline">{h.name}</a>
+              </td>
+              <td class="px-4 py-2 text-stone-600 max-w-xs truncate">{h.description}</td>
+              <td class="px-4 py-2">{h.sortOrder}</td>
+              <td class="px-4 py-2">
+                <a href={`/admin/agra-highlights/${h.id}/edit`} class="text-stone-500 hover:underline">Edit</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</AdminLayout>
