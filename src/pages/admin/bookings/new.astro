@@ -7,6 +7,7 @@ import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { insertManualBooking } from '../../../lib/crm';
 import { computeTotal } from '../../../lib/catalog';
 import { getCatalogItem, listTours } from '../../../lib/tours';
+import { sendBookingConfirmationEmail } from '../../../lib/email';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -42,6 +43,19 @@ if (Astro.request.method === 'POST' && db) {
       amountPaid,
       currency: item.currency,
     });
+
+    // Best-effort — never blocks the redirect (see email.ts).
+    await sendBookingConfirmationEmail(env, {
+      to: travelerEmail,
+      travelerName,
+      tourTitle: tours.find((t) => t.id === tourId)?.title || 'your tour',
+      travelDate,
+      travelers,
+      amountPaid,
+      currency: item.currency,
+      bookingId: id,
+    });
+
     return Astro.redirect(`/admin/bookings/${id}`);
   }
 }

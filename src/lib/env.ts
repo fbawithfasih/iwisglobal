@@ -17,5 +17,7 @@ export function resolveEnv(locals: unknown): Record<string, any> {
     APPLE_TEAM_ID: runtimeEnv.APPLE_TEAM_ID ?? import.meta.env.APPLE_TEAM_ID,
     APPLE_KEY_ID: runtimeEnv.APPLE_KEY_ID ?? import.meta.env.APPLE_KEY_ID,
     APPLE_PRIVATE_KEY: runtimeEnv.APPLE_PRIVATE_KEY ?? import.meta.env.APPLE_PRIVATE_KEY,
+    RESEND_API_KEY: runtimeEnv.RESEND_API_KEY ?? import.meta.env.RESEND_API_KEY,
+    BOOKING_EMAIL_FROM: runtimeEnv.BOOKING_EMAIL_FROM ?? import.meta.env.BOOKING_EMAIL_FROM,
   };
 }

@@ -5,6 +5,8 @@ import { getCatalogItem } from '../../lib/tours';
 import { insertVerifiedBooking, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
+import { getTourById } from '../../lib/tours';
+import { sendBookingConfirmationEmail } from '../../lib/email';
 
 export const prerender = false;
 
@@ -83,6 +85,22 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           }),
           { status: 409, headers: { 'Content-Type': 'application/json' } }
         );
+      }
+
+      // Best-effort — only on the first insert, never on a retried/duplicate
+      // request, and never allowed to affect the response (see email.ts).
+      if (outcome === 'inserted') {
+        const tour = await getTourById(db, verified.tourId);
+        await sendBookingConfirmationEmail(env, {
+          to: travelerEmail || '',
+          travelerName: travelerName || '',
+          tourTitle: tour?.title || 'your tour',
+          travelDate: verified.date,
+          travelers: verified.travelers,
+          amountPaid,
+          currency: item.currency,
+          bookingId: `bk_${verified.paymentId}`,
+        });
       }
     }
 
