@@ -1,0 +1,122 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { resolveEnv } from '../lib/env';
+import { getSessionCustomerId, CUSTOMER_COOKIE } from '../lib/requireCustomer';
+import { getCustomerByEmail, createCustomerWithPassword } from '../lib/customers';
+import { hashPassword, generateSaltHex } from '../lib/passwordHash';
+import { createCustomerSessionToken } from '../lib/customerAuth';
+
+const env = resolveEnv(Astro.locals);
+
+const existingCustomerId = await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET);
+if (existingCustomerId) {
+  return Astro.redirect('/account/bookings');
+}
+
+const redirectTarget = Astro.url.searchParams.get('redirect') || '/account/bookings';
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+let error: string | null = null;
+let name = '';
+let email = '';
+
+if (Astro.request.method === 'POST') {
+  const db = env.DB;
+  const form = await Astro.request.formData();
+  name = String(form.get('name') ?? '').trim();
+  email = String(form.get('email') ?? '').trim();
+  const password = String(form.get('password') ?? '');
+
+  if (!db || !env.CUSTOMER_SESSION_SECRET) {
+    error = 'Accounts are not available right now.';
+  } else if (!name) {
+    error = 'Please enter your name.';
+  } else if (!EMAIL_RE.test(email)) {
+    error = 'Please enter a valid email address.';
+  } else if (password.length < 8) {
+    error = 'Password must be at least 8 characters.';
+  } else {
+    const existing = await getCustomerByEmail(db, email);
+    if (existing && existing.provider !== 'email') {
+      error = `This email is already linked to ${existing.provider === 'google' ? 'Google' : 'Apple'} sign-in — use "Continue with ${existing.provider === 'google' ? 'Google' : 'Apple'}" on the sign-in page instead.`;
+    } else if (existing) {
+      error = 'An account with this email already exists. Sign in instead.';
+    } else {
+      const passwordSalt = generateSaltHex();
+      const passwordHash = await hashPassword(password, passwordSalt);
+      const customer = await createCustomerWithPassword(db, { email, name, passwordHash, passwordSalt });
+
+      const token = await createCustomerSessionToken(customer.id, env.CUSTOMER_SESSION_SECRET);
+      Astro.cookies.set(CUSTOMER_COOKIE, token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      });
+      return Astro.redirect(redirectTarget);
+    }
+  }
+}
+---
+
+<BaseLayout title="Create an account — IWIS Global" description="Create an IWIS Global account to view your booking history.">
+  <section class="max-w-sm mx-auto px-6 py-20 text-center">
+    <h1 class="text-3xl font-serif font-semibold mb-2">Create an account</h1>
+    <p class="text-stone-600 mb-8">You don't need an account to book a tour — this is just to view your booking history later.</p>
+
+    {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
+
+    <form method="POST" class="space-y-3 text-left">
+      <div>
+        <label for="name" class="block text-xs font-medium text-stone-500 mb-1">Name</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          autocomplete="name"
+          value={name}
+          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </div>
+      <div>
+        <label for="email" class="block text-xs font-medium text-stone-500 mb-1">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autocomplete="email"
+          value={email}
+          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </div>
+      <div>
+        <label for="password" class="block text-xs font-medium text-stone-500 mb-1">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          minlength="8"
+          autocomplete="new-password"
+          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+        <p class="text-xs text-stone-400 mt-1">At least 8 characters.</p>
+      </div>
+      <button
+        type="submit"
+        class="w-full rounded-lg bg-brand-800 text-white px-4 py-3 font-medium hover:bg-brand-900 transition"
+      >
+        Create account
+      </button>
+    </form>
+
+    <p class="text-sm text-stone-500 mt-4">
+      Already have an account? <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="text-brand-700 font-medium hover:underline">Sign in</a>
+    </p>
+  </section>
+</BaseLayout>

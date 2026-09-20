@@ -3,9 +3,13 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { resolveEnv } from '../lib/env';
-import { getSessionCustomerId, OAUTH_STATE_COOKIE } from '../lib/requireCustomer';
+import { getSessionCustomerId, OAUTH_STATE_COOKIE, CUSTOMER_COOKIE } from '../lib/requireCustomer';
 import { buildGoogleAuthorizeUrl } from '../lib/oauth/google';
 import { buildAppleAuthorizeUrl } from '../lib/oauth/apple';
+import { getCustomerByEmail } from '../lib/customers';
+import { verifyPassword } from '../lib/passwordHash';
+import { createCustomerSessionToken } from '../lib/customerAuth';
+import { checkCustomerLoginLock, recordFailedCustomerLogin, clearCustomerLoginAttempts } from '../lib/customerLoginAttempts';
 
 const env = resolveEnv(Astro.locals);
 
@@ -16,6 +20,50 @@ if (existingCustomerId) {
 
 const errorParam = Astro.url.searchParams.get('error');
 const redirectTarget = Astro.url.searchParams.get('redirect') || '/account/bookings';
+
+// Email/password sign-in. Google/Apple use their own callback routes
+// (src/pages/auth/*/callback.ts); this form posts back to this same page.
+let emailLoginError: string | null = null;
+if (Astro.request.method === 'POST') {
+  const db = env.DB;
+  const ip = Astro.request.headers.get('cf-connecting-ip') ?? 'unknown';
+  const lockedForMs = db ? await checkCustomerLoginLock(db, ip) : null;
+
+  if (lockedForMs) {
+    emailLoginError = `Too many failed attempts. Try again in ${Math.ceil(lockedForMs / 60000)} minute(s).`;
+  } else if (!db || !env.CUSTOMER_SESSION_SECRET) {
+    emailLoginError = 'Accounts are not available right now.';
+  } else {
+    const form = await Astro.request.formData();
+    const email = String(form.get('email') ?? '').trim();
+    const password = String(form.get('password') ?? '');
+
+    const customer = email ? await getCustomerByEmail(db, email) : null;
+    const valid =
+      customer?.provider === 'email' && customer.password_hash && customer.password_salt
+        ? await verifyPassword(password, customer.password_salt, customer.password_hash)
+        : false;
+
+    if (valid && customer) {
+      await clearCustomerLoginAttempts(db, ip);
+      const token = await createCustomerSessionToken(customer.id, env.CUSTOMER_SESSION_SECRET);
+      Astro.cookies.set(CUSTOMER_COOKIE, token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      });
+      return Astro.redirect(redirectTarget);
+    }
+
+    await recordFailedCustomerLogin(db, ip);
+    emailLoginError =
+      customer && customer.provider !== 'email'
+        ? `This email is linked to ${customer.provider === 'google' ? 'Google' : 'Apple'} sign-in — use "Continue with ${customer.provider === 'google' ? 'Google' : 'Apple'}" above instead.`
+        : 'Incorrect email or password.';
+  }
+}
 
 // CSRF nonce for the OAuth `state` param, paired with where to send the
 // customer back to once sign-in completes. SameSite=None because Apple's
@@ -54,7 +102,7 @@ try {
     <h1 class="text-3xl font-serif font-semibold mb-2">Sign in</h1>
     <p class="text-stone-600 mb-8">Sign in to view your booking history. You don't need an account to book a tour.</p>
 
-    {errorParam && <p class="text-red-600 text-sm mb-4">{errorParam}</p>}
+    {(emailLoginError || errorParam) && <p class="text-red-600 text-sm mb-4">{emailLoginError || errorParam}</p>}
 
     <div class="space-y-3">
       {googleUrl ? (
@@ -88,5 +136,46 @@ try {
         <p class="text-xs text-stone-400 border border-dashed border-stone-300 rounded-lg px-4 py-3">{appleError}</p>
       )}
     </div>
+
+    <div class="flex items-center gap-3 my-6">
+      <div class="h-px flex-1 bg-stone-200"></div>
+      <span class="text-xs text-stone-400 uppercase tracking-wide">or</span>
+      <div class="h-px flex-1 bg-stone-200"></div>
+    </div>
+
+    <form method="POST" class="space-y-3 text-left">
+      <div>
+        <label for="email" class="block text-xs font-medium text-stone-500 mb-1">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autocomplete="email"
+          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </div>
+      <div>
+        <label for="password" class="block text-xs font-medium text-stone-500 mb-1">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          autocomplete="current-password"
+          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </div>
+      <button
+        type="submit"
+        class="w-full rounded-lg bg-brand-800 text-white px-4 py-3 font-medium hover:bg-brand-900 transition"
+      >
+        Sign in with email
+      </button>
+    </form>
+
+    <p class="text-sm text-stone-500 mt-4">
+      New here? <a href={`/signup?redirect=${encodeURIComponent(redirectTarget)}`} class="text-brand-700 font-medium hover:underline">Create an account</a>
+    </p>
   </section>
 </BaseLayout>

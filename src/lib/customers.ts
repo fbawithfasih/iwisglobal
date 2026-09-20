@@ -9,8 +9,10 @@ export interface CustomerRow {
   email: string;
   name: string;
   avatar_url: string | null;
-  provider: 'google' | 'apple';
+  provider: 'google' | 'apple' | 'email';
   provider_sub: string;
+  password_hash: string | null;
+  password_salt: string | null;
   created_at: string;
 }
 
@@ -42,11 +44,66 @@ export async function upsertCustomer(db: D1Like, profile: CustomerProfile): Prom
     .bind(id, profile.email, profile.name, profile.avatarUrl ?? null, profile.provider, profile.providerSub, now)
     .run();
 
-  return { id, email: profile.email, name: profile.name, avatar_url: profile.avatarUrl ?? null, provider: profile.provider, provider_sub: profile.providerSub, created_at: now };
+  return {
+    id,
+    email: profile.email,
+    name: profile.name,
+    avatar_url: profile.avatarUrl ?? null,
+    provider: profile.provider,
+    provider_sub: profile.providerSub,
+    password_hash: null,
+    password_salt: null,
+    created_at: now,
+  };
 }
 
 export async function getCustomerById(db: D1Like, id: string): Promise<CustomerRow | null> {
   return db.prepare(`SELECT * FROM customers WHERE id = ?`).bind(id).first<CustomerRow>();
+}
+
+// Email lookups are case-insensitive (normalizeEmail lowercases before
+// storing/querying) so "User@x.com" and "user@x.com" resolve to one account.
+export async function getCustomerByEmail(db: D1Like, email: string): Promise<CustomerRow | null> {
+  return db.prepare(`SELECT * FROM customers WHERE email = ?`).bind(normalizeEmail(email)).first<CustomerRow>();
+}
+
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export interface EmailSignupInput {
+  email: string;
+  name: string;
+  passwordHash: string;
+  passwordSalt: string;
+}
+
+// Creates a password-based customer account. provider_sub has no external
+// meaning for the 'email' provider — it's set to the normalized email so
+// the existing (provider, provider_sub) index still gives it a unique key.
+export async function createCustomerWithPassword(db: D1Like, input: EmailSignupInput): Promise<CustomerRow> {
+  const email = normalizeEmail(input.email);
+  const id = `cust_${crypto.randomUUID()}`;
+  const now = new Date().toISOString();
+  await db
+    .prepare(
+      `INSERT INTO customers (id, email, name, avatar_url, provider, provider_sub, password_hash, password_salt, created_at)
+       VALUES (?, ?, ?, NULL, 'email', ?, ?, ?, ?)`
+    )
+    .bind(id, email, input.name, email, input.passwordHash, input.passwordSalt, now)
+    .run();
+
+  return {
+    id,
+    email,
+    name: input.name,
+    avatar_url: null,
+    provider: 'email',
+    provider_sub: email,
+    password_hash: input.passwordHash,
+    password_salt: input.passwordSalt,
+    created_at: now,
+  };
 }
 
 export interface CustomerBookingRow {
