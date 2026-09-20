@@ -29,13 +29,39 @@ if (Astro.url.searchParams.get('lang')) {
   Astro.cookies.set('lang', locale, { path: '/', maxAge: 60 * 60 * 24 * 365 });
 }
 const t = getDictionary(locale);
+
+// Backlog 2.1. "IWIS Global" alone collides with a German industrial chain
+// manufacturer and an unrelated Amazon storefront of the same name — the
+// category-in-name string is entity disambiguation, not a typo (see
+// product-marketing-context.md §7 and CLAUDE.md hard rule 4).
+//
+// sameAs: the live Google Business Profile share link (given by the user).
+// Add any other confirmed social profiles here as they're set up — don't
+// invent them. Same reasoning for address: only locality/region/country
+// are confirmed facts (product-marketing-context.md §1); no street address
+// or postal code exists yet (also blocks backlog 0.5's /about page).
 const orgJsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'TravelAgency',
-  name: 'IWIS Global',
+  '@type': ['Organization', 'TravelAgency'],
+  '@id': 'https://www.iwisglobal.com/#organization',
+  name: 'IWIS Global, a Taj Mahal and Agra tour operator based in Agra, India',
+  alternateName: 'IWIS Global',
   url: 'https://www.iwisglobal.com',
   logo: 'https://www.iwisglobal.com/logo.png',
-  areaServed: 'Agra, India',
+  image: 'https://www.iwisglobal.com/logo.png',
+  telephone: '+91 6399226633',
+  email: 'info@iwisglobal.com',
+  sameAs: ['https://share.google/LOqFXgGLF8KWXdMNn'],
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Agra',
+    addressRegion: 'Uttar Pradesh',
+    addressCountry: 'IN',
+  },
+  areaServed: {
+    '@type': 'City',
+    name: 'Agra',
+  },
 };
 ---
 <!doctype html>

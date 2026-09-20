@@ -51,16 +51,40 @@ function extractInfoBlocks(description: string): { main: string; blocks: { label
 }
 const { main: mainDescription, blocks: infoBlocks } = extractInfoBlocks(tour.description);
 
+// Backlog 2.1: Product + Offer + TouristTrip. Both share one Offer built
+// from the already-resolved `price` (the same amount/currency shown to the
+// visitor and charged server-side) — the previous version used the raw
+// flat tour.amount/tour.currency, which drifted from the real price once
+// currency toggling and group-size tiers existed.
+const tourUrl = `https://www.iwisglobal.com/tours/${tour.slug}`;
+const tourOfferJsonLd = {
+  '@type': 'Offer',
+  price: price.amount,
+  priceCurrency: price.currency,
+  availability: 'https://schema.org/InStock',
+  url: tourUrl,
+};
 const tripJsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'TouristTrip',
-  name: tour.title,
-  description: tour.summary,
-  offers: {
-    '@type': 'Offer',
-    price: tour.amount,
-    priceCurrency: tour.currency,
-  },
+  '@graph': [
+    {
+      '@type': 'Product',
+      name: tour.title,
+      description: tour.summary,
+      url: tourUrl,
+      image: tour.image ? new URL(tour.image, Astro.url.origin).toString() : undefined,
+      brand: { '@type': 'Organization', name: 'IWIS Global' },
+      offers: tourOfferJsonLd,
+    },
+    {
+      '@type': 'TouristTrip',
+      name: tour.title,
+      description: tour.summary,
+      url: tourUrl,
+      touristType: 'Leisure',
+      offers: tourOfferJsonLd,
+    },
+  ],
 };
 ---
 <BaseLayout title={`${tour.title} — IWIS Global`} description={tour.summary}>
