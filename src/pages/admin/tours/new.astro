@@ -4,8 +4,8 @@ export const prerender = false;
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
-import { createTour, replaceAddOns } from '../../../lib/tours';
-import { parseLines, parseItinerary, parseAddOns } from '../../../lib/tourForm';
+import { createTour, replaceAddOns, replacePricingTiers } from '../../../lib/tours';
+import { parseLines, parseItinerary, parseAddOns, parsePricingTiers } from '../../../lib/tourForm';
 import { uploadTourImage } from '../../../lib/images';
 
 const env = resolveEnv(Astro.locals);
@@ -56,6 +56,8 @@ if (Astro.request.method === 'POST' && db) {
       });
       const addOns = parseAddOns(String(form.get('addOns') ?? ''));
       if (addOns.length > 0) await replaceAddOns(db, id, addOns);
+      const pricingTiers = parsePricingTiers(String(form.get('pricingTiers') ?? ''));
+      if (pricingTiers.length > 0) await replacePricingTiers(db, id, pricingTiers);
       return Astro.redirect(`/admin/tours/${id}/edit`);
     } catch (err: any) {
       error = err?.message || 'Failed to create tour.';
@@ -125,8 +127,20 @@ if (Astro.request.method === 'POST' && db) {
       <textarea name="excludes" rows="3" class="w-full rounded border border-stone-300 px-3 py-2"></textarea>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Add-ons (one per line: "Name | INR price | USD price (optional)")</label>
+      <label class="block text-stone-500 mb-1">
+        Group-size pricing tiers (one per line: "Travelers | INR price per traveler | USD price (optional)")
+      </label>
+      <textarea name="pricingTiers" rows="4" class="w-full rounded border border-stone-300 px-3 py-2" placeholder={'1 | 11999\n2 | 6499\n3 | 5499\n4 | 4499'}></textarea>
+      <p class="text-xs text-stone-500 mt-1">
+        Optional. Leave blank to keep the flat "Price per traveler" above for every group size.
+      </p>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">
+        Add-ons (one per line: "Name | INR price | USD price (optional) | yes-if-included-by-default")
+      </label>
       <textarea name="addOns" rows="3" class="w-full rounded border border-stone-300 px-3 py-2" placeholder="Art gallery & souvenir stop | 500 | 6"></textarea>
+      <p class="text-xs text-stone-500 mt-1">Add "| yes" as a 4th segment to bundle it into the price by default (backlog 0.3).</p>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Guide language</label>

@@ -4,8 +4,17 @@ export const prerender = false;
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../../lib/env';
 import { isAdminAuthenticated } from '../../../../lib/requireAdmin';
-import { getTourById, updateTour, replaceAddOns } from '../../../../lib/tours';
-import { parseLines, parseItinerary, parseAddOns, formatLines, formatItinerary, formatAddOns } from '../../../../lib/tourForm';
+import { getTourById, updateTour, replaceAddOns, replacePricingTiers } from '../../../../lib/tours';
+import {
+  parseLines,
+  parseItinerary,
+  parseAddOns,
+  parsePricingTiers,
+  formatLines,
+  formatItinerary,
+  formatAddOns,
+  formatPricingTiers,
+} from '../../../../lib/tourForm';
 import { uploadTourImage } from '../../../../lib/images';
 
 const env = resolveEnv(Astro.locals);
@@ -59,6 +68,7 @@ if (Astro.request.method === 'POST') {
         privateTour: form.get('privateTour') === 'on',
       });
       await replaceAddOns(db, id, parseAddOns(String(form.get('addOns') ?? '')));
+      await replacePricingTiers(db, id, parsePricingTiers(String(form.get('pricingTiers') ?? '')));
       return Astro.redirect(`/admin/tours/${id}/edit?saved=1`);
     } catch (err: any) {
       error = err?.message || 'Failed to save tour.';
@@ -149,8 +159,25 @@ const saved = Astro.url.searchParams.get('saved') === '1';
       <textarea name="excludes" rows="3" class="w-full rounded border border-stone-300 px-3 py-2">{formatLines(tour.excludes)}</textarea>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Add-ons (one per line: "Name | INR price | USD price (optional)")</label>
+      <label class="block text-stone-500 mb-1">
+        Group-size pricing tiers (one per line: "Travelers | INR price per traveler | USD price (optional)")
+      </label>
+      <textarea name="pricingTiers" rows="4" class="w-full rounded border border-stone-300 px-3 py-2" placeholder={'1 | 11999\n2 | 6499\n3 | 5499\n4 | 4499'}>{formatPricingTiers(tour.pricingTiers)}</textarea>
+      <p class="text-xs text-stone-500 mt-1">
+        Optional. Leave blank to keep the flat "Price per traveler" above for every group size. A group larger than
+        the biggest tier here still prices at that tier's rate.
+      </p>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">
+        Add-ons (one per line: "Name | INR price | USD price (optional) | yes-if-included-by-default")
+      </label>
       <textarea name="addOns" rows="3" class="w-full rounded border border-stone-300 px-3 py-2">{formatAddOns(tour.addOns)}</textarea>
+      <p class="text-xs text-stone-500 mt-1">
+        Add "| yes" as a 4th segment to bundle it into the price by default (backlog 0.3) — the booking widget
+        pre-checks it and the customer unchecks to remove it, rather than checking to add it. Example:
+        "Monument entry (Taj Mahal + Agra Fort) | 1300 | | yes"
+      </p>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Guide language</label>

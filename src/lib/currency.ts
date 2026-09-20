@@ -33,14 +33,52 @@ export interface PricedAddOn {
   name: string;
   amount: number;
   usdAmount?: number | null;
+  includedByDefault?: boolean;
 }
 
 // Resolves a tour's add-ons for a given (already-resolved) tour currency.
 // An add-on without a USD price is simply left out when the effective
 // currency is USD, rather than mixing currencies in one total.
-export function resolveAddOns(addOns: PricedAddOn[], tourCurrency: Currency): { id: string; name: string; amount: number }[] {
+export function resolveAddOns(
+  addOns: PricedAddOn[],
+  tourCurrency: Currency
+): { id: string; name: string; amount: number; includedByDefault?: boolean }[] {
   if (tourCurrency === 'USD') {
-    return addOns.filter((a) => a.usdAmount != null).map((a) => ({ id: a.id, name: a.name, amount: a.usdAmount as number }));
+    return addOns
+      .filter((a) => a.usdAmount != null)
+      .map((a) => ({ id: a.id, name: a.name, amount: a.usdAmount as number, includedByDefault: a.includedByDefault }));
   }
-  return addOns.map((a) => ({ id: a.id, name: a.name, amount: a.amount }));
+  return addOns.map((a) => ({ id: a.id, name: a.name, amount: a.amount, includedByDefault: a.includedByDefault }));
+}
+
+export interface PricedTier {
+  travelers: number;
+  amount: number;
+  usdAmount?: number | null;
+}
+
+// Resolves a tour's group-size pricing tiers (backlog 0.2) for a given
+// (already-resolved) tour currency, same per-row fallback rule as
+// resolveAddOns: a tier without a USD price is left out when the effective
+// currency is USD, rather than mixing currencies. An empty result is
+// expected and fine — callers fall back to the tour's flat amount.
+export function resolvePricingTiers(tiers: PricedTier[], tourCurrency: Currency): { travelers: number; amount: number }[] {
+  if (tourCurrency === 'USD') {
+    return tiers.filter((t) => t.usdAmount != null).map((t) => ({ travelers: t.travelers, amount: t.usdAmount as number }));
+  }
+  return tiers.map((t) => ({ travelers: t.travelers, amount: t.amount }));
+}
+
+// The cheapest available per-person rate for a tour — the "From ₹X" price
+// shown on cards and the tour page. With tiers, that's the largest-group
+// tier's rate (not the flat amount, which would understate what a solo
+// traveler actually pays and overstate what a group of 4 pays).
+export function resolveFromPrice(
+  tour: PricedItem & { pricingTiers?: PricedTier[] },
+  requested: Currency
+): { amount: number; currency: Currency } {
+  const base = resolvePrice(tour, requested);
+  const tiers = resolvePricingTiers(tour.pricingTiers ?? [], base.currency);
+  if (tiers.length === 0) return base;
+  return { amount: Math.min(...tiers.map((t) => t.amount)), currency: base.currency };
 }

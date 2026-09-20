@@ -2,7 +2,7 @@
 // (src/pages/admin/tours/*) instead of requiring a code change + redeploy.
 
 import type { D1Like } from './db';
-import type { CatalogItem, AddOn } from './catalog';
+import type { CatalogItem, AddOn, PricingTier } from './catalog';
 import { resolvePrice, type Currency } from './currency';
 
 export interface TourRow {
@@ -59,6 +59,7 @@ export interface ParsedTour {
   createdAt: string;
   updatedAt: string;
   addOns: AddOn[];
+  pricingTiers: PricingTier[];
 }
 
 function safeJsonParse<T>(json: string, fallback: T): T {
@@ -69,11 +70,35 @@ function safeJsonParse<T>(json: string, fallback: T): T {
   }
 }
 
+interface AddOnRow {
+  id: string;
+  name: string;
+  amount: number;
+  usdAmount: number | null;
+  includedByDefault: number; // D1 stores 0/1
+}
+
 async function loadAddOns(db: D1Like, tourId: string): Promise<AddOn[]> {
   const { results } = await db
-    .prepare(`SELECT id, name, amount, usd_amount as usdAmount FROM tour_addons WHERE tour_id = ? ORDER BY created_at ASC`)
+    .prepare(
+      `SELECT id, name, amount, usd_amount as usdAmount, included_by_default as includedByDefault
+       FROM tour_addons WHERE tour_id = ? ORDER BY created_at ASC`
+    )
     .bind(tourId)
-    .all<AddOn>();
+    .all<AddOnRow>();
+  // Coerce 0/1 to boolean like every other flag column in this file
+  // (featured, pickup_included, ...).
+  return results.map((r) => ({ ...r, includedByDefault: !!r.includedByDefault }));
+}
+
+async function loadPricingTiers(db: D1Like, tourId: string): Promise<PricingTier[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT travelers, amount, usd_amount as usdAmount
+       FROM tour_pricing_tiers WHERE tour_id = ? ORDER BY travelers ASC`
+    )
+    .bind(tourId)
+    .all<PricingTier>();
   return results;
 }
 
@@ -102,6 +127,7 @@ async function parseTour(db: D1Like, row: TourRow): Promise<ParsedTour> {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     addOns: await loadAddOns(db, row.id),
+    pricingTiers: await loadPricingTiers(db, row.id),
   };
 }
 
@@ -153,10 +179,22 @@ export async function getCatalogItem(
   // total.
   const addOns =
     resolved.currency === 'USD'
-      ? allAddOns.filter((a) => a.usdAmount != null).map((a) => ({ id: a.id, name: a.name, amount: a.usdAmount as number }))
-      : allAddOns.map((a) => ({ id: a.id, name: a.name, amount: a.amount }));
+      ? allAddOns
+          .filter((a) => a.usdAmount != null)
+          .map((a) => ({ id: a.id, name: a.name, amount: a.usdAmount as number, includedByDefault: a.includedByDefault }))
+      : allAddOns.map((a) => ({ id: a.id, name: a.name, amount: a.amount, includedByDefault: a.includedByDefault }));
 
-  return { amount: resolved.amount, currency: resolved.currency, addOns };
+  // Same per-row currency fallback as add-ons: a tier without a USD price is
+  // left out (not mixed in) when paying in USD — computeTotal then falls
+  // back to the flat `resolved.amount` for that traveler count, same as a
+  // tour with no tiers at all.
+  const allTiers = await loadPricingTiers(db, tourId);
+  const pricingTiers =
+    resolved.currency === 'USD'
+      ? allTiers.filter((t) => t.usdAmount != null).map((t) => ({ travelers: t.travelers, amount: t.usdAmount as number }))
+      : allTiers.map((t) => ({ travelers: t.travelers, amount: t.amount }));
+
+  return { amount: resolved.amount, currency: resolved.currency, addOns, pricingTiers };
 }
 
 function slugify(title: string): string {
@@ -290,8 +328,27 @@ export async function replaceAddOns(db: D1Like, tourId: string, addOns: AddOn[])
   const now = new Date().toISOString();
   for (const addOn of addOns) {
     await db
-      .prepare(`INSERT INTO tour_addons (id, tour_id, name, amount, usd_amount, created_at) VALUES (?, ?, ?, ?, ?, ?)`)
-      .bind(addOn.id, tourId, addOn.name, addOn.amount, addOn.usdAmount ?? null, now)
+      .prepare(
+        `INSERT INTO tour_addons (id, tour_id, name, amount, usd_amount, included_by_default, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .bind(addOn.id, tourId, addOn.name, addOn.amount, addOn.usdAmount ?? null, addOn.includedByDefault ? 1 : 0, now)
+      .run();
+  }
+}
+
+// Mirrors replaceAddOns: full delete-then-insert of a tour's pricing tiers,
+// so the admin form can just submit "the current set" without diffing.
+export async function replacePricingTiers(db: D1Like, tourId: string, tiers: PricingTier[]): Promise<void> {
+  await db.prepare(`DELETE FROM tour_pricing_tiers WHERE tour_id = ?`).bind(tourId).run();
+  const now = new Date().toISOString();
+  for (const tier of tiers) {
+    await db
+      .prepare(
+        `INSERT INTO tour_pricing_tiers (id, tour_id, travelers, amount, usd_amount, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .bind(`TIER_${tourId}_${tier.travelers}`, tourId, tier.travelers, tier.amount, tier.usdAmount ?? null, now)
       .run();
   }
 }

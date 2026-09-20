@@ -4,7 +4,7 @@ import BookingWidget from '../../components/BookingWidget.tsx';
 import { getTourBySlug } from '../../lib/tours';
 import { getAvailability } from '../../lib/availability';
 import { resolveEnv } from '../../lib/env';
-import { resolveCurrency, resolvePrice, resolveAddOns, CURRENCY_SYMBOLS } from '../../lib/currency';
+import { resolveCurrency, resolvePrice, resolveAddOns, resolvePricingTiers, resolveFromPrice, CURRENCY_SYMBOLS } from '../../lib/currency';
 
 export const prerender = false;
 
@@ -24,6 +24,11 @@ if (Astro.url.searchParams.get('currency')) {
 }
 const price = resolvePrice(tour, requestedCurrency);
 const resolvedAddOns = resolveAddOns(tour.addOns, price.currency);
+const resolvedTiers = resolvePricingTiers(tour.pricingTiers, price.currency);
+// "From ₹X" uses the cheapest available rate (the largest-group tier when
+// tiers are set) rather than the flat per-traveler amount, which would
+// understate a solo traveler's price and overstate a group of 4's.
+const fromPrice = resolveFromPrice(tour, requestedCurrency);
 
 // Some tour descriptions end with short labeled paragraphs (e.g. "What to
 // bring: ..."). Pull those out of the prose block so they render as their
@@ -105,10 +110,15 @@ const tripJsonLd = {
         {tour.guideLanguage && <span>{tour.guideLanguage} guide</span>}
       </div>
 
-      <p class="text-2xl font-semibold text-stone-900 mb-8 pb-8 border-b border-stone-200">
-        From {CURRENCY_SYMBOLS[price.currency]}{price.amount.toLocaleString(price.currency === 'USD' ? 'en-US' : 'en-IN')}
-        <span class="text-sm font-normal text-stone-500">/person</span>
-      </p>
+      <div class="mb-8 pb-8 border-b border-stone-200">
+        <p class="text-2xl font-semibold text-stone-900">
+          From {CURRENCY_SYMBOLS[fromPrice.currency]}{fromPrice.amount.toLocaleString(fromPrice.currency === 'USD' ? 'en-US' : 'en-IN')}
+          <span class="text-sm font-normal text-stone-500">/person</span>
+        </p>
+        {resolvedTiers.length > 0 && (
+          <p class="text-sm text-stone-500 mt-1">for groups of {Math.max(...resolvedTiers.map((t) => t.travelers))}+ — solo or smaller groups pay more per person</p>
+        )}
+      </div>
 
       {tour.highlights.length > 0 && (
         <div class="mb-8 rounded-xl border border-stone-200 bg-white p-6">
@@ -230,6 +240,7 @@ const tripJsonLd = {
         tourId={tour.id}
         tourTitle={tour.title}
         pricePerTraveler={price.amount}
+        pricingTiers={resolvedTiers}
         currency={price.currency}
         addOns={resolvedAddOns}
         minDate={availability.minBookableDate}

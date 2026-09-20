@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
+import { pickPricingTier, type PricingTier } from '../lib/catalog';
 
 declare global {
   interface Window {
@@ -11,22 +12,37 @@ interface AddOnOption {
   id: string;
   name: string;
   amount: number;
+  includedByDefault?: boolean;
 }
 
 interface BookingWidgetProps {
   tourId: string;
   tourTitle: string;
-  pricePerTraveler: number;
+  pricePerTraveler: number; // flat per-traveler rate — used when pricingTiers is empty
+  pricingTiers?: PricingTier[]; // backlog 0.2: price varies with group size when set
   currency: Currency;
   addOns: AddOnOption[];
   minDate: string;
   availabilityLabel?: string;
 }
 
-export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, currency, addOns, minDate, availabilityLabel }: BookingWidgetProps) {
+export default function BookingWidget({
+  tourId,
+  tourTitle,
+  pricePerTraveler,
+  pricingTiers = [],
+  currency,
+  addOns,
+  minDate,
+  availabilityLabel,
+}: BookingWidgetProps) {
   const [date, setDate] = useState(minDate);
   const [travelers, setTravelers] = useState(2);
-  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
+  // Add-ons marked includedByDefault (backlog 0.3, e.g. monument entry)
+  // start checked — the customer opts OUT by unchecking, not in by checking.
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>(() =>
+    addOns.filter((a) => a.includedByDefault).map((a) => a.id)
+  );
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -34,11 +50,16 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<string | null>(null);
 
+  // Same tier-matching logic computeTotal() uses server-side — this is a
+  // display estimate only; the server independently recomputes it from its
+  // own D1-sourced catalog, so this can't be tampered with to change price.
+  const currentRate = pickPricingTier(pricingTiers, travelers)?.amount ?? pricePerTraveler;
+
   const addOnsTotal = selectedAddOns.reduce((sum, id) => {
     const addOn = addOns.find((a) => a.id === id);
     return sum + (addOn?.amount ?? 0);
   }, 0);
-  const total = pricePerTraveler * travelers + addOnsTotal;
+  const total = currentRate * travelers + addOnsTotal;
 
   const toggleAddOn = (id: string) => {
     setSelectedAddOns((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
@@ -167,6 +188,11 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
           onChange={(e) => setTravelers(Math.max(1, Number(e.target.value)))}
           className="w-full rounded border border-stone-300 px-3 py-2"
         />
+        {pricingTiers.length > 0 && (
+          <p className="text-xs text-stone-500 mt-1">
+            {CURRENCY_SYMBOLS[currency]}{currentRate.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}/person for {travelers} {travelers === 1 ? 'traveler' : 'travelers'}
+          </p>
+        )}
       </div>
 
       {addOns.length > 0 && (
@@ -180,7 +206,15 @@ export default function BookingWidget({ tourId, tourTitle, pricePerTraveler, cur
                 onChange={() => toggleAddOn(addOn.id)}
                 className="h-4 w-4"
               />
-              {addOn.name} (+{CURRENCY_SYMBOLS[currency]}{addOn.amount})
+              {addOn.includedByDefault ? (
+                <span>
+                  {addOn.name} <span className="text-emerald-700">(included — uncheck to remove)</span>
+                </span>
+              ) : (
+                <span>
+                  {addOn.name} (+{CURRENCY_SYMBOLS[currency]}{addOn.amount})
+                </span>
+              )}
             </label>
           ))}
         </div>

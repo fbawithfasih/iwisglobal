@@ -1,6 +1,6 @@
 ---
 import { getAvailability } from '../lib/availability';
-import { resolvePrice, CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
+import { resolveFromPrice, CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import type { ParsedTour } from '../lib/tours';
 
 interface Props {
@@ -10,7 +10,10 @@ interface Props {
 
 const { tour, currency } = Astro.props;
 const availability = getAvailability();
-const price = resolvePrice(tour, currency);
+// Cheapest available per-person rate (the largest-group tier when the tour
+// has pricing tiers) — see backlog 0.2. Kept in sync with tours/[slug].astro's
+// "From" price via the same resolveFromPrice helper.
+const price = resolveFromPrice(tour, currency);
 ---
 <a
   href={`/tours/${tour.slug}`}

@@ -2,7 +2,7 @@
 // server-rendered-form pattern (no JS islands) instead of a repeatable-field
 // React component, consistent with the rest of /admin.
 
-import type { AddOn } from './catalog';
+import type { AddOn, PricingTier } from './catalog';
 import type { ItineraryStep } from './tours';
 
 export function parseLines(text: string): string[] {
@@ -39,11 +39,16 @@ function slugAddOnId(name: string, index: number): string {
   return base ? `${base}_${index}` : `ADDON_${index}`;
 }
 
-// One add-on per line: "Art gallery & souvenir stop | 500 | 6" (USD segment optional)
+// One add-on per line: "Art gallery & souvenir stop | 500 | 6" (USD segment
+// optional). A 4th segment marks it included-by-default (backlog 0.3) —
+// bundled into the price, with the booking widget pre-checking it so the
+// customer opts OUT rather than in: "Monument entry | 1300 | | yes"
+const INCLUDED_MARKERS = /^(yes|included|default)$/i;
+
 export function parseAddOns(text: string): AddOn[] {
   return parseLines(text)
     .map((line, index) => {
-      const [name, amountStr, usdStr] = line.split('|');
+      const [name, amountStr, usdStr, includedStr] = line.split('|');
       const amount = Number((amountStr ?? '').trim());
       const usdAmount = usdStr != null && usdStr.trim() !== '' ? Number(usdStr.trim()) : null;
       return {
@@ -51,11 +56,44 @@ export function parseAddOns(text: string): AddOn[] {
         name: (name ?? '').trim(),
         amount: Number.isFinite(amount) ? amount : 0,
         usdAmount: usdAmount != null && Number.isFinite(usdAmount) ? usdAmount : null,
+        includedByDefault: INCLUDED_MARKERS.test((includedStr ?? '').trim()),
       };
     })
     .filter((a) => a.name);
 }
 
 export function formatAddOns(addOns: AddOn[]): string {
-  return addOns.map((a) => `${a.name} | ${a.amount}${a.usdAmount != null ? ` | ${a.usdAmount}` : ''}`).join('\n');
+  return addOns
+    .map((a) => {
+      const parts = [a.name, String(a.amount), a.usdAmount != null ? String(a.usdAmount) : ''];
+      if (a.includedByDefault) parts.push('yes');
+      return parts.join(' | ').replace(/(\s\|\s)+$/, ''); // trim trailing empty segments
+    })
+    .join('\n');
+}
+
+// One tier per line: "1 | 11999" or "1 | 11999 | 179" (USD segment optional)
+// — travelers | price PER TRAVELER at that group size | USD price (optional)
+export function parsePricingTiers(text: string): PricingTier[] {
+  return parseLines(text)
+    .map((line) => {
+      const [travelersStr, amountStr, usdStr] = line.split('|');
+      const travelers = Number((travelersStr ?? '').trim());
+      const amount = Number((amountStr ?? '').trim());
+      const usdAmount = usdStr != null && usdStr.trim() !== '' ? Number(usdStr.trim()) : null;
+      return {
+        travelers,
+        amount,
+        usdAmount: usdAmount != null && Number.isFinite(usdAmount) ? usdAmount : null,
+      };
+    })
+    .filter((t) => Number.isInteger(t.travelers) && t.travelers > 0 && Number.isFinite(t.amount) && t.amount > 0)
+    .sort((a, b) => a.travelers - b.travelers);
+}
+
+export function formatPricingTiers(tiers: PricingTier[]): string {
+  return [...tiers]
+    .sort((a, b) => a.travelers - b.travelers)
+    .map((t) => `${t.travelers} | ${t.amount}${t.usdAmount != null ? ` | ${t.usdAmount}` : ''}`)
+    .join('\n');
 }
