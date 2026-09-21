@@ -23,6 +23,7 @@ export interface BookingRow {
   guide_assigned: string;
   vehicle: string;
   created_at: string;
+  review_requested_at: string | null;
 }
 
 export interface BookingFilters {
@@ -58,6 +59,27 @@ const VALID_STATUSES = ['confirmed', 'completed', 'cancelled'];
 export async function updateBookingStatus(db: D1Like, id: string, status: string): Promise<void> {
   if (!VALID_STATUSES.includes(status)) throw new Error('Invalid status');
   await db.prepare(`UPDATE bookings SET status = ? WHERE id = ?`).bind(status, id).run();
+}
+
+// Backlog 1.2 — bookings whose travel date has passed (drop-off already
+// happened) and haven't had a review request sent yet. Cancelled bookings
+// are excluded since the guest never actually traveled. Ordered oldest
+// first so the ones most overdue for a request surface at the top.
+export async function listReviewCandidates(db: D1Like): Promise<BookingRow[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { results } = await db
+    .prepare(
+      `SELECT * FROM bookings
+       WHERE travel_date < ? AND status != 'cancelled' AND review_requested_at IS NULL
+       ORDER BY travel_date ASC`
+    )
+    .bind(today)
+    .all<BookingRow>();
+  return results;
+}
+
+export async function markReviewRequested(db: D1Like, id: string): Promise<void> {
+  await db.prepare(`UPDATE bookings SET review_requested_at = ? WHERE id = ?`).bind(new Date().toISOString(), id).run();
 }
 
 export async function updateBookingItinerary(

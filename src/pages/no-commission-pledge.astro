@@ -1,0 +1,49 @@
+---
+// Backlog 1.6. Real, confirmed differentiator (product-marketing-context.md
+// §4: "No-commission pledge on craft/workshop stops... genuinely good") —
+// not a claim invented for this page. The Same-Day tour's itinerary
+// already lists its craft-gallery stop as optional (schema_tours.sql).
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Our No-Commission Pledge — IWIS Global"
+  description="IWIS Global takes no commission from any workshop or craft stop. Any such stop is optional, and we say so plainly — most operators in this category won't."
+>
+  <section class="max-w-3xl mx-auto px-6 py-16">
+    <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-4">Our no-commission pledge</h1>
+
+    <p class="text-lg text-stone-700 mb-8">
+      IWIS Global takes no commission from any craft workshop, marble-inlay gallery, or souvenir stop on any tour. If a
+      tour's itinerary includes an optional stop like this, it's there because some travelers enjoy it, not because we
+      earn from it. You can skip it and nothing changes about your tour or your guide.
+    </p>
+
+    <h2 class="text-xl font-semibold mt-10 mb-3">Why we're saying this plainly</h2>
+    <p class="text-stone-700 mb-4">
+      Commission-driven detours are a known problem with unlicensed or informal operators in Agra: a guide routes the
+      day through a shop that pays them a cut, and the "quick stop" eats into the time you actually came for. It's
+      also common to hear about guides asking for tips after a trip has already been paid for in full, on top of
+      what's already been agreed.
+    </p>
+    <p class="text-stone-700 mb-4">
+      We're not claiming every operator does this. We're saying we don't, and we'd rather state it outright than let
+      you wonder.
+    </p>
+
+    <h2 class="text-xl font-semibold mt-10 mb-3">What this means on your tour</h2>
+    <ul class="list-disc list-inside text-stone-700 space-y-2 mb-4">
+      <li>Any craft or workshop stop on your itinerary is clearly marked optional</li>
+      <li>Skipping it doesn't shorten your tour or change your price</li>
+      <li>Your guide has no financial reason to steer you toward one shop over another</li>
+      <li>Tipping is always your choice, never expected on top of what you've already paid</li>
+    </ul>
+
+    <p class="text-stone-700 mt-10">
+      Questions about this, or about a specific tour's itinerary? <a href="/help" class="text-brand-700 hover:underline">Check our FAQs</a>
+      or <a href="https://wa.me/916399226633?text=Hi!%20I%20have%20a%20question%20about%20your%20no-commission%20pledge.%20(ref:%20PLEDGE)" target="_blank" rel="noopener noreferrer" data-wa-ref="PLEDGE" class="text-brand-700 hover:underline">message us on WhatsApp</a>.
+    </p>
+  </section>
+</BaseLayout>

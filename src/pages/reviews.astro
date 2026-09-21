@@ -1,0 +1,35 @@
+---
+// Backlog 1.7. No AggregateRating schema — CLAUDE.md hard rule 2 (never
+// publish fake/aggregate ratings) and this repo's own history (the "no
+// fabricated ratings/reviews, ever" decision recorded in
+// SESSION_HANDOFF.md). This page stays an honest empty state until real
+// reviews exist on Google/TripAdvisor to actually link to or quote.
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Reviews — IWIS Global"
+  description="We're a new operator and don't have reviews to show yet — here's where they'll go as real guests leave them."
+>
+  <section class="max-w-2xl mx-auto px-6 py-16 text-center">
+    <h1 class="text-3xl font-serif font-semibold mb-4">Reviews</h1>
+    <p class="text-stone-600 mb-8">
+      We're a newly-launched operator, so we don't have reviews to show here yet — and we're not going to make any
+      up. As real guests leave reviews on Google or TripAdvisor, we'll link to them here.
+    </p>
+    <p class="text-stone-600 mb-10">
+      Traveled with us already? We'd genuinely appreciate a review — it's one of the main ways new travelers decide
+      whether to trust a small operator they haven't heard of before.
+    </p>
+    <a
+      href="https://share.google/LOqFXgGLF8KWXdMNn"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="inline-block rounded-full bg-brand-800 text-white px-6 py-3 text-sm font-semibold hover:bg-brand-900 transition"
+    >
+      Leave us a review on Google
+    </a>
+  </section>
+</BaseLayout>
