@@ -1,0 +1,51 @@
+---
+// Backlog 2.6's five Viator-FAQ counter-pages, plus the general-purpose
+// route for any future guide added to the collection. Dynamic (not
+// prerendered) for the same reason as every other page here — BaseLayout's
+// nav/footer depend on Astro.cookies, which only resolves per-request.
+export const prerender = false;
+
+import { getCollection, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const { slug } = Astro.params;
+const entry: CollectionEntry<'guides'> | undefined = (await getCollection('guides')).find((e) => e.slug === slug);
+
+if (!entry) {
+  return Astro.redirect('/guides');
+}
+
+const { Content } = await entry.render();
+const { title, description, authorName, datePublished, dateModified } = entry.data;
+
+const dateFmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+// Backlog 2.1's Article schema — the one item that was N/A when 2.1 shipped
+// because no guide content existed yet.
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description,
+  author: { '@type': 'Organization', name: authorName },
+  datePublished: datePublished.toISOString(),
+  dateModified: dateModified.toISOString(),
+  publisher: { '@type': 'Organization', name: 'IWIS Global', logo: { '@type': 'ImageObject', url: 'https://www.iwisglobal.com/logo.png' } },
+};
+---
+
+<BaseLayout title={`${title} — IWIS Global`} description={description}>
+  <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
+
+  <article class="max-w-3xl mx-auto px-6 py-16">
+    <a href="/guides" class="text-sm text-stone-500 hover:underline">&larr; All guides</a>
+    <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-4 mb-3">{title}</h1>
+    <p class="text-sm text-stone-500 mb-10">
+      By {authorName} · Published {dateFmt(datePublished)}
+      {dateModified.getTime() !== datePublished.getTime() && <> · Updated {dateFmt(dateModified)}</>}
+    </p>
+    <div class="prose prose-stone max-w-none prose-headings:font-serif prose-a:text-brand-700">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>
