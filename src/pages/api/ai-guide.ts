@@ -2,6 +2,7 @@
 import type { APIRoute } from 'astro';
 import { resolveEnv } from '../../lib/env';
 import { listTours } from '../../lib/tours';
+import { resolveCurrency, resolvePrice } from '../../lib/currency';
 import {
   hashIp,
   checkRateLimit,
@@ -23,7 +24,7 @@ function fallbackResponse() {
   });
 }
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, locals, cookies }) => {
   let message = '';
   let history: GuideExchange[] = [];
 
@@ -75,9 +76,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     await recordRequest(db, ipHash);
 
+    // Same currency the visitor actually sees on the page (the `currency`
+    // cookie every tour page reads/writes) — otherwise YourGuide quotes a
+    // base-currency (INR) figure that doesn't match a USD-viewing
+    // visitor's own page, a real point of confusion for a paying customer.
+    const currency = resolveCurrency(new URL(request.url).searchParams, cookies.get('currency')?.value);
     const tours = await listTours(db, { status: 'published' });
     const systemPrompt = buildSystemPrompt(
-      tours.map((t) => ({ title: t.title, amount: t.amount, currency: t.currency, durationLabel: t.durationLabel }))
+      tours.map((t) => {
+        const resolved = resolvePrice({ amount: t.amount, usdAmount: t.usdAmount }, currency);
+        return { title: t.title, amount: resolved.amount, currency: resolved.currency, durationLabel: t.durationLabel };
+      })
     );
 
     const answer = await askYourGuide(message, history, systemPrompt, apiKey);
