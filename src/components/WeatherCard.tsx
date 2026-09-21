@@ -5,8 +5,18 @@ import { useEffect, useState } from 'react';
 const AGRA_LAT = 27.1767;
 const AGRA_LON = 78.0081;
 
-const CACHE_KEY = 'iwis-agra-weather';
+// v2: bumped when the cached shape changed (added `forecast`) so a
+// returning visitor's stale v1 cache entry is ignored instead of crashing
+// render on the missing field.
+const CACHE_KEY = 'iwis-agra-weather-v2';
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+interface ForecastDay {
+  date: string;
+  maxC: number;
+  minC: number;
+  weatherCode: number;
+}
 
 interface WeatherData {
   temperatureC: number;
@@ -17,6 +27,7 @@ interface WeatherData {
   rainChancePct: number | null;
   aqi: number | null;
   pm25: number | null;
+  forecast: ForecastDay[];
   fetchedAt: number;
 }
 
@@ -69,7 +80,8 @@ async function fetchWeather(): Promise<WeatherData> {
   const weatherUrl =
     `https://api.open-meteo.com/v1/forecast?latitude=${AGRA_LAT}&longitude=${AGRA_LON}` +
     `&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m` +
-    `&daily=precipitation_probability_max&timezone=Asia%2FKolkata`;
+    `&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min,weather_code` +
+    `&forecast_days=4&timezone=Asia%2FKolkata`;
   const aqiUrl =
     `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${AGRA_LAT}&longitude=${AGRA_LON}` +
     `&current=us_aqi,pm2_5&timezone=Asia%2FKolkata`;
@@ -82,6 +94,16 @@ async function fetchWeather(): Promise<WeatherData> {
   // failing the whole card if only this call fails.
   const aqiJson = aqiRes.ok ? await aqiRes.json() : null;
 
+  // daily.time[0] is today (already shown as "right now" above), so the
+  // 3-day forecast row is indices 1-3.
+  const dailyTimes: string[] = weatherJson.daily?.time ?? [];
+  const forecast: ForecastDay[] = dailyTimes.slice(1, 4).map((date, i) => ({
+    date,
+    maxC: weatherJson.daily.temperature_2m_max[i + 1],
+    minC: weatherJson.daily.temperature_2m_min[i + 1],
+    weatherCode: weatherJson.daily.weather_code[i + 1],
+  }));
+
   return {
     temperatureC: weatherJson.current.temperature_2m,
     humidityPct: weatherJson.current.relative_humidity_2m,
@@ -91,6 +113,7 @@ async function fetchWeather(): Promise<WeatherData> {
     rainChancePct: weatherJson.daily?.precipitation_probability_max?.[0] ?? null,
     aqi: aqiJson?.current?.us_aqi ?? null,
     pm25: aqiJson?.current?.pm2_5 ?? null,
+    forecast,
     fetchedAt: Date.now(),
   };
 }
@@ -168,6 +191,25 @@ export default function WeatherCard() {
             AQI {data.aqi} · {aqiInfo.label}
           </span>
           {data.pm25 !== null && <span className="text-[11px] text-stone-500">PM2.5: {data.pm25} µg/m³</span>}
+        </div>
+      )}
+
+      {data.forecast.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/50">
+          {data.forecast.map((day) => {
+            const dayInfo = describeWeatherCode(day.weatherCode);
+            return (
+              <div key={day.date} className="text-center">
+                <p className="text-[11px] text-stone-500">
+                  {new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' })}
+                </p>
+                <p className="text-lg leading-none my-1" aria-hidden="true">{dayInfo.icon}</p>
+                <p className="text-[11px] text-stone-700">
+                  {Math.round(day.maxC)}° <span className="text-stone-400">{Math.round(day.minC)}°</span>
+                </p>
+              </div>
+            );
+          })}
         </div>
       )}
 
