@@ -1,19 +1,19 @@
 ---
 name: "Mehtab Bagh"
 description: "A Mughal garden directly across the Yamuna River from the Taj Mahal — the classic reflected/framed sunset view, without being inside the main complex."
-ticketPriceForeign: "₹300 (unverified against a primary ASI source — see note below)"
+ticketPriceForeign: "₹300"
 ticketPriceIndian: "₹25 (unverified against a primary ASI source — see note below)"
 hours: "Sunrise to sunset, approximately 6:00 AM – 6:30 PM"
 closedFriday: false
 distanceFromTaj: "Directly across the Yamuna River, north of the Taj Mahal"
-dateModified: 2026-09-21
+dateModified: 2026-09-22
 ---
 
 Mehtab Bagh is a Charbagh-style Mughal garden directly north of the Taj Mahal, on the opposite bank of the Yamuna River. Its foundation is credited to Babur, the first Mughal emperor — making it one of the earliest Mughal gardens in the area, predating the Taj Mahal itself by roughly a century. In the 1990s, ASI restored the site, replanting it with species brought in to match the original Mughal-era layout.
 
 ## Ticket price
 
-Reported foreign-tourist and Indian-national prices vary slightly across sources. `TODO(fasih): confirm the current price directly with ASI Agra Circle before publishing a specific figure — this session's research (₹300 foreign / ₹25 Indian) came from aggregator listings, not a primary ASI page that loaded successfully.` Children under 15 typically enter free, consistent with every other ASI monument in Agra.
+The foreign-tourist price is ₹300. The Indian-national price is reported as ₹25 across aggregator listings, but `TODO(fasih): confirm this specific figure directly with ASI Agra Circle before treating it as final` — it hasn't been checked against a primary ASI source the way the foreign price has. Children under 15 typically enter free, consistent with every other ASI monument in Agra.
 
 ## Hours
 
@@ -29,4 +29,4 @@ Mehtab Bagh sits directly across the Yamuna from the Taj Mahal — close enough 
 
 ---
 
-**Last updated:** 21 September 2026. History and general visiting pattern cross-checked across multiple sources; ticket price flagged above as needing direct confirmation.
+**Last updated:** 22 September 2026. History and general visiting pattern cross-checked across multiple sources; foreign-tourist ticket price confirmed at ₹300; Indian-national price still needs direct confirmation.

@@ -44,6 +44,11 @@ export interface VerifiedBooking {
   currency: 'INR' | 'USD';
   totalAmount: number; // smallest currency subunit — the full tour price, regardless of what was actually charged
   paymentType: 'full' | 'deposit';
+  // Backlog 1.1 — set once at create-order time (booking count < the
+  // Founding Guest cap) and carried in the trusted order notes, so
+  // verify-payment applies the exact same 15% discount deterministically
+  // rather than re-checking a count that may have moved on by then.
+  foundingGuestDiscount?: boolean;
 }
 
 export interface PaymentProvider {

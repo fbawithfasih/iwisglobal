@@ -99,3 +99,17 @@ export const DEPOSIT_RATE = 0.25;
 export function computeDepositAmount(total: number): number {
   return Math.ceil(total * DEPOSIT_RATE);
 }
+
+// Backlog 1.1 — "Founding Guest" launch offer: 15% off, auto-applied (no
+// code) for the first 25 confirmed bookings site-wide, no end date — it
+// just stops once slot 25 is taken. Eligibility is decided once at
+// create-order time (src/lib/payments/razorpay.ts, via db.ts's
+// countBookings) and carried in the trusted Razorpay order notes so
+// verify-payment.ts can apply the exact same discount deterministically,
+// without re-querying a booking count that may have moved on by then.
+export const FOUNDING_GUEST_DISCOUNT_RATE = 0.15;
+export const FOUNDING_GUEST_SLOT_CAP = 25;
+
+export function applyFoundingGuestDiscount(totalMajorUnits: number, eligible: boolean): number {
+  return eligible ? totalMajorUnits * (1 - FOUNDING_GUEST_DISCOUNT_RATE) : totalMajorUnits;
+}

@@ -133,3 +133,14 @@ export async function travelersBookedOn(db: D1Like, tourId: string, travelDate: 
     .first<{ total: number }>();
   return row?.total ?? 0;
 }
+
+// Backlog 1.1 — total confirmed bookings site-wide, for the Founding Guest
+// offer's "first N bookings" eligibility (see catalog.ts's
+// FOUNDING_GUEST_SLOT_CAP). Not race-proof against two orders created in
+// the same instant near the threshold — acceptable for a small-volume
+// launch offer; worst case is a booking or two past 25 getting the
+// discount, not a security or data-integrity issue.
+export async function countBookings(db: D1Like): Promise<number> {
+  const row = await db.prepare(`SELECT COUNT(*) as count FROM bookings`).bind().first<{ count: number }>();
+  return row?.count ?? 0;
+}

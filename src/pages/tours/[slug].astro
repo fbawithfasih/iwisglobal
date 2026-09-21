@@ -4,6 +4,8 @@ import BookingWidget from '../../components/BookingWidget.tsx';
 import { getTourBySlug } from '../../lib/tours';
 import { getAvailability } from '../../lib/availability';
 import { resolveEnv } from '../../lib/env';
+import { countBookings } from '../../lib/db';
+import { FOUNDING_GUEST_SLOT_CAP } from '../../lib/catalog';
 import { resolveCurrency, resolvePrice, resolveAddOns, resolvePricingTiers, resolveFromPrice, CURRENCY_SYMBOLS } from '../../lib/currency';
 
 export const prerender = false;
@@ -29,6 +31,13 @@ const resolvedTiers = resolvePricingTiers(tour.pricingTiers, price.currency);
 // tiers are set) rather than the flat per-traveler amount, which would
 // understate a solo traveler's price and overstate a group of 4's.
 const fromPrice = resolveFromPrice(tour, requestedCurrency);
+
+// Backlog 1.1 — Founding Guest offer display only; the real eligibility
+// decision (and the actual discount applied) happens server-side at
+// payment time in razorpay.ts's createOrder, from a fresh count at that
+// exact moment. This is just for showing the banner/estimate.
+const bookingCount = env.DB ? await countBookings(env.DB) : 0;
+const foundingGuestSlotsLeft = Math.max(0, FOUNDING_GUEST_SLOT_CAP - bookingCount);
 
 // Some tour descriptions end with short labeled paragraphs (e.g. "What to
 // bring: ..."). Pull those out of the prose block so they render as their
@@ -269,6 +278,7 @@ const tripJsonLd = {
         addOns={resolvedAddOns}
         minDate={availability.minBookableDate}
         availabilityLabel={availability.label}
+        foundingGuestSlotsLeft={foundingGuestSlotsLeft}
       />
     </div>
   </section>

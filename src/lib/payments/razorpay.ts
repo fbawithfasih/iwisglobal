@@ -1,5 +1,6 @@
-import { computeTotal, computeDepositAmount } from '../catalog';
+import { computeTotal, computeDepositAmount, applyFoundingGuestDiscount, FOUNDING_GUEST_SLOT_CAP } from '../catalog';
 import { getCatalogItem } from '../tours';
+import { countBookings } from '../db';
 import type { BookingRequest, OrderResult, VerifyRequest, VerifiedBooking, PaymentProvider } from './index';
 
 function getCreds(env: Record<string, unknown>) {
@@ -32,7 +33,13 @@ export const razorpayProvider: PaymentProvider = {
     // The amount is NEVER taken from the client — it is derived from the
     // server-side catalog using the requested tourId, traveler count, and
     // add-ons. This prevents a booking being paid for at an arbitrary amount.
-    const totalMajorUnits = computeTotal(item, req.travelers, req.addOnIds ?? []);
+    const rawTotalMajorUnits = computeTotal(item, req.travelers, req.addOnIds ?? []);
+    // Backlog 1.1 — Founding Guest offer: 15% off, no code, first 25
+    // confirmed bookings site-wide. Decided once, here, and carried in the
+    // trusted order notes below so verifyPayment applies the identical
+    // discount rather than re-checking a count that may have moved on.
+    const foundingGuestDiscount = env.DB ? (await countBookings(env.DB as any)) < FOUNDING_GUEST_SLOT_CAP : false;
+    const totalMajorUnits = applyFoundingGuestDiscount(rawTotalMajorUnits, foundingGuestDiscount);
     const paymentType: 'full' | 'deposit' = req.paymentType === 'deposit' ? 'deposit' : 'full';
     // Backlog 0.4 — a deposit charges 25% of the total now; the rest is
     // paid on pickup, outside this payment flow entirely. The full total is
@@ -67,6 +74,7 @@ export const razorpayProvider: PaymentProvider = {
           currency: item.currency,
           totalAmount: String(Math.round(totalMajorUnits * 100)),
           paymentType,
+          foundingGuestDiscount: String(foundingGuestDiscount),
           ...(req.gaClientId ? { gaClientId: req.gaClientId } : {}),
         },
       }),
@@ -128,6 +136,7 @@ export const razorpayProvider: PaymentProvider = {
       // from breaking verification during the deploy that adds this).
       totalAmount: notes.totalAmount != null ? Number(notes.totalAmount) : order.amount,
       paymentType: notes.paymentType === 'deposit' ? 'deposit' : 'full',
+      foundingGuestDiscount: notes.foundingGuestDiscount === 'true',
     };
   },
 

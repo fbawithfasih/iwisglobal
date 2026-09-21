@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
-import { pickPricingTier, computeDepositAmount, type PricingTier } from '../lib/catalog';
+import { pickPricingTier, computeDepositAmount, applyFoundingGuestDiscount, type PricingTier } from '../lib/catalog';
 
 declare global {
   interface Window {
@@ -51,6 +51,10 @@ interface BookingWidgetProps {
   addOns: AddOnOption[];
   minDate: string;
   availabilityLabel?: string;
+  // Backlog 1.1 — display only; the server independently decides real
+  // eligibility at payment time from a fresh count. 0 or undefined hides
+  // the banner and applies no discount to the estimate.
+  foundingGuestSlotsLeft?: number;
 }
 
 export default function BookingWidget({
@@ -62,7 +66,9 @@ export default function BookingWidget({
   addOns,
   minDate,
   availabilityLabel,
+  foundingGuestSlotsLeft = 0,
 }: BookingWidgetProps) {
+  const foundingGuestEligible = foundingGuestSlotsLeft > 0;
   const [date, setDate] = useState(minDate);
   const [travelers, setTravelers] = useState(2);
   // Add-ons marked includedByDefault (backlog 0.3, e.g. monument entry)
@@ -88,7 +94,10 @@ export default function BookingWidget({
     if (!addOn) return sum;
     return sum + (addOn.perTraveler ? addOn.amount * travelers : addOn.amount);
   }, 0);
-  const total = currentRate * travelers + addOnsTotal;
+  const rawTotal = currentRate * travelers + addOnsTotal;
+  // Mirrors razorpay.ts's createOrder / verify-payment.ts exactly — the
+  // discount applies to the full total (tour + add-ons), same rate.
+  const total = applyFoundingGuestDiscount(rawTotal, foundingGuestEligible);
   const depositAmount = computeDepositAmount(total);
   const balanceDue = total - depositAmount;
   const amountDueNow = paymentType === 'deposit' ? depositAmount : total;
@@ -204,6 +213,12 @@ export default function BookingWidget({
 
   return (
     <div className="rounded-xl border border-brand-100 bg-white p-6 shadow-sm space-y-4">
+      {foundingGuestEligible && (
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+          <span className="font-semibold">Founding Guest Offer:</span> 15% off — {foundingGuestSlotsLeft}{' '}
+          {foundingGuestSlotsLeft === 1 ? 'spot' : 'spots'} left, no code needed.
+        </div>
+      )}
       <div>
         <label className="block text-sm font-medium mb-1">Travel date</label>
         <input

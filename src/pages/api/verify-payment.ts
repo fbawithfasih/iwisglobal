@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { razorpayProvider } from '../../lib/payments/razorpay';
-import { computeTotal, computeDepositAmount } from '../../lib/catalog';
+import { computeTotal, computeDepositAmount, applyFoundingGuestDiscount } from '../../lib/catalog';
 import { getCatalogItem } from '../../lib/tours';
 import { insertVerifiedBooking, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
@@ -46,8 +46,13 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
 
     // Mirrors razorpay.ts's createOrder computation exactly (major units,
     // then round to paise) so this always matches what was actually charged
-    // — including for a deposit, where amountPaid is 25% of totalAmount.
-    const totalMajorUnits = computeTotal(item, verified.travelers, verified.addOnIds);
+    // — including for a deposit, where amountPaid is 25% of totalAmount,
+    // and for the Founding Guest offer (backlog 1.1), applied here using
+    // the same eligibility decision createOrder made and carried in the
+    // trusted order notes — never re-checked against a booking count that
+    // may have moved on since the order was created.
+    const rawTotalMajorUnits = computeTotal(item, verified.travelers, verified.addOnIds);
+    const totalMajorUnits = applyFoundingGuestDiscount(rawTotalMajorUnits, verified.foundingGuestDiscount ?? false);
     const totalAmount = Math.round(totalMajorUnits * 100);
     const chargeMajorUnits = verified.paymentType === 'deposit' ? computeDepositAmount(totalMajorUnits) : totalMajorUnits;
     const amountPaid = Math.round(chargeMajorUnits * 100);
