@@ -34,6 +34,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       ? body.history
           .filter((h: any) => typeof h?.q === 'string' && typeof h?.a === 'string')
           .slice(-1)
+          .map((h: GuideExchange) => ({
+            q: h.q.slice(0, MAX_MESSAGE_LENGTH),
+            a: h.a.slice(0, MAX_MESSAGE_LENGTH),
+          }))
       : [];
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid request body' }), {
@@ -57,6 +61,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // set/propagated) degrades to the same fallback a rate-limited visitor
   // sees — never a 500, per the spec's "never a raw error" rule.
   if (!db || !apiKey) {
+    console.warn(`ai-guide: missing config — ${!db ? 'DB' : ''}${!db && !apiKey ? ' and ' : ''}${!apiKey ? 'ANTHROPIC_API_KEY' : ''} not bound`);
     return fallbackResponse();
   }
 

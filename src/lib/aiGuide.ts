@@ -102,29 +102,37 @@ export async function askYourGuide(
   }
   messages.push({ role: 'user', content: message });
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: AI_GUIDE_MODEL,
-      max_tokens: MAX_OUTPUT_TOKENS,
-      system: systemPrompt,
-      messages,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
-  if (!res.ok) {
-    throw new Error(`Anthropic API error: ${res.status}`);
-  }
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: AI_GUIDE_MODEL,
+        max_tokens: MAX_OUTPUT_TOKENS,
+        system: systemPrompt,
+        messages,
+      }),
+      signal: controller.signal,
+    });
 
-  const json: any = await res.json();
-  const text = json?.content?.[0]?.text;
-  if (typeof text !== 'string' || !text.trim()) {
-    throw new Error('Anthropic API returned no text');
+    if (!res.ok) {
+      throw new Error(`Anthropic API error: ${res.status}`);
+    }
+
+    const json: any = await res.json();
+    const text = json?.content?.[0]?.text;
+    if (typeof text !== 'string' || !text.trim()) {
+      throw new Error('Anthropic API returned no text');
+    }
+    return text.trim();
+  } finally {
+    clearTimeout(timeout);
   }
-  return text.trim();
 }
