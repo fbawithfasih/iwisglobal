@@ -10,6 +10,12 @@ export interface BookingRequest {
   addOnIds: string[];
   currency?: 'INR' | 'USD';
   receipt?: string;
+  // GA4 client_id (from the browser's _ga cookie), carried in the order's
+  // notes so the Razorpay webhook — which runs server-to-server with no
+  // access to the browser — can attribute the eventual purchase event to
+  // the same GA4 user/session (backlog 2.8). Optional: absent if GA4
+  // hasn't loaded yet, or for a return visitor without the cookie.
+  gaClientId?: string;
 }
 
 export interface OrderResult {

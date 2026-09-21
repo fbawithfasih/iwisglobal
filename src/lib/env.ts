@@ -19,5 +19,8 @@ export function resolveEnv(locals: unknown): Record<string, any> {
     APPLE_PRIVATE_KEY: runtimeEnv.APPLE_PRIVATE_KEY ?? import.meta.env.APPLE_PRIVATE_KEY,
     RESEND_API_KEY: runtimeEnv.RESEND_API_KEY ?? import.meta.env.RESEND_API_KEY,
     BOOKING_EMAIL_FROM: runtimeEnv.BOOKING_EMAIL_FROM ?? import.meta.env.BOOKING_EMAIL_FROM,
+    RAZORPAY_WEBHOOK_SECRET: runtimeEnv.RAZORPAY_WEBHOOK_SECRET ?? import.meta.env.RAZORPAY_WEBHOOK_SECRET,
+    GA4_MEASUREMENT_ID: runtimeEnv.GA4_MEASUREMENT_ID ?? import.meta.env.GA4_MEASUREMENT_ID,
+    GA4_API_SECRET: runtimeEnv.GA4_API_SECRET ?? import.meta.env.GA4_API_SECRET,
   };
 }

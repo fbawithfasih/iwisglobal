@@ -79,7 +79,7 @@ const lastUpdated = '19 September 2026';
     <p class="text-stone-700">
       Questions about these terms, or to cancel a booking, contact us at
       <a href="mailto:info@iwisglobal.com" class="text-brand-800 hover:underline">info@iwisglobal.com</a> or via
-      <a href="https://wa.me/916399226633" target="_blank" rel="noopener noreferrer" class="text-brand-800 hover:underline">WhatsApp</a>.
+      <a href={`https://wa.me/916399226633?text=${encodeURIComponent('Hi! (ref: TERMS)')}`} target="_blank" rel="noopener noreferrer" data-wa-ref="TERMS" class="text-brand-800 hover:underline">WhatsApp</a>.
     </p>
   </section>
 </BaseLayout>

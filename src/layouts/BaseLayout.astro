@@ -30,6 +30,16 @@ if (Astro.url.searchParams.get('lang')) {
 }
 const t = getDictionary(locale);
 
+// Backlog 2.9 — unique wa.me ref per page, so a WhatsApp lead can be traced
+// back to where it started (product-marketing-context.md §9's WhatsApp
+// attribution gap). HOME for the homepage, TOUR-<slug> for a tour page,
+// the pathname otherwise.
+function whatsappRef(location: string): string {
+  const path = Astro.url.pathname;
+  const page = path === '/' ? 'HOME' : path.replace(/^\/|\/$/g, '').replace(/\//g, '-').toUpperCase();
+  return `${location}-${page}`;
+}
+
 // Backlog 2.1. "IWIS Global" alone collides with a German industrial chain
 // manufacturer and an unrelated Amazon storefront of the same name — the
 // category-in-name string is entity disambiguation, not a typo (see
@@ -164,9 +174,10 @@ const orgJsonLd = {
             </li>
             <li>
               <a
-                href="https://wa.me/916399226633?text=Hi!%20I%20have%20a%20question."
+                href={`https://wa.me/916399226633?text=${encodeURIComponent(`Hi! I have a question. (ref: ${whatsappRef('FOOTER')})`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-wa-ref={whatsappRef('FOOTER')}
                 class="flex items-center gap-2 text-stone-600 hover:text-brand-800 transition"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-4 w-4 shrink-0" aria-hidden="true">
@@ -225,10 +236,11 @@ const orgJsonLd = {
     </footer>
 
     <a
-      href="https://wa.me/916399226633?text=Hi!%20I'd%20like%20to%20know%20more%20about%20your%20Agra%20tours."
+      href={`https://wa.me/916399226633?text=${encodeURIComponent(`Hi! I'd like to know more about your Agra tours. (ref: ${whatsappRef('FLOATING')})`)}`}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat with us on WhatsApp"
+      data-wa-ref={whatsappRef('FLOATING')}
       class="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105 hover:shadow-xl"
     >
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7">
@@ -266,4 +278,24 @@ const orgJsonLd = {
     updateScrolled();
     window.addEventListener('scroll', updateScrolled, { passive: true });
   }
+
+  // Backlog 2.8/2.9 — dataLayer events, product-marketing-context.md §9.
+  window.dataLayer = window.dataLayer || [];
+
+  // whatsapp_clicked: delegated so it covers every wa.me link site-wide
+  // (footer, floating button, and any page-specific ones like /help's),
+  // as long as it carries data-wa-ref.
+  document.addEventListener('click', (e) => {
+    const link = (e.target as Element)?.closest?.('[data-wa-ref]');
+    if (link) window.dataLayer.push({ event: 'whatsapp_clicked', ref: link.getAttribute('data-wa-ref') });
+  });
+
+  // currency_switched / language_switched: the switcher does a full
+  // navigation to `?currency=X` / `?lang=X`, so the param is present on the
+  // destination page's first load — exactly the signal to fire on.
+  const params = new URLSearchParams(location.search);
+  const switchedCurrency = params.get('currency');
+  if (switchedCurrency) window.dataLayer.push({ event: 'currency_switched', currency: switchedCurrency });
+  const switchedLang = params.get('lang');
+  if (switchedLang) window.dataLayer.push({ event: 'language_switched', language: switchedLang });
 </script>

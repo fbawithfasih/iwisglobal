@@ -5,7 +5,33 @@ import { pickPricingTier, type PricingTier } from '../lib/catalog';
 declare global {
   interface Window {
     Razorpay: any;
+    dataLayer: any[];
   }
+}
+
+// Thin wrapper around GTM's dataLayer (backlog 2.8/2.9's "Key events" list
+// — product-marketing-context.md §9). `purchase` is deliberately NOT pushed
+// here: on a redirect-based payment flow the browser can navigate away
+// before this would fire, which undercounts. That event is server-side
+// only, via the Razorpay webhook (src/pages/api/webhooks/razorpay.ts).
+function track(event: string, params: Record<string, unknown> = {}): void {
+  if (typeof window === 'undefined') return;
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ event, ...params });
+}
+
+// GA4's client_id, read from the _ga cookie it sets once GTM's GA4 tag has
+// loaded (format: GA1.1.<part1>.<part2> — the id itself is the last two
+// segments). Passed to /api/create-order so the eventual webhook-fired
+// purchase event can be attributed to this same GA4 user (backlog 2.8).
+// Returns undefined if GA4 hasn't set the cookie yet — the webhook falls
+// back to a fresh id in that case rather than failing.
+function getGaClientId(): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const match = document.cookie.match(/(?:^|;\s*)_ga=([^;]+)/);
+  if (!match) return undefined;
+  const parts = decodeURIComponent(match[1]).split('.');
+  return parts.length >= 4 ? `${parts[2]}.${parts[3]}` : undefined;
 }
 
 interface AddOnOption {
@@ -81,6 +107,8 @@ export default function BookingWidget({
     if (!date) return setError('Please choose a travel date.');
     if (!name || !email || !phone) return setError('Please fill in your name, email, and phone.');
 
+    track('checkout_started', { tour_id: tourId, tour_name: tourTitle, travelers, currency, value: total });
+
     setLoading(true);
     try {
       const scriptLoaded = await loadRazorpayScript();
@@ -98,6 +126,7 @@ export default function BookingWidget({
           addOnIds: selectedAddOns,
           currency,
           receipt: `rcpt_${Date.now()}`,
+          gaClientId: getGaClientId(),
         }),
       });
 
@@ -147,6 +176,8 @@ export default function BookingWidget({
         theme: { color: '#6d28d9' },
       };
 
+      track('payment_initiated', { tour_id: tourId, tour_name: tourTitle, travelers, currency: orderCurrency, value: amount / 100 });
+
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', (resp: { error: { description: string } }) => {
         setError(resp.error.description || 'Payment failed');
@@ -172,7 +203,10 @@ export default function BookingWidget({
           type="date"
           value={date}
           min={minDate}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={(e) => {
+            setDate(e.target.value);
+            if (e.target.value) track('availability_checked', { tour_id: tourId, tour_name: tourTitle, date: e.target.value });
+          }}
           className="w-full rounded border border-stone-300 px-3 py-2"
         />
         {availabilityLabel && <p className="text-xs text-accent-600 mt-1">{availabilityLabel}</p>}

@@ -14,7 +14,7 @@ export const prerender = false;
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const { tourId, date, travelers, addOnIds, currency, receipt } = await request.json();
+    const { tourId, date, travelers, addOnIds, currency, receipt, gaClientId } = await request.json();
 
     if (!tourId || !date || !travelers) {
       return new Response(JSON.stringify({ error: 'Missing tourId, date, or travelers' }), {
@@ -47,7 +47,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const order = await razorpayProvider.createOrder(
-      { tourId, date, travelers, addOnIds: addOnIds ?? [], currency: currency === 'USD' ? 'USD' : 'INR', receipt },
+      {
+        tourId,
+        date,
+        travelers,
+        addOnIds: addOnIds ?? [],
+        currency: currency === 'USD' ? 'USD' : 'INR',
+        receipt,
+        gaClientId: typeof gaClientId === 'string' ? gaClientId : undefined,
+      },
       env
     );
 

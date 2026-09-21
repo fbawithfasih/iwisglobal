@@ -51,12 +51,15 @@ export const razorpayProvider: PaymentProvider = {
         receipt: req.receipt || `rcpt_${Date.now()}`,
         // Persist the booking details server-side so verifyPayment can read
         // them back from the trusted order rather than trusting the client.
+        // gaClientId rides along the same way so the webhook (backlog 2.8)
+        // can read it back too, with no DB round-trip needed for either.
         notes: {
           tourId: req.tourId,
           date: req.date,
           travelers: String(req.travelers),
           addOnIds: (req.addOnIds ?? []).join(','),
           currency: item.currency,
+          ...(req.gaClientId ? { gaClientId: req.gaClientId } : {}),
         },
       }),
     });
