@@ -1,0 +1,62 @@
+---
+// Backlog 2.7 — Agra attraction landing pages. Mirrors guides/[slug].astro's
+// pattern (same content-collection approach, same reasons: dynamic route,
+// prerender=false because BaseLayout needs per-request cookies).
+export const prerender = false;
+
+import { getCollection, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const { slug } = Astro.params;
+const entry: CollectionEntry<'attractions'> | undefined = (await getCollection('attractions')).find((e) => e.slug === slug);
+
+if (!entry) {
+  return Astro.redirect('/tours');
+}
+
+const { Content } = await entry.render();
+const { name, description, ticketPriceForeign, ticketPriceIndian, hours, closedFriday, dateModified } = entry.data;
+
+const attractionJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TouristAttraction',
+  name,
+  description,
+  url: `https://www.iwisglobal.com/agra/${entry.slug}`,
+  address: { '@type': 'PostalAddress', addressLocality: 'Agra', addressRegion: 'Uttar Pradesh', addressCountry: 'IN' },
+};
+---
+
+<BaseLayout title={`${name} — Agra Visitor Guide | IWIS Global`} description={description}>
+  <script type="application/ld+json" set:html={JSON.stringify(attractionJsonLd)} />
+
+  <article class="max-w-3xl mx-auto px-6 py-16">
+    <a href="/agra" class="text-sm text-stone-500 hover:underline">&larr; All Agra attractions</a>
+    <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-4 mb-6">{name}</h1>
+
+    <div class="grid sm:grid-cols-2 gap-4 mb-8 rounded-xl border border-stone-200 bg-white p-5 text-sm">
+      <div>
+        <p class="text-stone-400 uppercase text-xs tracking-wide mb-1">Ticket (foreign tourist)</p>
+        <p class="font-semibold">{ticketPriceForeign}</p>
+      </div>
+      <div>
+        <p class="text-stone-400 uppercase text-xs tracking-wide mb-1">Ticket (Indian national)</p>
+        <p class="font-semibold">{ticketPriceIndian}</p>
+      </div>
+      <div>
+        <p class="text-stone-400 uppercase text-xs tracking-wide mb-1">Hours</p>
+        <p class="font-semibold">{hours}</p>
+      </div>
+      <div>
+        <p class="text-stone-400 uppercase text-xs tracking-wide mb-1">Friday</p>
+        <p class="font-semibold">{closedFriday ? 'Closed' : 'Open'}</p>
+      </div>
+    </div>
+
+    <div class="prose prose-stone max-w-none prose-headings:font-serif prose-a:text-brand-700">
+      <Content />
+    </div>
+
+    <p class="text-xs text-stone-400 mt-10">Last updated {dateModified.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+  </article>
+</BaseLayout>

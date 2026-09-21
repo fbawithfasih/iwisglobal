@@ -21,15 +21,27 @@ if (Astro.url.searchParams.get('currency')) {
 const locale = resolveLocale(Astro.url.searchParams, Astro.cookies.get('lang')?.value);
 const t = getDictionary(locale);
 
-// Informational "things to do" content, not separate bookable products —
-// IWIS currently sells one combined tour, so these link to /tours rather
-// than implying each landmark is its own purchasable listing. Managed from
-// /admin/agra-highlights (src/lib/agraHighlights.ts); a card without an
-// uploaded image falls back to the same "No image yet" placeholder
-// TourCard.astro uses for tours without a photo.
+// Informational "things to do" content, not separate bookable products.
+// Managed from /admin/agra-highlights (src/lib/agraHighlights.ts); a card
+// without an uploaded image falls back to the same "No image yet"
+// placeholder TourCard.astro uses for tours without a photo.
 const AGRA_HIGHLIGHTS = env.DB ? await listAgraHighlights(env.DB) : [];
+
+// Backlog 2.7 — link each card to its own attraction landing page (real,
+// sourced ticket-price/hours content) instead of a generic /tours page.
+// Falls back to /tours for any highlight without a dedicated page yet.
+const ATTRACTION_SLUGS: Record<string, string> = {
+  TAJ_MAHAL: 'taj-mahal',
+  AGRA_FORT: 'agra-fort',
+  FATEHPUR_SIKRI: 'fatehpur-sikri',
+  MEHTAB_BAGH: 'mehtab-bagh',
+};
+function highlightHref(id: string): string {
+  const slug = ATTRACTION_SLUGS[id];
+  return slug ? `/agra/${slug}` : '/tours';
+}
 ---
-<BaseLayout title="IWIS Global — Private Taj Mahal & Agra Tours, Booked Online">
+<BaseLayout title="Private Taj Mahal & Agra Tours from Delhi — IWIS Global">
   <section class="relative isolate">
     <div class="absolute inset-0 -z-10 overflow-hidden hero-frame" id="hero-frame">
       <img
@@ -146,7 +158,7 @@ const AGRA_HIGHLIGHTS = env.DB ? await listAgraHighlights(env.DB) : [];
       </div>
       <div data-carousel-row class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-6 px-6 carousel-row">
         {AGRA_HIGHLIGHTS.map((item) => (
-          <a href="/tours" class="w-64 sm:w-72 shrink-0 snap-start block rounded-xl border border-stone-200 bg-white overflow-hidden hover:shadow-lg transition">
+          <a href={highlightHref(item.id)} class="w-64 sm:w-72 shrink-0 snap-start block rounded-xl border border-stone-200 bg-white overflow-hidden hover:shadow-lg transition">
             <div class="aspect-[4/3] bg-brand-50">
               {item.image ? (
                 <img src={item.image} alt={item.name} class="w-full h-full object-cover" />

@@ -1,0 +1,36 @@
+---
+name: "Fatehpur Sikri"
+description: "Akbar's abandoned Mughal capital, 37 km from Agra — a UNESCO World Heritage Site since 1986. Entry is ₹610 for foreign tourists; open sunrise to sunset, every day."
+ticketPriceForeign: "₹610"
+ticketPriceIndian: "₹50 (same for SAARC/BIMSTEC nationals)"
+hours: "Sunrise to sunset, every day"
+closedFriday: false
+distanceFromTaj: "About 37 km from Agra — roughly 45 minutes to 1 hour by road"
+dateModified: 2026-09-21
+---
+
+Fatehpur Sikri is the fortified city Mughal emperor Akbar built as his capital starting in 1571, on the site where the holy man Shaikh Salim Chishti reportedly predicted the birth of Akbar's son and heir. "Fatehpur" — city of victory — was added after Akbar's conquest of Gujarat in 1573. Akbar moved the capital to Lahore around 1585, and Fatehpur Sikri was largely abandoned soon after — which is why it survives today as a remarkably intact, un-rebuilt Mughal city rather than a monument that's been through centuries of reuse.
+
+## Ticket price
+
+Foreign tourists pay ₹610. Indian nationals and SAARC/BIMSTEC nationals both pay ₹50. Children under 15 enter free.
+
+## Hours
+
+Fatehpur Sikri is open sunrise to sunset, every day of the week — no Friday closure.
+
+## How much time to set aside
+
+A proper visit takes 2.5 to 3.5 hours; add more if you want to see the Jama Masjid and the Tomb of Salim Chishti within the complex without rushing.
+
+## History
+
+Fatehpur Sikri was Akbar's capital from roughly 1571 to 1585. It was designated a UNESCO World Heritage Site in 1986.
+
+## Getting there
+
+Fatehpur Sikri is about 37 km from Agra, roughly 45 minutes to an hour by road — too far to combine casually with a same-day Taj Mahal trip from Delhi, but a natural add-on for a multi-day Agra itinerary. `TODO(fasih): if IWIS Global adds a Fatehpur Sikri option to any tour, link it here.`
+
+---
+
+**Last updated:** 21 September 2026. Prices and hours sourced from [tajmahal.gov.in's Fatehpur Sikri page](https://www.tajmahal.gov.in/fatehpur-sikri.aspx).

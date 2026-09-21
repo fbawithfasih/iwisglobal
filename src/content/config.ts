@@ -18,4 +18,21 @@ const guides = defineCollection({
   }),
 });
 
-export const collections = { guides };
+// Backlog 2.7 — Agra attraction landing pages. Every figure here is sourced
+// to ASI/tajmahal.gov.in (fetched live) or cross-checked aggregators when
+// the primary source wasn't reachable — same sourcing discipline as guides.
+const attractions = defineCollection({
+  type: 'content',
+  schema: z.object({
+    name: z.string(),
+    description: z.string(),
+    ticketPriceForeign: z.string(),
+    ticketPriceIndian: z.string(),
+    hours: z.string(),
+    closedFriday: z.boolean(),
+    distanceFromTaj: z.string(),
+    dateModified: z.date(),
+  }),
+});
+
+export const collections = { guides, attractions };

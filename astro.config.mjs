@@ -15,12 +15,20 @@ const guideSlugs = readdirSync(new URL('./src/content/guides/', import.meta.url)
   .filter((f) => f.endsWith('.md'))
   .map((f) => f.replace(/\.md$/, ''));
 
+// Same gap, same fix, for backlog 2.7's /agra/[slug] attraction pages.
+const attractionSlugs = readdirSync(new URL('./src/content/attractions/', import.meta.url))
+  .filter((f) => f.endsWith('.md'))
+  .map((f) => f.replace(/\.md$/, ''));
+
 export default defineConfig({
   integrations: [
     tailwind(),
     react(),
     sitemap({
-      customPages: guideSlugs.map((slug) => `https://www.iwisglobal.com/guides/${slug}`),
+      customPages: [
+        ...guideSlugs.map((slug) => `https://www.iwisglobal.com/guides/${slug}`),
+        ...attractionSlugs.map((slug) => `https://www.iwisglobal.com/agra/${slug}`),
+      ],
     }),
   ],
   site: 'https://www.iwisglobal.com',

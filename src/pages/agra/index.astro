@@ -1,0 +1,24 @@
+---
+export const prerender = false;
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const attractions = await getCollection('attractions');
+---
+
+<BaseLayout title="Agra Attractions Guide — IWIS Global" description="Ticket prices, hours, and visitor guides for the Taj Mahal, Agra Fort, Fatehpur Sikri, and Mehtab Bagh.">
+  <section class="max-w-3xl mx-auto px-6 py-16">
+    <h1 class="text-3xl font-serif font-semibold mb-2">Agra attractions</h1>
+    <p class="text-stone-600 mb-10">Ticket prices, hours, and what to expect at each of Agra's main sites.</p>
+
+    <div class="space-y-6">
+      {attractions.map((a) => (
+        <a href={`/agra/${a.slug}`} class="block rounded-xl border border-stone-200 bg-white p-6 hover:shadow-md transition">
+          <h2 class="text-lg font-semibold mb-1">{a.data.name}</h2>
+          <p class="text-sm text-stone-600">{a.data.description}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
