@@ -202,12 +202,20 @@ astro.config.mjs             # sitemap customPages for /guides + /agra dynamic r
 
 ## 5. What remains / likely next asks
 
+**Resolved this session:**
+- 0.1: confirmed — but ₹8,999 never actually appeared anywhere in the live
+  site or code (only in this file, from an earlier planning doc). No code
+  change was needed; flagging closed.
+- 0.3: real Taj Mahal foreign-visitor ticket (₹1,300, bundled at cost)
+  seeded on both published tours. Surfaced and fixed a real billing bug
+  along the way — add-ons were flat-per-booking only, undercharging any
+  2+-traveler booking on a genuinely per-traveler cost. See
+  `src/lib/catalog.ts`'s `AddOn.perTraveler`.
+- 0.5: `/about` page live (`src/pages/about.astro`) with the real
+  registered address and GSTIN; `BaseLayout.astro`'s `orgJsonLd` now has a
+  full `streetAddress`/`postalCode` too (previously locality/region only).
+
 **Needs the user's input (not code-blocked):**
-- 0.1: confirm whether ₹8,999/vehicle cost includes the guide, and whether
-  it holds for the sunrise departure.
-- 0.3: real at-cost monument-entry ticket price, to seed the bundled add-on.
-- 0.5: `/about` page — needs real legal entity name, Agra street address,
-  registration/licence numbers, GST. Currently nothing published anywhere.
 - 1.1: founding-guest offer terms (price, slot count, deadline) if the user
   wants to run it.
 - GBP/TripAdvisor: user needs to paste `docs/gbp-tripadvisor-content.md`'s

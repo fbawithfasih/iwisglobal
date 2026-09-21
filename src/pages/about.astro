@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Same reasoning as privacy.astro/terms.astro — dynamic because
+// BaseLayout's nav/footer depend on live per-request session/locale state.
+export const prerender = false;
+---
+
+<BaseLayout title="About IWIS Global" description="IWIS Global is a private Taj Mahal & Agra tour operator based in Agra, India — registered address, GST details, and how to reach us.">
+  <section class="max-w-2xl mx-auto px-6 py-16">
+    <h1 class="text-3xl font-serif font-semibold mb-1">About IWIS Global</h1>
+    <p class="text-stone-700 mt-6 mb-6">
+      IWIS Global is a private Taj Mahal &amp; Agra tour operator based in Agra, India. We run small,
+      professionally guided tours — same-day trips from Delhi and multi-day Agra itineraries — booked and
+      paid for online, with transparent pricing and no hidden commissions. See our
+      <a href="/no-commission-pledge" class="text-brand-800 hover:underline">No-Commission Pledge</a> for what
+      that means in practice.
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">Registered address</h2>
+    <p class="text-stone-700 mb-6">
+      A-5, First Floor, Essar Mughal Apartment, Jyoti Nagar, Shaheed Nagar,<br />
+      Agra – 282001, Uttar Pradesh, India
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">GST registration</h2>
+    <p class="text-stone-700 mb-6">GSTIN: 09AAIFI6799J1ZH</p>
+
+    <h2 class="text-lg font-semibold mb-2">Contact us</h2>
+    <p class="text-stone-700">
+      Email:
+      <a href="mailto:info@iwisglobal.com" class="text-brand-800 hover:underline">info@iwisglobal.com</a><br />
+      Phone / WhatsApp:
+      <a href={`https://wa.me/916399226633?text=${encodeURIComponent('Hi! (ref: ABOUT)')}`} target="_blank" rel="noopener noreferrer" data-wa-ref="ABOUT" class="text-brand-800 hover:underline">+91 6399226633</a>
+    </p>
+  </section>
+</BaseLayout>
