@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TourCard from '../components/TourCard.astro';
+import WeatherCard from '../components/WeatherCard';
 import { listTours } from '../lib/tours';
 import { listAgraHighlights } from '../lib/agraHighlights';
 import { resolveEnv } from '../lib/env';
@@ -109,6 +110,12 @@ function highlightHref(id: string): string {
         <p class="font-semibold mb-1">{t.trust.promiseTitle}</p>
         <p class="text-sm text-stone-600">{t.trust.promiseDesc}</p>
       </div>
+    </div>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 pt-16">
+    <div class="max-w-sm">
+      <WeatherCard client:load />
     </div>
   </section>
 
