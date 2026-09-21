@@ -34,6 +34,7 @@ export interface PricedAddOn {
   amount: number;
   usdAmount?: number | null;
   includedByDefault?: boolean;
+  perTraveler?: boolean;
 }
 
 // Resolves a tour's add-ons for a given (already-resolved) tour currency.
@@ -42,13 +43,13 @@ export interface PricedAddOn {
 export function resolveAddOns(
   addOns: PricedAddOn[],
   tourCurrency: Currency
-): { id: string; name: string; amount: number; includedByDefault?: boolean }[] {
+): { id: string; name: string; amount: number; includedByDefault?: boolean; perTraveler?: boolean }[] {
   if (tourCurrency === 'USD') {
     return addOns
       .filter((a) => a.usdAmount != null)
-      .map((a) => ({ id: a.id, name: a.name, amount: a.usdAmount as number, includedByDefault: a.includedByDefault }));
+      .map((a) => ({ id: a.id, name: a.name, amount: a.usdAmount as number, includedByDefault: a.includedByDefault, perTraveler: a.perTraveler }));
   }
-  return addOns.map((a) => ({ id: a.id, name: a.name, amount: a.amount, includedByDefault: a.includedByDefault }));
+  return addOns.map((a) => ({ id: a.id, name: a.name, amount: a.amount, includedByDefault: a.includedByDefault, perTraveler: a.perTraveler }));
 }
 
 export interface PricedTier {

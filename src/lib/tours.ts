@@ -76,19 +76,20 @@ interface AddOnRow {
   amount: number;
   usdAmount: number | null;
   includedByDefault: number; // D1 stores 0/1
+  perTraveler: number; // D1 stores 0/1
 }
 
 async function loadAddOns(db: D1Like, tourId: string): Promise<AddOn[]> {
   const { results } = await db
     .prepare(
-      `SELECT id, name, amount, usd_amount as usdAmount, included_by_default as includedByDefault
+      `SELECT id, name, amount, usd_amount as usdAmount, included_by_default as includedByDefault, per_traveler as perTraveler
        FROM tour_addons WHERE tour_id = ? ORDER BY created_at ASC`
     )
     .bind(tourId)
     .all<AddOnRow>();
   // Coerce 0/1 to boolean like every other flag column in this file
   // (featured, pickup_included, ...).
-  return results.map((r) => ({ ...r, includedByDefault: !!r.includedByDefault }));
+  return results.map((r) => ({ ...r, includedByDefault: !!r.includedByDefault, perTraveler: !!r.perTraveler }));
 }
 
 async function loadPricingTiers(db: D1Like, tourId: string): Promise<PricingTier[]> {
@@ -181,8 +182,8 @@ export async function getCatalogItem(
     resolved.currency === 'USD'
       ? allAddOns
           .filter((a) => a.usdAmount != null)
-          .map((a) => ({ id: a.id, name: a.name, amount: a.usdAmount as number, includedByDefault: a.includedByDefault }))
-      : allAddOns.map((a) => ({ id: a.id, name: a.name, amount: a.amount, includedByDefault: a.includedByDefault }));
+          .map((a) => ({ id: a.id, name: a.name, amount: a.usdAmount as number, includedByDefault: a.includedByDefault, perTraveler: a.perTraveler }))
+      : allAddOns.map((a) => ({ id: a.id, name: a.name, amount: a.amount, includedByDefault: a.includedByDefault, perTraveler: a.perTraveler }));
 
   // Same per-row currency fallback as add-ons: a tier without a USD price is
   // left out (not mixed in) when paying in USD — computeTotal then falls
@@ -329,10 +330,19 @@ export async function replaceAddOns(db: D1Like, tourId: string, addOns: AddOn[])
   for (const addOn of addOns) {
     await db
       .prepare(
-        `INSERT INTO tour_addons (id, tour_id, name, amount, usd_amount, included_by_default, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO tour_addons (id, tour_id, name, amount, usd_amount, included_by_default, per_traveler, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .bind(addOn.id, tourId, addOn.name, addOn.amount, addOn.usdAmount ?? null, addOn.includedByDefault ? 1 : 0, now)
+      .bind(
+        addOn.id,
+        tourId,
+        addOn.name,
+        addOn.amount,
+        addOn.usdAmount ?? null,
+        addOn.includedByDefault ? 1 : 0,
+        addOn.perTraveler ? 1 : 0,
+        now
+      )
       .run();
   }
 }

@@ -43,12 +43,16 @@ function slugAddOnId(name: string, index: number): string {
 // optional). A 4th segment marks it included-by-default (backlog 0.3) —
 // bundled into the price, with the booking widget pre-checking it so the
 // customer opts OUT rather than in: "Monument entry | 1300 | | yes"
+// A 5th segment marks it per-traveler (backlog 0.3) — its amount is charged
+// × the traveler count instead of once per booking, for costs like a
+// monument ticket that scale with group size: "Monument entry | 1300 | | yes | each"
 const INCLUDED_MARKERS = /^(yes|included|default)$/i;
+const PER_TRAVELER_MARKERS = /^(yes|each|per-traveler|per traveler|pertraveler)$/i;
 
 export function parseAddOns(text: string): AddOn[] {
   return parseLines(text)
     .map((line, index) => {
-      const [name, amountStr, usdStr, includedStr] = line.split('|');
+      const [name, amountStr, usdStr, includedStr, perTravelerStr] = line.split('|');
       const amount = Number((amountStr ?? '').trim());
       const usdAmount = usdStr != null && usdStr.trim() !== '' ? Number(usdStr.trim()) : null;
       return {
@@ -57,6 +61,7 @@ export function parseAddOns(text: string): AddOn[] {
         amount: Number.isFinite(amount) ? amount : 0,
         usdAmount: usdAmount != null && Number.isFinite(usdAmount) ? usdAmount : null,
         includedByDefault: INCLUDED_MARKERS.test((includedStr ?? '').trim()),
+        perTraveler: PER_TRAVELER_MARKERS.test((perTravelerStr ?? '').trim()),
       };
     })
     .filter((a) => a.name);
@@ -66,7 +71,8 @@ export function formatAddOns(addOns: AddOn[]): string {
   return addOns
     .map((a) => {
       const parts = [a.name, String(a.amount), a.usdAmount != null ? String(a.usdAmount) : ''];
-      if (a.includedByDefault) parts.push('yes');
+      if (a.includedByDefault || a.perTraveler) parts.push(a.includedByDefault ? 'yes' : '');
+      if (a.perTraveler) parts.push('each');
       return parts.join(' | ').replace(/(\s\|\s)+$/, ''); // trim trailing empty segments
     })
     .join('\n');

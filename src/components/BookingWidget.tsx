@@ -39,6 +39,7 @@ interface AddOnOption {
   name: string;
   amount: number;
   includedByDefault?: boolean;
+  perTraveler?: boolean;
 }
 
 interface BookingWidgetProps {
@@ -84,7 +85,8 @@ export default function BookingWidget({
 
   const addOnsTotal = selectedAddOns.reduce((sum, id) => {
     const addOn = addOns.find((a) => a.id === id);
-    return sum + (addOn?.amount ?? 0);
+    if (!addOn) return sum;
+    return sum + (addOn.perTraveler ? addOn.amount * travelers : addOn.amount);
   }, 0);
   const total = currentRate * travelers + addOnsTotal;
   const depositAmount = computeDepositAmount(total);
@@ -247,11 +249,14 @@ export default function BookingWidget({
               />
               {addOn.includedByDefault ? (
                 <span>
-                  {addOn.name} <span className="text-emerald-700">(included — uncheck to remove)</span>
+                  {addOn.name}{' '}
+                  <span className="text-emerald-700">
+                    (included{addOn.perTraveler ? ` — ${CURRENCY_SYMBOLS[currency]}${addOn.amount} × ${travelers} travelers` : ''} — uncheck to remove)
+                  </span>
                 </span>
               ) : (
                 <span>
-                  {addOn.name} (+{CURRENCY_SYMBOLS[currency]}{addOn.amount})
+                  {addOn.name} (+{CURRENCY_SYMBOLS[currency]}{addOn.amount}{addOn.perTraveler ? ` × ${travelers}` : ''})
                 </span>
               )}
             </label>

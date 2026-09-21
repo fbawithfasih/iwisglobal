@@ -17,6 +17,7 @@ export interface AddOn {
   amount: number; // major currency units (e.g. rupees), already resolved to the catalog item's currency
   usdAmount?: number | null; // raw USD price as set by the admin, before currency resolution
   includedByDefault?: boolean; // bundled into the price by default; customer can opt out (uncheck) to subtract it
+  perTraveler?: boolean; // backlog 0.3 — true for a per-person cost (e.g. a monument ticket, charged amount × travelers); false/absent keeps the original flat per-booking behavior (e.g. a private art-gallery stop)
 }
 
 // Per-traveler price at a given group size (backlog 0.2 — "group-size
@@ -68,11 +69,13 @@ export function perTravelerRate(item: CatalogItem, travelers: number): number {
 
 // Computes the total charge (in major currency units) for a booking:
 // the group-size-appropriate per-traveler rate × traveler count, plus any
-// selected add-ons (each add-on is a flat per-booking charge, not
-// per-traveler). Add-ons marked includedByDefault are NOT auto-added here —
-// the caller (client UI pre-checking them, or a server call passing their
-// ids) decides which add-on ids are actually selected; this just prices
-// whatever was selected, same as before.
+// selected add-ons. An add-on is a flat per-booking charge by default (e.g.
+// a private art-gallery stop); one marked `perTraveler` (e.g. a monument
+// entry ticket, backlog 0.3) is multiplied by traveler count instead, since
+// its real cost scales with group size. Add-ons marked includedByDefault
+// are NOT auto-added here — the caller (client UI pre-checking them, or a
+// server call passing their ids) decides which add-on ids are actually
+// selected; this just prices whatever was selected, same as before.
 export function computeTotal(
   item: CatalogItem,
   travelers: number,
@@ -81,7 +84,8 @@ export function computeTotal(
   const base = perTravelerRate(item, travelers) * travelers;
   const addOnsTotal = (addOnIds ?? []).reduce((sum, id) => {
     const addOn = getAddOn(item, id);
-    return sum + (addOn?.amount ?? 0);
+    if (!addOn) return sum;
+    return sum + (addOn.perTraveler ? addOn.amount * travelers : addOn.amount);
   }, 0);
   return base + addOnsTotal;
 }
