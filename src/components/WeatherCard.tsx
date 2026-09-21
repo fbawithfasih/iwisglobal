@@ -121,10 +121,10 @@ export default function WeatherCard() {
 
   if (status === 'loading' || !data) {
     return (
-      <div className="rounded-xl border border-stone-200 bg-white p-5 animate-pulse" aria-hidden="true">
-        <div className="h-3 w-28 bg-stone-200 rounded mb-3"></div>
-        <div className="h-7 w-16 bg-stone-200 rounded mb-2"></div>
-        <div className="h-3 w-40 bg-stone-200 rounded"></div>
+      <div className="rounded-xl border border-white/50 bg-white/40 backdrop-blur-md p-5 animate-pulse" aria-hidden="true">
+        <div className="h-3 w-28 bg-white/40 rounded mb-3"></div>
+        <div className="h-7 w-16 bg-white/40 rounded mb-2"></div>
+        <div className="h-3 w-40 bg-white/40 rounded"></div>
       </div>
     );
   }
@@ -139,7 +139,7 @@ export default function WeatherCard() {
         : null;
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-5">
+    <div className="rounded-xl border border-white/50 bg-white/40 backdrop-blur-md p-5">
       <div className="flex items-center gap-2 mb-3">
         <span className="relative flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>

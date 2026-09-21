@@ -51,6 +51,17 @@ function highlightHref(id: string): string {
         alt="The Taj Mahal at sunrise"
         class="w-full h-full object-cover object-[center_35%] hero-img"
       />
+      <!-- Backlog: "live" flying clouds — pure CSS, no image assets. Each
+           div is a soft blurred ellipse drifting left→right at its own
+           speed/height/opacity for a cheap parallax-cloud look, dimmed by
+           the same dark gradient the photo gets so it reads as sky, not a
+           sticker. Skipped under reduced-motion (see style block below),
+           matching the existing .hero-frame zoom pattern. -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div class="hero-cloud hero-cloud-1"></div>
+        <div class="hero-cloud hero-cloud-2"></div>
+        <div class="hero-cloud hero-cloud-3"></div>
+      </div>
       <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10"></div>
     </div>
     <div class="max-w-3xl mx-auto px-6 py-36 md:py-52 text-center">
@@ -76,26 +87,26 @@ function highlightHref(id: string): string {
   </section>
 
   <section class="bg-brand-50 py-14">
-    <div class="max-w-5xl mx-auto px-6 grid gap-10 md:grid-cols-2 md:items-start">
+    <div class="max-w-5xl mx-auto px-6 grid gap-10 md:grid-cols-2 md:items-center">
       <div class="max-w-md">
         <WeatherCard client:load />
       </div>
       <ul class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 list-disc pl-4 marker:text-brand-700">
         <li>
-          <p class="text-[10px] font-semibold uppercase tracking-wide text-stone-900 mb-1">{t.trust.curatedTitle}</p>
-          <p class="text-[8px] leading-relaxed text-stone-600">{t.trust.curatedDesc}</p>
+          <p class="text-[14px] font-semibold uppercase tracking-wide text-stone-900 mb-1">{t.trust.curatedTitle}</p>
+          <p class="text-[11px] leading-relaxed text-stone-600">{t.trust.curatedDesc}</p>
         </li>
         <li>
-          <p class="text-[10px] font-semibold uppercase tracking-wide text-stone-900 mb-1">{t.trust.bookTitle}</p>
-          <p class="text-[8px] leading-relaxed text-stone-600">{t.trust.bookDesc}</p>
+          <p class="text-[14px] font-semibold uppercase tracking-wide text-stone-900 mb-1">{t.trust.bookTitle}</p>
+          <p class="text-[11px] leading-relaxed text-stone-600">{t.trust.bookDesc}</p>
         </li>
         <li>
-          <p class="text-[10px] font-semibold uppercase tracking-wide text-stone-900 mb-1">{t.trust.pricingTitle}</p>
-          <p class="text-[8px] leading-relaxed text-stone-600">{t.trust.pricingDesc}</p>
+          <p class="text-[14px] font-semibold uppercase tracking-wide text-stone-900 mb-1">{t.trust.pricingTitle}</p>
+          <p class="text-[11px] leading-relaxed text-stone-600">{t.trust.pricingDesc}</p>
         </li>
         <li>
-          <p class="text-[10px] font-semibold uppercase tracking-wide text-stone-900 mb-1">{t.trust.promiseTitle}</p>
-          <p class="text-[8px] leading-relaxed text-stone-600">{t.trust.promiseDesc}</p>
+          <p class="text-[14px] font-semibold uppercase tracking-wide text-stone-900 mb-1">{t.trust.promiseTitle}</p>
+          <p class="text-[11px] leading-relaxed text-stone-600">{t.trust.promiseDesc}</p>
         </li>
       </ul>
     </div>
@@ -215,12 +226,55 @@ function highlightHref(id: string): string {
     from { transform: scale(1); }
     to { transform: scale(1.05); }
   }
+
+  .hero-cloud {
+    position: absolute;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    filter: blur(18px);
+    will-change: transform;
+  }
+  .hero-cloud-1 {
+    top: 12%;
+    width: 260px;
+    height: 60px;
+    left: -20%;
+    opacity: 0.5;
+    animation: cloud-drift 55s linear infinite;
+  }
+  .hero-cloud-2 {
+    top: 22%;
+    width: 180px;
+    height: 44px;
+    left: -20%;
+    opacity: 0.35;
+    animation: cloud-drift 80s linear infinite;
+    animation-delay: -20s;
+  }
+  .hero-cloud-3 {
+    top: 8%;
+    width: 320px;
+    height: 70px;
+    left: -20%;
+    opacity: 0.4;
+    animation: cloud-drift 100s linear infinite;
+    animation-delay: -50s;
+  }
+  @keyframes cloud-drift {
+    from { transform: translateX(0); }
+    to { transform: translateX(140vw); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .hero-frame {
       animation: none;
     }
     .hero-img {
       transition: none;
+    }
+    .hero-cloud {
+      animation: none;
+      display: none;
     }
   }
 </style>
