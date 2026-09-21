@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TourCard from '../components/TourCard.astro';
 import WeatherCard from '../components/WeatherCard';
+import AiGuideBox from '../components/AiGuideBox';
 import { listTours } from '../lib/tours';
 import { listAgraHighlights } from '../lib/agraHighlights';
 import { resolveEnv } from '../lib/env';
@@ -71,18 +72,7 @@ function highlightHref(id: string): string {
       <p class="text-lg text-white/90 mb-8">
         {t.hero.subtitle}
       </p>
-      <a
-        href="/tours"
-        class="inline-flex items-center justify-between gap-4 w-full max-w-md mx-auto bg-white rounded-full pl-6 pr-2 py-2 shadow-lg hover:shadow-xl transition"
-      >
-        <span class="text-stone-500 text-sm">{t.hero.searchPlaceholder}</span>
-        <span class="flex items-center justify-center h-11 w-11 rounded-full bg-brand-800 text-white shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
-            <circle cx="11" cy="11" r="7"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-        </span>
-      </a>
+      <AiGuideBox client:load />
     </div>
   </section>
 
