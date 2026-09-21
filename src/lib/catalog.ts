@@ -85,3 +85,13 @@ export function computeTotal(
   }, 0);
   return base + addOnsTotal;
 }
+
+// Backlog 0.4 — 25% deposit, balance on pickup. Rounded up to the nearest
+// whole major-currency unit so the deposit is never fractionally under a
+// clean 25%, and total - deposit (the balance) never has a stray paisa/cent
+// left over from rounding down.
+export const DEPOSIT_RATE = 0.25;
+
+export function computeDepositAmount(total: number): number {
+  return Math.ceil(total * DEPOSIT_RATE);
+}

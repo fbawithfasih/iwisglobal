@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { razorpayProvider } from '../../lib/payments/razorpay';
-import { computeTotal } from '../../lib/catalog';
+import { computeTotal, computeDepositAmount } from '../../lib/catalog';
 import { getCatalogItem } from '../../lib/tours';
 import { insertVerifiedBooking, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
@@ -44,7 +44,13 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       });
     }
 
-    const amountPaid = Math.round(computeTotal(item, verified.travelers, verified.addOnIds) * 100);
+    // Mirrors razorpay.ts's createOrder computation exactly (major units,
+    // then round to paise) so this always matches what was actually charged
+    // — including for a deposit, where amountPaid is 25% of totalAmount.
+    const totalMajorUnits = computeTotal(item, verified.travelers, verified.addOnIds);
+    const totalAmount = Math.round(totalMajorUnits * 100);
+    const chargeMajorUnits = verified.paymentType === 'deposit' ? computeDepositAmount(totalMajorUnits) : totalMajorUnits;
+    const amountPaid = Math.round(chargeMajorUnits * 100);
 
     const db = env.DB;
     if (db) {
@@ -65,6 +71,8 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           amountPaid,
           currency: item.currency,
           customerId,
+          totalAmount,
+          paymentType: verified.paymentType,
         },
         MAX_TRAVELERS_PER_DATE
       );
@@ -100,6 +108,8 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           amountPaid,
           currency: item.currency,
           bookingId: `bk_${verified.paymentId}`,
+          totalAmount,
+          paymentType: verified.paymentType,
         });
       }
     }

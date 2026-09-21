@@ -48,6 +48,12 @@ export interface BookingRecord {
   travelerPhone: string;
   amountPaid: number;
   currency: string;
+  // Backlog 0.4 — totalAmount is the full tour price regardless of
+  // paymentType; amountPaid is what was actually charged (equal to
+  // totalAmount for 'full', 25% of it for 'deposit'). Balance due is always
+  // totalAmount - amountPaid, computed where displayed, never stored twice.
+  totalAmount: number;
+  paymentType: 'full' | 'deposit';
   // Set only when the buyer was signed in (Google/Apple SSO — see
   // customerAuth.ts) at the time of booking, so it shows up on their "My
   // Bookings" page. Guest checkout leaves this null, same as today.
@@ -79,8 +85,9 @@ export async function insertVerifiedBooking(
       .prepare(
         `INSERT INTO bookings
           (id, payment_id, order_id, tour_id, travel_date, travelers, add_on_ids,
-           traveler_name, traveler_email, traveler_phone, amount_paid, currency, created_at, customer_id)
-         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+           traveler_name, traveler_email, traveler_phone, amount_paid, currency, created_at, customer_id,
+           total_amount, payment_type)
+         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
          WHERE (SELECT COALESCE(SUM(travelers), 0) FROM bookings WHERE tour_id = ? AND travel_date = ?) + ? <= ?`
       )
       .bind(
@@ -98,6 +105,8 @@ export async function insertVerifiedBooking(
         booking.currency,
         new Date().toISOString(),
         booking.customerId ?? null,
+        booking.totalAmount,
+        booking.paymentType,
         booking.tourId,
         booking.travelDate,
         booking.travelers,

@@ -16,6 +16,9 @@ export interface BookingRequest {
   // the same GA4 user/session (backlog 2.8). Optional: absent if GA4
   // hasn't loaded yet, or for a return visitor without the cookie.
   gaClientId?: string;
+  // Backlog 0.4 — pay the full amount now, or a 25% deposit with the
+  // balance due on pickup. Defaults to 'full' when omitted.
+  paymentType?: 'full' | 'deposit';
 }
 
 export interface OrderResult {
@@ -39,6 +42,8 @@ export interface VerifiedBooking {
   travelers: number;
   addOnIds: string[];
   currency: 'INR' | 'USD';
+  totalAmount: number; // smallest currency subunit — the full tour price, regardless of what was actually charged
+  paymentType: 'full' | 'deposit';
 }
 
 export interface PaymentProvider {

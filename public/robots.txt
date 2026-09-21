@@ -1,0 +1,11 @@
+# Backlog 0.7. Everything is crawlable by default — nothing here disallows
+# GPTBot, ChatGPT-User, OAI-SearchBot, ClaudeBot, anthropic-ai,
+# Google-Extended, PerplexityBot, or Bingbot; they all fall under the
+# wildcard block below, same as every other crawler.
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /account/
+
+Sitemap: https://www.iwisglobal.com/sitemap-index.xml

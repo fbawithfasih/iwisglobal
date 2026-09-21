@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
-import { pickPricingTier, type PricingTier } from '../lib/catalog';
+import { pickPricingTier, computeDepositAmount, type PricingTier } from '../lib/catalog';
 
 declare global {
   interface Window {
@@ -72,6 +72,7 @@ export default function BookingWidget({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('full'); // backlog 0.4
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<string | null>(null);
@@ -86,6 +87,9 @@ export default function BookingWidget({
     return sum + (addOn?.amount ?? 0);
   }, 0);
   const total = currentRate * travelers + addOnsTotal;
+  const depositAmount = computeDepositAmount(total);
+  const balanceDue = total - depositAmount;
+  const amountDueNow = paymentType === 'deposit' ? depositAmount : total;
 
   const toggleAddOn = (id: string) => {
     setSelectedAddOns((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
@@ -107,7 +111,7 @@ export default function BookingWidget({
     if (!date) return setError('Please choose a travel date.');
     if (!name || !email || !phone) return setError('Please fill in your name, email, and phone.');
 
-    track('checkout_started', { tour_id: tourId, tour_name: tourTitle, travelers, currency, value: total });
+    track('checkout_started', { tour_id: tourId, tour_name: tourTitle, travelers, currency, value: total, payment_type: paymentType });
 
     setLoading(true);
     try {
@@ -127,6 +131,7 @@ export default function BookingWidget({
           currency,
           receipt: `rcpt_${Date.now()}`,
           gaClientId: getGaClientId(),
+          paymentType,
         }),
       });
 
@@ -254,6 +259,30 @@ export default function BookingWidget({
         </div>
       )}
 
+      <div>
+        <label className="block text-sm font-medium mb-1">Payment</label>
+        <div className="space-y-2">
+          <label className="flex items-start gap-2 text-sm border border-stone-300 rounded px-3 py-2 cursor-pointer has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+            <input type="radio" name="paymentType" checked={paymentType === 'full'} onChange={() => setPaymentType('full')} className="mt-0.5" />
+            <span>
+              Pay in full — {CURRENCY_SYMBOLS[currency]}{total.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-sm border border-stone-300 rounded px-3 py-2 cursor-pointer has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+            <input type="radio" name="paymentType" checked={paymentType === 'deposit'} onChange={() => setPaymentType('deposit')} className="mt-0.5" />
+            <span>
+              Pay 25% deposit now — {CURRENCY_SYMBOLS[currency]}{depositAmount.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}, balance{' '}
+              {CURRENCY_SYMBOLS[currency]}{balanceDue.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')} due on pickup
+            </span>
+          </label>
+        </div>
+        {paymentType === 'deposit' && (
+          <p className="text-xs text-stone-500 mt-1">
+            The deposit is non-refundable within 24 hours of your tour, since your vehicle and guide are already committed by then.
+          </p>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 gap-3">
         <div>
           <label htmlFor="traveler-name" className="block text-sm font-medium mb-1">Full name</label>
@@ -291,7 +320,12 @@ export default function BookingWidget({
       </div>
 
       <div className="text-lg font-semibold">
-        Total: {CURRENCY_SYMBOLS[currency]}{total.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}
+        {paymentType === 'deposit' ? 'Due now (deposit)' : 'Total'}: {CURRENCY_SYMBOLS[currency]}{amountDueNow.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}
+        {paymentType === 'deposit' && (
+          <span className="block text-sm font-normal text-stone-500">
+            + {CURRENCY_SYMBOLS[currency]}{balanceDue.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')} on pickup
+          </span>
+        )}
       </div>
 
       <button

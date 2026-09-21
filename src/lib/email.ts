@@ -16,6 +16,8 @@ export interface BookingEmailDetails {
   amountPaid: number; // smallest currency subunit (paise/cents), matches bookings.amount_paid
   currency: string;
   bookingId: string;
+  totalAmount: number; // backlog 0.4 — full tour price; equals amountPaid unless paymentType is 'deposit'
+  paymentType: 'full' | 'deposit';
 }
 
 function formatAmount(amountPaid: number, currency: string): string {
@@ -36,6 +38,8 @@ export async function sendBookingConfirmationEmail(env: Record<string, any>, det
   const from = env.BOOKING_EMAIL_FROM || 'IWIS Global <info@iwisglobal.com>';
   const amount = formatAmount(details.amountPaid, details.currency);
   const name = escapeHtml(details.travelerName || 'there');
+  const isDeposit = details.paymentType === 'deposit';
+  const balanceDue = details.totalAmount - details.amountPaid;
 
   const html = `
     <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
@@ -46,9 +50,19 @@ export async function sendBookingConfirmationEmail(env: Record<string, any>, det
         <tr><td style="padding:6px 0; color:#78716c;">Tour</td><td style="padding:6px 0; text-align:right;">${escapeHtml(details.tourTitle)}</td></tr>
         <tr><td style="padding:6px 0; color:#78716c;">Date</td><td style="padding:6px 0; text-align:right;">${escapeHtml(details.travelDate)}</td></tr>
         <tr><td style="padding:6px 0; color:#78716c;">Travelers</td><td style="padding:6px 0; text-align:right;">${details.travelers}</td></tr>
-        <tr><td style="padding:6px 0; color:#78716c;">Amount</td><td style="padding:6px 0; text-align:right;">${amount}</td></tr>
+        <tr><td style="padding:6px 0; color:#78716c;">${isDeposit ? 'Deposit paid' : 'Amount'}</td><td style="padding:6px 0; text-align:right;">${amount}</td></tr>
+        ${
+          isDeposit
+            ? `<tr><td style="padding:6px 0; color:#78716c;">Balance due on pickup</td><td style="padding:6px 0; text-align:right; font-weight:600;">${formatAmount(balanceDue, details.currency)}</td></tr>`
+            : ''
+        }
         <tr><td style="padding:6px 0; color:#78716c;">Booking ID</td><td style="padding:6px 0; text-align:right;">${escapeHtml(details.bookingId)}</td></tr>
       </table>
+      ${
+        isDeposit
+          ? `<p>You've paid a 25% deposit to secure this booking; the remaining ${formatAmount(balanceDue, details.currency)} is due on pickup. The deposit is non-refundable within 24 hours of your tour, since your vehicle and guide are already committed by then.</p>`
+          : ''
+      }
       <p>Free cancellation up to 24 hours before your tour starts. Questions? Just reply to this email or message us on WhatsApp.</p>
       <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; www.iwisglobal.com</p>
     </div>

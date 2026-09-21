@@ -24,6 +24,8 @@ export interface BookingRow {
   vehicle: string;
   created_at: string;
   review_requested_at: string | null;
+  total_amount: number;
+  payment_type: string;
 }
 
 export interface BookingFilters {
@@ -115,8 +117,9 @@ export async function insertManualBooking(db: D1Like, input: ManualBookingInput)
       `INSERT INTO bookings
         (id, payment_id, order_id, tour_id, travel_date, travelers, add_on_ids,
          traveler_name, traveler_email, traveler_phone, amount_paid, currency,
-         status, source, pickup_time, guide_assigned, vehicle, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'manual', '', '', ?, ?)`
+         status, source, pickup_time, guide_assigned, vehicle, created_at,
+         total_amount, payment_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'manual', '', '', ?, ?, ?, 'full')`
     )
     .bind(
       id,
@@ -132,7 +135,10 @@ export async function insertManualBooking(db: D1Like, input: ManualBookingInput)
       input.amountPaid,
       input.currency,
       new Date().toISOString(),
-      new Date().toISOString()
+      new Date().toISOString(),
+      // Manual bookings (phone/WhatsApp) don't offer the deposit option —
+      // total always equals what was recorded as paid.
+      input.amountPaid
     )
     .run();
   return id;

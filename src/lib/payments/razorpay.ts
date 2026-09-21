@@ -1,4 +1,4 @@
-import { computeTotal } from '../catalog';
+import { computeTotal, computeDepositAmount } from '../catalog';
 import { getCatalogItem } from '../tours';
 import type { BookingRequest, OrderResult, VerifyRequest, VerifiedBooking, PaymentProvider } from './index';
 
@@ -33,7 +33,13 @@ export const razorpayProvider: PaymentProvider = {
     // server-side catalog using the requested tourId, traveler count, and
     // add-ons. This prevents a booking being paid for at an arbitrary amount.
     const totalMajorUnits = computeTotal(item, req.travelers, req.addOnIds ?? []);
-    const amount = Math.round(totalMajorUnits * 100); // Razorpay wants the smallest currency subunit
+    const paymentType: 'full' | 'deposit' = req.paymentType === 'deposit' ? 'deposit' : 'full';
+    // Backlog 0.4 — a deposit charges 25% of the total now; the rest is
+    // paid on pickup, outside this payment flow entirely. The full total is
+    // still recorded in notes below, so verifyPayment (and the balance-due
+    // figure shown to the customer/admin) always has the real total on hand.
+    const chargeMajorUnits = paymentType === 'deposit' ? computeDepositAmount(totalMajorUnits) : totalMajorUnits;
+    const amount = Math.round(chargeMajorUnits * 100); // Razorpay wants the smallest currency subunit
 
     const { keyId, keySecret } = getCreds(env);
     if (!keyId || !keySecret) throw new Error('Payment gateway is misconfigured. Please contact support.');
@@ -59,6 +65,8 @@ export const razorpayProvider: PaymentProvider = {
           travelers: String(req.travelers),
           addOnIds: (req.addOnIds ?? []).join(','),
           currency: item.currency,
+          totalAmount: String(Math.round(totalMajorUnits * 100)),
+          paymentType,
           ...(req.gaClientId ? { gaClientId: req.gaClientId } : {}),
         },
       }),
@@ -115,6 +123,11 @@ export const razorpayProvider: PaymentProvider = {
       travelers: Number(notes.travelers ?? 1),
       addOnIds: notes.addOnIds ? String(notes.addOnIds).split(',').filter(Boolean) : [],
       currency: notes.currency === 'USD' ? 'USD' : 'INR',
+      // Falls back to the actually-charged amount if an order predates this
+      // field (won't happen for new orders, but keeps old in-flight orders
+      // from breaking verification during the deploy that adds this).
+      totalAmount: notes.totalAmount != null ? Number(notes.totalAmount) : order.amount,
+      paymentType: notes.paymentType === 'deposit' ? 'deposit' : 'full',
     };
   },
 

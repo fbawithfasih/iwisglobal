@@ -62,7 +62,14 @@ const bookings = db ? await listBookings(db, { status: statusFilter }) : [];
                 <a href={`/admin/bookings/${b.id}`} class="text-amber-800 hover:underline">{b.traveler_name}</a>
               </td>
               <td class="px-4 py-2">{b.travelers}</td>
-              <td class="px-4 py-2">{b.currency} {(b.amount_paid / 100).toLocaleString('en-IN')}</td>
+              <td class="px-4 py-2">
+                {b.currency} {(b.amount_paid / 100).toLocaleString('en-IN')}
+                {b.payment_type === 'deposit' && (
+                  <span class="block text-xs text-amber-700">
+                    +{b.currency} {((b.total_amount - b.amount_paid) / 100).toLocaleString('en-IN')} due
+                  </span>
+                )}
+              </td>
               <td class="px-4 py-2">{b.source}</td>
               <td class="px-4 py-2">
                 <span class={`px-2 py-0.5 rounded text-xs ${

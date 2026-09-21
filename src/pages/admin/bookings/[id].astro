@@ -51,7 +51,10 @@ const notes = await listBookingNotes(db, id);
       <p><span class="text-stone-500">Add-ons:</span> {booking.add_on_ids || '—'}</p>
       <p><span class="text-stone-500">Email:</span> {booking.traveler_email}</p>
       <p><span class="text-stone-500">Phone:</span> {booking.traveler_phone}</p>
-      <p><span class="text-stone-500">Amount:</span> {booking.currency} {(booking.amount_paid / 100).toLocaleString('en-IN')}</p>
+      <p><span class="text-stone-500">Amount paid:</span> {booking.currency} {(booking.amount_paid / 100).toLocaleString('en-IN')} ({booking.payment_type === 'deposit' ? '25% deposit' : 'full'})</p>
+      {booking.payment_type === 'deposit' && (
+        <p><span class="text-stone-500">Balance due on pickup:</span> {booking.currency} {((booking.total_amount - booking.amount_paid) / 100).toLocaleString('en-IN')}</p>
+      )}
       <p><span class="text-stone-500">Source:</span> {booking.source}</p>
       <p><span class="text-stone-500">Payment ID:</span> {booking.payment_id}</p>
       <p><span class="text-stone-500">Booked on:</span> {booking.created_at}</p>

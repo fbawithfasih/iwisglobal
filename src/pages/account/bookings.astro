@@ -64,7 +64,13 @@ const statusClass = (status: string) =>
             <div class="text-right">
               <p class="font-semibold">
                 {b.currency} {(b.amount_paid / 100).toLocaleString(b.currency === 'USD' ? 'en-US' : 'en-IN')}
+                {b.payment_type === 'deposit' && <span class="font-normal text-stone-500"> paid</span>}
               </p>
+              {b.payment_type === 'deposit' && (
+                <p class="text-xs text-amber-700">
+                  {b.currency} {((b.total_amount - b.amount_paid) / 100).toLocaleString(b.currency === 'USD' ? 'en-US' : 'en-IN')} due on pickup
+                </p>
+              )}
               <span class={`inline-block text-xs px-2 py-0.5 rounded-full ${statusClass(b.status)}`}>{b.status}</span>
             </div>
           </div>

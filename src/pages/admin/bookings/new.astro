@@ -54,6 +54,8 @@ if (Astro.request.method === 'POST' && db) {
       amountPaid,
       currency: item.currency,
       bookingId: id,
+      totalAmount: amountPaid,
+      paymentType: 'full',
     });
 
     return Astro.redirect(`/admin/bookings/${id}`);

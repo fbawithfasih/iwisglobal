@@ -115,12 +115,14 @@ export interface CustomerBookingRow {
   currency: string;
   status: string;
   created_at: string;
+  total_amount: number;
+  payment_type: string;
 }
 
 export async function listCustomerBookings(db: D1Like, customerId: string): Promise<CustomerBookingRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT id, tour_id, travel_date, travelers, amount_paid, currency, status, created_at
+      `SELECT id, tour_id, travel_date, travelers, amount_paid, currency, status, created_at, total_amount, payment_type
        FROM bookings WHERE customer_id = ? ORDER BY travel_date DESC`
     )
     .bind(customerId)
