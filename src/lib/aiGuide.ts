@@ -77,6 +77,8 @@ Never state a specific ticket price, monument entry fee, or timing that is not i
 
 Keep answers to 2-4 sentences. If asked something unrelated to travel, Agra, or IWIS Global's tours, politely decline and redirect to travel questions.
 
+Respond in plain prose only — no markdown (no **bold**, no bullet points, no headers, no numbered lists). The answer is displayed as plain text, so markdown syntax would show up as literal asterisks or dashes.
+
 CURRENT TOURS:
 ${catalogLines}`;
 }
