@@ -20,6 +20,12 @@ const attractionSlugs = readdirSync(new URL('./src/content/attractions/', import
   .filter((f) => f.endsWith('.md'))
   .map((f) => f.replace(/\.md$/, ''));
 
+// Same gap, same fix, for /blog/[slug] posts. Empty today (infrastructure
+// only, no posts yet) — resolves to an empty array, harmless.
+const blogSlugs = readdirSync(new URL('./src/content/blog/', import.meta.url))
+  .filter((f) => f.endsWith('.md'))
+  .map((f) => f.replace(/\.md$/, ''));
+
 // account_id is not secret (it's routinely visible in dashboard URLs and
 // API error messages, same non-secret status as wrangler.toml's
 // database_id below) — only CLOUDFLARE_API_TOKEN is.
@@ -82,6 +88,7 @@ export default defineConfig({
         ...guideSlugs.map((slug) => `https://www.iwisglobal.com/guides/${slug}`),
         ...attractionSlugs.map((slug) => `https://www.iwisglobal.com/agra/${slug}`),
         ...tourSlugs.map((slug) => `https://www.iwisglobal.com/tours/${slug}`),
+        ...blogSlugs.map((slug) => `https://www.iwisglobal.com/blog/${slug}`),
       ],
     }),
   ],

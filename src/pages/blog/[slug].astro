@@ -1,0 +1,56 @@
+---
+// Mirrors src/pages/guides/[slug].astro's structure — same prerender/Article
+// JSON-LD/byline pattern, plus a category badge (news/travel-tips/seasonal).
+export const prerender = false;
+
+import { getCollection, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const { slug } = Astro.params;
+const entry: CollectionEntry<'blog'> | undefined = (await getCollection('blog')).find((e) => e.slug === slug);
+
+if (!entry) {
+  return Astro.redirect('/blog');
+}
+
+const { Content } = await entry.render();
+const { title, description, category, authorName, datePublished, dateModified } = entry.data;
+
+const CATEGORY_LABELS: Record<string, string> = {
+  news: 'News',
+  'travel-tips': 'Travel Tips',
+  seasonal: 'Seasonal',
+};
+
+const dateFmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description,
+  author: { '@type': 'Organization', name: authorName },
+  datePublished: datePublished.toISOString(),
+  dateModified: dateModified.toISOString(),
+  publisher: { '@type': 'Organization', name: 'IWIS Global', logo: { '@type': 'ImageObject', url: 'https://www.iwisglobal.com/logo.png' } },
+};
+---
+
+<BaseLayout title={`${title} — IWIS Global`} description={description}>
+  <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
+
+  <article class="max-w-3xl mx-auto px-6 py-16">
+    <a href="/blog" class="text-sm text-stone-500 hover:underline">&larr; All posts</a>
+    <span class="block text-xs font-semibold tracking-wide text-brand-700 uppercase mt-4">
+      {CATEGORY_LABELS[category] ?? category}
+    </span>
+    <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-2 mb-3">{title}</h1>
+    <p class="text-sm text-stone-500 mb-10">
+      By {authorName} · Published {dateFmt(datePublished)}
+      {dateModified.getTime() !== datePublished.getTime() && <> · Updated {dateFmt(dateModified)}</>}
+    </p>
+    <div class="prose prose-stone max-w-none prose-headings:font-serif prose-a:text-brand-700">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>
