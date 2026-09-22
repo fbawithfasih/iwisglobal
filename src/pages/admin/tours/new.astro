@@ -103,8 +103,9 @@ if (Astro.request.method === 'POST' && db) {
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Upload image</label>
-      <input type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
+      <input id="imageFile" type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
       <p class="text-xs text-stone-500 mt-1">JPEG/PNG/WebP/GIF, up to 5MB. Or paste a URL below instead.</p>
+      <p id="imageOptimizeStatus" class="text-xs text-emerald-700 mt-1"></p>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Image URL (used only if no file is uploaded above)</label>
@@ -161,3 +162,10 @@ if (Astro.request.method === 'POST' && db) {
     <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2">Create tour</button>
   </form>
 </AdminLayout>
+
+<script>
+  import { attachImageOptimizer } from '../../../lib/imageOptimizeClient';
+  const input = document.getElementById('imageFile') as HTMLInputElement | null;
+  const status = document.getElementById('imageOptimizeStatus');
+  if (input) attachImageOptimizer(input, status);
+</script>

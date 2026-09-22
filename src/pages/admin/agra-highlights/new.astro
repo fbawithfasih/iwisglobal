@@ -67,10 +67,11 @@ const nextSortOrder = existing.reduce((max, h) => Math.max(max, h.sortOrder), -1
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Upload image</label>
-      <input type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
+      <input id="imageFile" type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
       <p class="text-xs text-stone-500 mt-1">
         Recommended: <strong>1200 × 900px (4:3 ratio)</strong> — matches the card frame on the homepage exactly, so nothing gets cropped oddly. JPEG/PNG/WebP/GIF, up to 5MB.
       </p>
+      <p id="imageOptimizeStatus" class="text-xs text-emerald-700 mt-1"></p>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Image URL (used only if no file is uploaded above)</label>
@@ -83,3 +84,10 @@ const nextSortOrder = existing.reduce((max, h) => Math.max(max, h.sortOrder), -1
     <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2">Create</button>
   </form>
 </AdminLayout>
+
+<script>
+  import { attachImageOptimizer } from '../../../lib/imageOptimizeClient';
+  const input = document.getElementById('imageFile') as HTMLInputElement | null;
+  const status = document.getElementById('imageOptimizeStatus');
+  if (input) attachImageOptimizer(input, status);
+</script>

@@ -82,10 +82,11 @@ if (!highlight) return Astro.redirect('/admin/agra-highlights');
     )}
     <div>
       <label class="block text-stone-500 mb-1">Upload new image</label>
-      <input type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
+      <input id="imageFile" type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
       <p class="text-xs text-stone-500 mt-1">
         Recommended: <strong>1200 × 900px (4:3 ratio)</strong> — matches the card frame on the homepage exactly, so nothing gets cropped oddly. JPEG/PNG/WebP/GIF, up to 5MB. Leave blank to keep the current image.
       </p>
+      <p id="imageOptimizeStatus" class="text-xs text-emerald-700 mt-1"></p>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Image URL (used only if a new file isn't uploaded above)</label>
@@ -105,9 +106,15 @@ if (!highlight) return Astro.redirect('/admin/agra-highlights');
 </AdminLayout>
 
 <script>
+  import { attachImageOptimizer } from '../../../../lib/imageOptimizeClient';
+
   document.querySelectorAll<HTMLButtonElement>('[data-confirm="delete"]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       if (!confirm('Delete this card? This cannot be undone.')) e.preventDefault();
     });
   });
+
+  const input = document.getElementById('imageFile') as HTMLInputElement | null;
+  const status = document.getElementById('imageOptimizeStatus');
+  if (input) attachImageOptimizer(input, status);
 </script>
