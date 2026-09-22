@@ -199,6 +199,15 @@ astro.config.mjs             # sitemap customPages for /guides + /agra dynamic r
 - Sitewide content now includes 5 guides, 4 attraction pages, a
   no-commission pledge page, and an honest reviews page — up from just the
   tour pages + legal pages at session start.
+- Mobile PageSpeed Insights fix: admin image uploads (tours,
+  agra-highlights) were stored/served completely raw with no resizing —
+  one 2.2MB PNG alone was most of an 18.4s mobile LCP. Fixed at the root
+  (client-side Canvas resize-to-WebP before upload, `src/lib/imageOptimizeClient.ts`,
+  wired into all 4 admin upload forms) and retroactively for the 4
+  already-oversized images (3 admin-uploaded + the static hero image
+  being reused as a highlight-card thumbnail at 445×445). Mobile LCP:
+  18.4s → 7.6s. Some image weight likely remains (check PageSpeed again
+  after a few days of no new unoptimized uploads slipping through).
 
 ## 5. What remains / likely next asks
 
