@@ -38,7 +38,9 @@ ASI's own ticketing page doesn't list a separate online-vs-counter price differe
 
 ## What this means for booking a tour
 
-When a tour price is advertised as "all-inclusive," ask specifically whether that includes the ₹200 mausoleum ticket — it's the single most common gap between what's quoted and what a visitor actually pays at the gate. `TODO(fasih): confirm IWIS Global's own tour pricing explicitly states whether the mausoleum ticket is bundled, per backlog 0.3.`
+When a tour price is advertised as "all-inclusive," ask specifically whether that includes the ₹200 mausoleum ticket — it's the single most common gap between what's quoted and what a visitor actually pays at the gate. IWIS Global's own [Taj Mahal Sunrise Tour](/tours/taj-mahal-sunrise-tour) and [Same-Day Taj Mahal Tour from Delhi](/tours/same-day-agra-from-delhi) both bundle the full ₹1,300 entry (complex + mausoleum) at cost, included by default — see our [No-Commission Pledge](/no-commission-pledge) for what "at cost" means in practice.
+
+For the monument itself — history, hours, and what to expect on arrival — see our [Taj Mahal attraction page](/agra/taj-mahal).
 
 ---
 

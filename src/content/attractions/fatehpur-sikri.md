@@ -29,7 +29,7 @@ Fatehpur Sikri was Akbar's capital from roughly 1571 to 1585. It was designated 
 
 ## Getting there
 
-Fatehpur Sikri is about 37 km from Agra, roughly 45 minutes to an hour by road — too far to combine casually with a same-day Taj Mahal trip from Delhi, but a natural add-on for a multi-day Agra itinerary. `TODO(fasih): if IWIS Global adds a Fatehpur Sikri option to any tour, link it here.`
+Fatehpur Sikri is about 37 km from Agra, roughly 45 minutes to an hour by road — too far to combine casually with a same-day Taj Mahal trip from Delhi, but a natural add-on for a multi-day Agra itinerary. See our [Agra travel hub](/agra) for the rest of what's nearby, including the [Taj Mahal](/agra/taj-mahal) itself. `TODO(fasih): if IWIS Global adds a Fatehpur Sikri option to any tour, link it here.`
 
 ---
 

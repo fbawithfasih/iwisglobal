@@ -37,7 +37,7 @@ Morning fog is also concentrated November through January and can reduce visibil
 
 ## Sunrise timing by season
 
-Sunrise time matters directly for planning a sunrise tour's pickup time. Two confirmed anchor points for 2026, from [timeanddate.com](https://www.timeanddate.com/sun/india/agra):
+Sunrise time matters directly for planning a [sunrise tour](/tours/taj-mahal-sunrise-tour)'s pickup time. Two confirmed anchor points for 2026, from [timeanddate.com](https://www.timeanddate.com/sun/india/agra):
 
 - **Latest sunrise of the year:** 7:10 AM, around 12 January 2026 (winter)
 - **Earliest sunrise of the year:** around the 21 June 2026 summer solstice (longest day, 13h 51m of daylight)

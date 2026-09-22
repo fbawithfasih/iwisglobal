@@ -28,6 +28,8 @@ What's reasonably well established from multiple independent sources, even witho
 
 Selfie sticks aren't on ASI's published prohibited list. In practice, security in crowded zones may ask you to put one away — but this is a common-sense crowd-management request, not a published ban.
 
+Tripods are one item on a longer prohibited list — see our [complete "what not to bring" guide](/guides/what-not-to-bring-taj-mahal) for everything else that's banned, or our [Taj Mahal attraction page](/agra/taj-mahal) for entry tickets and hours. If sunrise light for photos is the actual goal, IWIS Global's [Taj Mahal Sunrise Tour](/tours/taj-mahal-sunrise-tour) is timed for exactly that window.
+
 ---
 
 **Last updated:** 21 September 2026. Primary source: [tajmahal.gov.in/dos-and-donts.aspx](https://www.tajmahal.gov.in/dos-and-donts.aspx) (Archaeological Survey of India). The permission-process details above are flagged as unconfirmed — verify with ASI directly before relying on them.

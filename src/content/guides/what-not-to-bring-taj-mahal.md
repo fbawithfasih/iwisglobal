@@ -22,7 +22,7 @@ Per ASI's official guidance, you cannot carry these inside:
 8. Wire
 9. Mobile phone chargers
 10. Electric goods, except still cameras
-11. Tripods
+11. Tripods (see our [full breakdown of the tripod rule](/guides/taj-mahal-tripod-photography-rules) — including the rare permission process for accredited photographers)
 
 Drone cameras are separately and explicitly banned "inside and around the Taj Mahal" — this isn't limited to the complex itself.
 
@@ -49,7 +49,9 @@ If you're visiting during a night-viewing slot, the ban list extends further: vi
 
 Third-party sources commonly describe cloakroom or locker facilities near the entry gates for depositing bags, food, or other restricted items before you go through security — but this isn't stated on ASI's own "Dos and Don'ts" page, so we can't confirm the exact location or procedure from a primary source. `TODO(fasih): confirm the current cloakroom location and procedure directly with ASI Agra Circle, or from IWIS Global's own guides' first-hand experience, before publishing this as fact.`
 
-The safest approach either way: leave prohibited items at your hotel or in the vehicle rather than counting on being able to check them at the gate.
+The safest approach either way: leave prohibited items at your hotel or in the vehicle rather than counting on being able to check them at the gate. Booking with a guided tour like IWIS Global's [Taj Mahal Sunrise Tour](/tours/taj-mahal-sunrise-tour) also means your guide can flag anything you're carrying before you reach security, not after.
+
+For entry ticket prices and what's included, see our [full ticket cost breakdown](/guides/taj-mahal-ticket-price-2026); for the monument itself, see our [Taj Mahal attraction page](/agra/taj-mahal).
 
 ---
 

@@ -25,7 +25,7 @@ Mehtab Bagh doesn't have the Taj Mahal's marble inlay work or mausoleum chamber 
 
 ## Getting there
 
-Mehtab Bagh sits directly across the Yamuna from the Taj Mahal — close enough to add to a same-day itinerary if your schedule allows a stop at the end of the day. `TODO(fasih): confirm whether any current IWIS Global tour itinerary includes a Mehtab Bagh stop; if one does, link it here.`
+Mehtab Bagh sits directly across the Yamuna from the Taj Mahal — close enough to add to a same-day itinerary if your schedule allows a stop at the end of the day. For the monument it faces, see our [Taj Mahal attraction page](/agra/taj-mahal); for everything else nearby, see the [Agra travel hub](/agra). `TODO(fasih): confirm whether any current IWIS Global tour itinerary includes a Mehtab Bagh stop; if one does, link it here.`
 
 ---
 
