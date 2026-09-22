@@ -1,0 +1,106 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { createBlogPost, type BlogCategory, type BlogStatus } from '../../../lib/blog';
+import { uploadBlogImage } from '../../../lib/images';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB;
+let error: string | null = null;
+
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  const title = String(form.get('title') ?? '').trim();
+  const description = String(form.get('description') ?? '').trim();
+  const body = String(form.get('body') ?? '');
+  const category = String(form.get('category') ?? 'news') as BlogCategory;
+  const authorName = String(form.get('authorName') ?? 'IWIS Global').trim() || 'IWIS Global';
+  const status = String(form.get('status') ?? 'draft') as BlogStatus;
+
+  if (!title || !description) {
+    error = 'Title and description are required.';
+  } else {
+    try {
+      const imageFile = form.get('imageFile');
+      let image = String(form.get('image') ?? '').trim();
+      if (imageFile instanceof File && imageFile.size > 0) {
+        if (!env.IMAGES) throw new Error('Image storage is not configured yet.');
+        const uploaded = await uploadBlogImage(env.IMAGES, imageFile);
+        image = uploaded.url;
+      }
+
+      await createBlogPost(db, { title, description, body, category, authorName, image, status });
+      return Astro.redirect('/admin/blog');
+    } catch (err: any) {
+      error = err?.message || 'Failed to create post.';
+    }
+  }
+}
+---
+<AdminLayout title="New Blog Post">
+  <a href="/admin/blog" class="text-sm text-stone-500 hover:underline">&larr; Back to blog</a>
+  <h1 class="text-2xl font-semibold mt-2 mb-6">New blog post</h1>
+
+  {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
+
+  <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-stone-200 p-6 space-y-4 max-w-2xl text-sm">
+    <div>
+      <label class="block text-stone-500 mb-1">Title *</label>
+      <input name="title" required class="w-full rounded border border-stone-300 px-3 py-2" placeholder="e.g. Agra in Monsoon: What Actually Changes" />
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Description (shown on the blog list and as meta description)</label>
+      <textarea name="description" required rows="2" class="w-full rounded border border-stone-300 px-3 py-2"></textarea>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-stone-500 mb-1">Category</label>
+        <select name="category" class="w-full rounded border border-stone-300 px-3 py-2">
+          <option value="news">News</option>
+          <option value="travel-tips">Travel Tips</option>
+          <option value="seasonal">Seasonal</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-stone-500 mb-1">Status</label>
+        <select name="status" class="w-full rounded border border-stone-300 px-3 py-2">
+          <option value="draft">Draft (not visible on the site)</option>
+          <option value="published">Published (live immediately)</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Author name</label>
+      <input name="authorName" value="IWIS Global" class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Upload image (optional)</label>
+      <input id="imageFile" type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
+      <p class="text-xs text-stone-500 mt-1">JPEG/PNG/WebP/GIF, up to 5MB.</p>
+      <p id="imageOptimizeStatus" class="text-xs text-emerald-700 mt-1"></p>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Image URL (used only if no file is uploaded above)</label>
+      <input name="image" placeholder="https://…" class="w-full rounded border border-stone-300 px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Body (Markdown)</label>
+      <textarea name="body" rows="14" class="w-full rounded border border-stone-300 px-3 py-2 font-mono text-xs" placeholder={"## A heading\n\nA paragraph. **Bold** and _italic_ and [links](https://example.com) work."}></textarea>
+    </div>
+    <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2">Create post</button>
+  </form>
+</AdminLayout>
+
+<script>
+  import { attachImageOptimizer } from '../../../lib/imageOptimizeClient';
+  const input = document.getElementById('imageFile') as HTMLInputElement | null;
+  const status = document.getElementById('imageOptimizeStatus');
+  if (input) attachImageOptimizer(input, status);
+</script>

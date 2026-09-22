@@ -42,3 +42,7 @@ export function uploadTourImage(r2: R2Like, file: File): Promise<UploadResult> {
 export function uploadAgraHighlightImage(r2: R2Like, file: File): Promise<UploadResult> {
   return uploadImage(r2, file, 'agra-highlights');
 }
+
+export function uploadBlogImage(r2: R2Like, file: File): Promise<UploadResult> {
+  return uploadImage(r2, file, 'blog');
+}

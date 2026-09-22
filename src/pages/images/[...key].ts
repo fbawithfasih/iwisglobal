@@ -8,7 +8,7 @@ export const prerender = false;
 // store, and without this allow-list this route would serve back ANY
 // object ever put into that bucket, not just the ones this app
 // intentionally made public.
-const ALLOWED_KEY_PREFIXES = ['tours/', 'agra-highlights/'];
+const ALLOWED_KEY_PREFIXES = ['tours/', 'agra-highlights/', 'blog/'];
 
 export const GET: APIRoute = async ({ params, locals }) => {
   const key = params.key;

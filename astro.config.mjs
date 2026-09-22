@@ -20,12 +20,6 @@ const attractionSlugs = readdirSync(new URL('./src/content/attractions/', import
   .filter((f) => f.endsWith('.md'))
   .map((f) => f.replace(/\.md$/, ''));
 
-// Same gap, same fix, for /blog/[slug] posts. Empty today (infrastructure
-// only, no posts yet) — resolves to an empty array, harmless.
-const blogSlugs = readdirSync(new URL('./src/content/blog/', import.meta.url))
-  .filter((f) => f.endsWith('.md'))
-  .map((f) => f.replace(/\.md$/, ''));
-
 // account_id is not secret (it's routinely visible in dashboard URLs and
 // API error messages, same non-secret status as wrangler.toml's
 // database_id below) — only CLOUDFLARE_API_TOKEN is.
@@ -55,7 +49,9 @@ function readEnvVar(name) {
   }
 }
 
-async function fetchTourSlugs() {
+// Shared by tours and blog_posts — both are D1-backed with the same
+// id/slug/status shape, so one query-runner covers both sitemap gaps.
+async function fetchD1Slugs(sql) {
   const token = readEnvVar('CLOUDFLARE_API_TOKEN');
   if (!token) return [];
 
@@ -65,7 +61,7 @@ async function fetchTourSlugs() {
       {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sql: "SELECT slug FROM tours WHERE status = 'published'" }),
+        body: JSON.stringify({ sql }),
       }
     );
     if (!res.ok) return [];
@@ -77,7 +73,10 @@ async function fetchTourSlugs() {
   }
 }
 
-const tourSlugs = await fetchTourSlugs();
+const tourSlugs = await fetchD1Slugs("SELECT slug FROM tours WHERE status = 'published'");
+// /blog/[slug] posts are D1-backed too (schema_blog_posts.sql) — same gap,
+// same fix as tours.
+const blogSlugs = await fetchD1Slugs("SELECT slug FROM blog_posts WHERE status = 'published'");
 
 export default defineConfig({
   integrations: [

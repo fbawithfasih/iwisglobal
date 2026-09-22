@@ -12,6 +12,7 @@ const isTours = path.startsWith('/admin/tours');
 const isLeads = path.startsWith('/admin/leads');
 const isAgraHighlights = path.startsWith('/admin/agra-highlights');
 const isReviews = path.startsWith('/admin/reviews');
+const isBlog = path.startsWith('/admin/blog');
 ---
 <!doctype html>
 <html lang="en">
@@ -33,6 +34,7 @@ const isReviews = path.startsWith('/admin/reviews');
       <a href="/admin/tours" aria-current={isTours ? 'page' : undefined} class={navLinkClass(isTours)}>Tours</a>
       <a href="/admin/leads" aria-current={isLeads ? 'page' : undefined} class={navLinkClass(isLeads)}>Leads</a>
       <a href="/admin/agra-highlights" aria-current={isAgraHighlights ? 'page' : undefined} class={navLinkClass(isAgraHighlights)}>Agra Highlights</a>
+      <a href="/admin/blog" aria-current={isBlog ? 'page' : undefined} class={navLinkClass(isBlog)}>Blog</a>
       <a href="/admin/reviews" aria-current={isReviews ? 'page' : undefined} class={navLinkClass(isReviews)}>Reviews</a>
       <a href="/admin/bookings/new" class="text-stone-300 hover:text-white transition">+ Manual Booking</a>
       <form method="POST" action="/admin/logout" class="ml-auto">

@@ -35,21 +35,9 @@ const attractions = defineCollection({
   }),
 });
 
-// Blog — company news/updates, travel stories/tips, seasonal content.
-// Separate from `guides` (structured Q&A/reference content) on purpose:
-// different tone and purpose, not a replacement. Infrastructure only for
-// now — no posts yet; real content is added later the same way guides
-// were (one markdown file per post), never fabricated ahead of time.
-const blog = defineCollection({
-  type: 'content',
-  schema: z.object({
-    title: z.string(),
-    description: z.string(),
-    category: z.enum(['news', 'travel-tips', 'seasonal']),
-    authorName: z.string().default('IWIS Global'),
-    datePublished: z.date(),
-    dateModified: z.date(),
-  }),
-});
+// Blog was originally a git-based collection here (infrastructure-only,
+// no posts). Replaced with a D1-backed version (src/lib/blog.ts,
+// /admin/blog) so posts can be published from a browser form without a
+// redeploy — see schema_blog_posts.sql.
 
-export const collections = { guides, attractions, blog };
+export const collections = { guides, attractions };
