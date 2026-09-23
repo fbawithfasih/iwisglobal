@@ -50,11 +50,17 @@ const articleJsonLd = {
       {CATEGORY_LABELS[post.category] ?? post.category}
     </span>
     <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-2 mb-3">{post.title}</h1>
-    <p class="text-sm text-stone-500 mb-10">
+    <p class="text-sm text-stone-500 mb-4">
       By {post.authorName}
       {post.datePublished && <> · Published {dateFmt(post.datePublished)}</>}
       {post.datePublished && post.updatedAt !== post.datePublished && <> · Updated {dateFmt(post.updatedAt)}</>}
     </p>
+
+    <!-- Google "Preferred Sources" button — see /blog/index.astro's comment
+         for the source. Loaded per-page since it's blog-scoped, not site-wide. -->
+    <script async src="https://news.google.com/swg/js/v1/publisher.js"></script>
+    <div google-add-preferred-source-btn data-theme="light" class="mb-8"></div>
+
     {post.image && <img src={post.image} alt={post.title} class="w-full aspect-video object-cover rounded-xl mb-10" />}
     <div class="prose prose-stone max-w-none prose-headings:font-serif prose-a:text-brand-700" set:html={bodyHtml} />
   </article>
