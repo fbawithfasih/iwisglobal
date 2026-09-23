@@ -144,10 +144,10 @@ export default function WeatherCard() {
 
   if (status === 'loading' || !data) {
     return (
-      <div className="rounded-xl border border-white/50 bg-white/40 backdrop-blur-md p-5 animate-pulse" aria-hidden="true">
-        <div className="h-3 w-28 bg-white/40 rounded mb-3"></div>
-        <div className="h-7 w-16 bg-white/40 rounded mb-2"></div>
-        <div className="h-3 w-40 bg-white/40 rounded"></div>
+      <div className="rounded-xl border border-stone-100 bg-white shadow-sm p-6 animate-pulse" aria-hidden="true">
+        <div className="h-3 w-28 bg-stone-100 rounded mb-3"></div>
+        <div className="h-7 w-16 bg-stone-100 rounded mb-2"></div>
+        <div className="h-3 w-40 bg-stone-100 rounded"></div>
       </div>
     );
   }
@@ -162,49 +162,49 @@ export default function WeatherCard() {
         : null;
 
   return (
-    <div className="rounded-xl border border-white/50 bg-white/40 backdrop-blur-md p-5">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="rounded-xl border border-stone-100 bg-white shadow-sm p-6">
+      <div className="flex items-center gap-2 mb-4">
         <span className="relative flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
         </span>
-        <h3 className="text-[14px] font-semibold tracking-wide text-stone-400 uppercase">Agra right now</h3>
+        <h3 className="text-xs font-semibold tracking-wide text-stone-400 uppercase">Agra right now</h3>
       </div>
 
-      <div className="flex items-center gap-3 mb-3">
-        <span className="text-3xl leading-none" aria-hidden="true">{icon}</span>
+      <div className="flex items-center gap-4 mb-4">
+        <span className="text-4xl leading-none" aria-hidden="true">{icon}</span>
         <div>
-          <p className="text-2xl font-serif font-semibold leading-none">{Math.round(data.temperatureC)}°C</p>
-          <p className="text-[11px] text-stone-600 mt-1">{label}</p>
+          <p className="text-3xl font-serif font-semibold leading-none text-stone-900">{Math.round(data.temperatureC)}°C</p>
+          <p className="text-xs text-stone-500 mt-1">{label}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-600 mb-3">
+      <div className="grid grid-cols-2 gap-2 text-xs text-stone-600 mb-4">
         <p>Humidity: {Math.round(data.humidityPct)}%</p>
         <p>Wind: {Math.round(data.windSpeedKmh)} km/h</p>
         {rainNote && <p className="col-span-2">{rainNote}</p>}
       </div>
 
       {aqiInfo && (
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${aqiInfo.className}`}>
+        <div className="flex items-center gap-2 mb-4">
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${aqiInfo.className}`}>
             AQI {data.aqi} · {aqiInfo.label}
           </span>
-          {data.pm25 !== null && <span className="text-[11px] text-stone-500">PM2.5: {data.pm25} µg/m³</span>}
+          {data.pm25 !== null && <span className="text-xs text-stone-500">PM2.5: {data.pm25} µg/m³</span>}
         </div>
       )}
 
       {data.forecast.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/50">
+        <div className="grid grid-cols-3 gap-2 pt-4 border-t border-stone-100">
           {data.forecast.map((day) => {
             const dayInfo = describeWeatherCode(day.weatherCode);
             return (
               <div key={day.date} className="text-center">
-                <p className="text-[11px] text-stone-500">
+                <p className="text-xs text-stone-500">
                   {new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' })}
                 </p>
                 <p className="text-lg leading-none my-1" aria-hidden="true">{dayInfo.icon}</p>
-                <p className="text-[11px] text-stone-700">
+                <p className="text-xs text-stone-700">
                   {Math.round(day.maxC)}° <span className="text-stone-400">{Math.round(day.minC)}°</span>
                 </p>
               </div>
@@ -213,7 +213,7 @@ export default function WeatherCard() {
         </div>
       )}
 
-      <p className="text-[11px] text-stone-400 mt-3">
+      <p className="text-xs text-stone-400 mt-4">
         Updated {new Date(data.fetchedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} ·
         Source: Open-Meteo
       </p>
