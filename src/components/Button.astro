@@ -1,0 +1,32 @@
+---
+// Shared button styling — resolves a 3-way radius inconsistency found across
+// the site (reviews.astro used rounded-full, BookingWidget.tsx used bare
+// rounded, help.astro used rounded-lg). rounded-full is the standard going
+// forward: rounded-full = interactive controls, rounded-lg = form inputs,
+// rounded-xl = cards/containers.
+interface Props {
+  variant?: 'primary' | 'secondary' | 'ghost';
+  href?: string;
+  type?: 'button' | 'submit';
+  class?: string;
+  target?: string;
+  rel?: string;
+  [key: `data-${string}`]: string | undefined;
+}
+
+const { variant = 'primary', href, type = 'button', class: className = '', ...rest } = Astro.props;
+
+const base = 'inline-flex items-center justify-center rounded-full font-semibold text-sm px-6 py-3 transition disabled:opacity-60 disabled:cursor-not-allowed';
+const variants = {
+  primary: 'bg-brand-800 hover:bg-brand-900 text-white',
+  secondary: 'border border-stone-300 hover:border-brand-500 hover:text-brand-800',
+  ghost: 'bg-white text-brand-800 hover:bg-white/90',
+};
+const classes = `${base} ${variants[variant]} ${className}`;
+---
+
+{href ? (
+  <a href={href} class={classes} {...rest}><slot /></a>
+) : (
+  <button type={type} class={classes} {...rest}><slot /></button>
+)}

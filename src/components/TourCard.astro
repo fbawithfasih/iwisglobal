@@ -17,38 +17,35 @@ const price = resolveFromPrice(tour, currency);
 ---
 <a
   href={`/tours/${tour.slug}`}
-  class="block rounded-xl border border-stone-200 bg-white overflow-hidden hover:shadow-lg transition"
+  class="group block"
 >
-  <div class="aspect-[4/3] bg-brand-50">
+  <div class="aspect-[4/3] bg-brand-50 rounded-xl overflow-hidden">
     {tour.image ? (
-      <img src={tour.image} alt={tour.title} class="w-full h-full object-cover" />
+      <img src={tour.image} alt={tour.title} class="w-full h-full object-cover transition group-hover:opacity-90" />
     ) : (
       <div class="w-full h-full flex items-center justify-center text-brand-300 text-sm">No image yet</div>
     )}
   </div>
 
-  <div class="p-5">
-    <h3 class="text-lg font-semibold mb-2">{tour.title}</h3>
+  <div class="pt-3">
+    <h3 class="text-lg font-semibold mb-1 group-hover:underline">{tour.title}</h3>
 
-    <div class="flex flex-wrap gap-1.5 mb-3">
-      <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-50 text-brand-800">Instant confirmation</span>
-      <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-50 text-brand-800">Free cancellation</span>
-      <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-accent-50 text-accent-700">{availability.label}</span>
+    <div class="flex items-center justify-between mb-1.5">
+      <span class="text-[11px] font-semibold uppercase tracking-wide text-brand-700 border-b-2 border-brand-600 pb-0.5">
+        {availability.label}
+      </span>
+      <p class="text-lg font-semibold text-stone-900">
+        {CURRENCY_SYMBOLS[price.currency]}{price.amount.toLocaleString(price.currency === 'USD' ? 'en-US' : 'en-IN')}
+        <span class="text-xs font-normal text-stone-500">/person</span>
+      </p>
     </div>
 
-    <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500 mb-4">
+    <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500">
       <span>{tour.durationLabel}</span>
       {tour.pickupIncluded && <span>· Hotel pickup</span>}
       {tour.privateTour && <span>· Private tour</span>}
       {tour.guideLanguage && <span>· {tour.guideLanguage} guide</span>}
-    </div>
-
-    <div class="flex items-center justify-between">
-      <div>
-        <span class="text-xs text-stone-500">From</span>
-        <p class="text-lg font-semibold text-stone-900">{CURRENCY_SYMBOLS[price.currency]}{price.amount.toLocaleString(price.currency === 'USD' ? 'en-US' : 'en-IN')}<span class="text-xs font-normal text-stone-500">/person</span></p>
-      </div>
-      <span class="text-sm font-medium text-brand-800">Check availability →</span>
+      <span>· Free cancellation</span>
     </div>
   </div>
 </a>

@@ -351,7 +351,7 @@ export default function BookingWidget({
       <button
         onClick={handleBook}
         disabled={loading}
-        className="w-full rounded bg-brand-800 hover:bg-brand-900 text-white py-3 font-medium disabled:opacity-60 transition"
+        className="w-full rounded-full bg-brand-800 hover:bg-brand-900 text-white py-3 font-medium disabled:opacity-60 transition"
       >
         {loading ? 'Processing…' : 'Book & Pay'}
       </button>

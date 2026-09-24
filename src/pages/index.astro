@@ -63,7 +63,7 @@ function highlightHref(id: string): string {
         <div class="hero-cloud hero-cloud-2"></div>
         <div class="hero-cloud hero-cloud-3"></div>
       </div>
-      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-brand-950/70 via-brand-900/25 to-transparent"></div>
     </div>
     <div class="max-w-3xl mx-auto px-6 py-36 md:py-52 text-center">
       <h1 class="text-4xl md:text-5xl font-serif font-semibold mb-4 text-white">
@@ -163,16 +163,16 @@ function highlightHref(id: string): string {
       </div>
       <div data-carousel-row class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-6 px-6 carousel-row">
         {AGRA_HIGHLIGHTS.map((item) => (
-          <a href={highlightHref(item.id)} class="w-64 sm:w-72 shrink-0 snap-start block rounded-xl border border-stone-200 bg-white overflow-hidden hover:shadow-lg transition">
-            <div class="aspect-[4/3] bg-brand-50">
+          <a href={highlightHref(item.id)} class="group w-64 sm:w-72 shrink-0 snap-start block">
+            <div class="aspect-[4/3] bg-brand-50 rounded-xl overflow-hidden">
               {item.image ? (
-                <img src={item.image} alt={item.name} class="w-full h-full object-cover" />
+                <img src={item.image} alt={item.name} class="w-full h-full object-cover transition group-hover:opacity-90" />
               ) : (
                 <div class="w-full h-full flex items-center justify-center text-brand-300 text-sm">No image yet</div>
               )}
             </div>
-            <div class="p-4">
-              <p class="font-semibold mb-1">{item.name}</p>
+            <div class="pt-3">
+              <p class="font-semibold mb-1 group-hover:underline">{item.name}</p>
               <p class="text-sm text-stone-600">{item.description}</p>
             </div>
           </a>

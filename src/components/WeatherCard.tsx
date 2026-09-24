@@ -118,7 +118,7 @@ async function fetchWeather(): Promise<WeatherData> {
   };
 }
 
-export default function WeatherCard() {
+export default function WeatherCard({ variant = 'full' }: { variant?: 'full' | 'inline' }) {
   const [data, setData] = useState<WeatherData | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
@@ -141,6 +141,19 @@ export default function WeatherCard() {
   // Never invent numbers: if the live fetch fails, show nothing rather than
   // a broken card or stale placeholder.
   if (status === 'error') return null;
+
+  if (variant === 'inline') {
+    if (status === 'loading' || !data) {
+      return <span className="inline-flex items-center gap-1.5 text-sm text-stone-400 animate-pulse" aria-hidden="true">Loading weather…</span>;
+    }
+    const inlineInfo = describeWeatherCode(data.weatherCode);
+    return (
+      <span className="inline-flex items-center gap-1.5 text-sm text-stone-600">
+        <span aria-hidden="true">{inlineInfo.icon}</span>
+        {Math.round(data.temperatureC)}°C, {inlineInfo.label}
+      </span>
+    );
+  }
 
   if (status === 'loading' || !data) {
     return (

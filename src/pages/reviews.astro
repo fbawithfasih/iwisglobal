@@ -7,6 +7,7 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/Button.astro';
 ---
 
 <BaseLayout
@@ -23,13 +24,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       Traveled with us already? We'd genuinely appreciate a review — it's one of the main ways new travelers decide
       whether to trust a small operator they haven't heard of before.
     </p>
-    <a
-      href="https://share.google/LOqFXgGLF8KWXdMNn"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="inline-block rounded-full bg-brand-800 text-white px-6 py-3 text-sm font-semibold hover:bg-brand-900 transition"
-    >
+    <Button href="https://share.google/LOqFXgGLF8KWXdMNn" target="_blank" rel="noopener noreferrer">
       Leave us a review on Google
-    </a>
+    </Button>
   </section>
 </BaseLayout>

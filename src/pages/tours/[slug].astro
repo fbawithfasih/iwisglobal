@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BookingWidget from '../../components/BookingWidget.tsx';
+import WeatherCard from '../../components/WeatherCard';
 import { getTourBySlug } from '../../lib/tours';
 import { getAvailability } from '../../lib/availability';
 import { resolveEnv } from '../../lib/env';
@@ -110,6 +111,11 @@ const tripJsonLd = {
       )}
       <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-2">{tour.title}</h1>
       <div class="h-1 w-16 rounded-full bg-gradient-to-r from-brand-600 to-accent-500 mb-4"></div>
+      <div class="flex items-center gap-2 text-sm text-stone-600 mb-4">
+        <span>📍 Agra, India</span>
+        <span aria-hidden="true">·</span>
+        <WeatherCard client:load variant="inline" />
+      </div>
       {requestedCurrency === 'USD' && price.currency === 'INR' && (
         <p class="text-xs text-stone-500 mb-2">USD price not set for this tour — showing INR</p>
       )}
