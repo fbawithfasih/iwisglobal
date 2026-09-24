@@ -86,6 +86,20 @@ function extractHeadedSections(text: string): { intro: string; sections: { headi
 }
 const { intro: descriptionIntro, sections: descriptionSections } = extractHeadedSections(mainDescription);
 
+// The description field is plain text, so a markdown-style [text](url) link
+// (e.g. cross-linking to another tour) would otherwise show up as literal
+// brackets — render it as a real link instead. Escape first so this can't
+// inject arbitrary HTML from the (staff-authored, but still) description field.
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function renderDescriptionHtml(text: string): string {
+  // whitespace-pre-line on the container handles line breaks — this only
+  // needs to turn the escaped [text](url) syntax into a real link.
+  return escapeHtml(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-brand-700 hover:underline">$1</a>');
+}
+const descriptionIntroHtml = renderDescriptionHtml(descriptionIntro);
+
 // Backlog 2.1: Product + Offer + TouristTrip. Both share one Offer built
 // from the already-resolved `price` (the same amount/currency shown to the
 // visitor and charged server-side) — the previous version used the raw
@@ -220,9 +234,7 @@ const tripJsonLd = {
         <div class="mb-8 rounded-xl border border-stone-200 bg-white p-6">
           <h2 class="text-lg font-serif font-semibold mb-3">About this tour</h2>
           {descriptionIntro && (
-            <div class="prose prose-stone max-w-none whitespace-pre-line text-sm leading-relaxed text-stone-700 mb-4">
-              {descriptionIntro}
-            </div>
+            <div class="prose prose-stone max-w-none whitespace-pre-line text-sm leading-relaxed text-stone-700 mb-4" set:html={descriptionIntroHtml} />
           )}
           {descriptionSections.length > 0 && (
             <ul class="space-y-3">
@@ -232,7 +244,7 @@ const tripJsonLd = {
                     <circle cx="12" cy="12" r="9"></circle>
                     <path d="M8.5 12.5l2.5 2.5 5-5"></path>
                   </svg>
-                  <span><span class="font-semibold text-stone-900">{section.heading}:</span> {section.body}</span>
+                  <span><span class="font-semibold text-stone-900">{section.heading}:</span> <span set:html={renderDescriptionHtml(section.body)} /></span>
                 </li>
               ))}
             </ul>
@@ -267,7 +279,7 @@ const tripJsonLd = {
                   </svg>
                 )}
                 <p class="text-sm text-stone-700 leading-relaxed">
-                  <span class="font-semibold text-brand-800">{block.label}:</span> {block.text}
+                  <span class="font-semibold text-brand-800">{block.label}:</span> <span set:html={renderDescriptionHtml(block.text)} />
                 </p>
               </li>
             ))}
