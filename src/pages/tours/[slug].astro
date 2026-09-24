@@ -61,6 +61,31 @@ function extractInfoBlocks(description: string): { main: string; blocks: { label
 }
 const { main: mainDescription, blocks: infoBlocks } = extractInfoBlocks(tour.description);
 
+// Some tour descriptions use "## Heading" lines to break up sub-topics
+// (what's included, what to expect, etc.) — rendered as bullet points
+// instead of literal "## " text, since the description field is plain
+// text (no markdown renderer) and headings that size would be visually
+// heavier than this section warrants anyway.
+function extractHeadedSections(text: string): { intro: string; sections: { heading: string; body: string }[] } {
+  const sections: { heading: string; body: string }[] = [];
+  const introParas: string[] = [];
+  let current: { heading: string; bodyParas: string[] } | null = null;
+  for (const para of text.split(/\n\n+/)) {
+    const trimmed = para.trim();
+    const headingMatch = trimmed.match(/^##\s+(.+)$/);
+    if (headingMatch) {
+      if (current) sections.push({ heading: current.heading, body: current.bodyParas.join(' ') });
+      current = { heading: headingMatch[1].trim(), bodyParas: [] };
+    } else if (trimmed) {
+      if (current) current.bodyParas.push(trimmed);
+      else introParas.push(trimmed);
+    }
+  }
+  if (current) sections.push({ heading: current.heading, body: current.bodyParas.join(' ') });
+  return { intro: introParas.join('\n\n'), sections };
+}
+const { intro: descriptionIntro, sections: descriptionSections } = extractHeadedSections(mainDescription);
+
 // Backlog 2.1: Product + Offer + TouristTrip. Both share one Offer built
 // from the already-resolved `price` (the same amount/currency shown to the
 // visitor and charged server-side) — the previous version used the raw
@@ -191,48 +216,62 @@ const tripJsonLd = {
         </div>
       )}
 
-      {mainDescription && (
+      {(descriptionIntro || descriptionSections.length > 0) && (
         <div class="mb-8 rounded-xl border border-stone-200 bg-white p-6">
           <h2 class="text-lg font-serif font-semibold mb-3">About this tour</h2>
-          <div class="prose prose-stone max-w-none whitespace-pre-line text-sm leading-relaxed text-stone-700">
-            {mainDescription}
-          </div>
+          {descriptionIntro && (
+            <div class="prose prose-stone max-w-none whitespace-pre-line text-sm leading-relaxed text-stone-700 mb-4">
+              {descriptionIntro}
+            </div>
+          )}
+          {descriptionSections.length > 0 && (
+            <ul class="space-y-3">
+              {descriptionSections.map((section) => (
+                <li class="flex items-start gap-2.5 text-sm text-stone-700 leading-relaxed">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-brand-600 shrink-0 mt-0.5" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M8.5 12.5l2.5 2.5 5-5"></path>
+                  </svg>
+                  <span><span class="font-semibold text-stone-900">{section.heading}:</span> {section.body}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
       {infoBlocks.length > 0 && (
         <div class="mb-8 rounded-xl border border-brand-100 bg-brand-50/50 p-6">
           <h2 class="text-lg font-serif font-semibold mb-4">Good to know</h2>
-          <div class="grid sm:grid-cols-3 gap-6">
+          <ul class="space-y-4">
             {infoBlocks.map((block) => (
-              <div>
-                <div class="flex items-center gap-2 mb-1.5 text-brand-800">
-                  {block.label === 'What to bring' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0" aria-hidden="true">
-                      <path d="M8 7V5a4 4 0 018 0v2"></path>
-                      <rect x="4" y="7" width="16" height="14" rx="2"></rect>
-                      <path d="M9 11h6"></path>
-                    </svg>
-                  )}
-                  {block.label === 'Not allowed' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0" aria-hidden="true">
-                      <circle cx="12" cy="12" r="9"></circle>
-                      <path d="M6 6l12 12"></path>
-                    </svg>
-                  )}
-                  {block.label === 'Know before you go' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0" aria-hidden="true">
-                      <circle cx="12" cy="12" r="9"></circle>
-                      <path d="M12 11v5"></path>
-                      <path d="M12 8h.01"></path>
-                    </svg>
-                  )}
-                  <p class="font-semibold text-sm">{block.label}</p>
-                </div>
-                <p class="text-sm text-stone-600 leading-relaxed">{block.text}</p>
-              </div>
+              <li class="flex items-start gap-2.5">
+                {block.label === 'What to bring' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 mt-0.5 text-brand-800" aria-hidden="true">
+                    <path d="M8 7V5a4 4 0 018 0v2"></path>
+                    <rect x="4" y="7" width="16" height="14" rx="2"></rect>
+                    <path d="M9 11h6"></path>
+                  </svg>
+                )}
+                {block.label === 'Not allowed' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 mt-0.5 text-brand-800" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M6 6l12 12"></path>
+                  </svg>
+                )}
+                {block.label === 'Know before you go' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 mt-0.5 text-brand-800" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M12 11v5"></path>
+                    <path d="M12 8h.01"></path>
+                  </svg>
+                )}
+                <p class="text-sm text-stone-700 leading-relaxed">
+                  <span class="font-semibold text-brand-800">{block.label}:</span> {block.text}
+                </p>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
 
