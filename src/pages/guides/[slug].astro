@@ -32,10 +32,72 @@ const articleJsonLd = {
   dateModified: dateModified.toISOString(),
   publisher: { '@type': 'Organization', name: 'IWIS Global', logo: { '@type': 'ImageObject', url: 'https://www.iwisglobal.com/logo.png' } },
 };
+
+// Marriott has zero FAQ content anywhere on activities.marriott.com — one
+// of the biggest AEO gaps found there. Rather than hand-author a parallel
+// FAQ list (which can drift from the guide's actual prose), pull genuine
+// question-style ## headings straight out of the guide's own markdown body
+// and pair each with the text that follows, up to the next heading. Guides
+// with no "?" heading (e.g. the Viator/GetYourGuide comparison page) simply
+// get no FAQPage schema — that's correct, not a gap, since they aren't
+// FAQ-structured content.
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .trim();
+}
+
+function extractFaqFromMarkdown(body: string): { question: string; answer: string }[] {
+  const faqs: { question: string; answer: string }[] = [];
+  let current: { question: string; answerLines: string[] } | null = null;
+  const flush = () => {
+    if (current) {
+      const answer = stripMarkdown(current.answerLines.join(' ').replace(/\s+/g, ' '));
+      if (answer) faqs.push({ question: stripMarkdown(current.question), answer });
+    }
+    current = null;
+  };
+  for (const line of body.split('\n')) {
+    const questionHeading = line.match(/^##\s+(.*\?)\s*$/);
+    if (questionHeading) {
+      flush();
+      current = { question: questionHeading[1], answerLines: [] };
+      continue;
+    }
+    // Every guide ends with a `---` rule before a "Last updated"/citation
+    // footer (see e.g. taj-mahal-ticket-price-2026.md) — that footer isn't
+    // part of the answer, so stop capture there too, same as a heading.
+    if (/^#{1,6}\s/.test(line) || /^---\s*$/.test(line)) {
+      flush();
+      continue;
+    }
+    const trimmed = line.trim();
+    if (current && trimmed && !trimmed.startsWith('|')) current.answerLines.push(trimmed);
+  }
+  flush();
+  return faqs;
+}
+
+const faqs = extractFaqFromMarkdown(entry.body);
+const faqJsonLd = faqs.length > 0
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+      })),
+    }
+  : null;
 ---
 
-<BaseLayout title={`${title} — IWIS Global`} description={description}>
+<BaseLayout title={`${title} — IWIS Global`} description={description} breadcrumbs={[{ name: 'Guides', path: '/guides' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
+  {faqJsonLd && <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />}
 
   <article class="max-w-3xl mx-auto px-6 py-16">
     <a href="/guides" class="text-sm text-stone-500 hover:underline">&larr; All guides</a>
@@ -46,6 +108,13 @@ const articleJsonLd = {
     </p>
     <div class="prose prose-stone max-w-none prose-headings:font-serif prose-a:text-brand-700">
       <Content />
+    </div>
+
+    <div class="mt-10 rounded-xl border border-brand-100 bg-brand-50/50 p-6 flex items-center justify-between gap-4 flex-wrap">
+      <p class="text-sm text-stone-700">Ready to see it for yourself?</p>
+      <a href="/tours" class="rounded-lg bg-brand-700 text-white px-5 py-2.5 text-sm font-semibold hover:bg-brand-800 transition">
+        Browse Taj Mahal tours →
+      </a>
     </div>
   </article>
 </BaseLayout>

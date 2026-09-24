@@ -6,10 +6,21 @@ import { getDictionary } from '../i18n/dictionaries';
 import LocaleSwitcher from '../components/LocaleSwitcher.astro';
 import { listTours } from '../lib/tours';
 
+interface BreadcrumbItem {
+  name: string;
+  path: string;
+}
+
 interface Props {
   title: string;
   description?: string;
   image?: string;
+  // Ordered from the homepage down to (but not including) the current page
+  // — e.g. [{ name: 'Tours', path: '/tours' }] on a tour detail page. Every
+  // page's own title is appended as the final crumb, so schema can't drift
+  // from the <title> actually rendered. Omit on top-level pages (home,
+  // /tours, /help, etc.) — a single-item trail has no SEO/AEO value.
+  breadcrumbs?: BreadcrumbItem[];
 }
 
 const {
@@ -20,7 +31,28 @@ const {
   // Facebook/Twitter/LinkedIn crop awkwardly. og-image.jpg is a proper
   // 1200×630 crop of the hero photo.
   image = '/og-image.jpg',
+  breadcrumbs,
 } = Astro.props;
+
+// BreadcrumbList JSON-LD — a gap shared with activities.marriott.com (it has
+// none either), but cheap to add here given pages already carry a title and
+// (for nested pages) a natural parent section.
+const breadcrumbJsonLd = breadcrumbs && breadcrumbs.length > 0
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { name: 'Home', path: '/' },
+        ...breadcrumbs,
+        { name: title.split(' — ')[0], path: Astro.url.pathname },
+      ].map((crumb, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: crumb.name,
+        item: new URL(crumb.path, Astro.site ?? 'https://www.iwisglobal.com').toString(),
+      })),
+    }
+  : null;
 const canonicalURL = Astro.site ? new URL(Astro.url.pathname, Astro.site) : Astro.url.pathname;
 const ogImageURL = Astro.site ? new URL(image, Astro.site).toString() : image;
 
@@ -128,6 +160,7 @@ const orgJsonLd = {
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 
     <script type="application/ld+json" set:html={JSON.stringify(orgJsonLd)} />
+    {breadcrumbJsonLd && <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />}
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

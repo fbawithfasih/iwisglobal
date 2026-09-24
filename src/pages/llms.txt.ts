@@ -58,6 +58,7 @@ export const GET: APIRoute = async ({ locals }) => {
   lines.push('');
 
   lines.push('## Optional');
+  lines.push(`- [Full site content](${SITE}/llms-full.txt): every tour, guide, and attraction page's complete text in one file.`);
   lines.push(`- [Help Center](${SITE}/help)`);
   lines.push(`- [Privacy Policy](${SITE}/privacy)`);
   lines.push(`- [Terms of Service](${SITE}/terms)`);

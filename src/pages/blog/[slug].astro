@@ -41,7 +41,7 @@ const articleJsonLd = {
 };
 ---
 
-<BaseLayout title={`${post.title} — IWIS Global`} description={post.description} image={post.image ?? undefined}>
+<BaseLayout title={`${post.title} — IWIS Global`} description={post.description} image={post.image ?? undefined} breadcrumbs={[{ name: 'Blog', path: '/blog' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
 
   <article class="max-w-3xl mx-auto px-6 py-16">

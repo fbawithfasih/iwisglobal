@@ -1,6 +1,6 @@
 ---
 title: "Taj Mahal Ticket Price 2026: The Full Cost, Not Just the Headline Number"
-description: "Foreign tourist entry is ₹1,100, but the number most guides quote leaves out the ₹200 mausoleum ticket. Here's the full cost stack, sourced from ASI's own ticketing page."
+description: "Taj Mahal tickets: foreign tourist entry is ₹1,100, but the number most guides quote leaves out the ₹200 mausoleum ticket. Here's the full cost stack, sourced from ASI's own ticketing page."
 authorName: "IWIS Global"
 datePublished: 2026-09-21
 dateModified: 2026-09-21

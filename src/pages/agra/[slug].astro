@@ -27,7 +27,7 @@ const attractionJsonLd = {
 };
 ---
 
-<BaseLayout title={`${name} — Agra Visitor Guide | IWIS Global`} description={description}>
+<BaseLayout title={`${name} — Agra Visitor Guide | IWIS Global`} description={description} breadcrumbs={[{ name: 'Agra Attractions', path: '/agra' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(attractionJsonLd)} />
 
   <article class="max-w-3xl mx-auto px-6 py-16">

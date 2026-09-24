@@ -15,9 +15,18 @@ if (Astro.url.searchParams.get('currency')) {
   Astro.cookies.set('currency', currency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
 }
 ---
-<BaseLayout title="Agra Tours — IWIS Global" description="Browse private, professionally guided Agra tours: same-day trips from Delhi and multi-day itineraries.">
+<BaseLayout
+  title="Taj Mahal Tours — Private, Guided Agra Trips | IWIS Global"
+  description="Taj Mahal tours from a real Agra-based operator: same-day trips from Delhi and multi-day Agra itineraries, booked online with transparent pricing and no hidden commissions."
+>
   <section class="max-w-5xl mx-auto px-6 py-16">
-    <h1 class="text-3xl font-serif font-semibold mb-8">All tours</h1>
+    <h1 class="text-3xl font-serif font-semibold mb-2">Taj Mahal tours</h1>
+    <p class="text-stone-600 mb-8 max-w-2xl">
+      Private, professionally guided Taj Mahal &amp; Agra tours — same-day trips from Delhi and
+      multi-day Agra itineraries, run and guided by IWIS Global directly (not a marketplace
+      re-listing). Not sure what a ticket costs first?
+      <a href="/guides/taj-mahal-ticket-price-2026" class="text-brand-700 hover:underline">See the full Taj Mahal ticket price breakdown</a>.
+    </p>
     <div class="grid md:grid-cols-2 gap-6">
       {tours.map((tour) => <TourCard tour={tour} currency={currency} />)}
     </div>

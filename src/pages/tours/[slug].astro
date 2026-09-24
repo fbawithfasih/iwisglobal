@@ -96,7 +96,7 @@ const tripJsonLd = {
   ],
 };
 ---
-<BaseLayout title={`${tour.title} — IWIS Global`} description={tour.summary}>
+<BaseLayout title={`${tour.title} — IWIS Global`} description={tour.summary} breadcrumbs={[{ name: 'Tours', path: '/tours' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(tripJsonLd)} />
 
   <section class="max-w-5xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-10 items-start">
