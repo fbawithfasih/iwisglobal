@@ -5,7 +5,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 // live per-request session and locale state via Astro.cookies.
 export const prerender = false;
 
-const lastUpdated = '19 September 2026';
+const lastUpdated = '24 September 2026';
 ---
 
 <BaseLayout title="Privacy Policy — IWIS Global" description="How IWIS Global collects, uses, and protects your information when you book a tour or create an account.">
@@ -31,6 +31,7 @@ const lastUpdated = '19 September 2026';
       <li><strong>Account information (optional):</strong> if you sign in with Google or Apple, we receive your name, email address, and (for Google) profile photo from that provider, so you can view your booking history.</li>
       <li><strong>Preferences:</strong> your chosen language and currency are stored in cookies on your device so the site remembers them on your next visit.</li>
       <li><strong>Contact via WhatsApp or email:</strong> if you message us on WhatsApp or by email, that conversation is governed by WhatsApp's (Meta's) or your email provider's own privacy practices, not this policy.</li>
+      <li><strong>Analytics:</strong> this site uses Google Analytics, loaded via Google Tag Manager, to understand how visitors use the site — for example, which pages are visited and general navigation patterns. This collects standard usage data (pages viewed, approximate location, device/browser type); it is not used to identify you personally.</li>
     </ul>
 
     <h2 class="text-lg font-semibold mb-2">How we use this information</h2>
@@ -39,14 +40,16 @@ const lastUpdated = '19 September 2026';
       <li>To let you sign in and view your booking history, if you create an account.</li>
       <li>To respond to questions you send us.</li>
       <li>To meet legal and accounting obligations (e.g. retaining payment records).</li>
+      <li>To understand overall site usage via Google Analytics, so we can improve the site.</li>
     </ul>
-    <p class="text-stone-700 mb-6">We do not sell your personal information, and we do not run advertising trackers or analytics scripts on this site.</p>
+    <p class="text-stone-700 mb-6">We do not sell your personal information.</p>
 
     <h2 class="text-lg font-semibold mb-2">Who we share it with</h2>
     <ul class="list-disc list-inside text-stone-700 space-y-1 mb-2">
       <li><strong>Razorpay</strong> — to process payments.</li>
       <li><strong>Google / Apple</strong> — only if you choose to sign in with them.</li>
       <li><strong>Cloudflare</strong> — our hosting and database provider; your requests pass through their infrastructure to reach our servers.</li>
+      <li><strong>Google</strong> — via Google Analytics and Google Tag Manager, for the site-usage analytics described above.</li>
     </ul>
     <p class="text-stone-700 mb-6">We don't share your information with anyone else for marketing purposes.</p>
 
@@ -57,6 +60,7 @@ const lastUpdated = '19 September 2026';
       <li><code class="text-sm bg-stone-100 px-1 rounded">customer_session</code> — keeps you signed in, if you have an account.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">admin_session</code> — staff-only, used to access the booking management system.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">oauth_state</code> — a short-lived cookie used only during Google/Apple sign-in, deleted immediately after.</li>
+      <li><code class="text-sm bg-stone-100 px-1 rounded">_ga</code>, <code class="text-sm bg-stone-100 px-1 rounded">_ga_*</code> — set by Google Analytics to distinguish visitors and measure site usage.</li>
     </ul>
 
     <h2 class="text-lg font-semibold mb-2">Data retention</h2>
