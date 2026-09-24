@@ -1,0 +1,43 @@
+name: Deploy to Cloudflare Pages
+
+# The iwisglobal Cloudflare Pages project was created via `wrangler pages
+# deploy` (a "Direct Upload" project), and Cloudflare does not allow
+# attaching a GitHub source to a project after the fact — confirmed via the
+# Pages API (error 8000069, "You cannot update the source object in a
+# Direct Uploads project."). This workflow replicates what native Git
+# integration would do (build + deploy on every push to main) without
+# migrating the live project, its custom domain, or its D1/R2 bindings.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # astro.config.mjs's build-time sitemap query for D1-backed
+      # tours/blog_posts reads CLOUDFLARE_API_TOKEN from a literal .env
+      # file on disk (not process.env — see that file's readEnvVar comment
+      # for why). Without this, the build still succeeds but silently
+      # drops tour/blog URLs from the sitemap.
+      - name: Write .env for build-time D1 sitemap query
+        run: echo "CLOUDFLARE_API_TOKEN=${{ secrets.CLOUDFLARE_API_TOKEN }}" > .env
+
+      - run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx wrangler pages deploy dist --project-name=iwisglobal --branch=main
