@@ -192,6 +192,25 @@ function highlightHref(id: string): string {
 </style>
 
 <script>
+  // Delegated on `document` (always exists at script-execution time) rather
+  // than bound directly to each prev/next button — this bundle's <script>
+  // tag ends up in <head>, ahead of the carousel markup in body, and the
+  // per-element listeners this used to attach directly were silently never
+  // firing (confirmed: a freshly-attached listener on the same button fires
+  // immediately; the original per-element one never did). Delegation
+  // resolves the clicked element and its row fresh at click time, so it
+  // can't be affected by that class of attach-before-DOM-exists timing bug.
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest?.<HTMLButtonElement>('[data-carousel-prev], [data-carousel-next]');
+    if (!btn) return;
+    const row = btn.closest('[data-carousel]')?.querySelector<HTMLElement>('[data-carousel-row]');
+    if (!row) return;
+    const direction = btn.matches('[data-carousel-prev]') ? -1 : 1;
+    const card = row.firstElementChild as HTMLElement | null;
+    const amount = (card?.offsetWidth ?? 320) + 24; // card width + gap-6
+    row.scrollBy({ left: direction * amount, behavior: 'smooth' });
+  });
+
   document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((carousel) => {
     const row = carousel.querySelector<HTMLElement>('[data-carousel-row]');
     const prevBtn = carousel.querySelector<HTMLButtonElement>('[data-carousel-prev]');
@@ -202,13 +221,6 @@ function highlightHref(id: string): string {
       prevBtn.disabled = row.scrollLeft <= 4;
       nextBtn.disabled = row.scrollLeft >= row.scrollWidth - row.clientWidth - 4;
     };
-    const scrollByCard = (direction: number) => {
-      const card = row.firstElementChild as HTMLElement | null;
-      const amount = (card?.offsetWidth ?? 320) + 24; // card width + gap-6
-      row.scrollBy({ left: direction * amount, behavior: 'smooth' });
-    };
-    prevBtn.addEventListener('click', () => scrollByCard(-1));
-    nextBtn.addEventListener('click', () => scrollByCard(1));
     row.addEventListener('scroll', updateButtons, { passive: true });
     updateButtons();
   });
