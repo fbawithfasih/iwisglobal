@@ -14,13 +14,13 @@ The tripod ban sits in the same prohibited-items list as knives, chargers, and o
 
 ## Is there any way to get permission?
 
-Third-party sources (professional photography forums, tour-operator blogs) describe a process for commercial or professional shoots — written permission from ASI's Agra and Delhi offices, sometimes with a fee — but this isn't documented on ASI's own public "Dos and Don'ts" page, so we can't confirm the current process, fee, or which office actually handles it from a primary source. `TODO(fasih): if this matters for a specific guest request, contact ASI Agra Circle directly for the current professional-permit process rather than relying on this page — what's below is what's commonly reported, not officially confirmed.`
+Third-party sources (professional photography forums, tour-operator blogs) describe a process for commercial or professional shoots — written permission from ASI's Agra and Delhi offices, sometimes with a fee — but this isn't documented on ASI's own public "Dos and Don'ts" page, so we can't confirm the current process, fee, or which office actually handles it from a primary source. What's below is what's commonly reported, not officially confirmed — if this matters for your trip, contact ASI Agra Circle directly for the current professional-permit process.
 
 What's reasonably well established from multiple independent sources, even without an ASI citation: this exception process is for professional/commercial photography, not for a tourist wanting steadier holiday photos.
 
 ## What actually works instead
 
-- A monopod is a different situation, and some visitors report far less friction using one — but it isn't explicitly addressed in ASI's published rules either. `TODO(fasih): confirm monopod status directly rather than assuming it's allowed.`
+- A monopod is a different situation, and some visitors report far less friction using one — but it isn't explicitly addressed in ASI's published rules either. <!-- TODO(fasih): confirm monopod status directly rather than assuming it's allowed. -->
 - Image stabilization on a modern phone or mirrorless camera handles most of what a tourist would have used a tripod for — sunrise light is workable handheld well before you'd need a long exposure.
 - If a tripod shot genuinely matters to you (product photography, professional portrait work), that's the case to actually go through ASI's permission process for, well ahead of your visit date.
 

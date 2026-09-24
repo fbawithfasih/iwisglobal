@@ -47,7 +47,9 @@ If you're visiting during a night-viewing slot, the ban list extends further: vi
 
 ## What happens if you bring something on the list anyway
 
-Third-party sources commonly describe cloakroom or locker facilities near the entry gates for depositing bags, food, or other restricted items before you go through security — but this isn't stated on ASI's own "Dos and Don'ts" page, so we can't confirm the exact location or procedure from a primary source. `TODO(fasih): confirm the current cloakroom location and procedure directly with ASI Agra Circle, or from IWIS Global's own guides' first-hand experience, before publishing this as fact.`
+Third-party sources commonly describe cloakroom or locker facilities near the entry gates for depositing bags, food, or other restricted items before you go through security — but this isn't stated on ASI's own "Dos and Don'ts" page, so we can't confirm the exact location or procedure from a primary source.
+
+<!-- TODO(fasih): confirm the current cloakroom location and procedure directly with ASI Agra Circle, or from IWIS Global's own guides' first-hand experience, before publishing this as fact. -->
 
 The safest approach either way: leave prohibited items at your hotel or in the vehicle rather than counting on being able to check them at the gate. Booking with a guided tour like IWIS Global's [Taj Mahal Sunrise Tour](/tours/taj-mahal-sunrise-tour) also means your guide can flag anything you're carrying before you reach security, not after.
 

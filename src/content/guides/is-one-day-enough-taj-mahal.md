@@ -26,7 +26,7 @@ This is the shape of a typical same-day departure — actual times shift with yo
 | Late afternoon | Depart for Delhi |
 | Evening | Arrive back in Delhi |
 
-`TODO(fasih): this is the general shape only. Backlog 2.6 specifically asks for real transit-time variance by departure hour on the Yamuna Expressway — e.g. a 5:30 AM departure vs. an 8:00 AM departure hitting different traffic — which is exactly the kind of thing a daily operator has and a public source doesn't. That data should come from IWIS Global's own trip logs, not be estimated here.`
+<!-- TODO(fasih): this is the general shape only. Backlog 2.6 specifically asks for real transit-time variance by departure hour on the Yamuna Expressway — e.g. a 5:30 AM departure vs. an 8:00 AM departure hitting different traffic — which is exactly the kind of thing a daily operator has and a public source doesn't. That data should come from IWIS Global's own trip logs, not be estimated here. -->
 
 ## Why departure time matters more than most guides mention
 

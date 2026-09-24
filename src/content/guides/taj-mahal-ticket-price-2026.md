@@ -34,7 +34,9 @@ The ₹1,100 entry ticket bundles in a few things that aren't obvious from the p
 
 ## Online vs. counter: is there a price difference?
 
-ASI's own ticketing page doesn't list a separate online-vs-counter price differential — tickets are sold both through [asiagracircle.in](https://www.asiagracircle.in) and directly on [tajmahal.gov.in](https://www.tajmahal.gov.in). If you've seen a source claiming a specific online convenience fee, treat it as unverified until ASI's page confirms it — we didn't find one as of this writing. `TODO(fasih): confirm directly with ASI Agra Circle if a current online booking surcharge exists — third-party operators sometimes reference one, but it wasn't on the official page as of Sep 2026.`
+ASI's own ticketing page doesn't list a separate online-vs-counter price differential — tickets are sold both through [asiagracircle.in](https://www.asiagracircle.in) and directly on [tajmahal.gov.in](https://www.tajmahal.gov.in). If you've seen a source claiming a specific online convenience fee, treat it as unverified until ASI's page confirms it — third-party operators sometimes reference one, but it wasn't on the official page as of September 2026.
+
+<!-- TODO(fasih): confirm directly with ASI Agra Circle if a current online booking surcharge exists. -->
 
 ## What this means for booking a tour
 

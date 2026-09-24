@@ -31,9 +31,13 @@ April through June regularly hits 40°C+ — outdoor walking on the marble platf
 
 ## The air quality trade-off winter doesn't advertise
 
-This is the part most "best time to visit" pages skip. Agra's air quality gets measurably worse starting around October and stays elevated through winter — the same months that are most comfortable temperature-wise. One dataset (IQAir, PM2.5, 2019) recorded January as the year's worst month at 113.6 µg/m³, against an annual average of 57.2 µg/m³ — both in the "unhealthy" range by WHO standards. `TODO(fasih): source a current-year (2026) monthly AQI dataset from CPCB's Agra station to replace this 2019 figure before this page is treated as current data — see cpcb.nic.in/agra-air-quality-data-2.`
+This is the part most "best time to visit" pages skip. Agra's air quality gets measurably worse starting around October and stays elevated through winter — the same months that are most comfortable temperature-wise. One dataset (IQAir, PM2.5, 2019) recorded January as the year's worst month at 113.6 µg/m³, against an annual average of 57.2 µg/m³ — both in the "unhealthy" range by WHO standards. This figure is from 2019 and may not reflect current air quality.
 
-Morning fog is also concentrated November through January and can reduce visibility at sunrise specifically — the exact number of foggy mornings per month isn't published anywhere we could verify. `TODO(fasih): no quantified fog-day count found from IMD; if IWIS Global tracks this operationally from daily pickups, that's a better source than anything public.`
+<!-- TODO(fasih): source a current-year (2026) monthly AQI dataset from CPCB's Agra station to replace this 2019 figure — see cpcb.nic.in/agra-air-quality-data-2. -->
+
+Morning fog is also concentrated November through January and can reduce visibility at sunrise specifically — the exact number of foggy mornings per month isn't published anywhere we could verify.
+
+<!-- TODO(fasih): no quantified fog-day count found from IMD; if IWIS Global tracks this operationally from daily pickups, that's a better source than anything public. -->
 
 ## Sunrise timing by season
 
@@ -42,7 +46,9 @@ Sunrise time matters directly for planning a [sunrise tour](/tours/taj-mahal-sun
 - **Latest sunrise of the year:** 7:10 AM, around 12 January 2026 (winter)
 - **Earliest sunrise of the year:** around the 21 June 2026 summer solstice (longest day, 13h 51m of daylight)
 
-So a winter sunrise pickup needs to be scheduled noticeably later than a summer one. `TODO(fasih): the exact sunrise time for each month wasn't retrievable from a scriptable source this session (timeanddate.com blocked automated fetches) — pull the specific month's time from that site directly when scheduling, rather than estimating.`
+So a winter sunrise pickup needs to be scheduled noticeably later than a summer one.
+
+<!-- TODO(fasih): the exact sunrise time for each month wasn't retrievable from a scriptable source this session (timeanddate.com blocked automated fetches) — pull the specific month's time from that site directly when scheduling, rather than estimating. -->
 
 ## So, when should you actually go?
 

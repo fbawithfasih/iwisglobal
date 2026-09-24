@@ -13,7 +13,7 @@ Mehtab Bagh is a Charbagh-style Mughal garden directly north of the Taj Mahal, o
 
 ## Ticket price
 
-The foreign-tourist price is ₹300. The Indian-national price is reported as ₹25 across aggregator listings, but `TODO(fasih): confirm this specific figure directly with ASI Agra Circle before treating it as final` — it hasn't been checked against a primary ASI source the way the foreign price has. Children under 15 typically enter free, consistent with every other ASI monument in Agra.
+The foreign-tourist price is ₹300. The Indian-national price is reported as ₹25 across aggregator listings, but it hasn't been checked against a primary ASI source the way the foreign price has — treat it as unverified until confirmed directly with ASI Agra Circle. Children under 15 typically enter free, consistent with every other ASI monument in Agra.
 
 ## Hours
 
@@ -25,7 +25,9 @@ Mehtab Bagh doesn't have the Taj Mahal's marble inlay work or mausoleum chamber 
 
 ## Getting there
 
-Mehtab Bagh sits directly across the Yamuna from the Taj Mahal — close enough to add to a same-day itinerary if your schedule allows a stop at the end of the day. For the monument it faces, see our [Taj Mahal attraction page](/agra/taj-mahal); for everything else nearby, see the [Agra travel hub](/agra). `TODO(fasih): confirm whether any current IWIS Global tour itinerary includes a Mehtab Bagh stop; if one does, link it here.`
+Mehtab Bagh sits directly across the Yamuna from the Taj Mahal — close enough to add to a same-day itinerary if your schedule allows a stop at the end of the day. For the monument it faces, see our [Taj Mahal attraction page](/agra/taj-mahal); for everything else nearby, see the [Agra travel hub](/agra).
+
+<!-- TODO(fasih): confirm whether any current IWIS Global tour itinerary includes a Mehtab Bagh stop; if one does, link it here. -->
 
 ---
 
