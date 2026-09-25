@@ -57,16 +57,20 @@ const factTiles: { icon: IconName; label: string; value: string }[] = [
 ].filter((t): t is { icon: IconName; label: string; value: string } => Boolean(t));
 
 // Itinerary stops get an icon picked from their wording (first match wins).
+// Matched against time + activity, since some tours label stops with words
+// ("Taj Mahal visit") rather than clock times. Fort comes before Taj so an
+// add-on like "Agra Fort or ... (Baby Taj)" reads as the fort.
 const STEP_ICONS: [RegExp, IconName][] = [
-  [/taj/i, 'taj'],
   [/fort|sikri/i, 'castle'],
+  [/taj/i, 'taj'],
   [/lunch|breakfast|dinner|meal/i, 'utensils'],
   [/train|gatimaan|station/i, 'train'],
   [/sunrise/i, 'sunrise'],
   [/pickup|pick-up|pick up|drop|depart|drive|return/i, 'car'],
 ];
-function stepIcon(activity: string): IconName {
-  return STEP_ICONS.find(([pattern]) => pattern.test(activity))?.[1] ?? 'map-pin';
+function stepIcon(step: { time: string; activity: string }): IconName {
+  const text = `${step.time} ${step.activity}`;
+  return STEP_ICONS.find(([pattern]) => pattern.test(text))?.[1] ?? 'map-pin';
 }
 
 // Some tour descriptions end with short labeled paragraphs (e.g. "What to
@@ -263,7 +267,7 @@ const tripJsonLd = {
                   <span class="absolute left-[17px] top-9 bottom-0 w-0.5 bg-brand-100" aria-hidden="true"></span>
                 )}
                 <span class="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white ring-4 ring-brand-50">
-                  <Icon name={stepIcon(step.activity)} class="h-[18px] w-[18px]" />
+                  <Icon name={stepIcon(step)} class="h-[18px] w-[18px]" />
                 </span>
                 {step.details ? (
                   <details class="group min-w-0 flex-1 rounded-xl border border-transparent transition open:border-brand-100 open:bg-brand-50/60">
