@@ -31,9 +31,11 @@ jobs:
       # tours/blog_posts reads CLOUDFLARE_API_TOKEN from a literal .env
       # file on disk (not process.env — see that file's readEnvVar comment
       # for why). Without this, the build still succeeds but silently
-      # drops tour/blog URLs from the sitemap.
+      # drops tour/blog URLs from the sitemap. D1_READ_TOKEN is a separate
+      # D1-scoped token: the deploy token (CLOUDFLARE_API_TOKEN) is
+      # Pages-only and gets a 403 (code 7403) from the D1 query API.
       - name: Write .env for build-time D1 sitemap query
-        run: echo "CLOUDFLARE_API_TOKEN=${{ secrets.CLOUDFLARE_API_TOKEN }}" > .env
+        run: echo "CLOUDFLARE_API_TOKEN=${{ secrets.D1_READ_TOKEN }}" > .env
 
       - run: npm run build
 
