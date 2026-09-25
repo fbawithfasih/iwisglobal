@@ -46,3 +46,23 @@ export function uploadAgraHighlightImage(r2: R2Like, file: File): Promise<Upload
 export function uploadBlogImage(r2: R2Like, file: File): Promise<UploadResult> {
   return uploadImage(r2, file, 'blog');
 }
+
+// E-tickets bought on ASI's site, uploaded from the admin booking page.
+// Stored under tickets/, which src/pages/images/[...key].ts does NOT serve —
+// they contain visitor details, so they're only downloadable through the
+// admin-authenticated /admin/bookings/[id]/ticket route.
+const TICKET_TYPES: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+export async function uploadTicketFile(r2: R2Like, file: File): Promise<{ key: string }> {
+  const ext = TICKET_TYPES[file.type];
+  if (!ext) throw new Error('Unsupported file type. Upload the e-ticket as a PDF, JPEG, PNG, or WebP.');
+  if (file.size > MAX_UPLOAD_BYTES) throw new Error('File is too large (max 5MB).');
+  const key = `tickets/${crypto.randomUUID()}.${ext}`;
+  await r2.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
+  return { key };
+}

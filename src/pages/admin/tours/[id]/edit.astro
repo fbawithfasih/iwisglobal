@@ -69,6 +69,7 @@ if (Astro.request.method === 'POST') {
         guideLanguage: String(form.get('guideLanguage') ?? 'English').trim() || 'English',
         pickupIncluded: form.get('pickupIncluded') === 'on',
         privateTour: form.get('privateTour') === 'on',
+        entryTicketsInPrice: parseLines(String(form.get('entryTicketsInPrice') ?? '')),
       });
       await replaceAddOns(db, id, parseAddOns(String(form.get('addOns') ?? '')));
       await replacePricingTiers(db, id, parsePricingTiers(String(form.get('pricingTiers') ?? '')));
@@ -153,6 +154,10 @@ const saved = Astro.url.searchParams.get('saved') === '1';
     <div>
       <label class="block text-stone-500 mb-1">Highlights (one per line)</label>
       <textarea name="highlights" rows="4" class="w-full rounded border border-stone-300 px-3 py-2">{formatLines(tour.highlights)}</textarea>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Entry tickets included in the price (one per line — only tickets NOT sold as an add-on below; staff buy these on ASI's site for every booking)</label>
+      <textarea name="entryTicketsInPrice" rows="2" class="w-full rounded border border-stone-300 px-3 py-2" placeholder="Agra Fort entry ticket">{formatLines(tour.entryTicketsInPrice)}</textarea>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Itinerary (one step per line: "Time | Activity | Details (optional, shown when the stop is tapped)")</label>

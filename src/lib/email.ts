@@ -89,3 +89,64 @@ export async function sendBookingConfirmationEmail(env: Record<string, any>, det
     console.error('sendBookingConfirmationEmail: request failed', err);
   }
 }
+
+export interface EntryTicketEmailDetails {
+  to: string;
+  travelerName: string;
+  tourTitle: string;
+  travelDate: string;
+  bookingId: string;
+  fileName: string;
+  fileBytes: ArrayBuffer;
+}
+
+function toBase64(bytes: ArrayBuffer): string {
+  let binary = '';
+  const view = new Uint8Array(bytes);
+  for (let i = 0; i < view.length; i += 0x8000) binary += String.fromCharCode(...view.subarray(i, i + 0x8000));
+  return btoa(binary);
+}
+
+// Emails the monument e-ticket(s) staff bought on ASI's site. Unlike the
+// confirmation email this returns whether it was sent, so the admin page can
+// record it (ticket_emailed_at) and show a clear result. Still never throws.
+export async function sendEntryTicketEmail(env: Record<string, any>, details: EntryTicketEmailDetails): Promise<boolean> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey || !details.to) return false;
+
+  const from = env.BOOKING_EMAIL_FROM || 'IWIS Global <info@iwisglobal.com>';
+  const name = escapeHtml(details.travelerName || 'there');
+  const html = `
+    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
+      <h2 style="color:#5b21b6; margin-bottom: 4px;">Your monument entry tickets</h2>
+      <p>Hi ${name},</p>
+      <p>We've booked the monument entry tickets for your <strong>${escapeHtml(details.tourTitle)}</strong> on <strong>${escapeHtml(details.travelDate)}</strong>. They're attached to this email.</p>
+      <p>Please keep this email handy on the day of your tour.</p>
+      <p style="color:#78716c; font-size:13px;">Booking ID: ${escapeHtml(details.bookingId)}</p>
+      <p>Questions? Just reply to this email or message us on WhatsApp.</p>
+      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; www.iwisglobal.com</p>
+    </div>
+  `;
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from,
+        to: details.to,
+        subject: `Your entry tickets — ${details.tourTitle}, ${details.travelDate}`,
+        html,
+        attachments: [{ filename: details.fileName, content: toBase64(details.fileBytes) }],
+      }),
+    });
+    if (!res.ok) {
+      console.error('sendEntryTicketEmail: Resend API error', res.status, await res.text());
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('sendEntryTicketEmail: request failed', err);
+    return false;
+  }
+}

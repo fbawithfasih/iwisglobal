@@ -26,6 +26,9 @@ export interface BookingRow {
   review_requested_at: string | null;
   total_amount: number;
   payment_type: string;
+  tickets_purchased_at: string | null;
+  ticket_file_key: string | null;
+  ticket_emailed_at: string | null;
 }
 
 export interface BookingFilters {
@@ -54,6 +57,27 @@ export async function listBookings(db: D1Like, filters: BookingFilters = {}): Pr
 
 export async function getBookingById(db: D1Like, id: string): Promise<BookingRow | null> {
   return db.prepare(`SELECT * FROM bookings WHERE id = ?`).bind(id).first<BookingRow>();
+}
+
+// Entry-ticket fulfilment (see lib/entryTickets.ts). Unticking "purchased"
+// clears the timestamp but keeps any uploaded e-ticket file.
+export async function setTicketsPurchased(db: D1Like, id: string, purchased: boolean): Promise<void> {
+  await db
+    .prepare(`UPDATE bookings SET tickets_purchased_at = ? WHERE id = ?`)
+    .bind(purchased ? new Date().toISOString() : null, id)
+    .run();
+}
+
+// Uploading the e-ticket implies the tickets were bought.
+export async function setTicketFile(db: D1Like, id: string, fileKey: string): Promise<void> {
+  await db
+    .prepare(`UPDATE bookings SET ticket_file_key = ?, tickets_purchased_at = COALESCE(tickets_purchased_at, ?) WHERE id = ?`)
+    .bind(fileKey, new Date().toISOString(), id)
+    .run();
+}
+
+export async function markTicketEmailed(db: D1Like, id: string): Promise<void> {
+  await db.prepare(`UPDATE bookings SET ticket_emailed_at = ? WHERE id = ?`).bind(new Date().toISOString(), id).run();
 }
 
 const VALID_STATUSES = ['confirmed', 'completed', 'cancelled'];

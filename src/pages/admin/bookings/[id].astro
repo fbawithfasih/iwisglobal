@@ -4,7 +4,20 @@ export const prerender = false;
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
-import { getBookingById, updateBookingStatus, updateBookingItinerary, addBookingNote, listBookingNotes } from '../../../lib/crm';
+import {
+  getBookingById,
+  updateBookingStatus,
+  updateBookingItinerary,
+  addBookingNote,
+  listBookingNotes,
+  setTicketsPurchased,
+  setTicketFile,
+  markTicketEmailed,
+} from '../../../lib/crm';
+import { getTourById } from '../../../lib/tours';
+import { computeTicketsToBuy, ASI_BOOKING_URL } from '../../../lib/entryTickets';
+import { uploadTicketFile } from '../../../lib/images';
+import { sendEntryTicketEmail } from '../../../lib/email';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -31,6 +44,46 @@ if (Astro.request.method === 'POST') {
   } else if (action === 'note') {
     const note = String(form.get('note') ?? '').trim();
     if (note) await addBookingNote(db, id, note);
+  } else if (action === 'tickets_purchased') {
+    await setTicketsPurchased(db, id, form.get('purchased') === 'on');
+  } else if (action === 'ticket_upload' || action === 'ticket_resend') {
+    // Upload (optional when resending): store privately, mark bought, then
+    // email the file to the customer. The result goes back as ?ticket=...
+    let result = 'uploaded';
+    try {
+      const current = await getBookingById(db, id);
+      if (!current) return Astro.redirect('/admin');
+      if (!env.IMAGES) throw new Error('File storage is not configured.');
+      let key = current.ticket_file_key;
+      const file = form.get('ticketFile');
+      if (action === 'ticket_upload') {
+        if (!(file instanceof File) || file.size === 0) throw new Error('Choose the e-ticket file first.');
+        key = (await uploadTicketFile(env.IMAGES, file)).key;
+        await setTicketFile(db, id, key);
+      }
+      if (!key) throw new Error('No e-ticket uploaded yet.');
+      const object = await env.IMAGES.get(key);
+      if (!object) throw new Error('Stored e-ticket not found.');
+      const tour = await getTourById(db, current.tour_id);
+      const sent = await sendEntryTicketEmail(env, {
+        to: current.traveler_email,
+        travelerName: current.traveler_name,
+        tourTitle: tour?.title ?? current.tour_id,
+        travelDate: current.travel_date,
+        bookingId: current.id,
+        fileName: `entry-tickets-${current.travel_date}.${key.split('.').pop()}`,
+        fileBytes: await new Response(object.body).arrayBuffer(),
+      });
+      if (sent) {
+        await markTicketEmailed(db, id);
+        result = 'emailed';
+      } else {
+        result = current.traveler_email ? 'email_failed' : 'no_email';
+      }
+    } catch (err: any) {
+      return Astro.redirect(`/admin/bookings/${id}?ticket=error&msg=${encodeURIComponent(err?.message ?? 'Upload failed')}`);
+    }
+    return Astro.redirect(`/admin/bookings/${id}?ticket=${result}`);
   }
   return Astro.redirect(`/admin/bookings/${id}`);
 }
@@ -38,6 +91,18 @@ if (Astro.request.method === 'POST') {
 const booking = await getBookingById(db, id);
 if (!booking) return Astro.redirect('/admin');
 const notes = await listBookingNotes(db, id);
+
+const tour = await getTourById(db, booking.tour_id);
+const tickets = tour ? computeTicketsToBuy(tour, booking) : [];
+const ticketResult = Astro.url.searchParams.get('ticket');
+const ticketMessages: Record<string, { text: string; ok: boolean }> = {
+  emailed: { text: 'E-ticket saved and emailed to the customer.', ok: true },
+  uploaded: { text: 'E-ticket saved.', ok: true },
+  no_email: { text: 'E-ticket saved, but this booking has no email address — send it on WhatsApp.', ok: false },
+  email_failed: { text: 'E-ticket saved, but the email did not send (check RESEND_API_KEY). Try "Resend" or send it on WhatsApp.', ok: false },
+  error: { text: Astro.url.searchParams.get('msg') ?? 'Something went wrong.', ok: false },
+};
+const fmtTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) : '');
 ---
 <AdminLayout title={`Booking ${booking.id}`}>
   <a href="/admin" class="text-sm text-stone-500 hover:underline">&larr; Back to bookings</a>
@@ -89,6 +154,62 @@ const notes = await listBookingNotes(db, id);
         <button type="submit" class="rounded bg-amber-800 text-white px-3 py-1 text-sm">Save itinerary</button>
       </form>
     </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-stone-200 p-6 mt-6 text-sm">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold">Entry tickets</h2>
+      {tickets.length > 0 && (
+        booking.tickets_purchased_at
+          ? <span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-800">Bought {fmtTime(booking.tickets_purchased_at)}</span>
+          : <span class="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-800">Tickets needed</span>
+      )}
+    </div>
+
+    {ticketResult && ticketMessages[ticketResult] && (
+      <p class={`mb-3 ${ticketMessages[ticketResult].ok ? 'text-green-700' : 'text-red-600'}`}>{ticketMessages[ticketResult].text}</p>
+    )}
+
+    {tickets.length === 0 ? (
+      <p class="text-stone-500">No monument tickets to buy for this booking (none included in the tour price or chosen as an add-on).</p>
+    ) : (
+      <div class="space-y-4">
+        <div>
+          <p class="mb-1">Buy on ASI's site for <strong>{booking.travel_date}</strong>:</p>
+          <ul class="list-disc list-inside">
+            {tickets.map((t) => <li><strong>{t.quantity} ×</strong> {t.name}</li>)}
+          </ul>
+          <a href={ASI_BOOKING_URL} target="_blank" rel="noopener noreferrer" class="inline-block mt-2 rounded bg-amber-800 text-white px-3 py-1.5">Open ASI ticket booking ↗</a>
+        </div>
+
+        <form method="POST" class="flex items-center gap-2">
+          <input type="hidden" name="_action" value="tickets_purchased" />
+          <label class="flex items-center gap-2">
+            <input type="checkbox" name="purchased" checked={!!booking.tickets_purchased_at} onchange="this.form.submit()" class="h-4 w-4" />
+            Tickets bought
+          </label>
+          <noscript><button type="submit" class="rounded border border-stone-300 px-2 py-0.5">Save</button></noscript>
+        </form>
+
+        <form method="POST" enctype="multipart/form-data" class="border-t border-stone-100 pt-4 space-y-2">
+          <input type="hidden" name="_action" value="ticket_upload" />
+          <label class="block text-stone-500">Upload the e-ticket (PDF or image, up to 5MB) — it's emailed to {booking.traveler_email || 'the customer'} automatically</label>
+          <input type="file" name="ticketFile" accept="application/pdf,image/jpeg,image/png,image/webp" required class="text-sm" />
+          <button type="submit" class="rounded bg-amber-800 text-white px-3 py-1">Upload &amp; email</button>
+        </form>
+
+        {booking.ticket_file_key && (
+          <div class="flex flex-wrap items-center gap-3 text-stone-600">
+            <a href={`/admin/bookings/${booking.id}/ticket`} class="text-amber-800 hover:underline">Download e-ticket</a>
+            <span>{booking.ticket_emailed_at ? `Emailed ${fmtTime(booking.ticket_emailed_at)}` : 'Not emailed yet'}</span>
+            <form method="POST">
+              <input type="hidden" name="_action" value="ticket_resend" />
+              <button type="submit" class="text-amber-800 hover:underline">Resend email</button>
+            </form>
+          </div>
+        )}
+      </div>
+    )}
   </div>
 
   <div class="bg-white rounded-xl border border-stone-200 p-6 mt-6 text-sm">
