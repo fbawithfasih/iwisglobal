@@ -81,7 +81,7 @@ function highlightHref(id: string): string {
     <div data-carousel>
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-serif font-semibold">{t.recommendations.title}</h2>
-        <div class="flex items-center gap-2">
+        <div class="hidden md:flex items-center gap-2">
           <button type="button" data-carousel-prev aria-label="Previous" class="h-9 w-9 rounded-full border border-stone-300 flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
               <polyline points="15 18 9 12 15 6"></polyline>
@@ -100,6 +100,18 @@ function highlightHref(id: string): string {
             <TourCard tour={tour} currency={currency} />
           </div>
         ))}
+      </div>
+      <div class="mt-4 flex justify-center gap-3 md:hidden">
+        <button type="button" data-carousel-prev aria-label="Previous" class="h-11 w-11 rounded-full border border-stone-300 bg-white flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button type="button" data-carousel-next aria-label="Next" class="h-11 w-11 rounded-full border border-stone-300 bg-white flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
       </div>
     </div>
   </section>
@@ -149,7 +161,7 @@ function highlightHref(id: string): string {
     <div data-carousel>
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-serif font-semibold">{t.thingsToDo.title}</h2>
-        <div class="flex items-center gap-2">
+        <div class="hidden md:flex items-center gap-2">
           <button type="button" data-carousel-prev aria-label="Previous" class="h-9 w-9 rounded-full border border-stone-300 flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
               <polyline points="15 18 9 12 15 6"></polyline>
@@ -178,6 +190,18 @@ function highlightHref(id: string): string {
             </div>
           </a>
         ))}
+      </div>
+      <div class="mt-4 flex justify-center gap-3 md:hidden">
+        <button type="button" data-carousel-prev aria-label="Previous" class="h-11 w-11 rounded-full border border-stone-300 bg-white flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button type="button" data-carousel-next aria-label="Next" class="h-11 w-11 rounded-full border border-stone-300 bg-white flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
       </div>
     </div>
   </section>
@@ -214,13 +238,16 @@ function highlightHref(id: string): string {
 
   document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((carousel) => {
     const row = carousel.querySelector<HTMLElement>('[data-carousel-row]');
-    const prevBtn = carousel.querySelector<HTMLButtonElement>('[data-carousel-prev]');
-    const nextBtn = carousel.querySelector<HTMLButtonElement>('[data-carousel-next]');
-    if (!row || !prevBtn || !nextBtn) return;
+    // Two arrow pairs per carousel: heading row (md+) and below the cards (phones).
+    const prevBtns = carousel.querySelectorAll<HTMLButtonElement>('[data-carousel-prev]');
+    const nextBtns = carousel.querySelectorAll<HTMLButtonElement>('[data-carousel-next]');
+    if (!row || !prevBtns.length || !nextBtns.length) return;
 
     const updateButtons = () => {
-      prevBtn.disabled = row.scrollLeft <= 4;
-      nextBtn.disabled = row.scrollLeft >= row.scrollWidth - row.clientWidth - 4;
+      const atStart = row.scrollLeft <= 4;
+      const atEnd = row.scrollLeft >= row.scrollWidth - row.clientWidth - 4;
+      prevBtns.forEach((b) => (b.disabled = atStart));
+      nextBtns.forEach((b) => (b.disabled = atEnd));
     };
     row.addEventListener('scroll', updateButtons, { passive: true });
     updateButtons();
