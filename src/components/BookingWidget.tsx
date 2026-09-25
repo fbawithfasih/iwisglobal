@@ -271,7 +271,10 @@ export default function BookingWidget({
                 </span>
               ) : (
                 <span>
-                  {addOn.name} (+{CURRENCY_SYMBOLS[currency]}{addOn.amount.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}{addOn.perTraveler ? ` × ${travelers}` : ''})
+                  {addOn.name}{' '}
+                  {addOn.amount === 0
+                    ? '(free)'
+                    : `(+${CURRENCY_SYMBOLS[currency]}${addOn.amount.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}${addOn.perTraveler ? ` × ${travelers}` : ''})`}
                 </span>
               )}
             </label>

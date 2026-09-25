@@ -6,6 +6,7 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import MobileActionBar from '../components/MobileActionBar.astro';
 ---
 
 <BaseLayout
@@ -51,4 +52,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <a href="/guides/iwis-vs-viator-getyourguide" class="text-brand-700 hover:underline">side-by-side comparison</a>.
     </p>
   </section>
+
+  <!-- Phones: WhatsApp moves into this bar so the floating button doesn't
+       sit on top of the text. -->
+  <MobileActionBar waRef="PLEDGEBAR-NO-COMMISSION-PLEDGE" waMessage="Hi! I have a question about your tours.">
+    <Fragment slot="info">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Visiting Agra?</p>
+      <p class="text-sm font-semibold leading-tight text-stone-900">Private Taj Mahal tours</p>
+    </Fragment>
+    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+      View tours
+    </a>
+  </MobileActionBar>
 </BaseLayout>
