@@ -330,13 +330,18 @@ export async function replaceAddOns(db: D1Like, tourId: string, addOns: AddOn[])
   await db.prepare(`DELETE FROM tour_addons WHERE tour_id = ?`).bind(tourId).run();
   const now = new Date().toISOString();
   for (const addOn of addOns) {
+    // tour_addons.id is a table-wide primary key, but parseAddOns derives it
+    // from name + position only, so two tours with the same add-on (e.g. the
+    // Taj entry ticket) collided and the second tour's save failed. Scope it
+    // to the tour; stable across re-saves since parseAddOns never prefixes.
+    const id = addOn.id.startsWith(`${tourId}_`) ? addOn.id : `${tourId}_${addOn.id}`;
     await db
       .prepare(
         `INSERT INTO tour_addons (id, tour_id, name, amount, usd_amount, included_by_default, per_traveler, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .bind(
-        addOn.id,
+        id,
         tourId,
         addOn.name,
         addOn.amount,

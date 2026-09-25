@@ -3,7 +3,7 @@ title: "Taj Mahal Ticket Price 2026: The Full Cost, Not Just the Headline Number
 description: "Taj Mahal tickets: foreign tourist entry is ₹1,100, but the number most guides quote leaves out the ₹200 mausoleum ticket. Here's the full cost stack, sourced from ASI's own ticketing page."
 authorName: "IWIS Global"
 datePublished: 2026-09-21
-dateModified: 2026-09-21
+dateModified: 2026-09-26
 ---
 
 Foreign tourists pay **₹1,100** for Taj Mahal complex entry, plus a separate **₹200** ticket to enter the main mausoleum chamber — **₹1,300 total** per adult. Indian nationals pay ₹50 (complex) + ₹200 (mausoleum); SAARC/BIMSTEC nationals pay ₹540 + ₹200. Children under 15 enter free, for both tickets. Source: [ASI's official ticketing page](https://www.tajmahal.gov.in/ticketing.aspx), checked 21 September 2026.
@@ -40,7 +40,7 @@ ASI's own ticketing page doesn't list a separate online-vs-counter price differe
 
 ## What this means for booking a tour
 
-When a tour price is advertised as "all-inclusive," ask specifically whether that includes the ₹200 mausoleum ticket — it's the single most common gap between what's quoted and what a visitor actually pays at the gate. IWIS Global's own [Taj Mahal Sunrise Tour](/tours/taj-mahal-sunrise-tour) and [Same-Day Taj Mahal Tour from Delhi](/tours/same-day-agra-from-delhi) both bundle the full ₹1,300 entry (complex + mausoleum) at cost, included by default — see our [No-Commission Pledge](/no-commission-pledge) for what "at cost" means in practice.
+When a tour price is advertised as "all-inclusive," ask specifically whether that includes the ₹200 mausoleum ticket — it's the single most common gap between what's quoted and what a visitor actually pays at the gate. Here's how it works on IWIS Global's own tours: the [Same-Day Taj Mahal Tour from Delhi](/tours/same-day-agra-from-delhi) and the [Same-Day Taj Mahal Tour by Gatimaan Express](/tours/same-day-taj-mahal-tour-by-gatimaan-express) bundle the full ₹1,300 entry (complex + mausoleum) at cost, included by default; the [Taj Mahal Luxury Car Tour](/tours/taj-mahal-luxury-car-tour-from-delhi) includes it in the tour price; and on the [Taj Mahal Sunrise Tour](/tours/taj-mahal-sunrise-tour) it's an optional ₹1,300-per-person add-on at checkout, so you can buy tickets yourself at the gate instead. See our [No-Commission Pledge](/no-commission-pledge) for what "at cost" means in practice.
 
 For the monument itself — history, hours, and what to expect on arrival — see our [Taj Mahal attraction page](/agra/taj-mahal).
 
