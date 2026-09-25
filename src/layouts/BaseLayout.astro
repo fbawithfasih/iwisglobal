@@ -211,6 +211,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
         </a>
         <nav class="hidden md:flex items-center gap-6">
           <a href="/tours" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">{t.nav.tours}</a>
+          <a href="/blog" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">{t.nav.blog}</a>
           <a href="/help" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">{t.nav.help}</a>
           {isSignedIn ? (
             <>
@@ -240,6 +241,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
       </div>
       <div id="mobile-nav-panel" class="hidden md:hidden border-t border-stone-200 bg-white px-6 py-4 space-y-3">
         <a href="/tours" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.tours}</a>
+        <a href="/blog" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.blog}</a>
         <a href="/help" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.help}</a>
         {isSignedIn ? (
           <>

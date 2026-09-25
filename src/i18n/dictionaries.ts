@@ -8,6 +8,7 @@ import type { Locale } from '../lib/i18n';
 export interface Dictionary {
   nav: {
     tours: string;
+    blog: string;
     help: string;
     signIn: string;
     myBookings: string;
@@ -41,7 +42,7 @@ export interface Dictionary {
 }
 
 const en: Dictionary = {
-  nav: { tours: 'Tours', help: 'Help', signIn: 'Sign in', myBookings: 'My Bookings', signOut: 'Sign out' },
+  nav: { tours: 'Tours', blog: 'Blog', help: 'Help', signIn: 'Sign in', myBookings: 'My Bookings', signOut: 'Sign out' },
   hero: {
     title: 'The Taj Mahal, curated just for you.',
     subtitle:
@@ -64,7 +65,7 @@ const en: Dictionary = {
 };
 
 const es: Dictionary = {
-  nav: { tours: 'Tours', help: 'Ayuda', signIn: 'Iniciar sesión', myBookings: 'Mis reservas', signOut: 'Cerrar sesión' },
+  nav: { tours: 'Tours', blog: 'Blog', help: 'Ayuda', signIn: 'Iniciar sesión', myBookings: 'Mis reservas', signOut: 'Cerrar sesión' },
   hero: {
     title: 'El Taj Mahal, diseñado para ti.',
     subtitle:
@@ -87,7 +88,7 @@ const es: Dictionary = {
 };
 
 const fr: Dictionary = {
-  nav: { tours: 'Circuits', help: 'Aide', signIn: 'Se connecter', myBookings: 'Mes réservations', signOut: 'Se déconnecter' },
+  nav: { tours: 'Circuits', blog: 'Blog', help: 'Aide', signIn: 'Se connecter', myBookings: 'Mes réservations', signOut: 'Se déconnecter' },
   hero: {
     title: 'Le Taj Mahal, pensé pour vous.',
     subtitle:
@@ -110,7 +111,7 @@ const fr: Dictionary = {
 };
 
 const de: Dictionary = {
-  nav: { tours: 'Touren', help: 'Hilfe', signIn: 'Anmelden', myBookings: 'Meine Buchungen', signOut: 'Abmelden' },
+  nav: { tours: 'Touren', blog: 'Blog', help: 'Hilfe', signIn: 'Anmelden', myBookings: 'Meine Buchungen', signOut: 'Abmelden' },
   hero: {
     title: 'Das Taj Mahal, ganz nach Ihren Wünschen.',
     subtitle:
