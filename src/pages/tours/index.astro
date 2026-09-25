@@ -28,7 +28,7 @@ if (Astro.url.searchParams.get('currency')) {
       <a href="/guides/taj-mahal-ticket-price-2026" class="text-brand-700 hover:underline">See the full Taj Mahal ticket price breakdown</a>.
     </p>
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {tours.map((tour) => <TourCard tour={tour} currency={currency} />)}
+      {tours.map((tour, i) => <TourCard tour={tour} currency={currency} loading={i === 0 ? "eager" : "lazy"} />)}
     </div>
   </section>
 </BaseLayout>

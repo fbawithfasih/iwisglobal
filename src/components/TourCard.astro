@@ -6,9 +6,12 @@ import type { ParsedTour } from '../lib/tours';
 interface Props {
   tour: ParsedTour;
   currency: Currency;
+  // Lazy by default (cards are mostly below the fold); pass "eager" for a
+  // card that is the page's main image, e.g. the first card on /tours.
+  loading?: 'lazy' | 'eager';
 }
 
-const { tour, currency } = Astro.props;
+const { tour, currency, loading = 'lazy' } = Astro.props;
 const availability = getAvailability();
 // Cheapest available per-person rate (the largest-group tier when the tour
 // has pricing tiers) — see backlog 0.2. Kept in sync with tours/[slug].astro's
@@ -21,7 +24,7 @@ const price = resolveFromPrice(tour, currency);
 >
   <div class="aspect-[4/3] bg-brand-50 rounded-xl overflow-hidden">
     {tour.image ? (
-      <img src={tour.image} alt={tour.title} class="w-full h-full object-cover transition group-hover:opacity-90" />
+      <img src={tour.image} alt={tour.title} loading={loading} decoding="async" class="w-full h-full object-cover transition group-hover:opacity-90" />
     ) : (
       <div class="w-full h-full flex items-center justify-center text-brand-300 text-sm">No image yet</div>
     )}

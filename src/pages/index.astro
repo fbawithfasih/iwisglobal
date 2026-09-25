@@ -59,15 +59,45 @@ function highlightHref(id: string): string {
         <source src="https://d2ol7oe51mr4n9.cloudfront.net/user_3DcNrqF8RYl6IEcXyvyHIz0mgUZ/77342590-7bb6-4f5c-a0dc-8c192a2db2bd.mp4" type="video/mp4" />
       </video>
       <div class="absolute inset-0 bg-gradient-to-t from-brand-950/70 via-brand-900/25 to-transparent"></div>
+      <!-- Phones: the headline sits right over the bright marble dome, where
+           the bottom-up gradient above is still transparent. -->
+      <div class="absolute inset-0 bg-brand-950/35 md:hidden"></div>
     </div>
     <div class="max-w-3xl mx-auto px-6 py-36 md:py-52 text-center">
-      <h1 class="text-4xl md:text-5xl font-serif font-semibold mb-4 text-white">
+      <h1 class="text-4xl md:text-5xl font-serif font-semibold mb-4 text-white [text-shadow:0_2px_14px_rgba(30,10,60,0.45)]">
         {t.hero.title}
       </h1>
-      <p class="text-lg text-white/90 mb-8">
+      <p class="text-lg text-white/90 mb-8 [text-shadow:0_1px_10px_rgba(30,10,60,0.45)]">
         {t.hero.subtitle}
       </p>
       <AiGuideBox client:load />
+    </div>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 py-12 md:py-16">
+    <div data-carousel>
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-serif font-semibold">{t.recommendations.title}</h2>
+        <div class="flex items-center gap-2">
+          <button type="button" data-carousel-prev aria-label="Previous" class="h-9 w-9 rounded-full border border-stone-300 flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <button type="button" data-carousel-next aria-label="Next" class="h-9 w-9 rounded-full border border-stone-300 flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div data-carousel-row class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-px-6 scroll-smooth pb-2 -mx-6 px-6 carousel-row">
+        {tours.map((tour) => (
+          <div class="w-64 sm:w-72 shrink-0 snap-start">
+            <TourCard tour={tour} currency={currency} />
+          </div>
+        ))}
+      </div>
     </div>
   </section>
 
@@ -112,34 +142,7 @@ function highlightHref(id: string): string {
     </div>
   </section>
 
-  <section class="max-w-5xl mx-auto px-6 py-16">
-    <div data-carousel>
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-serif font-semibold">{t.recommendations.title}</h2>
-        <div class="flex items-center gap-2">
-          <button type="button" data-carousel-prev aria-label="Previous" class="h-9 w-9 rounded-full border border-stone-300 flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-          </button>
-          <button type="button" data-carousel-next aria-label="Next" class="h-9 w-9 rounded-full border border-stone-300 flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div data-carousel-row class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-6 px-6 carousel-row">
-        {tours.map((tour) => (
-          <div class="w-64 sm:w-72 shrink-0 snap-start">
-            <TourCard tour={tour} currency={currency} />
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <section class="max-w-5xl mx-auto px-6 pb-16">
+  <section class="max-w-5xl mx-auto px-6 py-12 md:py-16">
     <div data-carousel>
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-serif font-semibold">{t.thingsToDo.title}</h2>
@@ -156,12 +159,12 @@ function highlightHref(id: string): string {
           </button>
         </div>
       </div>
-      <div data-carousel-row class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-6 px-6 carousel-row">
+      <div data-carousel-row class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-px-6 scroll-smooth pb-2 -mx-6 px-6 carousel-row">
         {AGRA_HIGHLIGHTS.map((item) => (
           <a href={highlightHref(item.id)} class="group w-64 sm:w-72 shrink-0 snap-start block">
             <div class="aspect-[4/3] bg-brand-50 rounded-xl overflow-hidden">
               {item.image ? (
-                <img src={item.image} alt={item.name} class="w-full h-full object-cover transition group-hover:opacity-90" />
+                <img src={item.image} alt={item.name} loading="lazy" decoding="async" class="w-full h-full object-cover transition group-hover:opacity-90" />
               ) : (
                 <div class="w-full h-full flex items-center justify-center text-brand-300 text-sm">No image yet</div>
               )}

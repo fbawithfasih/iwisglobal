@@ -66,7 +66,7 @@ export default function AiGuideBox() {
           maxLength={MAX_LENGTH}
           placeholder="YourGuide — ask me anything about your travel"
           aria-label="Ask YourGuide a travel question"
-          className="flex-1 bg-transparent text-stone-700 text-sm placeholder:text-stone-500 outline-none"
+          className="flex-1 min-w-0 h-11 bg-transparent text-stone-700 text-sm placeholder:text-stone-500 outline-none"
         />
         <button
           type="submit"
@@ -86,7 +86,7 @@ export default function AiGuideBox() {
         </button>
       </form>
 
-      <a href="/tours" className="block text-center text-sm text-white/80 hover:text-white transition mt-3">
+      <a href="/tours" className="mx-auto mt-1 flex w-fit min-h-11 items-center px-3 text-sm text-white/80 hover:text-white transition">
         Browse tours →
       </a>
 
