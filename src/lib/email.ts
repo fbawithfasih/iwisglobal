@@ -60,10 +60,10 @@ export async function sendBookingConfirmationEmail(env: Record<string, any>, det
       </table>
       ${
         isDeposit
-          ? `<p>You've paid a 25% deposit to secure this booking; the remaining ${formatAmount(balanceDue, details.currency)} is due on pickup. The deposit is non-refundable within 24 hours of your tour, since your vehicle and guide are already committed by then.</p>`
+          ? `<p>You've paid a 25% deposit to secure this booking; the remaining ${formatAmount(balanceDue, details.currency)} is due on pickup. If you cancel less than 24 hours before your tour, 50% of the deposit is refunded.</p>`
           : ''
       }
-      <p>Free cancellation up to 24 hours before your tour starts. Questions? Just reply to this email or message us on WhatsApp.</p>
+      <p>Free cancellation up to 24 hours before your tour starts (50% refund after that; no refund for no-shows). Questions? Just reply to this email or message us on WhatsApp.</p>
       <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; www.iwisglobal.com</p>
     </div>
   `;
