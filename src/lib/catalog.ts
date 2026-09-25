@@ -110,6 +110,10 @@ export function computeDepositAmount(total: number): number {
 export const FOUNDING_GUEST_DISCOUNT_RATE = 0.15;
 export const FOUNDING_GUEST_SLOT_CAP = 25;
 
+// Rounded to a whole rupee/dollar: 15% off otherwise leaves paise/cents
+// (₹15,998 → ₹13,598.3), which the booking widget displayed as-is. Every
+// display and charge path goes through this function, so rounding here keeps
+// the shown price and the Razorpay charge identical.
 export function applyFoundingGuestDiscount(totalMajorUnits: number, eligible: boolean): number {
-  return eligible ? totalMajorUnits * (1 - FOUNDING_GUEST_DISCOUNT_RATE) : totalMajorUnits;
+  return eligible ? Math.round(totalMajorUnits * (1 - FOUNDING_GUEST_DISCOUNT_RATE)) : totalMajorUnits;
 }

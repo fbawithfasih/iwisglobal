@@ -266,12 +266,12 @@ export default function BookingWidget({
                 <span>
                   {addOn.name}{' '}
                   <span className="text-emerald-700">
-                    (included{addOn.perTraveler ? ` — ${CURRENCY_SYMBOLS[currency]}${addOn.amount} × ${travelers} travelers` : ''} — uncheck to remove)
+                    (included{addOn.perTraveler ? ` — ${CURRENCY_SYMBOLS[currency]}${addOn.amount.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')} × ${travelers} travelers` : ''} — uncheck to remove)
                   </span>
                 </span>
               ) : (
                 <span>
-                  {addOn.name} (+{CURRENCY_SYMBOLS[currency]}{addOn.amount}{addOn.perTraveler ? ` × ${travelers}` : ''})
+                  {addOn.name} (+{CURRENCY_SYMBOLS[currency]}{addOn.amount.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}{addOn.perTraveler ? ` × ${travelers}` : ''})
                 </span>
               )}
             </label>
