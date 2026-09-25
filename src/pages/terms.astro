@@ -5,17 +5,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 // live per-request session and locale state via Astro.cookies.
 export const prerender = false;
 
+// Written from the business's actual booking, payment, and cancellation
+// practices; not yet reviewed by a lawyer. Have it reviewed, particularly
+// the liability and governing-law sections. This used to be a public
+// banner, removed 26 Sep 2026 because payment-network reviewers read it as
+// an incomplete policy.
 const lastUpdated = '25 September 2026';
 ---
 
 <BaseLayout title="Terms of Service — IWIS Global" description="The terms that apply when you book a tour with IWIS Global.">
   <section class="max-w-2xl mx-auto px-6 py-16">
-    <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-8">
-      This page is a starting draft covering this business's actual booking, payment, and cancellation
-      practices. It has not been reviewed by a lawyer — please have it reviewed, particularly the liability
-      and governing-law sections, before relying on it as binding legal terms.
-    </p>
-
     <h1 class="text-3xl font-serif font-semibold mb-1">Terms of Service</h1>
     <p class="text-sm text-stone-500 mb-6">Last updated: {lastUpdated}</p>
 
