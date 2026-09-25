@@ -31,9 +31,9 @@ const D1_DATABASE_ID = '71733870-0326-4760-b9f6-9c0513a7ce10';
 // --remote` — this environment's wrangler login lacks D1 API scope (fails
 // with a 7403 "not authorized" error), while CLOUDFLARE_API_TOKEN in .env
 // already works against the same database (confirmed working for this
-// change). Fails gracefully to an empty list — a missing token, a network
-// hiccup, or an API error just means the sitemap omits tour URLs for that
-// build, not a broken build.
+// change). A missing token, a network hiccup, or an API error means the
+// sitemap omits tour URLs for that build (logged as an error, see
+// fetchD1Slugs), not a broken build.
 function readEnvVar(name) {
   // Deliberately not process.loadEnvFile: its parsing produced a token
   // value that the D1 API rejected (403) even though the identical raw
@@ -52,8 +52,15 @@ function readEnvVar(name) {
 // Shared by tours and blog_posts — both are D1-backed with the same
 // id/slug/status shape, so one query-runner covers both sitemap gaps.
 async function fetchD1Slugs(sql) {
+  // Still non-fatal (a sitemap gap shouldn't block a deploy), but never
+  // silent: live sitemaps shipped with zero tour/blog URLs unnoticed.
+  // "::error::" surfaces as an annotation on the GitHub Actions run.
+  const fail = (reason) => {
+    console.error(`::error::Sitemap D1 slug query failed (${sql}): ${reason}`);
+    return [];
+  };
   const token = readEnvVar('CLOUDFLARE_API_TOKEN');
-  if (!token) return [];
+  if (!token) return fail('CLOUDFLARE_API_TOKEN missing from .env');
 
   try {
     const res = await fetch(
@@ -64,12 +71,14 @@ async function fetchD1Slugs(sql) {
         body: JSON.stringify({ sql }),
       }
     );
-    if (!res.ok) return [];
-    const json = await res.json();
+    const json = await res.json().catch(() => null);
+    if (!res.ok) return fail(`HTTP ${res.status} ${JSON.stringify(json?.errors ?? '')}`);
     const rows = json?.result?.[0]?.results ?? [];
-    return rows.map((r) => r.slug).filter(Boolean);
-  } catch {
-    return [];
+    const slugs = rows.map((r) => r.slug).filter(Boolean);
+    if (slugs.length === 0) return fail('query returned no published slugs');
+    return slugs;
+  } catch (err) {
+    return fail(String(err));
   }
 }
 
@@ -83,6 +92,12 @@ export default defineConfig({
     tailwind(),
     react(),
     sitemap({
+      // Only indexable pages: admin/account/auth are robots-disallowed or
+      // redirect, and login/signup/booking-confirmation have no search value.
+      filter: (page) =>
+        !/^https:\/\/www\.iwisglobal\.com\/(admin|account|auth|login|signup|booking)(\/|$)/.test(page),
+      // Match src/middleware.ts, which 301s trailing-slash paths to bare ones.
+      serialize: (item) => ({ ...item, url: item.url.replace(/(?<=\.com\/.+)\/$/, '') }),
       customPages: [
         ...guideSlugs.map((slug) => `https://www.iwisglobal.com/guides/${slug}`),
         ...attractionSlugs.map((slug) => `https://www.iwisglobal.com/agra/${slug}`),
