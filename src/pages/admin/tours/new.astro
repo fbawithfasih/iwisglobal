@@ -80,6 +80,10 @@ if (Astro.request.method === 'POST' && db) {
       <label class="block text-stone-500 mb-1">Summary (shown on cards/meta description)</label>
       <textarea name="summary" rows="2" class="w-full rounded border border-stone-300 px-3 py-2"></textarea>
     </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Description ("About this tour" — blank line between paragraphs; "## Heading" for a bullet heading; "Know before you go: …", "What to bring: …", "Not allowed: …" paragraphs go to "Good to know"; [text](/link) for links)</label>
+      <textarea name="description" rows="14" class="w-full rounded border border-stone-300 px-3 py-2 font-mono text-xs leading-relaxed"></textarea>
+    </div>
     <div class="grid grid-cols-2 gap-4">
       <div>
         <label class="block text-stone-500 mb-1">Price per traveler (INR) *</label>

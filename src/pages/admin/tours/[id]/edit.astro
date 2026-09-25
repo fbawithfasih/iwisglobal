@@ -51,7 +51,10 @@ if (Astro.request.method === 'POST') {
       await updateTour(db, id, {
         title,
         summary: String(form.get('summary') ?? ''),
-        description: String(form.get('description') ?? ''),
+        // The form had no description field for a while, and every save
+        // wiped the description. If the field is ever missing again, keep
+        // what's stored rather than overwrite it with nothing.
+        description: form.has('description') ? String(form.get('description')) : existing?.description ?? '',
         durationLabel: String(form.get('durationLabel') ?? ''),
         startPoint: String(form.get('startPoint') ?? ''),
         amount,
@@ -105,6 +108,10 @@ const saved = Astro.url.searchParams.get('saved') === '1';
     <div>
       <label class="block text-stone-500 mb-1">Summary</label>
       <textarea name="summary" rows="2" class="w-full rounded border border-stone-300 px-3 py-2">{tour.summary}</textarea>
+    </div>
+    <div>
+      <label class="block text-stone-500 mb-1">Description ("About this tour" — blank line between paragraphs; "## Heading" for a bullet heading; "Know before you go: …", "What to bring: …", "Not allowed: …" paragraphs go to "Good to know"; [text](/link) for links)</label>
+      <textarea name="description" rows="14" class="w-full rounded border border-stone-300 px-3 py-2 font-mono text-xs leading-relaxed">{tour.description}</textarea>
     </div>
     <div class="grid grid-cols-2 gap-4">
       <div>
