@@ -24,7 +24,7 @@ export const GET: APIRoute = async ({ locals }) => {
   lines.push('# IWIS Global');
   lines.push('');
   lines.push(
-    '> Private Taj Mahal & Agra tour operator based in Agra, India. Same-day trips from Delhi and multi-day Agra itineraries, booked and paid for online, with transparent pricing and no hidden commissions. The full content below is inlined for AI systems that answer from a single fetch rather than crawling every page.'
+    '> Private Taj Mahal & Agra tour operator based in Agra, India. Private same-day trips from Delhi, booked and paid for online, with transparent pricing and no hidden commissions. The full content below is inlined for AI systems that answer from a single fetch rather than crawling every page.'
   );
   lines.push('');
 
