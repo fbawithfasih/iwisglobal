@@ -3,22 +3,186 @@ export const prerender = false;
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { resolveEnv } from '../../lib/env';
+import { listTours } from '../../lib/tours';
 
-const attractions = await getCollection('attractions');
+// Agra travel hub. Google crawled the old ~300-word card list and left it
+// "Crawled - currently not indexed", so this page now carries real planning
+// content. Every fact below comes from the attraction/guide markdown (already
+// sourced to ASI) — ticket prices, hours, and Friday status are read from
+// attraction frontmatter, never retyped here, so the table can't drift.
+
+// Visit order for a typical trip: the Taj first, the Fort alongside it, the
+// riverside sunset view, then the out-of-town day trip.
+const ORDER = ['taj-mahal', 'agra-fort', 'mehtab-bagh', 'fatehpur-sikri'];
+const attractions = (await getCollection('attractions')).sort(
+  (a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug)
+);
+const openOnFriday = attractions.filter((a) => !a.data.closedFriday);
+
+const guides = await getCollection('guides');
+
+const env = resolveEnv(Astro.locals);
+const tours = env.DB ? await listTours(env.DB, { status: 'published' }) : [];
+
+const faqs = [
+  {
+    q: 'What are the main things to do in Agra?',
+    a: `Agra's four main sites are the Taj Mahal, Agra Fort, Mehtab Bagh, and Fatehpur Sikri. The Taj Mahal, Agra Fort, and Fatehpur Sikri are all UNESCO World Heritage Sites.`,
+  },
+  {
+    q: 'Is the Taj Mahal open on Fridays?',
+    a: `No. The Taj Mahal is closed every Friday. ${openOnFriday.map((a) => a.data.name).join(', ')} stay open on Fridays.`,
+  },
+  {
+    q: 'Can you see the Taj Mahal and Agra Fort on the same day?',
+    a: 'Yes. Agra Fort is a short drive from the Taj Mahal within Agra city, and most day-trip itineraries visit both.',
+  },
+  {
+    q: 'How far is Fatehpur Sikri from Agra?',
+    a: 'About 37 km, roughly 45 minutes to an hour by road. A proper visit takes 2.5 to 3.5 hours, so it fits a multi-day Agra trip better than a same-day trip from Delhi.',
+  },
+  {
+    q: 'How far is Agra from Delhi?',
+    a: 'Roughly 230 km via the Yamuna Expressway, which is why most international visitors see Agra as a same-day trip from Delhi.',
+  },
+];
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
 ---
 
-<BaseLayout title="Agra Attractions Guide — IWIS Global" description="Ticket prices, hours, and visitor guides for the Taj Mahal, Agra Fort, Fatehpur Sikri, and Mehtab Bagh.">
-  <section class="max-w-3xl mx-auto px-6 py-16">
-    <h1 class="text-3xl font-serif font-semibold mb-2">Agra attractions</h1>
-    <p class="text-stone-600 mb-10">Ticket prices, hours, and what to expect at each of Agra's main sites.</p>
+<BaseLayout
+  title="Things to Do in Agra: Taj Mahal, Agra Fort & More — IWIS Global"
+  description="A visitor's guide to Agra: ticket prices, opening hours, and Friday closures for the Taj Mahal, Agra Fort, Mehtab Bagh, and Fatehpur Sikri, plus how to plan your day."
+>
+  <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
 
-    <div class="space-y-6">
+  <article class="max-w-3xl mx-auto px-6 py-16">
+    <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-4">Things to do in Agra</h1>
+    <p class="text-lg text-stone-700 mb-4">
+      Agra is home to three UNESCO World Heritage Sites — the Taj Mahal, Agra Fort, and Fatehpur
+      Sikri — plus Mehtab Bagh, the Mughal garden across the river with the classic view of the Taj.
+      It sits roughly 230 km from Delhi via the Yamuna Expressway, so most visitors come on a
+      same-day trip; a second day lets you add Fatehpur Sikri without rushing.
+    </p>
+    <p class="text-stone-600 mb-10">
+      Below: what each site costs and when it's open, how to fit them into one or two days, and the
+      rules worth knowing before you go.
+    </p>
+
+    <h2 class="text-2xl font-serif font-semibold mb-4">Agra's main sites at a glance</h2>
+    <div class="overflow-x-auto mb-3 -mx-6 px-6">
+      <table class="w-full min-w-[560px] text-sm border-collapse">
+        <thead>
+          <tr class="border-b border-stone-300 text-left">
+            <th class="py-2 pr-4 font-semibold">Site</th>
+            <th class="py-2 pr-4 font-semibold">Foreign visitor ticket</th>
+            <th class="py-2 pr-4 font-semibold">Hours</th>
+            <th class="py-2 font-semibold">Fridays</th>
+          </tr>
+        </thead>
+        <tbody>
+          {attractions.map((a) => (
+            <tr class="border-b border-stone-200 align-top">
+              <td class="py-3 pr-4">
+                <a href={`/agra/${a.slug}`} class="font-medium text-brand-800 hover:underline">{a.data.name}</a>
+              </td>
+              <td class="py-3 pr-4">{a.data.ticketPriceForeign}</td>
+              <td class="py-3 pr-4">{a.data.hours}</td>
+              <td class="py-3">{a.data.closedFriday ? <strong>Closed</strong> : 'Open'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="text-xs text-stone-500 mb-12">
+      Children under 15 enter free at all four sites. Indian and SAARC/BIMSTEC prices are on each
+      site's page. Prices change; confirm with ASI before a specific trip.
+    </p>
+
+    <h2 class="text-2xl font-serif font-semibold mb-4">The sites</h2>
+    <div class="space-y-4 mb-12">
       {attractions.map((a) => (
         <a href={`/agra/${a.slug}`} class="block rounded-xl border border-stone-200 bg-white p-6 hover:shadow-md transition">
-          <h2 class="text-lg font-semibold mb-1">{a.data.name}</h2>
-          <p class="text-sm text-stone-600">{a.data.description}</p>
+          <h3 class="text-lg font-semibold mb-1">{a.data.name}</h3>
+          <p class="text-sm text-stone-600 mb-2">{a.data.description}</p>
+          {a.data.distanceFromTaj !== '—' && (
+            <p class="text-xs text-stone-500">Location: {a.data.distanceFromTaj}</p>
+          )}
         </a>
       ))}
     </div>
-  </section>
+
+    <h2 class="text-2xl font-serif font-semibold mb-4">Planning your visit</h2>
+    <h3 class="text-lg font-semibold mb-2">One day in Agra</h3>
+    <p class="text-stone-700 mb-4">
+      A single day covers the Taj Mahal and Agra Fort comfortably — the Fort is a short drive away
+      within the city, and most same-day itineraries pair the two. If time allows at the end of the
+      day, Mehtab Bagh sits directly across the Yamuna from the Taj and is known for its sunset view.
+      Whether one day is enough depends on what you want to see; our guide on
+      <a href="/guides/is-one-day-enough-taj-mahal" class="text-brand-800 underline">whether one day is enough for the Taj Mahal</a>
+      walks through it.
+    </p>
+    <h3 class="text-lg font-semibold mb-2">Two days or more</h3>
+    <p class="text-stone-700 mb-4">
+      Fatehpur Sikri, Akbar's abandoned capital, is about 37 km from Agra and deserves 2.5 to 3.5
+      hours on its own. That makes it a poor fit for a same-day trip from Delhi but a natural second
+      day.
+    </p>
+    <h3 class="text-lg font-semibold mb-2">Visiting on a Friday</h3>
+    <p class="text-stone-700 mb-12">
+      The Taj Mahal is <strong>closed every Friday</strong>. {openOnFriday.map((a) => a.data.name).join(', ')}
+      are all open, so a Friday in Agra still works — just plan the Taj for another day.
+    </p>
+
+    {guides.length > 0 && (
+      <>
+        <h2 class="text-2xl font-serif font-semibold mb-4">Before you go</h2>
+        <ul class="space-y-2 mb-12">
+          {guides.map((g) => (
+            <li>
+              <a href={`/guides/${g.slug}`} class="text-brand-800 hover:underline font-medium">{g.data.title}</a>
+              <span class="text-stone-600 text-sm"> — {g.data.description}</span>
+            </li>
+          ))}
+        </ul>
+      </>
+    )}
+
+    {tours.length > 0 && (
+      <>
+        <h2 class="text-2xl font-serif font-semibold mb-2">Private Agra tours</h2>
+        <p class="text-stone-600 mb-4">
+          IWIS Global runs private tours with transport and an English-speaking guide.
+        </p>
+        <div class="grid sm:grid-cols-2 gap-4 mb-12">
+          {tours.map((tour) => (
+            <a href={`/tours/${tour.slug}`} class="block rounded-xl border border-stone-200 bg-white p-5 hover:shadow-md transition">
+              <h3 class="font-semibold mb-1">{tour.title}</h3>
+              <p class="text-sm text-stone-600 mb-2">{tour.summary}</p>
+              <p class="text-xs text-stone-500">{tour.durationLabel}</p>
+            </a>
+          ))}
+        </div>
+      </>
+    )}
+
+    <h2 class="text-2xl font-serif font-semibold mb-4">Frequently asked questions</h2>
+    <div class="space-y-5">
+      {faqs.map((f) => (
+        <div>
+          <h3 class="font-semibold mb-1">{f.q}</h3>
+          <p class="text-stone-700">{f.a}</p>
+        </div>
+      ))}
+    </div>
+  </article>
 </BaseLayout>
