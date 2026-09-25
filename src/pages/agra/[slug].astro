@@ -6,6 +6,7 @@ export const prerender = false;
 
 import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import MobileActionBar from '../../components/MobileActionBar.astro';
 
 const { slug } = Astro.params;
 const entry: CollectionEntry<'attractions'> | undefined = (await getCollection('attractions')).find((e) => e.slug === slug);
@@ -31,7 +32,7 @@ const attractionJsonLd = {
   <script type="application/ld+json" set:html={JSON.stringify(attractionJsonLd)} />
 
   <article class="max-w-3xl mx-auto px-6 py-16">
-    <a href="/agra" class="text-sm text-stone-500 hover:underline">&larr; All Agra attractions</a>
+    <a href="/agra" class="inline-flex min-h-11 items-center text-sm text-stone-500 hover:underline">&larr; All Agra attractions</a>
     <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-4 mb-6">{name}</h1>
 
     <div class="grid sm:grid-cols-2 gap-4 mb-8 rounded-xl border border-stone-200 bg-white p-5 text-sm">
@@ -59,4 +60,16 @@ const attractionJsonLd = {
 
     <p class="text-xs text-stone-400 mt-10">Last updated {dateModified.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
   </article>
+
+  <!-- Phones: WhatsApp moves into this bar so the floating button doesn't
+       sit on top of the article text; plus a way on to the tours. -->
+  <MobileActionBar waRef={`ATTRBAR-AGRA-${entry.slug.toUpperCase()}`} waMessage="Hi! I have a question about visiting the Taj Mahal.">
+    <Fragment slot="info">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Visiting Agra?</p>
+      <p class="text-sm font-semibold leading-tight text-stone-900">Private Taj Mahal tours</p>
+    </Fragment>
+    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+      View tours
+    </a>
+  </MobileActionBar>
 </BaseLayout>

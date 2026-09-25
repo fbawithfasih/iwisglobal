@@ -46,7 +46,7 @@ const articleJsonLd = {
   <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
 
   <article class="max-w-3xl mx-auto px-6 py-16">
-    <a href="/blog" class="text-sm text-stone-500 hover:underline">&larr; All posts</a>
+    <a href="/blog" class="inline-flex min-h-11 items-center text-sm text-stone-500 hover:underline">&larr; All posts</a>
     <span class="block text-xs font-semibold tracking-wide text-brand-700 uppercase mt-4">
       {CATEGORY_LABELS[post.category] ?? post.category}
     </span>

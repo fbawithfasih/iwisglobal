@@ -7,6 +7,7 @@ export const prerender = false;
 
 import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import MobileActionBar from '../../components/MobileActionBar.astro';
 
 const { slug } = Astro.params;
 const entry: CollectionEntry<'guides'> | undefined = (await getCollection('guides')).find((e) => e.slug === slug);
@@ -102,7 +103,7 @@ const faqJsonLd = faqs.length > 0
   {faqJsonLd && <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />}
 
   <article class="max-w-3xl mx-auto px-6 py-16">
-    <a href="/guides" class="text-sm text-stone-500 hover:underline">&larr; All guides</a>
+    <a href="/guides" class="inline-flex min-h-11 items-center text-sm text-stone-500 hover:underline">&larr; All guides</a>
     <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-4 mb-3">{title}</h1>
     <p class="text-sm text-stone-500 mb-10">
       By {authorName} · Published {dateFmt(datePublished)}
@@ -119,4 +120,16 @@ const faqJsonLd = faqs.length > 0
       </a>
     </div>
   </article>
+
+  <!-- Phones: WhatsApp moves into this bar so the floating button doesn't
+       sit on top of the article text; plus a way on to the tours. -->
+  <MobileActionBar waRef={`GUIDEBAR-GUIDES-${entry.slug.toUpperCase()}`} waMessage="Hi! I have a question about visiting the Taj Mahal.">
+    <Fragment slot="info">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Visiting the Taj?</p>
+      <p class="text-sm font-semibold leading-tight text-stone-900">Private Taj Mahal tours</p>
+    </Fragment>
+    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+      View tours
+    </a>
+  </MobileActionBar>
 </BaseLayout>
