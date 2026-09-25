@@ -83,3 +83,12 @@ export function resolveFromPrice(
   if (tiers.length === 0) return base;
   return { amount: Math.min(...tiers.map((t) => t.amount)), currency: base.currency };
 }
+
+// Cheapest first by that same "From" price (in the visitor's currency), so
+// listings lead with the entry-level tour. Used by /tours and the homepage.
+export function sortByFromPrice<T extends PricedItem & { pricingTiers?: PricedTier[] }>(
+  tours: T[],
+  currency: Currency
+): T[] {
+  return [...tours].sort((a, b) => resolveFromPrice(a, currency).amount - resolveFromPrice(b, currency).amount);
+}

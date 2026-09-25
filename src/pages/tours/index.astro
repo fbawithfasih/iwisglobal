@@ -4,7 +4,7 @@ import TourCard from '../../components/TourCard.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 import { listTours } from '../../lib/tours';
 import { resolveEnv } from '../../lib/env';
-import { resolveCurrency, resolveFromPrice } from '../../lib/currency';
+import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
 
 export const prerender = false;
 
@@ -16,11 +16,8 @@ if (Astro.url.searchParams.get('currency')) {
   Astro.cookies.set('currency', currency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
 }
 
-// Cheapest first, by the same "From" price each card shows (in the visitor's
-// currency), so the entry-level tour is the first thing a visitor sees.
-const tours = [...publishedTours].sort(
-  (a, b) => resolveFromPrice(a, currency).amount - resolveFromPrice(b, currency).amount
-);
+// Cheapest first (see sortByFromPrice).
+const tours = sortByFromPrice(publishedTours, currency);
 ---
 <BaseLayout
   title="Taj Mahal Tours — Private, Guided Agra Trips | IWIS Global"
