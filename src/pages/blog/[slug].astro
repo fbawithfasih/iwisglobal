@@ -8,6 +8,7 @@
 export const prerender = false;
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import MobileActionBar from '../../components/MobileActionBar.astro';
 import { resolveEnv } from '../../lib/env';
 import { getBlogPostBySlug, renderBlogBody } from '../../lib/blog';
 
@@ -64,4 +65,16 @@ const articleJsonLd = {
     {post.image && <img src={post.image} alt={post.title} class="w-full aspect-video object-cover rounded-xl mb-10" />}
     <div class="prose prose-stone max-w-none prose-headings:font-serif prose-a:text-brand-700" set:html={bodyHtml} />
   </article>
+
+  <!-- Phones: WhatsApp moves into this bar so the floating button doesn't
+       sit on top of the article text; plus a way on to the tours. -->
+  <MobileActionBar waRef={`BLOGBAR-BLOG-${post.slug.toUpperCase()}`} waMessage="Hi! I read your blog and have a question.">
+    <Fragment slot="info">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Visiting Agra?</p>
+      <p class="text-sm font-semibold leading-tight text-stone-900">Private Taj Mahal tours</p>
+    </Fragment>
+    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+      View tours
+    </a>
+  </MobileActionBar>
 </BaseLayout>

@@ -1,0 +1,75 @@
+---
+// Phones-only sticky bottom bar: page-specific info + primary action, plus a
+// WhatsApp button. While it shows, the site-wide floating WhatsApp button is
+// hidden (it used to sit on top of the page text). Used by tour pages
+// (price + Book now) and blog posts (View tours).
+//
+// Slots: "info" (left side) and "action" (primary button, right of WhatsApp).
+interface Props {
+  // data-wa-ref for click attribution — "<location>-<page>" like BaseLayout's.
+  waRef: string;
+  // Pre-filled WhatsApp message; the ref is appended automatically.
+  waMessage: string;
+  // Optional element id: the bar slides away while that element is on
+  // screen (tour pages: the booking form it points to).
+  hideWhenVisible?: string;
+}
+
+const { waRef, waMessage, hideWhenVisible } = Astro.props;
+const waHref = `https://wa.me/916399226633?text=${encodeURIComponent(`${waMessage} (ref: ${waRef})`)}`;
+---
+<div
+  id="mobile-action-bar"
+  data-hide-when-visible={hideWhenVisible}
+  class="fixed inset-x-0 bottom-0 z-40 border-t border-brand-100 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(76,29,149,0.12)] backdrop-blur transition-transform duration-200 md:hidden"
+>
+  <div class="flex items-center justify-between gap-3">
+    <div class="min-w-0">
+      <slot name="info" />
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <a
+        href={waHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Chat with us on WhatsApp"
+        data-wa-ref={waRef}
+        class="flex h-11 w-11 items-center justify-center rounded-full bg-[#25D366] text-white shadow-md transition hover:brightness-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-green-200"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-6 w-6" aria-hidden="true">
+          <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.87 9.87 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.09c-.24.68-1.4 1.3-1.93 1.36-.5.06-1.02.25-3.4-.71-2.87-1.16-4.72-4.08-4.86-4.27-.14-.19-1.16-1.55-1.16-2.95 0-1.41.74-2.1 1-2.39.26-.29.57-.36.76-.36.19 0 .38 0 .55.01.18.01.42-.07.65.5.24.58.82 2 .89 2.14.07.14.12.31.02.5-.1.19-.15.31-.29.48-.14.17-.3.38-.43.51-.14.14-.29.29-.13.57.17.29.75 1.24 1.61 2 1.11.99 2.04 1.3 2.33 1.44.29.14.46.12.63-.07.17-.19.72-.84.91-1.13.19-.29.38-.24.65-.14.26.1 1.68.79 1.97.94.29.14.48.21.55.34.07.12.07.71-.17 1.4Z" />
+        </svg>
+      </a>
+      <slot name="action" />
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  @media (max-width: 767px) {
+    body.has-action-bar a[data-wa-ref^='FLOATING'] {
+      display: none;
+    }
+  }
+  #mobile-action-bar.is-hidden {
+    transform: translateY(110%);
+  }
+</style>
+
+<script>
+  const bar = document.getElementById('mobile-action-bar');
+  if (bar) {
+    document.body.classList.add('has-action-bar');
+    const targetId = bar.dataset.hideWhenVisible;
+    const target = targetId ? document.getElementById(targetId) : null;
+    if (target && 'IntersectionObserver' in window) {
+      new IntersectionObserver(([entry]) => {
+        bar.classList.toggle('is-hidden', entry.isIntersecting);
+        // inert (not just aria-hidden): the hidden bar's links must not be focusable.
+        bar.inert = entry.isIntersecting;
+        // The floating WhatsApp button comes back while the bar is away.
+        document.body.classList.toggle('has-action-bar', !entry.isIntersecting);
+      }).observe(target);
+    }
+  }
+</script>
