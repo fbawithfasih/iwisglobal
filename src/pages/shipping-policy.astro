@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Required page for Razorpay card-network activation. IWIS Global sells tour
+// services, not goods, so "shipping" here means how the booking and the tour
+// are delivered, and "exchange" means changing the tour date.
+export const prerender = false;
+
+const lastUpdated = '25 September 2026';
+---
+
+<BaseLayout
+  title="Shipping, Delivery & Exchange Policy — IWIS Global"
+  description="IWIS Global sells tour services, not physical goods: how your booking confirmation and tour are delivered, and how date changes work."
+>
+  <section class="max-w-2xl mx-auto px-6 py-16">
+    <h1 class="text-3xl font-serif font-semibold mb-1">Shipping, Delivery &amp; Exchange Policy</h1>
+    <p class="text-sm text-stone-500 mb-6">Last updated: {lastUpdated}</p>
+
+    <h2 class="text-lg font-semibold mb-2">No physical shipping</h2>
+    <p class="text-stone-700 mb-6">
+      IWIS Global ("we", "us") sells private guided tour services in Agra and from Delhi. We don't sell or ship
+      physical products, so no shipping charges apply and nothing is sent to you by post or courier.
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">How your booking is delivered</h2>
+    <ul class="list-disc list-inside text-stone-700 space-y-1 mb-6">
+      <li>Your booking is confirmed as soon as payment succeeds, and the confirmation is shown on screen immediately.</li>
+      <li>A booking confirmation is also emailed to the address you enter at checkout.</li>
+      <li>If you create an account, you can view your bookings at any time under My Bookings.</li>
+    </ul>
+
+    <h2 class="text-lg font-semibold mb-2">How the tour is delivered</h2>
+    <ul class="list-disc list-inside text-stone-700 space-y-1 mb-6">
+      <li>The tour is delivered in person on the date you booked, starting from the pickup point stated on the tour page (for most tours, your hotel in Delhi or the airport).</li>
+      <li>What's included — vehicle, guide, and any tickets or add-ons — is listed on each tour page and in your confirmation.</li>
+      <li>Same-day tours can be booked until 9 PM India Standard Time the night before, so we have time to arrange your vehicle and guide.</li>
+    </ul>
+
+    <h2 class="text-lg font-semibold mb-2">Exchanges (changing your tour date)</h2>
+    <p class="text-stone-700 mb-6">
+      A tour can't be exchanged like a product, but you can change its date free of charge up to 24 hours
+      before it starts, subject to availability. If the new date or a change in group size costs more, you pay
+      the difference. Full details, including refunds, are in our
+      <a href="/cancellation-refund-policy" class="text-brand-800 hover:underline">Cancellation &amp; Refund Policy</a>.
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">Questions</h2>
+    <p class="text-stone-700">
+      <a href="/contact" class="text-brand-800 hover:underline">Contact us</a> by email or WhatsApp with your
+      name and payment reference.
+    </p>
+  </section>
+</BaseLayout>

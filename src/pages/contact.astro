@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Required page for Razorpay card-network activation. Same contact details
+// as /about (registered address, GSTIN, email, phone) — keep them in sync.
+export const prerender = false;
+
+const waHref = `https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have a question. (ref: CONTACT)')}`;
+---
+
+<BaseLayout
+  title="Contact Us — IWIS Global"
+  description="Contact IWIS Global, a private Taj Mahal & Agra tour operator based in Agra: email, phone and WhatsApp, and our registered address."
+>
+  <section class="max-w-2xl mx-auto px-6 py-16">
+    <h1 class="text-3xl font-serif font-semibold mb-2">Contact Us</h1>
+    <p class="text-stone-700 mb-8">
+      Questions about a tour, or help with an existing booking? Reach us by WhatsApp, phone, or email. For an
+      existing booking, include your name and payment reference so we can find it quickly.
+    </p>
+
+    <div class="grid sm:grid-cols-2 gap-4 mb-10">
+      <a href={waHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONTACT" class="block rounded-xl border border-brand-100 bg-brand-50/60 p-5 hover:border-brand-300 transition">
+        <p class="text-xs font-medium uppercase tracking-wide text-stone-500">WhatsApp / Phone</p>
+        <p class="text-lg font-semibold text-brand-800">+91 6399226633</p>
+        <p class="text-sm text-stone-600 mt-1">Fastest way to reach us</p>
+      </a>
+      <a href="mailto:info@iwisglobal.com" class="block rounded-xl border border-stone-200 bg-white p-5 hover:border-brand-300 transition">
+        <p class="text-xs font-medium uppercase tracking-wide text-stone-500">Email</p>
+        <p class="text-lg font-semibold text-brand-800">info@iwisglobal.com</p>
+        <p class="text-sm text-stone-600 mt-1">Bookings, cancellations, and general questions</p>
+      </a>
+    </div>
+
+    <h2 class="text-lg font-semibold mb-2">Registered address</h2>
+    <p class="text-stone-700 mb-6">
+      IWIS Global<br />
+      A-5, First Floor, Essar Mughal Apartment, Jyoti Nagar, Shaheed Nagar,<br />
+      Agra – 282001, Uttar Pradesh, India
+    </p>
+
+    <h2 class="text-lg font-semibold mb-2">GST registration</h2>
+    <p class="text-stone-700 mb-6">GSTIN: 09AAIFI6799J1ZH</p>
+
+    <h2 class="text-lg font-semibold mb-2">Policies</h2>
+    <ul class="list-disc list-inside text-stone-700 space-y-1">
+      <li><a href="/terms" class="text-brand-800 hover:underline">Terms of Service</a></li>
+      <li><a href="/privacy" class="text-brand-800 hover:underline">Privacy Policy</a></li>
+      <li><a href="/cancellation-refund-policy" class="text-brand-800 hover:underline">Cancellation &amp; Refund Policy</a></li>
+      <li><a href="/shipping-policy" class="text-brand-800 hover:underline">Shipping, Delivery &amp; Exchange Policy</a></li>
+    </ul>
+  </section>
+</BaseLayout>
