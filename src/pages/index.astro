@@ -45,24 +45,19 @@ function highlightHref(id: string): string {
 ---
 <BaseLayout title="Private Taj Mahal & Agra Tours from Delhi — IWIS Global">
   <section class="relative isolate">
-    <div class="absolute inset-0 -z-10 overflow-hidden hero-frame" id="hero-frame">
-      <img
-        id="hero-img"
-        src="/hero-taj-mahal.jpg"
-        alt="The Taj Mahal at sunrise"
-        class="w-full h-full object-cover object-[center_35%] hero-img"
-      />
-      <!-- Backlog: "live" flying clouds — pure CSS, no image assets. Each
-           div is a soft blurred ellipse drifting left→right at its own
-           speed/height/opacity for a cheap parallax-cloud look, dimmed by
-           the same dark gradient the photo gets so it reads as sky, not a
-           sticker. Skipped under reduced-motion (see style block below),
-           matching the existing .hero-frame zoom pattern. -->
-      <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-        <div class="hero-cloud hero-cloud-1"></div>
-        <div class="hero-cloud hero-cloud-2"></div>
-        <div class="hero-cloud hero-cloud-3"></div>
-      </div>
+    <div class="absolute inset-0 -z-10 overflow-hidden" id="hero-frame">
+      <video
+        id="hero-video"
+        class="w-full h-full object-cover object-[center_35%]"
+        poster="/hero-taj-mahal.jpg"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+      >
+        <source src="https://d2ol7oe51mr4n9.cloudfront.net/user_3DcNrqF8RYl6IEcXyvyHIz0mgUZ/77342590-7bb6-4f5c-a0dc-8c192a2db2bd.mp4" type="video/mp4" />
+      </video>
       <div class="absolute inset-0 bg-gradient-to-t from-brand-950/70 via-brand-900/25 to-transparent"></div>
     </div>
     <div class="max-w-3xl mx-auto px-6 py-36 md:py-52 text-center">
@@ -226,94 +221,15 @@ function highlightHref(id: string): string {
   });
 </script>
 
-<style>
-  /* Slow ambient zoom on the frame; the image itself is scaled up slightly
-     (see .hero-img below) so mouse-parallax translation never exposes an
-     edge. Two separate elements (frame vs. image) so the continuous
-     keyframe animation and the JS-driven parallax transform never fight
-     over the same `transform` property. */
-  .hero-frame {
-    animation: hero-zoom 24s ease-in-out infinite alternate;
-  }
-  .hero-img {
-    transform: scale(1.08);
-    transition: transform 0.2s ease-out;
-  }
-  @keyframes hero-zoom {
-    from { transform: scale(1); }
-    to { transform: scale(1.05); }
-  }
-
-  .hero-cloud {
-    position: absolute;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.55);
-    filter: blur(18px);
-    will-change: transform;
-  }
-  .hero-cloud-1 {
-    top: 12%;
-    width: 260px;
-    height: 60px;
-    left: -20%;
-    opacity: 0.5;
-    animation: cloud-drift 55s linear infinite;
-  }
-  .hero-cloud-2 {
-    top: 22%;
-    width: 180px;
-    height: 44px;
-    left: -20%;
-    opacity: 0.35;
-    animation: cloud-drift 80s linear infinite;
-    animation-delay: -20s;
-  }
-  .hero-cloud-3 {
-    top: 8%;
-    width: 320px;
-    height: 70px;
-    left: -20%;
-    opacity: 0.4;
-    animation: cloud-drift 100s linear infinite;
-    animation-delay: -50s;
-  }
-  @keyframes cloud-drift {
-    from { transform: translateX(0); }
-    to { transform: translateX(140vw); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .hero-frame {
-      animation: none;
-    }
-    .hero-img {
-      transition: none;
-    }
-    .hero-cloud {
-      animation: none;
-      display: none;
-    }
-  }
-</style>
-
 <script>
-  const frame = document.getElementById('hero-frame');
-  const img = document.getElementById('hero-img') as HTMLImageElement | null;
+  // The video itself provides motion now, so no CSS zoom/parallax/fake-cloud
+  // effects are needed (those existed specifically to animate a static
+  // image). Respect prefers-reduced-motion the same way the old effects
+  // did: freeze on the poster frame instead of autoplaying.
+  const heroVideo = document.getElementById('hero-video') as HTMLVideoElement | null;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // Desktop-only enhancement: a hover/mousemove parallax on the hero photo.
-  // Skipped entirely under reduced-motion, and harmless on touch devices
-  // (no mousemove events fire there, so the image just sits still).
-  if (frame && img && !reduceMotion) {
-    const maxShiftPx = 16;
-    frame.addEventListener('mousemove', (e) => {
-      const rect = frame.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5;
-      const y = (e.clientY - rect.top) / rect.height - 0.5;
-      img.style.transform = `scale(1.08) translate(${(-x * maxShiftPx * 2).toFixed(1)}px, ${(-y * maxShiftPx * 2).toFixed(1)}px)`;
-    });
-    frame.addEventListener('mouseleave', () => {
-      img.style.transform = '';
-    });
+  if (heroVideo && reduceMotion) {
+    heroVideo.pause();
+    heroVideo.removeAttribute('autoplay');
   }
 </script>
