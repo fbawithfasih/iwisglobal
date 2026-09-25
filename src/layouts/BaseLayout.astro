@@ -173,11 +173,11 @@ const orgJsonLd = {
     <!-- End Google Tag Manager (noscript) -->
     <header id="site-header" class="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur-sm transition-[box-shadow,height] duration-200">
       <div class="site-header-inner max-w-5xl mx-auto px-6 h-16 flex items-center justify-between transition-[height] duration-200">
-        <a href="/" class="flex items-center gap-2.5">
-          <img src="/logo.png" alt="IWIS Global" class="h-11 w-11 object-contain" />
-          <span class="text-xl font-serif font-semibold tracking-tight">IWIS Global</span>
+        <a href="/" class="flex items-center gap-2 md:gap-2.5 min-w-0">
+          <img src="/logo.png" alt="IWIS Global" class="h-9 w-9 md:h-11 md:w-11 object-contain shrink-0" />
+          <span class="text-lg md:text-xl font-serif font-semibold tracking-tight truncate">IWIS Global</span>
         </a>
-        <nav class="flex items-center gap-6">
+        <nav class="hidden md:flex items-center gap-6">
           <a href="/tours" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">{t.nav.tours}</a>
           <a href="/help" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">{t.nav.help}</a>
           {isSignedIn ? (
@@ -192,6 +192,36 @@ const orgJsonLd = {
           )}
           <LocaleSwitcher />
         </nav>
+        <button
+          type="button"
+          id="mobile-nav-trigger"
+          class="md:hidden flex items-center justify-center h-9 w-9 shrink-0 rounded-lg text-stone-600 hover:bg-stone-100 transition"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="mobile-nav-panel"
+          aria-label="Menu"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="h-6 w-6" aria-hidden="true">
+            <path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </button>
+      </div>
+      <div id="mobile-nav-panel" class="hidden md:hidden border-t border-stone-200 bg-white px-6 py-4 space-y-3">
+        <a href="/tours" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.tours}</a>
+        <a href="/help" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.help}</a>
+        {isSignedIn ? (
+          <>
+            <a href="/account/bookings" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.myBookings}</a>
+            <form method="POST" action="/auth/logout">
+              <button type="submit" class="text-sm font-medium text-stone-700 hover:text-brand-800 transition cursor-pointer">{t.nav.signOut}</button>
+            </form>
+          </>
+        ) : (
+          <a href="/login" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.signIn}</a>
+        )}
+        <div class="pt-2 border-t border-stone-100">
+          <LocaleSwitcher />
+        </div>
       </div>
     </header>
     <slot />
@@ -326,6 +356,30 @@ const orgJsonLd = {
 </style>
 
 <script>
+  // Mirrors LocaleSwitcher.astro's own open/close/click-outside/Escape
+  // pattern for consistency.
+  const mobileNavTrigger = document.getElementById('mobile-nav-trigger');
+  const mobileNavPanel = document.getElementById('mobile-nav-panel');
+  if (mobileNavTrigger && mobileNavPanel) {
+    const closeMobileNav = () => {
+      mobileNavPanel.classList.add('hidden');
+      mobileNavTrigger.setAttribute('aria-expanded', 'false');
+    };
+    const openMobileNav = () => {
+      mobileNavPanel.classList.remove('hidden');
+      mobileNavTrigger.setAttribute('aria-expanded', 'true');
+    };
+    mobileNavTrigger.addEventListener('click', () => {
+      mobileNavPanel.classList.contains('hidden') ? openMobileNav() : closeMobileNav();
+    });
+    document.addEventListener('click', (e) => {
+      if (!mobileNavTrigger.contains(e.target as Node) && !mobileNavPanel.contains(e.target as Node)) closeMobileNav();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMobileNav();
+    });
+  }
+
   const header = document.getElementById('site-header');
   if (header) {
     const updateScrolled = () => {
