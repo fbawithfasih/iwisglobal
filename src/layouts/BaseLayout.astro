@@ -172,6 +172,8 @@ const websiteJsonLd = Astro.url.pathname === '/'
     {robotsNoindex && <meta name="robots" content="noindex, follow" />}
 
     <meta property="og:type" content="website" />
+    <!-- One of the signals Google uses for the site name shown above the URL. -->
+    <meta property="og:site_name" content="IWIS Global" />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />

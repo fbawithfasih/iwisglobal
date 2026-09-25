@@ -45,7 +45,7 @@ const en: Dictionary = {
   hero: {
     title: 'The Taj Mahal, curated just for you.',
     subtitle:
-      'Private, professionally guided Agra tours for international travelers — same-day trips from Delhi, multi-day itineraries, and curated stops at local art galleries.',
+      'Private Taj Mahal & Agra tours from Delhi — your own English-speaking guide and private car, hotel pickup included, and free cancellation up to 24 hours before.',
     searchPlaceholder: 'Search tours in Agra',
   },
   trust: {
@@ -68,7 +68,7 @@ const es: Dictionary = {
   hero: {
     title: 'El Taj Mahal, diseñado para ti.',
     subtitle:
-      'Tours privados con guía profesional en Agra para viajeros internacionales: excursiones de un día desde Delhi, itinerarios de varios días y paradas seleccionadas en galerías de arte locales.',
+      'Tours privados al Taj Mahal y Agra desde Delhi: tu propio guía de habla inglesa y coche privado, recogida en el hotel incluida y cancelación gratuita hasta 24 horas antes.',
     searchPlaceholder: 'Buscar tours en Agra',
   },
   trust: {
@@ -91,7 +91,7 @@ const fr: Dictionary = {
   hero: {
     title: 'Le Taj Mahal, pensé pour vous.',
     subtitle:
-      "Circuits privés à Agra avec guide professionnel pour voyageurs internationaux — excursions d'une journée depuis Delhi, itinéraires de plusieurs jours et arrêts sélectionnés dans des galeries d'art locales.",
+      "Circuits privés au Taj Mahal et à Agra depuis Delhi — votre propre guide anglophone et voiture privée, prise en charge à l'hôtel incluse et annulation gratuite jusqu'à 24 heures avant.",
     searchPlaceholder: 'Rechercher des circuits à Agra',
   },
   trust: {
@@ -114,7 +114,7 @@ const de: Dictionary = {
   hero: {
     title: 'Das Taj Mahal, ganz nach Ihren Wünschen.',
     subtitle:
-      'Private, professionell geführte Agra-Touren für internationale Reisende — Tagesausflüge ab Delhi, mehrtägige Reiserouten und ausgewählte Stopps in lokalen Kunstgalerien.',
+      'Private Taj-Mahal- und Agra-Touren ab Delhi — Ihr eigener englischsprachiger Guide und Privatwagen, Hotelabholung inklusive und kostenlose Stornierung bis 24 Stunden vorher.',
     searchPlaceholder: 'Touren in Agra suchen',
   },
   trust: {
