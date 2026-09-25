@@ -77,19 +77,19 @@ function highlightHref(id: string): string {
   </section>
 
   <section class="bg-brand-50 py-14">
-    <div class="max-w-5xl mx-auto px-6 grid gap-8 md:grid-cols-2 md:items-start">
+    <div class="max-w-5xl mx-auto px-6 grid gap-8 md:grid-cols-2">
       <div class="max-w-md">
         <WeatherCard client:load />
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 auto-rows-fr">
+        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5 flex flex-col justify-center">
           <svg class="h-5 w-5 text-brand-700 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v3m0 12v3m9-9h-3M6 12H3m14.4-6.4-2.1 2.1M8.7 15.3l-2.1 2.1m0-10.8 2.1 2.1m8.7 8.7 2.1 2.1" />
           </svg>
           <p class="text-[13px] font-semibold text-stone-900 mb-1">{t.trust.curatedTitle}</p>
           <p class="text-xs leading-relaxed text-stone-500">{t.trust.curatedDesc}</p>
         </div>
-        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5">
+        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5 flex flex-col justify-center">
           <svg class="h-5 w-5 text-brand-700 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <circle cx="12" cy="12" r="9" stroke-linecap="round" stroke-linejoin="round" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3" />
@@ -97,7 +97,7 @@ function highlightHref(id: string): string {
           <p class="text-[13px] font-semibold text-stone-900 mb-1">{t.trust.bookTitle}</p>
           <p class="text-xs leading-relaxed text-stone-500">{t.trust.bookDesc}</p>
         </div>
-        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5">
+        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5 flex flex-col justify-center">
           <svg class="h-5 w-5 text-brand-700 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M20.6 12.6 12.9 20.3a1.5 1.5 0 0 1-2.1 0l-7.1-7.1a1.5 1.5 0 0 1 0-2.1L11.4 3.4a1.5 1.5 0 0 1 1.05-.44H19a1.5 1.5 0 0 1 1.5 1.5v6.55a1.5 1.5 0 0 1-.44 1.05Z" />
             <circle cx="16" cy="8" r="1" fill="currentColor" stroke="none" />
@@ -105,7 +105,7 @@ function highlightHref(id: string): string {
           <p class="text-[13px] font-semibold text-stone-900 mb-1">{t.trust.pricingTitle}</p>
           <p class="text-xs leading-relaxed text-stone-500">{t.trust.pricingDesc}</p>
         </div>
-        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5">
+        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5 flex flex-col justify-center">
           <svg class="h-5 w-5 text-brand-700 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3.5 5 6v6c0 4.2 2.9 7.3 7 8.5 4.1-1.2 7-4.3 7-8.5V6l-7-2.5Z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="m9.5 12 1.8 1.8L14.5 10" />
