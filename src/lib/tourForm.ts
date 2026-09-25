@@ -16,18 +16,27 @@ export function formatLines(items: string[]): string {
   return items.join('\n');
 }
 
-// One step per line: "5:30 AM | Pickup from hotel"
+// One step per line: "5:30 AM | Pickup from hotel | optional details".
+// The third segment is the expandable text on the tour page; anything past
+// it is kept as part of the details, so a "|" inside details survives.
 export function parseItinerary(text: string): ItineraryStep[] {
   return parseLines(text)
     .map((line) => {
-      const [time, ...rest] = line.split('|');
-      return { time: (time ?? '').trim(), activity: rest.join('|').trim() };
+      const [time, activity, ...rest] = line.split('|');
+      const details = rest.join('|').trim();
+      return {
+        time: (time ?? '').trim(),
+        activity: (activity ?? '').trim(),
+        ...(details ? { details } : {}),
+      };
     })
     .filter((step) => step.time || step.activity);
 }
 
 export function formatItinerary(steps: ItineraryStep[]): string {
-  return steps.map((s) => `${s.time} | ${s.activity}`).join('\n');
+  return steps
+    .map((s) => (s.details ? `${s.time} | ${s.activity} | ${s.details}` : `${s.time} | ${s.activity}`))
+    .join('\n');
 }
 
 function slugAddOnId(name: string, index: number): string {

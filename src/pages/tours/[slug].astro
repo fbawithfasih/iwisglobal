@@ -2,11 +2,12 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BookingWidget from '../../components/BookingWidget.tsx';
 import WeatherCard from '../../components/WeatherCard';
+import Icon, { type IconName } from '../../components/Icon.astro';
 import { getTourBySlug } from '../../lib/tours';
 import { getAvailability } from '../../lib/availability';
 import { resolveEnv } from '../../lib/env';
 import { countBookings } from '../../lib/db';
-import { FOUNDING_GUEST_SLOT_CAP } from '../../lib/catalog';
+import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../../lib/catalog';
 import { resolveCurrency, resolvePrice, resolveAddOns, resolvePricingTiers, resolveFromPrice, CURRENCY_SYMBOLS } from '../../lib/currency';
 
 export const prerender = false;
@@ -39,6 +40,34 @@ const fromPrice = resolveFromPrice(tour, requestedCurrency);
 // exact moment. This is just for showing the banner/estimate.
 const bookingCount = env.DB ? await countBookings(env.DB) : 0;
 const foundingGuestSlotsLeft = Math.max(0, FOUNDING_GUEST_SLOT_CAP - bookingCount);
+const foundingGuestPercent = Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100);
+
+const fromPriceLabel = `${CURRENCY_SYMBOLS[fromPrice.currency]}${fromPrice.amount.toLocaleString(fromPrice.currency === 'USD' ? 'en-US' : 'en-IN')}`;
+
+// Key-facts tiles under the title. Each is shown only when the tour data
+// backs it, so nothing here claims more than the tour actually offers.
+const factTiles: { icon: IconName; label: string; value: string }[] = [
+  tour.durationLabel && { icon: 'clock', label: 'Duration', value: tour.durationLabel },
+  tour.startPoint && { icon: 'map-pin', label: 'Starts from', value: tour.startPoint },
+  tour.privateTour && { icon: 'users', label: 'Tour type', value: 'Private, just your group' },
+  tour.guideLanguage && { icon: 'languages', label: 'Guide', value: `${tour.guideLanguage}-speaking` },
+  tour.pickupIncluded && { icon: 'car', label: 'Hotel pickup', value: 'Included' },
+  { icon: 'calendar-check', label: 'Cancellation', value: 'Free up to 24h before' },
+  { icon: 'zap', label: 'Confirmation', value: 'Instant, on booking' },
+].filter((t): t is { icon: IconName; label: string; value: string } => Boolean(t));
+
+// Itinerary stops get an icon picked from their wording (first match wins).
+const STEP_ICONS: [RegExp, IconName][] = [
+  [/taj/i, 'taj'],
+  [/fort|sikri/i, 'castle'],
+  [/lunch|breakfast|dinner|meal/i, 'utensils'],
+  [/train|gatimaan|station/i, 'train'],
+  [/sunrise/i, 'sunrise'],
+  [/pickup|pick-up|pick up|drop|depart|drive|return/i, 'car'],
+];
+function stepIcon(activity: string): IconName {
+  return STEP_ICONS.find(([pattern]) => pattern.test(activity))?.[1] ?? 'map-pin';
+}
 
 // Some tour descriptions end with short labeled paragraphs (e.g. "What to
 // bring: ..."). Pull those out of the prose block so they render as their
@@ -150,64 +179,67 @@ const tripJsonLd = {
       )}
       <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-2">{tour.title}</h1>
       <div class="h-1 w-16 rounded-full bg-gradient-to-r from-brand-600 to-accent-500 mb-4"></div>
-      <div class="flex items-center gap-2 text-sm text-stone-600 mb-4">
-        <span>📍 Agra, India</span>
+      <div class="flex flex-wrap items-center gap-2 text-sm text-stone-600 mb-4">
+        <span class="inline-flex items-center gap-1"><Icon name="map-pin" class="h-4 w-4 text-brand-600" /> Agra, India</span>
         <span aria-hidden="true">·</span>
         <WeatherCard client:load variant="inline" />
+        <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-accent-50 text-accent-700">
+          {availability.label}
+        </span>
       </div>
       {requestedCurrency === 'USD' && price.currency === 'INR' && (
         <p class="text-xs text-stone-500 mb-2">USD price not set for this tour — showing INR</p>
       )}
-      <p class="text-stone-600 mb-4">{tour.summary}</p>
+      <p class="text-stone-700 text-lg leading-relaxed mb-6">{tour.summary}</p>
 
-      <div class="flex flex-wrap gap-2 mb-6">
-        <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-brand-50 text-brand-800">
-          ✓ Free cancellation until 24h before
-        </span>
-        <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-brand-50 text-brand-800">
-          ✓ Instant confirmation
-        </span>
-        {tour.pickupIncluded && (
-          <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-brand-50 text-brand-800">
-            ✓ Hotel pickup included
-          </span>
-        )}
-        {tour.privateTour && (
-          <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-brand-50 text-brand-800">
-            ✓ Private tour
-          </span>
-        )}
-        <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-accent-50 text-accent-700">
-          {availability.label}
-        </span>
-      </div>
+      <ul class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6" aria-label="Key facts">
+        {factTiles.map((tile) => (
+          <li class="flex items-start gap-3 rounded-xl border border-brand-100 bg-white p-3 transition hover:border-brand-300 hover:shadow-sm">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
+              <Icon name={tile.icon} class="h-5 w-5" />
+            </span>
+            <span class="min-w-0">
+              <span class="block text-[11px] font-medium uppercase tracking-wide text-stone-500">{tile.label}</span>
+              <span class="block text-sm font-semibold text-stone-900 leading-snug">{tile.value}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
 
-      <div class="flex gap-6 text-sm text-stone-500 mb-4">
-        <span>{tour.durationLabel}</span>
-        <span>From {tour.startPoint}</span>
-        {tour.guideLanguage && <span>{tour.guideLanguage} guide</span>}
-      </div>
-
-      <div class="mb-8 pb-8 border-b border-stone-200">
-        <p class="text-2xl font-semibold text-stone-900">
-          From {CURRENCY_SYMBOLS[fromPrice.currency]}{fromPrice.amount.toLocaleString(fromPrice.currency === 'USD' ? 'en-US' : 'en-IN')}
-          <span class="text-sm font-normal text-stone-500">/person</span>
-        </p>
-        {resolvedTiers.length > 0 && (
-          <p class="text-sm text-stone-500 mt-1">for groups of {Math.max(...resolvedTiers.map((t) => t.travelers))}+ — solo or smaller groups pay more per person</p>
+      <div class="mb-8 rounded-2xl bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 p-6 text-white shadow-lg shadow-brand-900/20">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p class="text-sm text-brand-100">Private tour, priced per person</p>
+            <p class="text-3xl font-semibold">
+              From {fromPriceLabel}
+              <span class="text-base font-normal text-brand-100">/person</span>
+            </p>
+            {resolvedTiers.length > 0 && (
+              <p class="text-sm text-brand-100 mt-1">for groups of {Math.max(...resolvedTiers.map((t) => t.travelers))}+ — solo or smaller groups pay more per person</p>
+            )}
+          </div>
+          <a href="#booking" class="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-6 font-semibold text-brand-800 shadow transition hover:bg-brand-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60">
+            Check availability
+          </a>
+        </div>
+        {foundingGuestSlotsLeft > 0 && (
+          <p class="mt-4 flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm">
+            <Icon name="gift" class="h-5 w-5 shrink-0" />
+            <span><strong>Founding Guest Offer:</strong> {foundingGuestPercent}% off automatically, {foundingGuestSlotsLeft} of {FOUNDING_GUEST_SLOT_CAP} spots left. No code needed.</span>
+          </p>
         )}
       </div>
 
       {tour.highlights.length > 0 && (
-        <div class="mb-8 rounded-xl border border-stone-200 bg-white p-6">
-          <h2 class="text-lg font-serif font-semibold mb-4">Highlights</h2>
+        <div class="mb-8 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-6">
+          <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-4">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white"><Icon name="sparkles" class="h-[18px] w-[18px]" /></span>
+            Highlights
+          </h2>
           <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-3">
             {tour.highlights.map((h) => (
               <li class="flex items-start gap-2.5 text-sm text-stone-700">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-brand-600 shrink-0 mt-0.5" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9"></circle>
-                  <path d="M8.5 12.5l2.5 2.5 5-5"></path>
-                </svg>
+                <Icon name="circle-check" class="h-5 w-5 text-brand-600 shrink-0 mt-0.5" strokeWidth={2} />
                 <span>{h}</span>
               </li>
             ))}
@@ -216,14 +248,40 @@ const tripJsonLd = {
       )}
 
       {tour.itinerary.length > 0 && (
-        <div class="mb-8 rounded-xl border border-stone-200 bg-white p-6">
-          <h2 class="text-lg font-serif font-semibold mb-5">Itinerary</h2>
-          <ol class="relative border-l-2 border-brand-100 pl-6 space-y-6">
-            {tour.itinerary.map((step) => (
-              <li class="relative">
-                <span class="absolute -left-[26px] top-0.5 h-3.5 w-3.5 rounded-full bg-brand-600 ring-4 ring-brand-50"></span>
-                <p class="font-semibold text-stone-900 text-sm">{step.time}</p>
-                <p class="text-stone-600 text-sm mt-0.5">{step.activity}</p>
+        <div class="mb-8 rounded-2xl border border-stone-200 bg-white p-6">
+          <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-1">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white"><Icon name="route" class="h-[18px] w-[18px]" /></span>
+            Itinerary
+          </h2>
+          {tour.itinerary.some((s) => s.details) && (
+            <p class="text-xs text-stone-500 mb-4 ml-[42px]">Tap a stop for details</p>
+          )}
+          <ol class="relative mt-4">
+            {tour.itinerary.map((step, index) => (
+              <li class="relative flex gap-4 pb-5 last:pb-0">
+                {index < tour.itinerary.length - 1 && (
+                  <span class="absolute left-[17px] top-9 bottom-0 w-0.5 bg-brand-100" aria-hidden="true"></span>
+                )}
+                <span class="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white ring-4 ring-brand-50">
+                  <Icon name={stepIcon(step.activity)} class="h-[18px] w-[18px]" />
+                </span>
+                {step.details ? (
+                  <details class="group min-w-0 flex-1 rounded-xl border border-transparent transition open:border-brand-100 open:bg-brand-50/60">
+                    <summary class="flex min-h-11 cursor-pointer list-none items-start justify-between gap-3 rounded-xl px-3 py-1.5 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
+                      <span>
+                        <span class="block text-xs font-semibold uppercase tracking-wide text-brand-700">{step.time}</span>
+                        <span class="block text-sm font-medium text-stone-900">{step.activity}</span>
+                      </span>
+                      <Icon name="chevron-down" class="mt-2 h-5 w-5 shrink-0 text-brand-600 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <p class="px-3 pb-3 text-sm leading-relaxed text-stone-700" set:html={renderDescriptionHtml(step.details)} />
+                  </details>
+                ) : (
+                  <div class="min-w-0 flex-1 px-3 py-1.5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-brand-700">{step.time}</p>
+                    <p class="text-sm font-medium text-stone-900">{step.activity}</p>
+                  </div>
+                )}
               </li>
             ))}
           </ol>
@@ -231,8 +289,11 @@ const tripJsonLd = {
       )}
 
       {(descriptionIntro || descriptionSections.length > 0) && (
-        <div class="mb-8 rounded-xl border border-stone-200 bg-white p-6">
-          <h2 class="text-lg font-serif font-semibold mb-3">About this tour</h2>
+        <div class="mb-8 rounded-2xl border border-stone-200 bg-white p-6">
+          <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-4">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white"><Icon name="book-open" class="h-[18px] w-[18px]" /></span>
+            About this tour
+          </h2>
           {descriptionIntro && (
             <div class="prose prose-stone max-w-none whitespace-pre-line text-sm leading-relaxed text-stone-700 mb-4" set:html={descriptionIntroHtml} />
           )}
@@ -240,10 +301,7 @@ const tripJsonLd = {
             <ul class="space-y-3">
               {descriptionSections.map((section) => (
                 <li class="flex items-start gap-2.5 text-sm text-stone-700 leading-relaxed">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-brand-600 shrink-0 mt-0.5" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <path d="M8.5 12.5l2.5 2.5 5-5"></path>
-                  </svg>
+                  <Icon name="circle-check" class="h-5 w-5 text-brand-600 shrink-0 mt-0.5" strokeWidth={2} />
                   <span><span class="font-semibold text-stone-900">{section.heading}:</span> <span set:html={renderDescriptionHtml(section.body)} /></span>
                 </li>
               ))}
@@ -253,31 +311,18 @@ const tripJsonLd = {
       )}
 
       {infoBlocks.length > 0 && (
-        <div class="mb-8 rounded-xl border border-brand-100 bg-brand-50/50 p-6">
-          <h2 class="text-lg font-serif font-semibold mb-4">Good to know</h2>
+        <div class="mb-8 rounded-2xl border border-brand-100 bg-brand-50/50 p-6">
+          <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-4">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white"><Icon name="info" class="h-[18px] w-[18px]" /></span>
+            Good to know
+          </h2>
           <ul class="space-y-4">
             {infoBlocks.map((block) => (
               <li class="flex items-start gap-2.5">
-                {block.label === 'What to bring' && (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 mt-0.5 text-brand-800" aria-hidden="true">
-                    <path d="M8 7V5a4 4 0 018 0v2"></path>
-                    <rect x="4" y="7" width="16" height="14" rx="2"></rect>
-                    <path d="M9 11h6"></path>
-                  </svg>
-                )}
-                {block.label === 'Not allowed' && (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 mt-0.5 text-brand-800" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <path d="M6 6l12 12"></path>
-                  </svg>
-                )}
-                {block.label === 'Know before you go' && (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 mt-0.5 text-brand-800" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <path d="M12 11v5"></path>
-                    <path d="M12 8h.01"></path>
-                  </svg>
-                )}
+                <Icon
+                  name={block.label === 'What to bring' ? 'backpack' : block.label === 'Not allowed' ? 'ban' : 'info'}
+                  class="h-5 w-5 shrink-0 mt-0.5 text-brand-700"
+                />
                 <p class="text-sm text-stone-700 leading-relaxed">
                   <span class="font-semibold text-brand-800">{block.label}:</span> <span set:html={renderDescriptionHtml(block.text)} />
                 </p>
@@ -290,14 +335,15 @@ const tripJsonLd = {
       {(tour.includes.length > 0 || tour.excludes.length > 0) && (
         <div class="grid sm:grid-cols-2 gap-6">
           {tour.includes.length > 0 && (
-            <div class="rounded-xl border border-stone-200 bg-white p-6">
-              <h2 class="text-lg font-serif font-semibold mb-3 text-brand-800">Included</h2>
+            <div class="rounded-2xl border border-brand-200 bg-white p-6 shadow-sm shadow-brand-100">
+              <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-4 text-brand-800">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white"><Icon name="check" class="h-[18px] w-[18px]" strokeWidth={2.25} /></span>
+                Included
+              </h2>
               <ul class="space-y-2.5">
                 {tour.includes.map((i) => (
-                  <li class="flex items-start gap-2 text-sm text-stone-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-brand-600 shrink-0 mt-0.5" aria-hidden="true">
-                      <path d="M5 12l5 5 9-9"></path>
-                    </svg>
+                  <li class="flex items-start gap-2.5 text-sm text-stone-700">
+                    <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700"><Icon name="check" class="h-3.5 w-3.5" strokeWidth={2.5} /></span>
                     <span>{i}</span>
                   </li>
                 ))}
@@ -306,14 +352,15 @@ const tripJsonLd = {
           )}
 
           {tour.excludes.length > 0 && (
-            <div class="rounded-xl border border-stone-200 bg-white p-6">
-              <h2 class="text-lg font-serif font-semibold mb-3 text-stone-500">Not included</h2>
+            <div class="rounded-2xl border border-stone-200 bg-white p-6">
+              <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-4 text-stone-500">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-200 text-stone-500"><Icon name="x" class="h-[18px] w-[18px]" strokeWidth={2.25} /></span>
+                Not included
+              </h2>
               <ul class="space-y-2.5">
                 {tour.excludes.map((e) => (
-                  <li class="flex items-start gap-2 text-sm text-stone-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-stone-400 shrink-0 mt-0.5" aria-hidden="true">
-                      <path d="M6 6l12 12M18 6L6 18"></path>
-                    </svg>
+                  <li class="flex items-start gap-2.5 text-sm text-stone-500">
+                    <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-400"><Icon name="x" class="h-3.5 w-3.5" strokeWidth={2.5} /></span>
                     <span>{e}</span>
                   </li>
                 ))}
@@ -324,7 +371,7 @@ const tripJsonLd = {
       )}
     </div>
 
-    <div class="md:sticky md:top-24 self-start">
+    <div id="booking" class="md:sticky md:top-24 self-start scroll-mt-24">
       <BookingWidget
         client:load
         tourId={tour.id}
@@ -339,7 +386,55 @@ const tripJsonLd = {
       />
     </div>
   </section>
+
+  <!-- Phones only: the booking form sits below all the tour content there,
+       so keep the price and a way to it in reach. Hidden while the form
+       itself is on screen (script below). -->
+  <div
+    id="mobile-book-bar"
+    class="fixed inset-x-0 bottom-0 z-40 border-t border-brand-100 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(76,29,149,0.12)] backdrop-blur transition-transform duration-200 md:hidden"
+  >
+    <div class="flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">From</p>
+        <p class="text-lg font-semibold leading-tight text-stone-900">
+          {fromPriceLabel} <span class="text-xs font-normal text-stone-500">/person</span>
+        </p>
+      </div>
+      <a href="#booking" class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-brand-700 px-6 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+        Book now
+      </a>
+    </div>
+  </div>
+  <div class="h-20 md:hidden" aria-hidden="true"></div>
 </BaseLayout>
+
+<style is:global>
+  /* Lift the floating WhatsApp button above the mobile book bar while the
+     bar is showing, so the two never overlap. */
+  @media (max-width: 767px) {
+    body.has-book-bar a[data-wa-ref^='FLOATING'] {
+      bottom: 5.75rem;
+    }
+  }
+  #mobile-book-bar.is-hidden {
+    transform: translateY(110%);
+  }
+</style>
+
+<script>
+  const bar = document.getElementById('mobile-book-bar');
+  const booking = document.getElementById('booking');
+  if (bar && booking && 'IntersectionObserver' in window) {
+    document.body.classList.add('has-book-bar');
+    new IntersectionObserver(([entry]) => {
+      bar.classList.toggle('is-hidden', entry.isIntersecting);
+      // inert (not just aria-hidden): the hidden bar's link must not be focusable.
+      bar.inert = entry.isIntersecting;
+      document.body.classList.toggle('has-book-bar', !entry.isIntersecting);
+    }).observe(booking);
+  }
+</script>
 
 <script define:vars={{ tourId: tour.id, tourName: tour.title, currency: price.currency, value: price.amount }}>
   // Backlog 2.8 — product-marketing-context.md §9's "Key events" list.

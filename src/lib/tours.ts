@@ -33,6 +33,8 @@ export interface TourRow {
 export interface ItineraryStep {
   time: string;
   activity: string;
+  // Optional longer text revealed when the stop is expanded on the tour page.
+  details?: string;
 }
 
 export interface ParsedTour {
