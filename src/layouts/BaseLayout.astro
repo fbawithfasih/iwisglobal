@@ -21,6 +21,9 @@ interface Props {
   // from the <title> actually rendered. Omit on top-level pages (home,
   // /tours, /help, etc.) — a single-item trail has no SEO/AEO value.
   breadcrumbs?: BreadcrumbItem[];
+  // For pages with no search value (login, signup, booking confirmation)
+  // that Google still finds through header/footer links.
+  noindex?: boolean;
 }
 
 const {
@@ -32,7 +35,14 @@ const {
   // 1200×630 crop of the hero photo.
   image = '/og-image.jpg',
   breadcrumbs,
+  noindex = false,
 } = Astro.props;
+
+// ?lang= / ?currency= are switcher links that set a cookie; the page they
+// render is a duplicate of the bare URL. Google indexed /?lang=es as its own
+// page despite the canonical (the text differs), splitting the homepage.
+const robotsNoindex =
+  noindex || Astro.url.searchParams.has('lang') || Astro.url.searchParams.has('currency');
 
 // BreadcrumbList JSON-LD — a gap shared with activities.marriott.com (it has
 // none either), but cheap to add here given pages already carry a title and
@@ -77,9 +87,10 @@ function whatsappRef(location: string): string {
 }
 
 // Backlog 2.1. "IWIS Global" alone collides with a German industrial chain
-// manufacturer and an unrelated Amazon storefront of the same name — the
-// category-in-name string is entity disambiguation, not a typo (see
-// product-marketing-context.md §7 and CLAUDE.md hard rule 4).
+// manufacturer and an unrelated Amazon storefront of the same name. The
+// disambiguation lives in disambiguatingDescription, not name: name is the
+// brand string Google matches for brand queries, so it must be exactly
+// "IWIS Global" (a sentence there weakened the "iwis global" entity).
 //
 // sameAs: the live Google Business Profile share link (given by the user).
 // Add any other confirmed social profiles here as they're set up — don't
@@ -90,14 +101,15 @@ const orgJsonLd = {
   '@context': 'https://schema.org',
   '@type': ['Organization', 'TravelAgency'],
   '@id': 'https://www.iwisglobal.com/#organization',
-  name: 'IWIS Global, a Taj Mahal and Agra tour operator based in Agra, India',
-  alternateName: 'IWIS Global',
+  name: 'IWIS Global',
+  alternateName: 'iwisglobal',
+  disambiguatingDescription: 'A Taj Mahal and Agra tour operator based in Agra, India',
   url: 'https://www.iwisglobal.com',
   logo: 'https://www.iwisglobal.com/logo.png',
   image: 'https://www.iwisglobal.com/logo.png',
   telephone: '+91 6399226633',
   email: 'info@iwisglobal.com',
-  sameAs: ['https://share.google/LOqFXgGLF8KWXdMNn'],
+  sameAs: ['https://share.google/UoeRHRhy0YWsmUpKh'],
   address: {
     '@type': 'PostalAddress',
     streetAddress: 'A-5, First Floor, Essar Mughal Apartment, Jyoti Nagar, Shaheed Nagar',
@@ -111,6 +123,19 @@ const orgJsonLd = {
     name: 'Agra',
   },
 };
+
+// Google reads the site name shown on search results from WebSite markup on
+// the homepage only.
+const websiteJsonLd = Astro.url.pathname === '/'
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'IWIS Global',
+      alternateName: 'iwisglobal',
+      url: 'https://www.iwisglobal.com/',
+      publisher: { '@id': 'https://www.iwisglobal.com/#organization' },
+    }
+  : null;
 ---
 <!doctype html>
 <html lang={locale} class="scroll-smooth">
@@ -144,6 +169,7 @@ const orgJsonLd = {
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
+    {robotsNoindex && <meta name="robots" content="noindex, follow" />}
 
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalURL} />
@@ -160,6 +186,7 @@ const orgJsonLd = {
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 
     <script type="application/ld+json" set:html={JSON.stringify(orgJsonLd)} />
+    {websiteJsonLd && <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />}
     {breadcrumbJsonLd && <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />}
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
