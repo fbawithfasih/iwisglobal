@@ -6,6 +6,7 @@ import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { listLeads, insertLead, updateLeadStatus } from '../../../lib/crm';
 import { formatDateTimeIst } from '../../../lib/format';
+import { telHref, waHref } from '../../../lib/contact';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -50,10 +51,6 @@ const statusClass = (status: string) =>
   status === 'lost' ? 'bg-red-100 text-red-800' :
   status === 'contacted' ? 'bg-blue-100 text-blue-800' :
   'bg-stone-100 text-stone-700';
-// tel: works with any number; WhatsApp needs the country code, so only
-// offer it when the number was entered with a leading "+".
-const telHref = (phone: string) => `tel:${phone.replace(/[^\d+]/g, '')}`;
-const waHref = (phone: string) => (phone.trim().startsWith('+') ? `https://wa.me/${phone.replace(/\D/g, '')}` : null);
 const contactBtn = 'inline-flex min-h-11 items-center rounded border border-stone-300 bg-white px-3 text-sm text-stone-800';
 ---
 <AdminLayout title="Leads">

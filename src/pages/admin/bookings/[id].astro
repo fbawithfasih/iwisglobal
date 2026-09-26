@@ -16,6 +16,7 @@ import {
 } from '../../../lib/crm';
 import { getTourById } from '../../../lib/tours';
 import { formatTravelDate, formatMoneyMinor, formatDateTimeIst } from '../../../lib/format';
+import { telHref, waHref } from '../../../lib/contact';
 import { computeTicketsToBuy, ASI_BOOKING_URL } from '../../../lib/entryTickets';
 import { uploadTicketFile } from '../../../lib/images';
 import { sendEntryTicketEmail } from '../../../lib/email';
@@ -104,6 +105,23 @@ const ticketMessages: Record<string, { text: string; ok: boolean }> = {
   error: { text: Astro.url.searchParams.get('msg') ?? 'Something went wrong.', ok: false },
 };
 const fmtTime = formatDateTimeIst;
+
+// Pickup details for the customer on WhatsApp, built only from what's been
+// filled in under Itinerary / logistics (nothing when all three are empty).
+const firstName = booking.traveler_name.trim().split(/\s+/)[0] || 'there';
+const pickupParts = [
+  booking.pickup_time && 'pickup ' + booking.pickup_time,
+  booking.vehicle && 'vehicle ' + booking.vehicle,
+  booking.guide_assigned && 'guide ' + booking.guide_assigned,
+].filter(Boolean);
+const pickupMessage = pickupParts.length
+  ? 'Hi ' + firstName + ', here are the details for your ' + (tour?.title ?? 'tour') + ' on ' +
+    formatTravelDate(booking.travel_date) + ': ' + pickupParts.join(', ') + '. Payment reference: ' + booking.payment_id
+  : null;
+const pickupWa = pickupMessage && booking.traveler_phone ? waHref(booking.traveler_phone, pickupMessage) : null;
+const contactWa = booking.traveler_phone ? waHref(booking.traveler_phone) : null;
+const contactBtn = 'inline-flex min-h-11 items-center rounded border border-stone-300 bg-white px-3 text-sm text-stone-800';
+const actionBtn = 'min-h-11 rounded bg-amber-800 text-white px-4 text-sm';
 // Add-on names for display. IDs gained a "<TOUR_ID>_" prefix when a tour is
 // re-saved (tours.ts replaceAddOns), so match both forms; an add-on since
 // removed from the tour falls back to its stored id.
@@ -132,15 +150,22 @@ const addOnNames = booking.add_on_ids
       <p><span class="text-stone-500">Source:</span> {booking.source}</p>
       <p><span class="text-stone-500">Payment ID:</span> {booking.payment_id}</p>
       <p><span class="text-stone-500">Booked on:</span> {fmtTime(booking.created_at)}</p>
+      {(booking.traveler_phone || booking.traveler_email) && (
+        <div class="flex flex-wrap gap-2 pt-2">
+          {booking.traveler_phone && <a href={telHref(booking.traveler_phone)} class={contactBtn}>Call</a>}
+          {contactWa && <a href={contactWa} target="_blank" rel="noopener noreferrer" class={contactBtn}>WhatsApp</a>}
+          {booking.traveler_email && <a href={`mailto:${booking.traveler_email}`} class={contactBtn}>Email</a>}
+        </div>
+      )}
 
       <form method="POST" class="pt-4 flex items-center gap-2">
         <input type="hidden" name="_action" value="status" />
-        <select name="status" class="rounded border border-stone-300 px-2 py-1">
+        <select name="status" class="min-h-11 rounded border border-stone-300 px-2">
           <option value="confirmed" selected={booking.status === 'confirmed'}>Confirmed</option>
           <option value="completed" selected={booking.status === 'completed'}>Completed</option>
           <option value="cancelled" selected={booking.status === 'cancelled'}>Cancelled</option>
         </select>
-        <button type="submit" class="rounded bg-amber-800 text-white px-3 py-1 text-sm">Update status</button>
+        <button type="submit" class={actionBtn}>Update status</button>
       </form>
     </div>
 
@@ -160,8 +185,15 @@ const addOnNames = booking.add_on_ids
           <label class="block text-stone-500 mb-1">Vehicle</label>
           <input name="vehicle" value={booking.vehicle} class="w-full rounded border border-stone-300 px-3 py-2" placeholder="e.g. Innova, plate no." />
         </div>
-        <button type="submit" class="rounded bg-amber-800 text-white px-3 py-1 text-sm">Save itinerary</button>
+        <button type="submit" class={actionBtn}>Save itinerary</button>
       </form>
+      {pickupWa ? (
+        <a href={pickupWa} target="_blank" rel="noopener noreferrer" class="flex min-h-11 items-center justify-center rounded bg-emerald-600 px-4 font-medium text-white">
+          Send pickup details on WhatsApp
+        </a>
+      ) : pickupMessage ? (
+        <p class="text-xs text-stone-500">To send these on WhatsApp, the customer's phone number needs its country code (+).</p>
+      ) : null}
     </div>
   </div>
 
@@ -204,7 +236,7 @@ const addOnNames = booking.add_on_ids
           <input type="hidden" name="_action" value="ticket_upload" />
           <label class="block text-stone-500">Upload the e-ticket (PDF or image, up to 5MB) — it's emailed to {booking.traveler_email || 'the customer'} automatically</label>
           <input type="file" name="ticketFile" accept="application/pdf,image/jpeg,image/png,image/webp" required class="text-sm" />
-          <button type="submit" class="rounded bg-amber-800 text-white px-3 py-1">Upload &amp; email</button>
+          <button type="submit" class={actionBtn}>Upload &amp; email</button>
         </form>
 
         {booking.ticket_file_key && (
@@ -226,7 +258,7 @@ const addOnNames = booking.add_on_ids
     <form method="POST" class="flex gap-2 mb-4">
       <input type="hidden" name="_action" value="note" />
       <input name="note" placeholder="Add a note…" class="flex-1 rounded border border-stone-300 px-3 py-2" required />
-      <button type="submit" class="rounded bg-amber-800 text-white px-3 py-1">Add</button>
+      <button type="submit" class={actionBtn}>Add</button>
     </form>
     {notes.length === 0 ? (
       <p class="text-stone-500">No notes yet.</p>
