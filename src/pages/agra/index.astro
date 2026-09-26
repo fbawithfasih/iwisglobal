@@ -16,8 +16,8 @@ import MobileActionBar from '../../components/MobileActionBar.astro';
 // attraction frontmatter, never retyped here, so the table can't drift.
 
 // Visit order for a typical trip: the Taj first, the Fort alongside it, the
-// riverside sunset view, then the out-of-town day trip.
-const ORDER = ['taj-mahal', 'agra-fort', 'mehtab-bagh', 'fatehpur-sikri'];
+// two left-bank sites (sunset view, "Baby Taj"), then the out-of-town day trip.
+const ORDER = ['taj-mahal', 'agra-fort', 'mehtab-bagh', 'itimad-ud-daulah', 'fatehpur-sikri'];
 const attractions = (await getCollection('attractions')).sort(
   (a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug)
 );
@@ -36,7 +36,7 @@ const tours = sortByFromPrice(env.DB ? await listTours(env.DB, { status: 'publis
 const faqs = [
   {
     q: 'What are the main things to do in Agra?',
-    a: `Agra's four main sites are the Taj Mahal, Agra Fort, Mehtab Bagh, and Fatehpur Sikri. The Taj Mahal, Agra Fort, and Fatehpur Sikri are all UNESCO World Heritage Sites.`,
+    a: `Agra's main sites are the Taj Mahal, Agra Fort, Mehtab Bagh, Itimad-ud-Daulah's Tomb (the "Baby Taj"), and Fatehpur Sikri. The Taj Mahal, Agra Fort, and Fatehpur Sikri are all UNESCO World Heritage Sites.`,
   },
   {
     q: 'Is the Taj Mahal open on Fridays?',
@@ -69,7 +69,7 @@ const faqJsonLd = {
 
 <BaseLayout
   title="Things to Do in Agra: Taj Mahal, Agra Fort & More — IWIS Global"
-  description="A visitor's guide to Agra: ticket prices, opening hours, and Friday closures for the Taj Mahal, Agra Fort, Mehtab Bagh, and Fatehpur Sikri, plus how to plan your day."
+  description="A visitor's guide to Agra: ticket prices, opening hours, and Friday closures for the Taj Mahal, Agra Fort, Mehtab Bagh, the Baby Taj, and Fatehpur Sikri, plus how to plan your day."
 >
   <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
 
@@ -77,7 +77,8 @@ const faqJsonLd = {
     <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-4">Things to do in Agra</h1>
     <p class="text-lg text-stone-700 mb-4">
       Agra is home to three UNESCO World Heritage Sites — the Taj Mahal, Agra Fort, and Fatehpur
-      Sikri — plus Mehtab Bagh, the Mughal garden across the river with the classic view of the Taj.
+      Sikri — plus Mehtab Bagh, the Mughal garden across the river with the classic view of the Taj,
+      and Itimad-ud-Daulah's Tomb, the marble "Baby Taj" on the same bank.
       It sits roughly 230 km from Delhi via the Yamuna Expressway, so most visitors come on a
       same-day trip; a second day lets you add Fatehpur Sikri without rushing.
     </p>
@@ -134,7 +135,7 @@ const faqJsonLd = {
       </table>
     </div>
     <p class="text-xs text-stone-500 mb-12">
-      Children under 15 enter free at all four sites. Indian and SAARC/BIMSTEC prices are on each
+      Children under 15 enter free at every site listed here. Indian and SAARC/BIMSTEC prices are on each
       site's page. Prices change; confirm with ASI before a specific trip.
     </p>
 
