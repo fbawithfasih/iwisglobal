@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, type FocusEvent } from 'react';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import { isFriday, FRIDAY_CLOSED_MESSAGE } from '../lib/availability';
-import { pickPricingTier, computeDepositAmount, applyFoundingGuestDiscount, type PricingTier } from '../lib/catalog';
+import { pickPricingTier, computeDepositAmount, applyFoundingGuestDiscount, FOUNDING_GUEST_DISCOUNT_RATE, type PricingTier } from '../lib/catalog';
 
 declare global {
   interface Window {
@@ -213,8 +213,22 @@ export default function BookingWidget({
     return <p className="text-emerald-700 font-medium">Booking confirmed — payment {confirmed}.</p>;
   }
 
+  const money = (n: number) => `${CURRENCY_SYMBOLS[currency]}${n.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}`;
+
+  // Phones: the floating WhatsApp button sits over the right end of these
+  // fields, so hide it while the keyboard is up (BaseLayout's
+  // body.booking-typing rule) and bring it back when focus leaves the form.
+  const TYPING_TYPES = ['text', 'email', 'tel', 'number', 'date'];
+  const onFormFocus = (e: FocusEvent<HTMLDivElement>) => {
+    const t = e.target as HTMLInputElement;
+    document.body.classList.toggle('booking-typing', t.tagName === 'INPUT' && TYPING_TYPES.includes(t.type));
+  };
+  const onFormBlur = (e: FocusEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) document.body.classList.remove('booking-typing');
+  };
+
   return (
-    <div className="rounded-xl border border-brand-100 bg-white p-6 shadow-sm space-y-4">
+    <div onFocus={onFormFocus} onBlur={onFormBlur} className="rounded-xl border border-brand-100 bg-white p-6 shadow-sm space-y-4">
       {foundingGuestEligible && (
         <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
           <span className="font-semibold">Founding Guest Offer:</span> 15% off — {foundingGuestSlotsLeft}{' '}
@@ -222,8 +236,9 @@ export default function BookingWidget({
         </div>
       )}
       <div>
-        <label className="block text-sm font-medium mb-1">Travel date</label>
+        <label htmlFor="travel-date" className="block text-sm font-medium mb-1">Travel date</label>
         <input
+          id="travel-date"
           type="date"
           value={date}
           min={minDate}
@@ -246,8 +261,9 @@ export default function BookingWidget({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Travelers</label>
+        <label htmlFor="travelers" className="block text-sm font-medium mb-1">Travelers</label>
         <input
+          id="travelers"
           type="number"
           min={1}
           max={12}
@@ -358,6 +374,13 @@ export default function BookingWidget({
         {paymentType === 'deposit' && (
           <span className="block text-sm font-normal text-stone-500">
             + {CURRENCY_SYMBOLS[currency]}{balanceDue.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')} on pickup
+          </span>
+        )}
+        {total < rawTotal && (
+          <span className="block text-sm font-normal text-stone-500">
+            <s>{money(rawTotal)}</s>
+            {paymentType === 'deposit' && <> {money(total)} tour total</>}
+            <span className="text-amber-700"> · Founding Guest Offer −{Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100)}%</span>
           </span>
         )}
       </div>

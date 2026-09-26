@@ -367,6 +367,13 @@ const websiteJsonLd = Astro.url.pathname === '/'
   * {
     box-sizing: border-box;
   }
+  /* Phones: hide the floating WhatsApp button while someone types in the
+     booking form (set by BookingWidget), so it doesn't cover the fields. */
+  @media (max-width: 767px) {
+    body.booking-typing a[data-wa-ref^='FLOATING'] {
+      display: none;
+    }
+  }
   body {
     margin: 0;
     padding: 0;
