@@ -4,8 +4,9 @@ export const prerender = false;
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { resolveEnv } from '../../lib/env';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
-import { getCustomerById, listCustomerBookings } from '../../lib/customers';
+import { getCustomerById, listCustomerBookings, type CustomerBookingRow } from '../../lib/customers';
 import { getTourById } from '../../lib/tours';
+import { CURRENCY_SYMBOLS, type Currency } from '../../lib/currency';
 
 const env = resolveEnv(Astro.locals);
 const customerId = await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET);
@@ -20,62 +21,132 @@ if (!customer) {
 }
 
 const bookings = db ? await listCustomerBookings(db, customerId) : [];
-const tourTitles = new Map<string, string>();
+type TourLink = { title: string; slug: string | null };
+const tours = new Map<string, TourLink>();
 if (db) {
   for (const b of bookings) {
-    if (!tourTitles.has(b.tour_id)) {
+    if (!tours.has(b.tour_id)) {
       const tour = await getTourById(db, b.tour_id);
-      tourTitles.set(b.tour_id, tour?.title ?? b.tour_id);
+      tours.set(b.tour_id, { title: tour?.title ?? b.tour_id, slug: tour?.slug ?? null });
     }
   }
 }
 
-const statusClass = (status: string) =>
-  status === 'confirmed' ? 'bg-blue-100 text-blue-800' : status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+// Today in India (tours run there), as YYYY-MM-DD for comparing travel dates.
+const todayIst = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+// Upcoming soonest first; past most recent first.
+const upcoming = bookings
+  .filter((b) => b.travel_date >= todayIst && b.status !== 'completed')
+  .sort((a, b) => a.travel_date.localeCompare(b.travel_date));
+const past = bookings
+  .filter((b) => !upcoming.includes(b))
+  .sort((a, b) => b.travel_date.localeCompare(a.travel_date));
+
+const formatDate = (ymd: string) =>
+  new Date(`${ymd}T00:00:00Z`).toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+// Amounts are stored in the smallest unit (paise/cents).
+const formatMoney = (minor: number, currency: string) => {
+  const symbol = CURRENCY_SYMBOLS[currency as Currency] ?? `${currency} `;
+  return `${symbol}${(minor / 100).toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}`;
+};
+
+type StatusStyle = { label: string; cls: string };
+const STATUS: Record<string, StatusStyle> = {
+  confirmed: { label: 'Confirmed', cls: 'bg-green-100 text-green-800' },
+  completed: { label: 'Completed', cls: 'bg-stone-200 text-stone-700' },
+  cancelled: { label: 'Cancelled', cls: 'bg-red-100 text-red-800' },
+};
+const statusOf = (status: string) =>
+  STATUS[status] ?? { label: status.charAt(0).toUpperCase() + status.slice(1), cls: 'bg-stone-200 text-stone-700' };
+
+const changeHref = (b: CustomerBookingRow) => {
+  const message =
+    'Hi! I would like to change or cancel my booking: ' +
+    `${tours.get(b.tour_id)?.title} on ${formatDate(b.travel_date)}. ` +
+    `Payment reference: ${b.payment_id} (ref: MYBOOKINGS)`;
+  return 'https://wa.me/916399226633?text=' + encodeURIComponent(message);
+};
+
+const withDetails = (list: CustomerBookingRow[]) =>
+  list.map((b) => {
+    const tour = tours.get(b.tour_id);
+    return { b, title: tour?.title ?? b.tour_id, href: tour?.slug ? `/tours/${tour.slug}` : null, status: statusOf(b.status) };
+  });
+const sections = [
+  { title: 'Upcoming', items: withDetails(upcoming), canChange: true },
+  { title: 'Past trips', items: withDetails(past), canChange: false },
+].filter((s) => s.items.length > 0);
 ---
 
-<BaseLayout title="My Bookings — IWIS Global">
+<BaseLayout title="My Bookings — IWIS Global" noindex>
   <section class="max-w-3xl mx-auto px-6 py-16">
-    <div class="flex items-center justify-between mb-2">
+    <div class="flex items-center justify-between gap-4 mb-2">
       <h1 class="text-3xl font-serif font-semibold">My Bookings</h1>
       <form method="POST" action="/auth/logout">
-        <button type="submit" class="text-sm text-stone-500 hover:text-brand-800 transition cursor-pointer">Sign out</button>
+        <button type="submit" class="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-4 text-sm text-stone-600 hover:border-brand-300 hover:text-brand-800 transition cursor-pointer">Sign out</button>
       </form>
     </div>
-    <p class="text-stone-600 mb-8">Signed in as {customer.name} ({customer.email})</p>
+    <p class="text-stone-600 mb-8 break-words">Signed in as {customer.name} ({customer.email})</p>
 
-    {bookings.length === 0 ? (
+    {bookings.length === 0 && (
       <div class="rounded-xl border border-stone-200 bg-white p-8 text-center">
         <p class="text-stone-600 mb-4">No bookings on this account yet. Bookings you make while signed in will show up here.</p>
-        <a href="/tours" class="inline-block rounded-full bg-brand-800 hover:bg-brand-900 text-white px-5 py-2.5 text-sm font-medium transition">
+        <a href="/tours" class="inline-flex min-h-11 items-center rounded-full bg-brand-800 hover:bg-brand-900 text-white px-5 text-sm font-medium transition">
           Browse tours
         </a>
       </div>
-    ) : (
-      <div class="space-y-3">
-        {bookings.map((b) => (
-          <div class="rounded-xl border border-stone-200 bg-white p-5 flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <p class="font-semibold">{tourTitles.get(b.tour_id)}</p>
-              <p class="text-sm text-stone-500">
-                {b.travel_date} · {b.travelers} traveler{b.travelers > 1 ? 's' : ''}
-              </p>
-            </div>
-            <div class="text-right">
-              <p class="font-semibold">
-                {b.currency} {(b.amount_paid / 100).toLocaleString(b.currency === 'USD' ? 'en-US' : 'en-IN')}
-                {b.payment_type === 'deposit' && <span class="font-normal text-stone-500"> paid</span>}
-              </p>
-              {b.payment_type === 'deposit' && (
-                <p class="text-xs text-amber-700">
-                  {b.currency} {((b.total_amount - b.amount_paid) / 100).toLocaleString(b.currency === 'USD' ? 'en-US' : 'en-IN')} due on pickup
-                </p>
-              )}
-              <span class={`inline-block text-xs px-2 py-0.5 rounded-full ${statusClass(b.status)}`}>{b.status}</span>
-            </div>
-          </div>
-        ))}
-      </div>
     )}
+
+    {sections.map((section) => (
+        <div class="mb-10">
+          <h2 class="text-lg font-semibold mb-3">{section.title}</h2>
+          <div class="space-y-3">
+            {section.items.map(({ b, title, href, status }) => (
+                <div class="rounded-xl border border-stone-200 bg-white p-5">
+                  <div class="flex items-start justify-between gap-3">
+                    {href ? (
+                      <a href={href} class="font-semibold text-stone-900 hover:text-brand-800 hover:underline">{title}</a>
+                    ) : (
+                      <p class="font-semibold">{title}</p>
+                    )}
+                    <span class={`shrink-0 text-xs font-medium px-2.5 py-0.5 rounded-full ${status.cls}`}>{status.label}</span>
+                  </div>
+                  <p class="text-sm text-stone-600 mt-1">
+                    {formatDate(b.travel_date)} · {b.travelers} traveler{b.travelers > 1 ? 's' : ''}
+                  </p>
+                  <p class="text-sm mt-2">
+                    <span class="font-semibold">{formatMoney(b.amount_paid, b.currency)}</span>
+                    <span class="text-stone-500"> paid</span>
+                    {b.payment_type === 'deposit' && (
+                      <span class="text-amber-700"> · {formatMoney(b.total_amount - b.amount_paid, b.currency)} due on pickup</span>
+                    )}
+                  </p>
+                  {b.payment_id && (
+                    <p class="text-xs text-stone-500 mt-1 break-all">
+                      Payment reference: <span class="font-mono text-stone-700">{b.payment_id}</span>
+                    </p>
+                  )}
+                  {section.canChange && b.status === 'confirmed' && (
+                    <a
+                      href={changeHref(b)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-wa-ref="MYBOOKINGS"
+                      class="mt-3 inline-flex min-h-11 items-center rounded-full border border-brand-200 bg-brand-50 px-4 text-sm font-medium text-brand-800 hover:border-brand-400 transition"
+                    >
+                      Change or cancel on WhatsApp
+                    </a>
+                  )}
+                </div>
+            ))}
+          </div>
+        </div>
+    ))}
   </section>
 </BaseLayout>
