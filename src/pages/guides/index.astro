@@ -3,15 +3,30 @@ export const prerender = false;
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import MobileActionBar from '../../components/MobileActionBar.astro';
 
+// Trip-planning questions first (what travelers search for most), our own
+// comparison piece last. Guides not listed here follow, newest first.
+const ORDER = [
+  'taj-mahal-ticket-price-2026',
+  'best-time-to-visit-taj-mahal',
+  'is-one-day-enough-taj-mahal',
+  'what-not-to-bring-taj-mahal',
+  'taj-mahal-tripod-photography-rules',
+  'iwis-vs-viator-getyourguide',
+];
+const rank = (slug: string) => {
+  const i = ORDER.indexOf(slug);
+  return i === -1 ? ORDER.length : i;
+};
 const guides = (await getCollection('guides')).sort(
-  (a, b) => b.data.datePublished.getTime() - a.data.datePublished.getTime()
+  (a, b) => rank(a.slug) - rank(b.slug) || b.data.datePublished.getTime() - a.data.datePublished.getTime()
 );
 ---
 
-<BaseLayout title="Guides — IWIS Global" description="Practical, sourced answers to the questions travelers actually ask before a Taj Mahal trip — tickets, timing, what to bring, and more.">
+<BaseLayout title="Taj Mahal Travel Guides — IWIS Global" description="Practical, sourced answers to the questions travelers actually ask before a Taj Mahal trip — tickets, timing, what to bring, and more.">
   <section class="max-w-3xl mx-auto px-6 py-16">
-    <h1 class="text-3xl font-serif font-semibold mb-2">Guides</h1>
+    <h1 class="text-3xl font-serif font-semibold mb-2">Taj Mahal travel guides</h1>
     <p class="text-stone-600 mb-10">Practical, sourced answers to the questions travelers actually ask before a Taj Mahal trip.</p>
 
     <div class="space-y-6">
@@ -23,4 +38,16 @@ const guides = (await getCollection('guides')).sort(
       ))}
     </div>
   </section>
+
+  <!-- Phones: WhatsApp moves into this bar so the floating button doesn't
+       sit on top of the guide cards; plus a way on to the tours. -->
+  <MobileActionBar waRef="GUIDEBAR-GUIDES" waMessage="Hi! I have a question about visiting the Taj Mahal.">
+    <Fragment slot="info">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Visiting the Taj?</p>
+      <p class="text-sm font-semibold leading-tight text-stone-900">Private Taj Mahal tours</p>
+    </Fragment>
+    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+      View tours
+    </a>
+  </MobileActionBar>
 </BaseLayout>
