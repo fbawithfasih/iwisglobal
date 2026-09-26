@@ -6,7 +6,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 // are delivered, and "exchange" means changing the tour date.
 export const prerender = false;
 
-const lastUpdated = '25 September 2026';
+const lastUpdated = '27 September 2026';
 ---
 
 <BaseLayout
@@ -27,14 +27,16 @@ const lastUpdated = '25 September 2026';
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
       <li>Your booking is confirmed as soon as payment succeeds, and the confirmation is shown on screen immediately.</li>
       <li>A booking confirmation is also emailed to the address you enter at checkout.</li>
-      <li>If you create an account, you can view your bookings at any time under My Bookings.</li>
+      <li>If you create an account, you can view your bookings at any time under <a href="/account/bookings" class="text-brand-800 hover:underline">My Bookings</a>.</li>
+      <li>Where your tour includes monument entry tickets, we buy them on the Archaeological Survey of India's official website and email you the e-tickets before your tour.</li>
     </ul>
 
     <h2 class="text-lg font-semibold mb-2">How the tour is delivered</h2>
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
-      <li>The tour is delivered in person on the date you booked, starting from the pickup point stated on the tour page (for most tours, your hotel in Delhi or the airport).</li>
+      <li>The tour is delivered in person on the date you booked, starting from the pickup point stated on the tour page — your hotel in Delhi (the Luxury tour can also pick you up at the airport).</li>
       <li>What's included — vehicle, guide, and any tickets or add-ons — is listed on each tour page and in your confirmation.</li>
       <li>Same-day tours can be booked until 9 PM India Standard Time the night before, so we have time to arrange your vehicle and guide.</li>
+      <li>Tours don't run on Fridays, when the Taj Mahal is closed.</li>
     </ul>
 
     <h2 class="text-lg font-semibold mb-2">Exchanges (changing your tour date)</h2>
