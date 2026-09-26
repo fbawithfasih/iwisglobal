@@ -54,5 +54,18 @@ const isBlog = path.startsWith('/admin/blog');
     <main class="max-w-6xl mx-auto px-6 py-8">
       <slot />
     </main>
+    <script>
+      // Admin text boxes grow to fit their content (never below their rows=
+      // height), so long itineraries/add-ons aren't a scroll-inside-a-scroll
+      // on phones.
+      const grow = (t: HTMLTextAreaElement) => {
+        t.style.height = 'auto';
+        t.style.height = `${t.scrollHeight + 2}px`;
+      };
+      document.querySelectorAll<HTMLTextAreaElement>('main textarea').forEach((t) => {
+        grow(t);
+        t.addEventListener('input', () => grow(t));
+      });
+    </script>
   </body>
 </html>

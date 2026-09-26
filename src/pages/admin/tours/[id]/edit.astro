@@ -112,9 +112,9 @@ const saved = Astro.url.searchParams.get('saved') === '1';
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Description ("About this tour" — blank line between paragraphs; "## Heading" for a bullet heading; "Know before you go: …", "What to bring: …", "Not allowed: …" paragraphs go to "Good to know"; [text](/link) for links)</label>
-      <textarea name="description" rows="14" class="w-full rounded border border-stone-300 px-3 py-2 font-mono text-xs leading-relaxed">{tour.description}</textarea>
+      <textarea name="description" rows="14" class="w-full rounded border border-stone-300 px-3 py-2 md:font-mono md:text-xs leading-relaxed">{tour.description}</textarea>
     </div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <label class="block text-stone-500 mb-1">Price per traveler (INR) *</label>
         <input type="number" name="amount" min="1" required value={tour.amount} class="w-full rounded border border-stone-300 px-3 py-2" />
@@ -125,7 +125,7 @@ const saved = Astro.url.searchParams.get('saved') === '1';
       </div>
     </div>
     <input type="hidden" name="currency" value={tour.currency} />
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <label class="block text-stone-500 mb-1">Duration label</label>
         <input name="durationLabel" value={tour.durationLabel} class="w-full rounded border border-stone-300 px-3 py-2" />
@@ -187,9 +187,10 @@ const saved = Astro.url.searchParams.get('saved') === '1';
       </label>
       <textarea name="addOns" rows="3" class="w-full rounded border border-stone-300 px-3 py-2">{formatAddOns(tour.addOns)}</textarea>
       <p class="text-xs text-stone-500 mt-1">
-        Add "| yes" as a 4th segment to bundle it into the price by default (backlog 0.3) — the booking widget
-        pre-checks it and the customer unchecks to remove it, rather than checking to add it. Example:
-        "Monument entry (Taj Mahal + Agra Fort) | 1300 | | yes"
+        Optional extras the customer can tick, e.g. "Taj Mahal entry ticket (foreign visitor) | 1300 | 16 | | each"
+        (₹1,300 / $16 per traveler). Tickets that are part of the tour price go in "Entry tickets included in the
+        price" above instead, not here. "| yes" as the 4th segment pre-ticks an add-on (the customer unticks to
+        remove it) — avoid it for anything the tour's price and "Includes" list say is included.
       </p>
     </div>
     <div>
@@ -208,7 +209,10 @@ const saved = Astro.url.searchParams.get('saved') === '1';
       <input type="checkbox" name="featured" checked={tour.featured} />
       Featured on homepage
     </label>
-    <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2">Save changes</button>
+    <!-- Phones: pinned to the bottom of the screen while scrolling the form. -->
+    <div class="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-white/95 border-t border-stone-200 md:static md:m-0 md:p-0 md:bg-transparent md:border-0">
+      <button type="submit" class="w-full md:w-auto min-h-11 rounded bg-amber-800 text-white px-4 py-2">Save changes</button>
+    </div>
   </form>
 </AdminLayout>
 
