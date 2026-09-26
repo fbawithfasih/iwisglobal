@@ -3,7 +3,9 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { resolveEnv } from '../lib/env';
-import { getSessionCustomerId, CUSTOMER_COOKIE } from '../lib/requireCustomer';
+import OAuthButtons from '../components/OAuthButtons.astro';
+import { getSessionCustomerId, CUSTOMER_COOKIE, safeRedirectPath } from '../lib/requireCustomer';
+import { startOAuthSignIn } from '../lib/oauth/start';
 import { getCustomerByEmail, createCustomerWithPassword } from '../lib/customers';
 import { hashPassword, generateSaltHex } from '../lib/passwordHash';
 import { createCustomerSessionToken } from '../lib/customerAuth';
@@ -15,7 +17,7 @@ if (existingCustomerId) {
   return Astro.redirect('/account/bookings');
 }
 
-const redirectTarget = Astro.url.searchParams.get('redirect') || '/account/bookings';
+const redirectTarget = safeRedirectPath(Astro.url.searchParams.get('redirect'));
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 let error: string | null = null;
@@ -60,6 +62,9 @@ if (Astro.request.method === 'POST') {
     }
   }
 }
+
+// Google (and Apple, once set up) create an account on first sign-in too.
+const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.origin, redirectTarget);
 ---
 
 <BaseLayout title="Create an account — IWIS Global" description="Create an IWIS Global account to view your booking history." noindex>
@@ -68,6 +73,8 @@ if (Astro.request.method === 'POST') {
     <p class="text-stone-600 mb-8">You don't need an account to book a tour — this is just to view your booking history later.</p>
 
     {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
+
+    <OAuthButtons googleUrl={googleUrl} appleUrl={appleUrl} />
 
     <form method="POST" class="space-y-3 text-left">
       <div>

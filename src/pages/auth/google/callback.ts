@@ -3,7 +3,7 @@ import { resolveEnv } from '../../../lib/env';
 import { exchangeGoogleCode } from '../../../lib/oauth/google';
 import { upsertCustomer } from '../../../lib/customers';
 import { createCustomerSessionToken } from '../../../lib/customerAuth';
-import { CUSTOMER_COOKIE, OAUTH_STATE_COOKIE } from '../../../lib/requireCustomer';
+import { CUSTOMER_COOKIE, OAUTH_STATE_COOKIE, safeRedirectPath } from '../../../lib/requireCustomer';
 
 export const prerender = false;
 
@@ -18,7 +18,7 @@ export const GET: APIRoute = async ({ url, cookies, locals, redirect }) => {
     if (!code || !state || !stateCookieRaw) throw new Error('Sign-in session expired. Please try again.');
     const parsedState = JSON.parse(stateCookieRaw);
     if (parsedState.nonce !== state) throw new Error('Sign-in session expired. Please try again.');
-    const redirectTarget: string = parsedState.redirect || '/account/bookings';
+    const redirectTarget = safeRedirectPath(parsedState.redirect);
 
     const db = env.DB;
     if (!db || !env.CUSTOMER_SESSION_SECRET) throw new Error('Accounts are not available right now.');

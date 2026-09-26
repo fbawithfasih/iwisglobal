@@ -1,0 +1,49 @@
+---
+// "Continue with Google / Apple" buttons plus the "or" divider above an email
+// form. Used by /login and /signup; a provider whose URL is null (not set up)
+// is left out, and nothing renders if neither is available. URLs come from
+// startOAuthSignIn (src/lib/oauth/start.ts).
+interface Props {
+  googleUrl: string | null;
+  appleUrl: string | null;
+}
+const { googleUrl, appleUrl } = Astro.props;
+---
+{(googleUrl || appleUrl) && (
+<>
+<div class="space-y-3">
+  {googleUrl && (
+    <a
+      href={googleUrl}
+      class="flex items-center justify-center gap-3 w-full rounded-lg border border-stone-300 px-4 py-3 font-medium hover:bg-stone-50 transition"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true">
+        <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z" />
+        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z" />
+        <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29A11.96 11.96 0 0 0 0 12c0 1.94.46 3.77 1.29 5.38l3.98-3.09z" />
+        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z" />
+      </svg>
+      Continue with Google
+    </a>
+  )}
+
+  {appleUrl && (
+    <a
+      href={appleUrl}
+      class="flex items-center justify-center gap-3 w-full rounded-lg bg-black text-white px-4 py-3 font-medium hover:bg-stone-800 transition"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+        <path d="M16.365 1.43c0 1.14-.43 2.207-1.16 3.002-.831.905-2.195 1.606-3.34 1.51-.15-1.09.42-2.26 1.16-3.02.84-.87 2.29-1.51 3.34-1.49zM20.94 17.1c-.52 1.2-.77 1.74-1.44 2.79-.94 1.47-2.27 3.31-3.91 3.32-1.46.02-1.84-.95-3.83-.94-1.99.01-2.4.96-3.86.94-1.64-.02-2.9-1.67-3.84-3.14C1.9 16.1.9 12.47 2.4 9.99c1.05-1.75 2.86-2.85 4.61-2.87 1.5-.02 2.9.99 3.83.99.92 0 2.63-1.23 4.44-1.05.76.03 2.9.31 4.27 2.32-.11.07-2.55 1.49-2.52 4.44.03 3.54 3.1 4.71 3.13 4.72-.03.08-.5 1.7-1.66 3.38z" />
+      </svg>
+      Continue with Apple
+    </a>
+  )}
+</div>
+
+<div class="flex items-center gap-3 my-6">
+  <div class="h-px flex-1 bg-stone-200"></div>
+  <span class="text-xs text-stone-400 uppercase tracking-wide">or</span>
+  <div class="h-px flex-1 bg-stone-200"></div>
+</div>
+</>
+)}
