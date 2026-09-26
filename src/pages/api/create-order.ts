@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { razorpayProvider } from '../../lib/payments/razorpay';
 import { travelersBookedOn, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
-import { isBookableDate } from '../../lib/availability';
+import { isBookableDate, isFriday, FRIDAY_CLOSED_MESSAGE } from '../../lib/availability';
 
 export const prerender = false;
 
@@ -25,9 +25,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     // Re-checks the same rule the date picker's `min` attribute expresses
     // client-side — a raw API call can't book a past date or a same-day
-    // slot after the 9 PM IST cutoff.
+    // slot after the 9 PM IST cutoff, or a Friday (Taj Mahal closed).
     if (typeof date !== 'string' || !isBookableDate(date)) {
-      return new Response(JSON.stringify({ error: 'Please choose a valid, bookable travel date.' }), {
+      const error = typeof date === 'string' && isFriday(date) ? FRIDAY_CLOSED_MESSAGE : 'Please choose a valid, bookable travel date.';
+      return new Response(JSON.stringify({ error }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
+import { isFriday, FRIDAY_CLOSED_MESSAGE } from '../lib/availability';
 import { pickPricingTier, computeDepositAmount, applyFoundingGuestDiscount, type PricingTier } from '../lib/catalog';
 
 declare global {
@@ -120,6 +121,7 @@ export default function BookingWidget({
     setError(null);
 
     if (!date) return setError('Please choose a travel date.');
+    if (isFriday(date)) return setError(FRIDAY_CLOSED_MESSAGE);
     if (!name || !email || !phone) return setError('Please fill in your name, email, and phone.');
 
     track('checkout_started', { tour_id: tourId, tour_name: tourTitle, travelers, currency, value: total, payment_type: paymentType });
@@ -231,7 +233,16 @@ export default function BookingWidget({
           }}
           className="w-full rounded border border-stone-300 px-3 py-2"
         />
-        {availabilityLabel && <p className="text-xs text-accent-600 mt-1">{availabilityLabel}</p>}
+        {/* A native date input can't grey out weekdays, so say it up front and
+            flag a Friday pick straight away (the server rejects it too). */}
+        {date && isFriday(date) ? (
+          <p className="text-xs text-red-600 mt-1" role="alert">{FRIDAY_CLOSED_MESSAGE}</p>
+        ) : (
+          <p className="text-xs text-stone-500 mt-1">
+            {availabilityLabel && <span className="text-accent-600">{availabilityLabel} · </span>}
+            No tours on Fridays (Taj Mahal closed)
+          </p>
+        )}
       </div>
 
       <div>

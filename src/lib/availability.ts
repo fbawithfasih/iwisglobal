@@ -7,6 +7,16 @@
 
 const CUTOFF_HOUR_IST = 21; // 9 PM
 
+// Every tour visits the Taj Mahal, which is closed every Friday, so Fridays
+// are never bookable. Also used by the booking widget (browser), so keep
+// this free of server-only code.
+export const FRIDAY_CLOSED_MESSAGE = 'The Taj Mahal is closed on Fridays — please pick another day.';
+
+// value is a YYYY-MM-DD calendar date (no time zone involved).
+export function isFriday(value: string): boolean {
+  return new Date(`${value}T00:00:00Z`).getUTCDay() === 5;
+}
+
 export interface AvailabilityInfo {
   minBookableDate: string; // YYYY-MM-DD
   sameDayAvailable: boolean;
@@ -37,20 +47,24 @@ function toDateString(year: number, month: number, day: number): string {
 
 export function getAvailability(now: Date = new Date()): AvailabilityInfo {
   const { year, month, day, hour } = istDateParts(now);
-  const sameDayAvailable = hour < CUTOFF_HOUR_IST;
-
-  if (sameDayAvailable) {
-    return { minBookableDate: toDateString(year, month, day), sameDayAvailable: true, label: 'Book today' };
-  }
-
-  // Advance one IST calendar day using UTC arithmetic on the IST date parts
-  // (avoids DST edge cases — India has no DST, so this is exact).
-  const next = new Date(Date.UTC(year, month - 1, day + 1));
-  return {
-    minBookableDate: toDateString(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate()),
-    sameDayAvailable: false,
-    label: 'Book tomorrow',
+  // Days ahead of today (IST) of the earliest bookable date: today before
+  // the 9 PM cutoff, else tomorrow — then one more if that lands on a Friday.
+  // UTC arithmetic on the IST date parts is exact (India has no DST).
+  let offset = hour < CUTOFF_HOUR_IST ? 0 : 1;
+  const dateAt = (o: number) => {
+    const d = new Date(Date.UTC(year, month - 1, day + o));
+    return toDateString(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
   };
+  if (isFriday(dateAt(offset))) offset += 1;
+  const minBookableDate = dateAt(offset);
+
+  const label =
+    offset === 0
+      ? 'Book today'
+      : offset === 1
+        ? 'Book tomorrow'
+        : `Book for ${new Date(`${minBookableDate}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })}`;
+  return { minBookableDate, sameDayAvailable: offset === 0, label };
 }
 
 // Strict "YYYY-MM-DD" check that also rejects calendar-invalid dates (e.g.
@@ -67,6 +81,6 @@ export function isValidDateString(value: string): boolean {
 // expresses client-side: a caller can't book a past date or a same-day slot
 // after the 9 PM IST cutoff by posting directly to the booking API.
 export function isBookableDate(value: string, now: Date = new Date()): boolean {
-  if (!isValidDateString(value)) return false;
+  if (!isValidDateString(value) || isFriday(value)) return false;
   return value >= getAvailability(now).minBookableDate;
 }
