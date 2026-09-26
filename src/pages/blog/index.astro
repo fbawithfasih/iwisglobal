@@ -20,7 +20,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
 ---
 
 <BaseLayout title="Blog — IWIS Global" description="Company news, travel stories and tips, and seasonal Agra updates from IWIS Global.">
