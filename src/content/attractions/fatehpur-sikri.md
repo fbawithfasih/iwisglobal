@@ -1,19 +1,19 @@
 ---
 name: "Fatehpur Sikri"
 description: "Akbar's abandoned Mughal capital, 37 km from Agra — a UNESCO World Heritage Site since 1986. Entry is ₹610 for foreign tourists; open sunrise to sunset, every day."
-ticketPriceForeign: "₹610"
-ticketPriceIndian: "₹50 (same for SAARC/BIMSTEC nationals)"
+ticketPriceForeign: "₹610 (₹600 on Fridays)"
+ticketPriceIndian: "₹50 (₹40 on Fridays); same for SAARC/BIMSTEC"
 hours: "Sunrise to sunset, every day"
 closedFriday: false
 distanceFromTaj: "About 37 km from Agra — roughly 45 minutes to 1 hour by road"
-dateModified: 2026-09-21
+dateModified: 2026-09-26
 ---
 
 Fatehpur Sikri is the fortified city Mughal emperor Akbar built as his capital starting in 1571, on the site where the holy man Shaikh Salim Chishti reportedly predicted the birth of Akbar's son and heir. "Fatehpur" — city of victory — was added after Akbar's conquest of Gujarat in 1573. Akbar moved the capital to Lahore around 1585, and Fatehpur Sikri was largely abandoned soon after — which is why it survives today as a remarkably intact, un-rebuilt Mughal city rather than a monument that's been through centuries of reuse.
 
 ## Ticket price
 
-Foreign tourists pay ₹610. Indian nationals and SAARC/BIMSTEC nationals both pay ₹50. Children under 15 enter free.
+Foreign tourists pay ₹610 on regular days, ₹600 on Fridays. Indian and SAARC/BIMSTEC nationals both pay ₹50 (₹40 on Fridays). Children under 15 enter free.
 
 ## Hours
 
@@ -35,4 +35,4 @@ Fatehpur Sikri is about 37 km from Agra, roughly 45 minutes to an hour by road �
 
 ---
 
-Prices and hours sourced from [tajmahal.gov.in's Fatehpur Sikri page](https://www.tajmahal.gov.in/fatehpur-sikri.aspx).
+Prices sourced from [ASI's official ticketing page](https://www.tajmahal.gov.in/ticketing.aspx); hours from [tajmahal.gov.in's Fatehpur Sikri page](https://www.tajmahal.gov.in/fatehpur-sikri.aspx).
