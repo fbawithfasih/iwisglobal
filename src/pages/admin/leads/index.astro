@@ -5,6 +5,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { listLeads, insertLead, updateLeadStatus } from '../../../lib/crm';
+import { formatDateTimeIst } from '../../../lib/format';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -36,7 +37,24 @@ if (Astro.request.method === 'POST' && db) {
   return Astro.redirect('/admin/leads');
 }
 
-const leads = db ? await listLeads(db) : [];
+const leads = db ? await listLeads(db) : []; // newest first
+
+const STATUSES = [
+  { value: 'new', label: 'New' },
+  { value: 'contacted', label: 'Contacted' },
+  { value: 'converted', label: 'Converted' },
+  { value: 'lost', label: 'Lost' },
+];
+const statusClass = (status: string) =>
+  status === 'converted' ? 'bg-green-100 text-green-800' :
+  status === 'lost' ? 'bg-red-100 text-red-800' :
+  status === 'contacted' ? 'bg-blue-100 text-blue-800' :
+  'bg-stone-100 text-stone-700';
+// tel: works with any number; WhatsApp needs the country code, so only
+// offer it when the number was entered with a leading "+".
+const telHref = (phone: string) => `tel:${phone.replace(/[^\d+]/g, '')}`;
+const waHref = (phone: string) => (phone.trim().startsWith('+') ? `https://wa.me/${phone.replace(/\D/g, '')}` : null);
+const contactBtn = 'inline-flex min-h-11 items-center rounded border border-stone-300 bg-white px-3 text-sm text-stone-800';
 ---
 <AdminLayout title="Leads">
   <h1 class="text-2xl font-semibold mb-6">Leads</h1>
@@ -57,10 +75,42 @@ const leads = db ? await listLeads(db) : [];
   {leads.length === 0 ? (
     <p class="text-stone-500">No leads yet.</p>
   ) : (
-    <div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+    <>
+    <!-- Phones: one card per lead, with tap-to-contact and status. -->
+    <ul class="md:hidden space-y-3">
+      {leads.map((l) => (
+        <li class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+          <div class="flex items-start justify-between gap-3">
+            <p class="font-semibold text-base">{l.name}</p>
+            <span class={`shrink-0 px-2 py-0.5 rounded text-xs ${statusClass(l.status)}`}>{l.status}</span>
+          </div>
+          <p class="text-xs text-stone-500 mt-0.5">{formatDateTimeIst(l.created_at)}</p>
+          {l.tour_interest && <p class="mt-2"><span class="text-stone-500">Interested in:</span> {l.tour_interest}</p>}
+          {l.message && <p class="mt-1 text-stone-700 whitespace-pre-line">{l.message}</p>}
+          {(l.phone || l.email) && (
+            <div class="flex flex-wrap gap-2 mt-3">
+              {l.phone && <a href={telHref(l.phone)} class={contactBtn}>Call</a>}
+              {l.phone && waHref(l.phone) && <a href={waHref(l.phone)} target="_blank" rel="noopener noreferrer" class={contactBtn}>WhatsApp</a>}
+              {l.email && <a href={`mailto:${l.email}`} class={contactBtn}>Email</a>}
+            </div>
+          )}
+          {(l.phone || l.email) && <p class="text-xs text-stone-500 mt-2 break-all">{l.phone}{l.phone && l.email ? ' · ' : ''}{l.email}</p>}
+          <form method="POST" class="flex gap-2 mt-3">
+            <input type="hidden" name="_action" value="status" />
+            <input type="hidden" name="leadId" value={l.id} />
+            <select name="status" aria-label={`Status for ${l.name}`} class="flex-1 min-h-11 rounded border border-stone-300 px-2">
+              {STATUSES.map((st) => <option value={st.value} selected={l.status === st.value}>{st.label}</option>)}
+            </select>
+            <button type="submit" class="min-h-11 rounded bg-amber-800 text-white px-4">Save</button>
+          </form>
+        </li>
+      ))}
+    </ul>
+    <div class="hidden md:block bg-white rounded-xl border border-stone-200 overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="bg-stone-50 text-left">
           <tr>
+            <th class="px-4 py-2">Added</th>
             <th class="px-4 py-2">Name</th>
             <th class="px-4 py-2">Contact</th>
             <th class="px-4 py-2">Tour interest</th>
@@ -72,29 +122,26 @@ const leads = db ? await listLeads(db) : [];
         <tbody>
           {leads.map((l) => (
             <tr class="border-t border-stone-100 align-top">
+              <td class="px-4 py-2 whitespace-nowrap text-stone-500">{formatDateTimeIst(l.created_at)}</td>
               <td class="px-4 py-2">{l.name}</td>
-              <td class="px-4 py-2">{l.email}{l.email && l.phone ? ' / ' : ''}{l.phone}</td>
+              <td class="px-4 py-2">
+                {l.email && <a href={`mailto:${l.email}`} class="text-amber-800 hover:underline">{l.email}</a>}
+                {l.email && l.phone ? ' / ' : ''}
+                {l.phone && <a href={telHref(l.phone)} class="text-amber-800 hover:underline">{l.phone}</a>}
+              </td>
               <td class="px-4 py-2">{l.tour_interest}</td>
               <td class="px-4 py-2 max-w-xs">{l.message}</td>
               <td class="px-4 py-2">
-                <span class={`px-2 py-0.5 rounded text-xs ${
-                  l.status === 'converted' ? 'bg-green-100 text-green-800' :
-                  l.status === 'lost' ? 'bg-red-100 text-red-800' :
-                  l.status === 'contacted' ? 'bg-blue-100 text-blue-800' :
-                  'bg-stone-100 text-stone-700'
-                }`}>{l.status}</span>
+                <span class={`px-2 py-0.5 rounded text-xs ${statusClass(l.status)}`}>{l.status}</span>
               </td>
               <td class="px-4 py-2">
                 <form method="POST" class="flex items-center gap-1">
                   <input type="hidden" name="_action" value="status" />
                   <input type="hidden" name="leadId" value={l.id} />
-                  <select name="status" class="rounded border border-stone-300 px-1 py-0.5 text-xs">
-                    <option value="new" selected={l.status === 'new'}>New</option>
-                    <option value="contacted" selected={l.status === 'contacted'}>Contacted</option>
-                    <option value="converted" selected={l.status === 'converted'}>Converted</option>
-                    <option value="lost" selected={l.status === 'lost'}>Lost</option>
+                  <select name="status" aria-label={`Status for ${l.name}`} class="rounded border border-stone-300 px-2 py-1 text-xs">
+                    {STATUSES.map((st) => <option value={st.value} selected={l.status === st.value}>{st.label}</option>)}
                   </select>
-                  <button type="submit" class="text-amber-800 text-xs hover:underline">Save</button>
+                  <button type="submit" class="rounded bg-amber-800 text-white px-3 py-1 text-xs">Save</button>
                 </form>
               </td>
             </tr>
@@ -102,5 +149,6 @@ const leads = db ? await listLeads(db) : [];
         </tbody>
       </table>
     </div>
+    </>
   )}
 </AdminLayout>
