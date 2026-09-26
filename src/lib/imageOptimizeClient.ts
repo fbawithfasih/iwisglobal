@@ -8,8 +8,17 @@
 // (tours/new, tours/[id]/edit, agra-highlights/new, agra-highlights/[id]/edit).
 const MAX_WIDTH = 1200;
 const WEBP_QUALITY = 0.82;
+// Optional small copy for list pages (the blog list shows covers ~330px wide).
+const THUMB_WIDTH = 800;
+const THUMB_QUALITY = 0.75;
 
-export function attachImageOptimizer(input: HTMLInputElement, statusEl?: HTMLElement | null) {
+// thumbInput: a hidden file input that receives the 800px copy, when the
+// form stores one (blog covers).
+export function attachImageOptimizer(
+  input: HTMLInputElement,
+  statusEl?: HTMLElement | null,
+  thumbInput?: HTMLInputElement | null
+) {
   input.addEventListener('change', async () => {
     const file = input.files?.[0];
     // Animated GIFs would lose their animation through a canvas round-trip
@@ -17,6 +26,7 @@ export function attachImageOptimizer(input: HTMLInputElement, statusEl?: HTMLEle
     if (!file || !file.type.startsWith('image/') || file.type === 'image/gif') return;
 
     if (statusEl) statusEl.textContent = 'Optimizing…';
+    if (thumbInput) thumbInput.value = '';
 
     try {
       const optimized = await resizeAndCompress(file, MAX_WIDTH, WEBP_QUALITY);
@@ -27,6 +37,12 @@ export function attachImageOptimizer(input: HTMLInputElement, statusEl?: HTMLEle
       const dt = new DataTransfer();
       dt.items.add(finalFile);
       input.files = dt.files;
+      if (thumbInput) {
+        const thumb = await resizeAndCompress(file, THUMB_WIDTH, THUMB_QUALITY);
+        const tdt = new DataTransfer();
+        tdt.items.add(thumb);
+        thumbInput.files = tdt.files;
+      }
       if (statusEl) {
         const before = (file.size / 1024).toFixed(0);
         const after = (finalFile.size / 1024).toFixed(0);

@@ -8,6 +8,7 @@ export const prerender = false;
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { resolveEnv } from '../../lib/env';
 import { listBlogPosts } from '../../lib/blog';
+import MobileActionBar from '../../components/MobileActionBar.astro';
 
 const env = resolveEnv(Astro.locals);
 const posts = env.DB ? await listBlogPosts(env.DB, { status: 'published' }) : [];
@@ -17,6 +18,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   'travel-tips': 'Travel Tips',
   seasonal: 'Seasonal',
 };
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
 ---
 
 <BaseLayout title="Blog — IWIS Global" description="Company news, travel stories and tips, and seasonal Agra updates from IWIS Global.">
@@ -43,7 +47,9 @@ const CATEGORY_LABELS: Record<string, string> = {
           <a href={`/blog/${post.slug}`} class="group block overflow-hidden rounded-xl border border-stone-200 bg-white hover:shadow-md transition">
             {post.image && (
               <img
-                src={post.image}
+                src={post.imageThumb ?? post.image}
+                srcset={post.imageThumb ? `${post.imageThumb} 800w, ${post.image} 1200w` : undefined}
+                sizes="(min-width: 768px) 672px, calc(100vw - 48px)"
                 alt=""
                 loading={i === 0 ? 'eager' : 'lazy'}
                 decoding="async"
@@ -51,9 +57,15 @@ const CATEGORY_LABELS: Record<string, string> = {
               />
             )}
             <div class="p-6">
-              <span class="inline-block text-xs font-semibold tracking-wide text-brand-700 uppercase mb-2">
-                {CATEGORY_LABELS[post.category] ?? post.category}
-              </span>
+              <p class="text-xs mb-2">
+                <span class="font-semibold tracking-wide text-brand-700 uppercase">{CATEGORY_LABELS[post.category] ?? post.category}</span>
+                {post.datePublished && (
+                  <>
+                    <span class="text-stone-400" aria-hidden="true"> · </span>
+                    <time datetime={post.datePublished} class="text-stone-500">{formatDate(post.datePublished)}</time>
+                  </>
+                )}
+              </p>
               <h2 class="text-lg font-semibold mb-1">{post.title}</h2>
               <p class="text-sm text-stone-600">{post.description}</p>
             </div>
@@ -62,4 +74,16 @@ const CATEGORY_LABELS: Record<string, string> = {
       </div>
     )}
   </section>
+
+  <!-- Phones: WhatsApp moves into this bar so the floating button doesn't
+       sit on top of the post cards; plus a way on to the tours. -->
+  <MobileActionBar waRef="BLOGBAR-BLOG" waMessage="Hi! I read your blog and have a question.">
+    <Fragment slot="info">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Visiting Agra?</p>
+      <p class="text-sm font-semibold leading-tight text-stone-900">Private Taj Mahal tours</p>
+    </Fragment>
+    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+      View tours
+    </a>
+  </MobileActionBar>
 </BaseLayout>

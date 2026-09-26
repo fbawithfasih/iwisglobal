@@ -30,13 +30,16 @@ if (Astro.request.method === 'POST' && db) {
     try {
       const imageFile = form.get('imageFile');
       let image = String(form.get('image') ?? '').trim();
+      let imageThumb = '';
       if (imageFile instanceof File && imageFile.size > 0) {
         if (!env.IMAGES) throw new Error('Image storage is not configured yet.');
-        const uploaded = await uploadBlogImage(env.IMAGES, imageFile);
+        const thumbFile = form.get('imageThumb');
+        const uploaded = await uploadBlogImage(env.IMAGES, imageFile, thumbFile instanceof File ? thumbFile : null);
         image = uploaded.url;
+        imageThumb = uploaded.thumbUrl;
       }
 
-      await createBlogPost(db, { title, description, body, category, authorName, image, status });
+      await createBlogPost(db, { title, description, body, category, authorName, image, imageThumb, status });
       return Astro.redirect('/admin/blog');
     } catch (err: any) {
       error = err?.message || 'Failed to create post.';
@@ -85,6 +88,7 @@ if (Astro.request.method === 'POST' && db) {
       <input id="imageFile" type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
       <p class="text-xs text-stone-500 mt-1">JPEG/PNG/WebP/GIF, up to 5MB.</p>
       <p id="imageOptimizeStatus" class="text-xs text-emerald-700 mt-1"></p>
+      <input id="imageThumb" type="file" name="imageThumb" hidden />
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Image URL (used only if no file is uploaded above)</label>
@@ -102,5 +106,5 @@ if (Astro.request.method === 'POST' && db) {
   import { attachImageOptimizer } from '../../../lib/imageOptimizeClient';
   const input = document.getElementById('imageFile') as HTMLInputElement | null;
   const status = document.getElementById('imageOptimizeStatus');
-  if (input) attachImageOptimizer(input, status);
+  if (input) attachImageOptimizer(input, status, document.getElementById('imageThumb') as HTMLInputElement | null);
 </script>

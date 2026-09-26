@@ -31,6 +31,7 @@ if (Astro.request.method === 'POST' && db) {
         category: existing.category,
         authorName: existing.authorName,
         image: existing.image ?? '',
+        imageThumb: existing.imageThumb ?? '',
         status,
       });
     }

@@ -18,7 +18,7 @@ export interface UploadResult {
   url: string;
 }
 
-async function uploadImage(r2: R2Like, file: File, folder: string): Promise<UploadResult> {
+async function uploadImage(r2: R2Like, file: File, folder: string, name: string = crypto.randomUUID()): Promise<UploadResult> {
   if (!ALLOWED_TYPES.has(file.type)) {
     throw new Error('Unsupported image type. Use JPEG, PNG, WebP, or GIF.');
   }
@@ -27,7 +27,7 @@ async function uploadImage(r2: R2Like, file: File, folder: string): Promise<Uplo
   }
 
   const ext = file.type.split('/')[1] === 'jpeg' ? 'jpg' : file.type.split('/')[1];
-  const key = `${folder}/${crypto.randomUUID()}.${ext}`;
+  const key = `${folder}/${name}.${ext}`;
   const buffer = await file.arrayBuffer();
 
   await r2.put(key, buffer, { httpMetadata: { contentType: file.type } });
@@ -43,8 +43,17 @@ export function uploadAgraHighlightImage(r2: R2Like, file: File): Promise<Upload
   return uploadImage(r2, file, 'agra-highlights');
 }
 
-export function uploadBlogImage(r2: R2Like, file: File): Promise<UploadResult> {
-  return uploadImage(r2, file, 'blog');
+// The cover plus, when the admin form's browser optimizer made one, its
+// 800px copy for the /blog list (stored beside it as <uuid>-800.<ext>).
+export async function uploadBlogImage(
+  r2: R2Like,
+  file: File,
+  thumb?: File | null
+): Promise<UploadResult & { thumbUrl: string }> {
+  const name = crypto.randomUUID();
+  const { url } = await uploadImage(r2, file, 'blog', name);
+  const thumbUrl = thumb && thumb.size > 0 ? (await uploadImage(r2, thumb, 'blog', `${name}-800`)).url : '';
+  return { url, thumbUrl };
 }
 
 // E-tickets bought on ASI's site, uploaded from the admin booking page.
