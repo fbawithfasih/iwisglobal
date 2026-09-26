@@ -106,7 +106,7 @@ const attractionJsonLd = {
 
   <!-- Phones: WhatsApp moves into this bar so the floating button doesn't
        sit on top of the article text; plus a way on to the tours. -->
-  <MobileActionBar waRef={`ATTRBAR-AGRA-${entry.slug.toUpperCase()}`} waMessage={`Hi! I have a question about visiting ${name}.`}>
+  <MobileActionBar waRef={`ATTRBAR-AGRA-${entry.slug.toUpperCase()}`} waMessage={`Hi! I have a question about visiting ${name === 'Taj Mahal' ? 'the Taj Mahal' : name}.`}>
     <Fragment slot="info">
       <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Visiting Agra?</p>
       <p class="text-sm font-semibold leading-tight text-stone-900">Private Taj Mahal tours</p>
