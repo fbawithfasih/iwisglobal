@@ -29,8 +29,8 @@ Agra Fort is a working complex of palaces, mosques, and courtyards built across 
 
 ## Getting there
 
-Agra Fort sits a short drive from the Taj Mahal, within Agra city — most day-trip itineraries visit both in the same day. IWIS Global's [Same-Day Taj Mahal Tour from Delhi](/tours/same-day-agra-from-delhi) includes an Agra Fort visit as part of the standard itinerary.
+Agra Fort sits a short drive from the Taj Mahal, within Agra city — most day-trip itineraries visit both in the same day. Every IWIS Global tour below includes an Agra Fort visit.
 
 ---
 
-Ticket prices cross-checked against multiple current listings; verify directly with ASI Agra Circle before a specific trip if this matters to your plans.
+Ticket prices sourced from [ASI's official ticketing page](https://www.tajmahal.gov.in/ticketing.aspx).
