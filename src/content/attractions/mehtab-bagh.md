@@ -2,18 +2,18 @@
 name: "Mehtab Bagh"
 description: "A Mughal garden directly across the Yamuna River from the Taj Mahal — the classic reflected/framed sunset view, without being inside the main complex."
 ticketPriceForeign: "₹300"
-ticketPriceIndian: "₹25 (unverified against a primary ASI source — see note below)"
+ticketPriceIndian: "₹25; SAARC/BIMSTEC ₹25"
 hours: "Sunrise to sunset, approximately 6:00 AM – 6:30 PM"
 closedFriday: false
 distanceFromTaj: "Directly across the Yamuna River, north of the Taj Mahal"
-dateModified: 2026-09-22
+dateModified: 2026-09-26
 ---
 
 Mehtab Bagh is a Charbagh-style Mughal garden directly north of the Taj Mahal, on the opposite bank of the Yamuna River. Its foundation is credited to Babur, the first Mughal emperor — making it one of the earliest Mughal gardens in the area, predating the Taj Mahal itself by roughly a century. In the 1990s, ASI restored the site, replanting it with species brought in to match the original Mughal-era layout.
 
 ## Ticket price
 
-The foreign-tourist price is ₹300. The Indian-national price is reported as ₹25 across aggregator listings, but it hasn't been checked against a primary ASI source the way the foreign price has — treat it as unverified until confirmed directly with ASI Agra Circle. Children under 15 typically enter free, consistent with every other ASI monument in Agra.
+Foreign tourists pay ₹300; Indian and SAARC/BIMSTEC nationals pay ₹25. The price is the same on Fridays. Children under 15 typically enter free, consistent with every other ASI monument in Agra.
 
 ## Hours
 
@@ -31,4 +31,4 @@ Mehtab Bagh sits directly across the Yamuna from the Taj Mahal — close enough 
 
 ---
 
-History and general visiting pattern cross-checked across multiple sources; foreign-tourist ticket price confirmed at ₹300; Indian-national price still needs direct confirmation.
+Ticket prices sourced from [ASI's official ticketing page](https://www.tajmahal.gov.in/ticketing.aspx).
