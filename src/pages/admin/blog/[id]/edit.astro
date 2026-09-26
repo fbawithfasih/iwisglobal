@@ -63,7 +63,12 @@ if (!post) return Astro.redirect('/admin/blog');
 ---
 <AdminLayout title={`Edit ${post.title}`}>
   <a href="/admin/blog" class="text-sm text-stone-500 hover:underline">&larr; Back to blog</a>
-  <h1 class="text-2xl font-semibold mt-2 mb-6">Edit post</h1>
+  <div class="flex items-center justify-between gap-4 mt-2 mb-6">
+    <h1 class="text-2xl font-semibold">Edit post</h1>
+    {post.status === 'published' && (
+      <a href={`/blog/${post.slug}`} target="_blank" rel="noopener" class="inline-flex min-h-11 items-center rounded border border-stone-300 bg-white px-4 text-sm text-amber-800 hover:underline">View post ↗</a>
+    )}
+  </div>
 
   {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
 
@@ -76,7 +81,7 @@ if (!post) return Astro.redirect('/admin/blog');
       <label class="block text-stone-500 mb-1">Description</label>
       <textarea name="description" required rows="2" class="w-full rounded border border-stone-300 px-3 py-2">{post.description}</textarea>
     </div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <label class="block text-stone-500 mb-1">Category</label>
         <select name="category" class="w-full rounded border border-stone-300 px-3 py-2">
@@ -116,9 +121,12 @@ if (!post) return Astro.redirect('/admin/blog');
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Body (Markdown)</label>
-      <textarea name="body" rows="14" class="w-full rounded border border-stone-300 px-3 py-2 font-mono text-xs">{post.body}</textarea>
+      <textarea name="body" rows="14" class="w-full rounded border border-stone-300 px-3 py-2 md:font-mono md:text-xs">{post.body}</textarea>
     </div>
-    <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2">Save changes</button>
+    <!-- Phones: pinned to the bottom of the screen while scrolling the form. -->
+    <div class="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-white/95 border-t border-stone-200 md:static md:m-0 md:p-0 md:bg-transparent md:border-0">
+      <button type="submit" class="w-full md:w-auto min-h-11 rounded bg-amber-800 text-white px-4 py-2">Save changes</button>
+    </div>
   </form>
 
   <form method="POST" class="mt-4 max-w-2xl">
