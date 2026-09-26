@@ -80,20 +80,20 @@ Astro.cookies.set(OAUTH_STATE_COOKIE, JSON.stringify({ nonce, redirect: redirect
 
 const origin = Astro.url.origin;
 
+// A provider that isn't set up (missing keys) is simply left off the page;
+// the reason goes to the server log, not to visitors.
 let googleUrl: string | null = null;
-let googleError: string | null = null;
 try {
   googleUrl = buildGoogleAuthorizeUrl(env, `${origin}/auth/google/callback`, nonce);
 } catch (e: any) {
-  googleError = e.message;
+  console.warn('login: Google sign-in unavailable:', e.message);
 }
 
 let appleUrl: string | null = null;
-let appleError: string | null = null;
 try {
   appleUrl = buildAppleAuthorizeUrl(env, `${origin}/auth/apple/callback`, nonce);
 } catch (e: any) {
-  appleError = e.message;
+  console.warn('login: Apple sign-in unavailable:', e.message);
 }
 ---
 
@@ -104,8 +104,10 @@ try {
 
     {(emailLoginError || errorParam) && <p class="text-red-600 text-sm mb-4">{emailLoginError || errorParam}</p>}
 
+    {(googleUrl || appleUrl) && (
+    <>
     <div class="space-y-3">
-      {googleUrl ? (
+      {googleUrl && (
         <a
           href={googleUrl}
           class="flex items-center justify-center gap-3 w-full rounded-lg border border-stone-300 px-4 py-3 font-medium hover:bg-stone-50 transition"
@@ -118,11 +120,9 @@ try {
           </svg>
           Continue with Google
         </a>
-      ) : (
-        <p class="text-xs text-stone-400 border border-dashed border-stone-300 rounded-lg px-4 py-3">{googleError}</p>
       )}
 
-      {appleUrl ? (
+      {appleUrl && (
         <a
           href={appleUrl}
           class="flex items-center justify-center gap-3 w-full rounded-lg bg-black text-white px-4 py-3 font-medium hover:bg-stone-800 transition"
@@ -132,8 +132,6 @@ try {
           </svg>
           Continue with Apple
         </a>
-      ) : (
-        <p class="text-xs text-stone-400 border border-dashed border-stone-300 rounded-lg px-4 py-3">{appleError}</p>
       )}
     </div>
 
@@ -142,6 +140,8 @@ try {
       <span class="text-xs text-stone-400 uppercase tracking-wide">or</span>
       <div class="h-px flex-1 bg-stone-200"></div>
     </div>
+    </>
+    )}
 
     <form method="POST" class="space-y-3 text-left">
       <div>
@@ -152,7 +152,7 @@ try {
           type="email"
           required
           autocomplete="email"
-          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
         />
       </div>
       <div>
@@ -163,7 +163,7 @@ try {
           type="password"
           required
           autocomplete="current-password"
-          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
         />
       </div>
       <button
