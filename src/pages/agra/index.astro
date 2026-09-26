@@ -5,6 +5,9 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { resolveEnv } from '../../lib/env';
 import { listTours } from '../../lib/tours';
+import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
+import TourCard from '../../components/TourCard.astro';
+import MobileActionBar from '../../components/MobileActionBar.astro';
 
 // Agra travel hub. Google crawled the old ~300-word card list and left it
 // "Crawled - currently not indexed", so this page now carries real planning
@@ -23,7 +26,12 @@ const openOnFriday = attractions.filter((a) => !a.data.closedFriday);
 const guides = await getCollection('guides');
 
 const env = resolveEnv(Astro.locals);
-const tours = env.DB ? await listTours(env.DB, { status: 'published' }) : [];
+const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
+if (Astro.url.searchParams.get('currency')) {
+  Astro.cookies.set('currency', currency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+}
+// Same cards and cheapest-first order as /tours and the homepage.
+const tours = sortByFromPrice(env.DB ? await listTours(env.DB, { status: 'published' }) : [], currency);
 
 const faqs = [
   {
@@ -79,8 +87,30 @@ const faqJsonLd = {
     </p>
 
     <h2 class="text-2xl font-serif font-semibold mb-4">Agra's main sites at a glance</h2>
-    <div class="overflow-x-auto mb-3 -mx-6 px-6">
-      <table class="w-full min-w-[560px] text-sm border-collapse">
+    <!-- Phones: one card per site. The 4-column table is wider than a phone
+         and hid the Fridays column off-screen. -->
+    <ul class="sm:hidden space-y-3 mb-3">
+      {attractions.map((a) => (
+        <li>
+          <a href={`/agra/${a.slug}`} class="block rounded-xl border border-stone-200 bg-white p-4">
+            <span class="flex items-center justify-between gap-3 mb-2">
+              <span class="font-semibold text-brand-800">{a.data.name}</span>
+              {a.data.closedFriday ? (
+                <span class="shrink-0 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700">Closed Fridays</span>
+              ) : (
+                <span class="shrink-0 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-800">Open Fridays</span>
+              )}
+            </span>
+            <dl class="text-sm text-stone-700 space-y-1">
+              <div><dt class="inline font-medium text-stone-900">Ticket (foreign visitor): </dt><dd class="inline">{a.data.ticketPriceForeign}</dd></div>
+              <div><dt class="inline font-medium text-stone-900">Hours: </dt><dd class="inline">{a.data.hours}</dd></div>
+            </dl>
+          </a>
+        </li>
+      ))}
+    </ul>
+    <div class="hidden sm:block overflow-x-auto mb-3">
+      <table class="w-full text-sm border-collapse">
         <thead>
           <tr class="border-b border-stone-300 text-left">
             <th class="py-2 pr-4 font-semibold">Site</th>
@@ -163,14 +193,8 @@ const faqJsonLd = {
         <p class="text-stone-600 mb-4">
           IWIS Global runs private tours with transport and an English-speaking guide.
         </p>
-        <div class="grid sm:grid-cols-2 gap-4 mb-12">
-          {tours.map((tour) => (
-            <a href={`/tours/${tour.slug}`} class="block rounded-xl border border-stone-200 bg-white p-5 hover:shadow-md transition">
-              <h3 class="font-semibold mb-1">{tour.title}</h3>
-              <p class="text-sm text-stone-600 mb-2">{tour.summary}</p>
-              <p class="text-xs text-stone-500">{tour.durationLabel}</p>
-            </a>
-          ))}
+        <div class="grid sm:grid-cols-2 gap-6 mb-12">
+          {tours.map((tour) => <TourCard tour={tour} currency={currency} />)}
         </div>
       </>
     )}
@@ -185,4 +209,14 @@ const faqJsonLd = {
       ))}
     </div>
   </article>
+
+  <MobileActionBar waRef="ATTRBAR-AGRA" waMessage="Hi! I have a question about visiting Agra.">
+    <Fragment slot="info">
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Visiting Agra?</p>
+      <p class="text-sm font-semibold leading-tight text-stone-900">Private Taj Mahal tours</p>
+    </Fragment>
+    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+      View tours
+    </a>
+  </MobileActionBar>
 </BaseLayout>
