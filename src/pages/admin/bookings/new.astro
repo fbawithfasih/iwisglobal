@@ -8,6 +8,7 @@ import { insertManualBooking } from '../../../lib/crm';
 import { computeTotal } from '../../../lib/catalog';
 import { getCatalogItem, listTours } from '../../../lib/tours';
 import { sendBookingConfirmationEmail } from '../../../lib/email';
+import { isFriday, FRIDAY_CLOSED_MESSAGE } from '../../../lib/availability';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -30,6 +31,9 @@ if (Astro.request.method === 'POST' && db) {
   const item = await getCatalogItem(db, tourId, { onlyPublished: false });
   if (!item || !travelDate || travelers < 1 || !travelerName) {
     error = 'Please fill in all required fields with a valid tour.';
+  } else if (isFriday(travelDate)) {
+    // Same rule as website bookings: every tour visits the Taj Mahal.
+    error = FRIDAY_CLOSED_MESSAGE;
   } else {
     const amountPaid = Math.round(computeTotal(item, travelers, []) * 100);
     const id = await insertManualBooking(db, {
@@ -79,6 +83,7 @@ if (Astro.request.method === 'POST' && db) {
     <div>
       <label class="block text-stone-500 mb-1">Travel date</label>
       <input type="date" name="travelDate" required class="w-full rounded border border-stone-300 px-3 py-2" />
+      <p class="text-xs text-stone-500 mt-1">No tours on Fridays (Taj Mahal closed).</p>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Travelers</label>
@@ -94,7 +99,7 @@ if (Astro.request.method === 'POST' && db) {
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Phone</label>
-      <input name="travelerPhone" class="w-full rounded border border-stone-300 px-3 py-2" />
+      <input type="tel" name="travelerPhone" placeholder="+44 7700 900000" class="w-full rounded border border-stone-300 px-3 py-2" />
     </div>
     <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2">Create booking</button>
   </form>
