@@ -9,7 +9,7 @@ export const prerender = false;
 // lawyer. Have it reviewed before relying on it for compliance (e.g. GDPR
 // for EU visitors). This used to be a public banner, removed 26 Sep 2026
 // because payment-network reviewers read it as an incomplete policy.
-const lastUpdated = '24 September 2026';
+const lastUpdated = '26 September 2026';
 ---
 
 <BaseLayout title="Privacy Policy — IWIS Global" description="How IWIS Global collects, uses, and protects your information when you book a tour or create an account.">
@@ -26,7 +26,9 @@ const lastUpdated = '24 September 2026';
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
       <li><strong>Booking details:</strong> when you book a tour, we collect your name, email address, and phone number, along with your chosen tour, travel date, and traveler count.</li>
       <li><strong>Payment:</strong> payments are processed by Razorpay. We never see or store your card, UPI, or bank details — Razorpay handles that directly, and we only receive confirmation that a payment succeeded.</li>
-      <li><strong>Account information (optional):</strong> if you sign in with Google or Apple, we receive your name, email address, and (for Google) profile photo from that provider, so you can view your booking history.</li>
+      <li><strong>Account information (optional):</strong> if you sign in with Google or Apple, we receive your name, email address, and (for Google) profile photo from that provider, so you can view your booking history. If you create an account with an email and password instead, we store your email address and a one-way hash of your password — never the password itself.</li>
+      <li><strong>Entry tickets:</strong> for tours that include monument entry tickets (or when you add them), we buy the tickets on the Archaeological Survey of India's (ASI) official website using the traveler names and nationalities its ticketing requires. We keep a copy of the e-ticket file with your booking and email it to you.</li>
+      <li><strong>Questions to our AI guide:</strong> questions you type into the "YourGuide" box on our homepage are sent to Anthropic's Claude AI to write the answer. We don't store your questions; to limit how often the box can be used, we keep a one-way hash of your IP address (not the address itself) and the time of each question.</li>
       <li><strong>Preferences:</strong> your chosen language and currency are stored in cookies on your device so the site remembers them on your next visit.</li>
       <li><strong>Contact via WhatsApp or email:</strong> if you message us on WhatsApp or by email, that conversation is governed by WhatsApp's (Meta's) or your email provider's own privacy practices, not this policy.</li>
       <li><strong>Analytics:</strong> this site uses Google Analytics, loaded via Google Tag Manager, to understand how visitors use the site — for example, which pages are visited and general navigation patterns. This collects standard usage data (pages viewed, approximate location, device/browser type); it is not used to identify you personally.</li>
@@ -34,7 +36,7 @@ const lastUpdated = '24 September 2026';
 
     <h2 class="text-lg font-semibold mb-2">How we use this information</h2>
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-2">
-      <li>To process and confirm your booking, and to contact you about it.</li>
+      <li>To process and confirm your booking, buy any entry tickets it includes, and contact you about it.</li>
       <li>To let you sign in and view your booking history, if you create an account.</li>
       <li>To respond to questions you send us.</li>
       <li>To meet legal and accounting obligations (e.g. retaining payment records).</li>
@@ -48,6 +50,10 @@ const lastUpdated = '24 September 2026';
       <li><strong>Google / Apple</strong> — only if you choose to sign in with them.</li>
       <li><strong>Cloudflare</strong> — our hosting and database provider; your requests pass through their infrastructure to reach our servers.</li>
       <li><strong>Google</strong> — via Google Analytics and Google Tag Manager, for the site-usage analytics described above.</li>
+      <li><strong>Resend</strong> — the email service that sends your booking confirmation and e-tickets (it receives your name, email address, and booking details).</li>
+      <li><strong>Archaeological Survey of India (ASI)</strong> — traveler names and nationalities, only when we buy monument entry tickets for your tour.</li>
+      <li><strong>Anthropic</strong> — the text of questions you type into the YourGuide box, to generate the answer.</li>
+      <li><strong>Open-Meteo and Google</strong> — some pages load content directly from them in your browser (the Agra weather card from Open-Meteo; the "Add to Preferred Sources" button on our blog from Google), which means they see your IP address like any website you visit.</li>
     </ul>
     <p class="text-stone-700 mb-6">We don't share your information with anyone else for marketing purposes.</p>
 
