@@ -35,4 +35,4 @@ Fatehpur Sikri is about 37 km from Agra, roughly 45 minutes to an hour by road â
 
 ---
 
-**Last updated:** 21 September 2026. Prices and hours sourced from [tajmahal.gov.in's Fatehpur Sikri page](https://www.tajmahal.gov.in/fatehpur-sikri.aspx).
+Prices and hours sourced from [tajmahal.gov.in's Fatehpur Sikri page](https://www.tajmahal.gov.in/fatehpur-sikri.aspx).

@@ -31,4 +31,4 @@ Mehtab Bagh sits directly across the Yamuna from the Taj Mahal — close enough 
 
 ---
 
-**Last updated:** 22 September 2026. History and general visiting pattern cross-checked across multiple sources; foreign-tourist ticket price confirmed at ₹300; Indian-national price still needs direct confirmation.
+History and general visiting pattern cross-checked across multiple sources; foreign-tourist ticket price confirmed at ₹300; Indian-national price still needs direct confirmation.

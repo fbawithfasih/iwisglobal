@@ -6,6 +6,12 @@ ticketPriceIndian: "₹250 total (₹50 complex entry + ₹200 mausoleum chamber
 hours: "Opens 30 minutes before sunrise, closes 30 minutes before sunset. Ticket windows: 1 hour before sunrise to 45 minutes before sunset."
 closedFriday: true
 distanceFromTaj: "—"
+image:
+  src: /taj-mahal-1200.jpg
+  srcset: /taj-mahal-750.jpg 750w, /taj-mahal-1200.jpg 1200w
+  alt: The Taj Mahal's white marble mausoleum and minarets reflected in the long garden pool
+  width: 1200
+  height: 800
 dateModified: 2026-09-21
 ---
 
@@ -33,4 +39,4 @@ Most international visitors see the Taj Mahal as part of a same-day trip from De
 
 ---
 
-**Last updated:** 21 September 2026. Prices and hours sourced from [ASI's official ticketing](https://www.tajmahal.gov.in/ticketing.aspx) and [visiting-hours](https://www.tajmahal.gov.in/visiting-hours.aspx) pages.
+Prices and hours sourced from [ASI's official ticketing](https://www.tajmahal.gov.in/ticketing.aspx) and [visiting-hours](https://www.tajmahal.gov.in/visiting-hours.aspx) pages.

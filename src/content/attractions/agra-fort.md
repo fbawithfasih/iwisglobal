@@ -33,4 +33,4 @@ Agra Fort sits a short drive from the Taj Mahal, within Agra city — most day-t
 
 ---
 
-**Last updated:** 21 September 2026. Ticket prices cross-checked against multiple current listings; verify directly with ASI Agra Circle before a specific trip if this matters to your plans.
+Ticket prices cross-checked against multiple current listings; verify directly with ASI Agra Circle before a specific trip if this matters to your plans.

@@ -32,6 +32,9 @@ const attractions = defineCollection({
     closedFriday: z.boolean(),
     distanceFromTaj: z.string(),
     dateModified: z.date(),
+    // Optional photo under the title: src is the largest copy, srcset lists
+    // the smaller ones (files live in /public).
+    image: z.object({ src: z.string(), srcset: z.string(), alt: z.string(), width: z.number(), height: z.number() }).optional(),
   }),
 });
 

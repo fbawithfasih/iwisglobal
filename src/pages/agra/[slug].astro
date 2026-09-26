@@ -7,6 +7,10 @@ export const prerender = false;
 import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
+import TourCard from '../../components/TourCard.astro';
+import { resolveEnv } from '../../lib/env';
+import { listTours } from '../../lib/tours';
+import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
 
 const { slug } = Astro.params;
 const entry: CollectionEntry<'attractions'> | undefined = (await getCollection('attractions')).find((e) => e.slug === slug);
@@ -16,7 +20,22 @@ if (!entry) {
 }
 
 const { Content } = await entry.render();
-const { name, description, ticketPriceForeign, ticketPriceIndian, hours, closedFriday, dateModified } = entry.data;
+const { name, description, ticketPriceForeign, ticketPriceIndian, hours, closedFriday, dateModified, image } = entry.data;
+
+const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
+if (Astro.url.searchParams.get('currency')) {
+  Astro.cookies.set('currency', currency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+}
+// Tours with this site as an actual itinerary stop (not just a mention in
+// the description), cheapest first like /tours.
+const env = resolveEnv(Astro.locals);
+const siteName = name.toLowerCase();
+const tours = sortByFromPrice(
+  (env.DB ? await listTours(env.DB, { status: 'published' }) : []).filter((t) =>
+    t.itinerary.some((step) => step.activity.toLowerCase().includes(siteName))
+  ),
+  currency
+);
 
 const attractionJsonLd = {
   '@context': 'https://schema.org',
@@ -24,6 +43,7 @@ const attractionJsonLd = {
   name,
   description,
   url: `https://www.iwisglobal.com/agra/${entry.slug}`,
+  ...(image && { image: `https://www.iwisglobal.com${image.src}` }),
   address: { '@type': 'PostalAddress', addressLocality: 'Agra', addressRegion: 'Uttar Pradesh', addressCountry: 'IN' },
 };
 ---
@@ -34,6 +54,20 @@ const attractionJsonLd = {
   <article class="max-w-3xl mx-auto px-6 py-16">
     <a href="/agra" class="inline-flex min-h-11 items-center text-sm text-stone-500 hover:underline">&larr; All Agra attractions</a>
     <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-4 mb-6">{name}</h1>
+
+    {image && (
+      <img
+        src={image.src}
+        srcset={image.srcset}
+        sizes="(min-width: 768px) 672px, calc(100vw - 48px)"
+        alt={image.alt}
+        width={image.width}
+        height={image.height}
+        fetchpriority="high"
+        decoding="async"
+        class="w-full h-auto rounded-xl mb-6 bg-brand-50"
+      />
+    )}
 
     <div class="grid sm:grid-cols-2 gap-4 mb-8 rounded-xl border border-stone-200 bg-white p-5 text-sm">
       <div>
@@ -57,6 +91,15 @@ const attractionJsonLd = {
     <div class="prose prose-stone max-w-none prose-headings:font-serif prose-a:text-brand-700">
       <Content />
     </div>
+
+    {tours.length > 0 && (
+      <section class="mt-12">
+        <h2 class="text-2xl font-serif font-semibold mb-4">Tours that visit {name}</h2>
+        <div class="grid sm:grid-cols-2 gap-6">
+          {tours.map((tour) => <TourCard tour={tour} currency={currency} />)}
+        </div>
+      </section>
+    )}
 
     <p class="text-xs text-stone-400 mt-10">Last updated {dateModified.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
   </article>
