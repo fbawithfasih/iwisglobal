@@ -1,23 +1,109 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { resolveEnv } from '../../lib/env';
+import { getBookingByPaymentId } from '../../lib/crm';
+import { getTourById } from '../../lib/tours';
+import { getSessionCustomerId } from '../../lib/requireCustomer';
+import { CURRENCY_SYMBOLS, type Currency } from '../../lib/currency';
 
 export const prerender = false;
 
+// Where the booking widget lands after a verified payment
+// (?payment_id=pay_…). Shows the trip and amounts only — no name, phone or
+// full email — since anyone holding the link can open it.
+const env = resolveEnv(Astro.locals);
 const paymentId = Astro.url.searchParams.get('payment_id');
+const db = env.DB;
+const booking = paymentId && db ? await getBookingByPaymentId(db, paymentId) : null;
+const tour = booking && db ? await getTourById(db, booking.tour_id) : null;
+const signedIn = !!(await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET));
+
+const formatDate = (ymd: string) =>
+  new Date(`${ymd}T00:00:00Z`).toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+// Amounts are stored in the smallest unit (paise/cents).
+const money = (minor: number, currency: string) =>
+  `${CURRENCY_SYMBOLS[currency as Currency] ?? `${currency} `}${(minor / 100).toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}`;
+// "a•••@gmail.com": enough to recognise, not enough to read out.
+const maskEmail = (email: string) => {
+  const [user, domain] = email.split('@');
+  return domain ? `${user.charAt(0)}•••@${domain}` : '';
+};
+
+const tourTitle = tour?.title ?? booking?.tour_id ?? '';
+const balance = booking ? booking.total_amount - booking.amount_paid : 0;
+const waMessage = booking
+  ? 'Hi! I have a question about my booking: ' +
+    `${tourTitle} on ${formatDate(booking.travel_date)}. ` +
+    `Payment reference: ${booking.payment_id} (ref: CONFIRMATION)`
+  : `Hi! I just paid for a tour but can't see my booking. Payment reference: ${paymentId ?? 'unknown'} (ref: CONFIRMATION)`;
+const waHref = 'https://wa.me/916399226633?text=' + encodeURIComponent(waMessage);
 ---
 <BaseLayout title="Booking Confirmed — IWIS Global" noindex>
-  <section class="max-w-2xl mx-auto px-6 py-24 text-center">
-    <h1 class="text-3xl font-serif font-semibold mb-4">Your booking is confirmed</h1>
-    {paymentId ? (
-      <p class="text-stone-600">
-        Payment reference <span class="font-mono">{paymentId}</span>. A confirmation with your itinerary
-        details will be sent to the email you provided.
-      </p>
+  <section class="max-w-xl mx-auto px-6 py-16">
+    {booking ? (
+      <>
+        <div class="text-center mb-8">
+          <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-700" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7"><path d="M20 6 9 17l-5-5" /></svg>
+          </div>
+          <h1 class="text-3xl font-serif font-semibold mb-3">Your booking is confirmed</h1>
+          {booking.traveler_email && (
+            <p class="text-stone-600">
+              We've emailed your confirmation to <span class="font-medium text-stone-800">{maskEmail(booking.traveler_email)}</span>.
+              If it isn't there in a few minutes, check your spam folder.
+            </p>
+          )}
+        </div>
+
+        <div class="rounded-xl border border-stone-200 bg-white p-5 mb-6">
+          {tour?.slug ? (
+            <a href={`/tours/${tour.slug}`} class="font-semibold text-stone-900 hover:text-brand-800 hover:underline">{tourTitle}</a>
+          ) : (
+            <p class="font-semibold">{tourTitle}</p>
+          )}
+          <dl class="mt-3 space-y-2 text-sm">
+            <div class="flex justify-between gap-4"><dt class="text-stone-500">Date</dt><dd class="text-right">{formatDate(booking.travel_date)}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-stone-500">Travelers</dt><dd>{booking.travelers}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-stone-500">Paid</dt><dd class="font-semibold">{money(booking.amount_paid, booking.currency)}</dd></div>
+            {booking.payment_type === 'deposit' && balance > 0 && (
+              <div class="flex justify-between gap-4"><dt class="text-stone-500">Due on pickup</dt><dd class="font-semibold text-amber-700">{money(balance, booking.currency)}</dd></div>
+            )}
+            <div class="flex justify-between gap-4 border-t border-stone-100 pt-2">
+              <dt class="text-stone-500">Payment reference</dt>
+              <dd class="font-mono text-xs text-stone-700 break-all text-right">{booking.payment_id}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <a href={waHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONFIRMATION" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 font-semibold text-white hover:brightness-95 transition">
+            WhatsApp us about this booking
+          </a>
+          {signedIn && (
+            <a href="/account/bookings" class="inline-flex min-h-12 items-center justify-center rounded-full bg-brand-800 px-6 font-semibold text-white hover:bg-brand-900 transition">
+              View my bookings
+            </a>
+          )}
+          <a href="/tours" class="text-center text-sm text-stone-500 hover:text-brand-800 hover:underline py-2">Browse more tours</a>
+        </div>
+      </>
     ) : (
-      <p class="text-stone-600">We couldn't find a payment reference for this page. If you just completed a booking, check your email for confirmation.</p>
+      <div class="text-center">
+        <h1 class="text-3xl font-serif font-semibold mb-3">We couldn't find this booking</h1>
+        <p class="text-stone-600 mb-6">
+          If you've just paid, check your email for the confirmation, or message us on WhatsApp with your payment
+          reference{paymentId ? <> (<span class="font-mono break-all">{paymentId}</span>)</> : null} and we'll look it up.
+        </p>
+        <a href={waHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONFIRMATION" class="inline-flex min-h-12 items-center justify-center rounded-full bg-[#25D366] px-6 font-semibold text-white hover:brightness-95 transition">
+          WhatsApp us
+        </a>
+      </div>
     )}
-    <a href="/tours" class="inline-block mt-8 rounded bg-brand-800 hover:bg-brand-900 text-white px-6 py-3 font-medium transition">
-      Browse more tours
-    </a>
   </section>
 </BaseLayout>

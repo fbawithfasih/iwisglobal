@@ -59,6 +59,11 @@ export async function getBookingById(db: D1Like, id: string): Promise<BookingRow
   return db.prepare(`SELECT * FROM bookings WHERE id = ?`).bind(id).first<BookingRow>();
 }
 
+// The booking a Razorpay payment created (payment ids are unique per booking).
+export async function getBookingByPaymentId(db: D1Like, paymentId: string): Promise<BookingRow | null> {
+  return db.prepare(`SELECT * FROM bookings WHERE payment_id = ?`).bind(paymentId).first<BookingRow>();
+}
+
 // Entry-ticket fulfilment (see lib/entryTickets.ts). Unticking "purchased"
 // clears the timestamp but keeps any uploaded e-ticket file.
 export async function setTicketsPurchased(db: D1Like, id: string, purchased: boolean): Promise<void> {
