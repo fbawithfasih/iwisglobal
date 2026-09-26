@@ -57,7 +57,7 @@ const leads = db ? await listLeads(db) : [];
   {leads.length === 0 ? (
     <p class="text-stone-500">No leads yet.</p>
   ) : (
-    <div class="bg-white rounded-xl border border-stone-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="bg-stone-50 text-left">
           <tr>

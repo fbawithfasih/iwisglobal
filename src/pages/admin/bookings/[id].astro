@@ -15,6 +15,7 @@ import {
   markTicketEmailed,
 } from '../../../lib/crm';
 import { getTourById } from '../../../lib/tours';
+import { formatTravelDate, formatMoneyMinor, formatDateTimeIst } from '../../../lib/format';
 import { computeTicketsToBuy, ASI_BOOKING_URL } from '../../../lib/entryTickets';
 import { uploadTicketFile } from '../../../lib/images';
 import { sendEntryTicketEmail } from '../../../lib/email';
@@ -102,27 +103,35 @@ const ticketMessages: Record<string, { text: string; ok: boolean }> = {
   email_failed: { text: 'E-ticket saved, but the email did not send (check RESEND_API_KEY). Try "Resend" or send it on WhatsApp.', ok: false },
   error: { text: Astro.url.searchParams.get('msg') ?? 'Something went wrong.', ok: false },
 };
-const fmtTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) : '');
+const fmtTime = formatDateTimeIst;
+// Add-on names for display. IDs gained a "<TOUR_ID>_" prefix when a tour is
+// re-saved (tours.ts replaceAddOns), so match both forms; an add-on since
+// removed from the tour falls back to its stored id.
+const addOnNames = booking.add_on_ids
+  .split(',')
+  .map((id) => id.trim())
+  .filter(Boolean)
+  .map((id) => tour?.addOns.find((a) => a.id === id || a.id === `${booking.tour_id}_${id}` || `${booking.tour_id}_${a.id}` === id)?.name ?? id);
 ---
 <AdminLayout title={`Booking ${booking.id}`}>
   <a href="/admin" class="text-sm text-stone-500 hover:underline">&larr; Back to bookings</a>
-  <h1 class="text-2xl font-semibold mt-2 mb-6">{booking.traveler_name} — {booking.tour_id}</h1>
+  <h1 class="text-2xl font-semibold mt-2 mb-6">{booking.traveler_name} — {tour?.title ?? booking.tour_id}</h1>
 
   <div class="grid md:grid-cols-2 gap-6">
     <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-2 text-sm">
       <h2 class="font-semibold mb-2">Booking details</h2>
-      <p><span class="text-stone-500">Date:</span> {booking.travel_date}</p>
+      <p><span class="text-stone-500">Date:</span> {formatTravelDate(booking.travel_date)}</p>
       <p><span class="text-stone-500">Travelers:</span> {booking.travelers}</p>
-      <p><span class="text-stone-500">Add-ons:</span> {booking.add_on_ids || '—'}</p>
+      <p><span class="text-stone-500">Add-ons:</span> {addOnNames.length ? addOnNames.join(', ') : '—'}</p>
       <p><span class="text-stone-500">Email:</span> {booking.traveler_email}</p>
       <p><span class="text-stone-500">Phone:</span> {booking.traveler_phone}</p>
-      <p><span class="text-stone-500">Amount paid:</span> {booking.currency} {(booking.amount_paid / 100).toLocaleString('en-IN')} ({booking.payment_type === 'deposit' ? '25% deposit' : 'full'})</p>
+      <p><span class="text-stone-500">Amount paid:</span> {formatMoneyMinor(booking.amount_paid, booking.currency)} ({booking.payment_type === 'deposit' ? '25% deposit' : 'full'})</p>
       {booking.payment_type === 'deposit' && (
-        <p><span class="text-stone-500">Balance due on pickup:</span> {booking.currency} {((booking.total_amount - booking.amount_paid) / 100).toLocaleString('en-IN')}</p>
+        <p><span class="text-stone-500">Balance due on pickup:</span> {formatMoneyMinor(booking.total_amount - booking.amount_paid, booking.currency)}</p>
       )}
       <p><span class="text-stone-500">Source:</span> {booking.source}</p>
       <p><span class="text-stone-500">Payment ID:</span> {booking.payment_id}</p>
-      <p><span class="text-stone-500">Booked on:</span> {booking.created_at}</p>
+      <p><span class="text-stone-500">Booked on:</span> {fmtTime(booking.created_at)}</p>
 
       <form method="POST" class="pt-4 flex items-center gap-2">
         <input type="hidden" name="_action" value="status" />
@@ -175,7 +184,7 @@ const fmtTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-
     ) : (
       <div class="space-y-4">
         <div>
-          <p class="mb-1">Buy on ASI's site for <strong>{booking.travel_date}</strong>:</p>
+          <p class="mb-1">Buy on ASI's site for <strong>{formatTravelDate(booking.travel_date)}</strong>:</p>
           <ul class="list-disc list-inside">
             {tickets.map((t) => <li><strong>{t.quantity} ×</strong> {t.name}</li>)}
           </ul>
@@ -226,7 +235,7 @@ const fmtTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-
         {notes.map((n) => (
           <li class="border-t border-stone-100 pt-2">
             <p>{n.note}</p>
-            <p class="text-xs text-stone-500">{n.created_at}</p>
+            <p class="text-xs text-stone-500">{fmtTime(n.created_at)}</p>
           </li>
         ))}
       </ul>

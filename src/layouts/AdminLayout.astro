@@ -25,10 +25,20 @@ const isBlog = path.startsWith('/admin/blog');
       @tailwind base;
       @tailwind components;
       @tailwind utilities;
+      /* Phones: 16px form text, or iOS zooms in on every field tap.
+         !important so it also beats per-field size utilities (text-xs etc). */
+      @media (max-width: 767px) {
+        main input:not([type='checkbox']):not([type='radio']):not([type='file']),
+        main select,
+        main textarea {
+          font-size: 16px !important;
+        }
+      }
     </style>
   </head>
   <body class="bg-stone-100 text-stone-900 min-h-screen">
-    <nav class="bg-stone-900 text-stone-100 px-6 py-3 flex items-center gap-6 text-sm">
+    <!-- Wraps onto two lines on phones instead of widening every admin page. -->
+    <nav class="bg-stone-900 text-stone-100 px-6 py-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
       <a href="/admin" class="font-semibold text-white">IWIS Admin</a>
       <a href="/admin" aria-current={isBookings ? 'page' : undefined} class={navLinkClass(isBookings)}>Bookings</a>
       <a href="/admin/tours" aria-current={isTours ? 'page' : undefined} class={navLinkClass(isTours)}>Tours</a>
