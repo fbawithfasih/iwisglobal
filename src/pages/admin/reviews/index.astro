@@ -9,7 +9,9 @@ export const prerender = false;
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
-import { listReviewCandidates, markReviewRequested } from '../../../lib/crm';
+import { listReviewCandidates, markReviewRequested, type BookingRow } from '../../../lib/crm';
+import { listTours } from '../../../lib/tours';
+import { formatTravelDate } from '../../../lib/format';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -26,6 +28,7 @@ if (Astro.request.method === 'POST' && db) {
 }
 
 const candidates = db ? await listReviewCandidates(db) : [];
+const tourNames = new Map((db ? await listTours(db) : []).map((t) => [t.id, t.title]));
 
 // TODO(fasih): this is the Google Business Profile share link you gave —
 // if GBP's "Get more reviews" feature has generated a dedicated
@@ -37,6 +40,11 @@ function reviewMessage(name: string): string {
   const firstName = name.trim().split(/\s+/)[0] || 'there';
   return `Hi ${firstName}! This is IWIS Global — thank you again for traveling with us. If you had a good experience, would you mind leaving us a quick review? It really helps: ${GBP_REVIEW_LINK}`;
 }
+
+const waHref = (b: BookingRow) =>
+  b.traveler_phone
+    ? `https://wa.me/${b.traveler_phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(reviewMessage(b.traveler_name))}`
+    : null;
 ---
 <AdminLayout title="Reviews">
   <h1 class="text-2xl font-semibold mb-2">Review requests</h1>
@@ -48,7 +56,29 @@ function reviewMessage(name: string): string {
   {candidates.length === 0 ? (
     <p class="text-stone-500">Nobody's due for a review request right now.</p>
   ) : (
-    <div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+    <>
+    <!-- Phones: one card per trip with full-size WhatsApp / Mark as sent. -->
+    <ul class="md:hidden space-y-3">
+      {candidates.map((b) => (
+        <li class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+          <p class="font-semibold text-base">{b.traveler_name}</p>
+          <p class="text-stone-700">{tourNames.get(b.tour_id) ?? b.tour_id}</p>
+          <p class="text-stone-500">Traveled {formatTravelDate(b.travel_date)}{b.traveler_phone ? ` · ${b.traveler_phone}` : ''}</p>
+          <div class="flex gap-2 mt-3">
+            {waHref(b) ? (
+              <a href={waHref(b)} target="_blank" rel="noopener noreferrer" class="flex-1 inline-flex min-h-11 items-center justify-center rounded bg-emerald-600 font-medium text-white">WhatsApp</a>
+            ) : (
+              <span class="flex-1 inline-flex min-h-11 items-center justify-center rounded border border-dashed border-stone-300 text-stone-400">No phone on file</span>
+            )}
+            <form method="POST" class="flex-1">
+              <input type="hidden" name="bookingId" value={b.id} />
+              <button type="submit" class="w-full min-h-11 rounded border border-stone-300 bg-white text-stone-700">Mark as sent</button>
+            </form>
+          </div>
+        </li>
+      ))}
+    </ul>
+    <div class="hidden md:block bg-white rounded-xl border border-stone-200 overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="bg-stone-50 text-left">
           <tr>
@@ -63,14 +93,14 @@ function reviewMessage(name: string): string {
         <tbody>
           {candidates.map((b) => (
             <tr class="border-t border-stone-100">
-              <td class="px-4 py-2">{b.travel_date}</td>
-              <td class="px-4 py-2">{b.tour_id}</td>
+              <td class="px-4 py-2 whitespace-nowrap">{formatTravelDate(b.travel_date)}</td>
+              <td class="px-4 py-2">{tourNames.get(b.tour_id) ?? b.tour_id}</td>
               <td class="px-4 py-2">{b.traveler_name}</td>
               <td class="px-4 py-2">{b.traveler_phone}</td>
               <td class="px-4 py-2">
-                {b.traveler_phone ? (
+                {waHref(b) ? (
                   <a
-                    href={`https://wa.me/${b.traveler_phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(reviewMessage(b.traveler_name))}`}
+                    href={waHref(b)}
                     target="_blank"
                     rel="noopener noreferrer"
                     class="text-emerald-700 hover:underline font-medium"
@@ -92,5 +122,6 @@ function reviewMessage(name: string): string {
         </tbody>
       </table>
     </div>
+    </>
   )}
 </AdminLayout>
