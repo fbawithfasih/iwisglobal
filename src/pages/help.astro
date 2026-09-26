@@ -203,7 +203,8 @@ const faqJsonLd = {
     </div>
     <p id="faq-no-results" class="hidden text-sm text-stone-500 -mt-10 mb-16">No results — try WhatsApp or email below.</p>
 
-    <div class="flex items-center gap-4 flex-wrap mb-16">
+    <!-- Phones get the same two buttons in the bottom bar instead. -->
+    <div class="hidden sm:flex items-center gap-4 flex-wrap mb-16">
       <h2 class="text-xl font-serif font-semibold shrink-0">Still need help?</h2>
       <Button
         href={`https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have a question. (ref: HELP-STILLNEEDHELP)')}`}
