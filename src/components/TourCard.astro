@@ -48,6 +48,9 @@ const price = resolveFromPrice(tour, currency);
       {tour.pickupIncluded && <span>· Hotel pickup</span>}
       {tour.privateTour && <span>· Private tour</span>}
       {tour.guideLanguage && <span>· {tour.guideLanguage} guide</span>}
+      {/* Only when tickets are built into the price (not a pre-ticked add-on),
+          so the "From" price really covers them. */}
+      {tour.entryTicketsInPrice.length > 0 && <span class="font-medium text-brand-700">· Entry tickets included</span>}
       <span>· Free cancellation</span>
     </div>
   </div>
