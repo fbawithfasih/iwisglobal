@@ -92,14 +92,15 @@ function whatsappRef(location: string): string {
 //
 // sameAs: the live Google Business Profile share link (given by the user).
 // Add any other confirmed social profiles here as they're set up — don't
-// invent them. Same reasoning for address: only locality/region/country
-// are confirmed facts (product-marketing-context.md §1); no street address
-// or postal code exists yet (also blocks backlog 0.5's /about page).
+// invent them. Address, legalName and taxID match /about and /contact;
+// legalName and taxID are as shown on the public GST register.
 const orgJsonLd = {
   '@context': 'https://schema.org',
   '@type': ['Organization', 'TravelAgency'],
   '@id': 'https://www.iwisglobal.com/#organization',
   name: 'IWIS Global',
+  legalName: 'IWIS Global',
+  taxID: '09AAIFI6799J1ZH',
   alternateName: 'iwisglobal',
   disambiguatingDescription: 'A Taj Mahal and Agra tour operator based in Agra, India',
   url: 'https://www.iwisglobal.com',
