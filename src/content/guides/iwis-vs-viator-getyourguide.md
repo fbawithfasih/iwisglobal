@@ -6,11 +6,11 @@ datePublished: 2026-09-22
 dateModified: 2026-09-27
 ---
 
-**Viator and GetYourGuide don't run tours themselves** — they're marketplaces where operators like IWIS Global list. Booking through one adds a marketplace layer (and its commission) between you and the operator running your tour. Booking directly with IWIS Global removes that layer — same guides, same vehicles, no markup for a listing you don't need.
+**Viator and GetYourGuide don't run tours themselves** — they're marketplaces where local tour operators list their tours. Booking through one adds a marketplace layer (and its commission) between you and the operator running your tour. IWIS Global doesn't list on either platform: you book directly with the operator whose guide and vehicle run your tour, with no marketplace commission built into the price.
 
 ## What Viator and GetYourGuide actually are
 
-Both platforms are booking marketplaces, not tour operators. A local company — sometimes IWIS Global itself, sometimes a competitor — creates a listing, sets a price, and pays the platform a commission on each booking. Neither platform publishes a single fixed commission rate. GetYourGuide's [supplier terms](https://www.getyourguide.com/c/supplier-terms-and-conditions/) define its commission as a percentage of the retail price, set in each supplier's account, and its [supplier site](https://supplier.getyourguide.com/) says rates vary by country. Viator describes its model as [pay-for-performance](https://operatorresources.viator.com/about-us/): the operator pays a commission when a booking is completed. Whatever the exact number for a given listing, it's built into the price you see — the operator sets a price that covers the tour cost *and* the commission.
+Both platforms are booking marketplaces, not tour operators. A local tour company creates a listing, sets a price, and pays the platform a commission on each booking. Neither platform publishes a single fixed commission rate. GetYourGuide's [supplier terms](https://www.getyourguide.com/c/supplier-terms-and-conditions/) define its commission as a percentage of the retail price, set in each supplier's account, and its [supplier site](https://supplier.getyourguide.com/) says rates vary by country. Viator describes its model as [pay-for-performance](https://operatorresources.viator.com/about-us/): the operator pays a commission when a booking is completed. Whatever the exact number for a given listing, it's built into the price you see — the operator sets a price that covers the tour cost *and* the commission.
 
 Booking directly with IWIS Global skips that layer. There's no marketplace commission to price in, because there's no marketplace.
 
