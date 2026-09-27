@@ -6,7 +6,7 @@ datePublished: 2026-09-21
 dateModified: 2026-09-27
 ---
 
-The Taj Mahal bans **arms and ammunition, anything related to fire or smoking, tobacco, liquor, food (including small snacks like toffees), headphones, knives, wire, mobile chargers, other electric goods (cameras are the exception), and tripods** — plus drones anywhere in or around the complex. This is the full list published on [ASI's official "Dos and Don'ts" page](https://www.tajmahal.gov.in/dos-and-donts.aspx), checked 21 September 2026.
+The Taj Mahal bans **arms and ammunition, anything related to fire or smoking, tobacco, liquor, food (including small snacks like toffees), headphones, knives, wire, mobile chargers, other electric goods (cameras are the exception), and tripods** — plus drones anywhere in or around the complex. This is the full list published on [ASI's official "Dos and Don'ts" page](https://www.tajmahal.gov.in/dos-and-donts.aspx), checked 27 September 2026.
 
 ## The complete prohibited items list
 
@@ -29,8 +29,8 @@ Drone cameras are separately and explicitly banned "inside and around the Taj Ma
 ## What you *can* bring
 
 - Still cameras — allowed for day visits and night viewing, but **not inside the main mausoleum chamber itself**, where photography is prohibited outright
-- Small, transparent water bottles (and the foreign-tourist ticket already includes a free bottle of water)
-- Mobile phones, as long as they're switched to silent or off inside the monument
+- A water bottle — ASI explicitly allows one inside (and foreign, SAARC and BIMSTEC tickets already include a free half-litre bottle)
+- Mobile phones on day visits, switched to silent or off inside the monument — they're banned for night viewing (see below)
 
 ## Rules beyond what to carry
 
@@ -43,7 +43,7 @@ A few behavioral rules from the same official page are worth knowing before you 
 
 ## Night viewing has extra restrictions
 
-If you're visiting during a night-viewing slot, the ban list extends further: video cameras and spare batteries are also prohibited, though still cameras remain allowed after screening.
+If you're visiting during a night-viewing slot, the ban list extends further: mobile phones are banned along with everything on the list above, and so are video cameras and spare batteries. Still cameras remain allowed after screening.
 
 ## What happens if you bring something on the list anyway
 
@@ -57,4 +57,4 @@ For entry ticket prices and what's included, see our [full ticket cost breakdown
 
 ---
 
-**Last updated:** 21 September 2026. Sourced from [tajmahal.gov.in/dos-and-donts.aspx](https://www.tajmahal.gov.in/dos-and-donts.aspx) (Archaeological Survey of India). Rules can change; verify before travel if this matters for your trip.
+**Checked on 27 September 2026** against [tajmahal.gov.in/dos-and-donts.aspx](https://www.tajmahal.gov.in/dos-and-donts.aspx) (Archaeological Survey of India). Rules can change; verify before travel if this matters for your trip.

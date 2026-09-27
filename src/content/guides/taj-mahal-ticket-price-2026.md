@@ -24,14 +24,14 @@ Indian nationals: ₹50 + ₹200 = ₹250. SAARC/BIMSTEC nationals: ₹540 + ₹
 
 ## What's included in the foreign-tourist ticket
 
-The ₹1,100 entry ticket bundles in a few things that aren't obvious from the price alone, per ASI's ticketing page:
+The ₹1,100 entry ticket bundles in a few things that aren't obvious from the price alone, per ASI's ticketing and Dos and Don'ts pages:
 
 - Shoe covers
-- A bottle of water
+- A half-litre bottle of water
 - A tourist guide map of Agra
 - Battery bus and golf cart services
 
-Separately, shoe racks just below the main mausoleum are free for every visitor, whatever their ticket.
+ASI's [Dos and Don'ts page](https://www.tajmahal.gov.in/dos-and-donts.aspx) says SAARC and BIMSTEC tickets include the same. Separately, shoe racks just below the main mausoleum are free for every visitor, whatever their ticket.
 
 ## Online vs. counter: is there a price difference?
 

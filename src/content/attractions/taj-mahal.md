@@ -27,7 +27,7 @@ The monument opens 30 minutes before sunrise and closes 30 minutes before sunset
 
 ## What's included with your ticket
 
-The foreign-tourist ticket bundles in shoe covers, a bottle of water, a tourist guide map of Agra, and battery bus and golf cart services. Shoe racks just below the main mausoleum are free for every visitor.
+The foreign-tourist ticket bundles in shoe covers, a half-litre bottle of water, a tourist guide map of Agra, and battery bus and golf cart services — and ASI's Dos and Don'ts page says SAARC and BIMSTEC tickets include the same. Shoe racks just below the main mausoleum are free for every visitor.
 
 ## Rules worth knowing before you go
 
