@@ -70,15 +70,20 @@ const articleJsonLd = {
 
     {/* Phones get the 800px copy made for the /blog list (imageThumb). */}
     {post.image && (
-      <img
-        src={post.image}
-        srcset={post.imageThumb ? `${post.imageThumb} 800w, ${post.image} 1200w` : undefined}
-        sizes="(min-width: 768px) 672px, calc(100vw - 48px)"
-        alt={post.title}
-        fetchpriority="high"
-        decoding="async"
-        class="w-full aspect-video object-cover rounded-xl mb-10"
-      />
+      <figure class="mb-10">
+        <img
+          src={post.image}
+          srcset={post.imageThumb ? `${post.imageThumb} 800w, ${post.image} 1200w` : undefined}
+          sizes="(min-width: 768px) 672px, calc(100vw - 48px)"
+          alt={post.imageIsIllustration ? `Illustration for: ${post.title}` : post.title}
+          fetchpriority="high"
+          decoding="async"
+          class="w-full aspect-video object-cover rounded-xl"
+        />
+        {post.imageIsIllustration && (
+          <figcaption class="mt-2 text-xs text-stone-500">Illustration — not a photograph.</figcaption>
+        )}
+      </figure>
     )}
     <div class="prose prose-stone max-w-none prose-headings:font-serif prose-a:text-brand-700" set:html={bodyHtml} />
   </article>

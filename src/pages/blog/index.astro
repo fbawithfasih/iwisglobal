@@ -46,15 +46,21 @@ const formatDate = (iso: string) =>
         {posts.map((post, i) => (
           <a href={`/blog/${post.slug}`} class="group block overflow-hidden rounded-xl border border-stone-200 bg-white hover:shadow-md transition">
             {post.image && (
-              <img
-                src={post.imageThumb ?? post.image}
-                srcset={post.imageThumb ? `${post.imageThumb} 800w, ${post.image} 1200w` : undefined}
-                sizes="(min-width: 768px) 672px, calc(100vw - 48px)"
-                alt=""
-                loading={i === 0 ? 'eager' : 'lazy'}
-                decoding="async"
-                class="w-full aspect-[16/9] object-cover transition group-hover:opacity-90"
-              />
+              <div class="relative">
+                <img
+                  src={post.imageThumb ?? post.image}
+                  srcset={post.imageThumb ? `${post.imageThumb} 800w, ${post.image} 1200w` : undefined}
+                  sizes="(min-width: 768px) 672px, calc(100vw - 48px)"
+                  alt=""
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  class="w-full aspect-[16/9] object-cover transition group-hover:opacity-90"
+                />
+                {/* Generated or drawn covers are labelled so they aren't taken for real photos. */}
+                {post.imageIsIllustration && (
+                  <span class="absolute left-3 bottom-3 rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-medium text-white">Illustration</span>
+                )}
+              </div>
             )}
             <div class="p-6">
               <p class="text-xs mb-2">

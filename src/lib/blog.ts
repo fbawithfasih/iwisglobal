@@ -22,6 +22,7 @@ export interface BlogPostRow {
   author_name: string;
   image: string;
   image_thumb: string;
+  image_is_illustration: number;
   status: string;
   created_at: string;
   updated_at: string;
@@ -39,6 +40,8 @@ export interface BlogPost {
   image: string | null;
   // 800px copy of the cover for the /blog list; null = none (use image).
   imageThumb: string | null;
+  // Cover is an illustration (AI-generated or artwork), labelled as such.
+  imageIsIllustration: boolean;
   status: BlogStatus;
   createdAt: string;
   updatedAt: string;
@@ -56,6 +59,7 @@ function parseRow(row: BlogPostRow): BlogPost {
     authorName: row.author_name,
     image: row.image || null,
     imageThumb: row.image_thumb || null,
+    imageIsIllustration: !!row.image_is_illustration,
     status: row.status === 'published' ? 'published' : 'draft',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -141,6 +145,7 @@ export interface BlogPostInput {
   authorName: string;
   image: string;
   imageThumb: string;
+  imageIsIllustration: boolean;
   status: BlogStatus;
 }
 
@@ -151,10 +156,10 @@ export async function createBlogPost(db: D1Like, input: BlogPostInput): Promise<
   const datePublished = input.status === 'published' ? now : null;
   await db
     .prepare(
-      `INSERT INTO blog_posts (id, slug, title, description, body, category, author_name, image, image_thumb, status, created_at, updated_at, date_published)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO blog_posts (id, slug, title, description, body, category, author_name, image, image_thumb, image_is_illustration, status, created_at, updated_at, date_published)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    .bind(id, slug, input.title, input.description, input.body, input.category, input.authorName, input.image, input.imageThumb, input.status, now, now, datePublished)
+    .bind(id, slug, input.title, input.description, input.body, input.category, input.authorName, input.image, input.imageThumb, input.imageIsIllustration ? 1 : 0, input.status, now, now, datePublished)
     .run();
   return id;
 }
@@ -171,10 +176,10 @@ export async function updateBlogPost(db: D1Like, id: string, input: BlogPostInpu
   await db
     .prepare(
       `UPDATE blog_posts
-       SET title = ?, description = ?, body = ?, category = ?, author_name = ?, image = ?, image_thumb = ?, status = ?, updated_at = ?, date_published = ?
+       SET title = ?, description = ?, body = ?, category = ?, author_name = ?, image = ?, image_thumb = ?, image_is_illustration = ?, status = ?, updated_at = ?, date_published = ?
        WHERE id = ?`
     )
-    .bind(input.title, input.description, input.body, input.category, input.authorName, input.image, input.imageThumb, input.status, now, datePublished, id)
+    .bind(input.title, input.description, input.body, input.category, input.authorName, input.image, input.imageThumb, input.imageIsIllustration ? 1 : 0, input.status, now, datePublished, id)
     .run();
 }
 

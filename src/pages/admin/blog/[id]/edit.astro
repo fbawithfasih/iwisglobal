@@ -50,7 +50,8 @@ if (Astro.request.method === 'POST') {
         imageThumb = uploaded.thumbUrl;
       }
 
-      await updateBlogPost(db, id, { title, description, body, category, authorName, image, imageThumb, status });
+      const imageIsIllustration = form.get('imageIsIllustration') === 'on';
+      await updateBlogPost(db, id, { title, description, body, category, authorName, image, imageThumb, imageIsIllustration, status });
       return Astro.redirect('/admin/blog');
     } catch (err: any) {
       error = err?.message || 'Failed to update post.';
@@ -118,6 +119,10 @@ if (!post) return Astro.redirect('/admin/blog');
     <div>
       <label class="block text-stone-500 mb-1">Image URL (only used if no new file is uploaded above)</label>
       <input name="image" value={post.image ?? ''} class="w-full rounded border border-stone-300 px-3 py-2" />
+      <label class="flex items-start gap-2 min-h-11 py-2">
+        <input type="checkbox" name="imageIsIllustration" checked={post.imageIsIllustration} class="mt-1" />
+        <span>Cover is an illustration (AI-generated or artwork), not a real photo — the site labels it "Illustration".</span>
+      </label>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Body (Markdown)</label>
