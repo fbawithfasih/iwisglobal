@@ -79,7 +79,7 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
 
         <div class="rounded-xl border border-stone-200 bg-white p-5 mb-6">
           {tour?.slug ? (
-            <a href={`/tours/${tour.slug}`} class="font-semibold text-stone-900 hover:text-brand-800 hover:underline">{tourTitle}</a>
+            <a href={`/tours/${tour.slug}`} class="inline-flex min-h-11 items-center font-semibold text-stone-900 hover:text-brand-800 hover:underline">{tourTitle}</a>
           ) : (
             <p class="font-semibold">{tourTitle}</p>
           )}
@@ -130,7 +130,7 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
               View my bookings
             </a>
           )}
-          <a href="/tours" class="text-center text-sm text-stone-500 hover:text-brand-800 hover:underline py-2">Browse more tours</a>
+          <a href="/tours" class="inline-flex min-h-11 items-center justify-center text-sm text-stone-500 hover:text-brand-800 hover:underline">Browse more tours</a>
         </div>
       </>
     ) : (
