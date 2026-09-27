@@ -4,6 +4,23 @@ import { isFriday, FRIDAY_CLOSED_MESSAGE, todayIst } from '../lib/availability';
 import { pickPricingTier, computeDepositAmount, type PricingTier } from '../lib/catalog';
 import { bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer } from '../lib/offers';
 
+// Same as MAX_TRAVELERS_PER_DATE in src/lib/db.ts (one vehicle per date);
+// the server enforces it — this only keeps the stepper in range.
+const MAX_TRAVELERS = 12;
+
+type ContactField = 'name' | 'email' | 'phone';
+// Checked before payment: a mistyped email means the confirmation and
+// tickets never arrive; a phone without a country code can't be reached on
+// WhatsApp.
+function contactErrors(name: string, email: string, phone: string): Partial<Record<ContactField, string>> {
+  const errors: Partial<Record<ContactField, string>> = {};
+  if (name.trim().length < 2) errors.name = 'Please enter your full name.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) errors.email = 'Please check your email address — we send your confirmation there.';
+  const digits = phone.replace(/[\s().-]/g, '');
+  if (!/^\+\d{8,15}$/.test(digits)) errors.phone = 'Include your country code, e.g. +44 7700 900123 or +91 98765 43210.';
+  return errors;
+}
+
 declare global {
   interface Window {
     Razorpay: any;
@@ -89,6 +106,7 @@ export default function BookingWidget({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ContactField, string>>>({});
   const [couponOpen, setCouponOpen] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [coupon, setCoupon] = useState<Offer | null>(null);
@@ -158,7 +176,15 @@ export default function BookingWidget({
 
     if (!date) return setError('Please choose a travel date.');
     if (isFriday(date)) return setError(FRIDAY_CLOSED_MESSAGE);
-    if (!name || !email || !phone) return setError('Please fill in your name, email, and phone.');
+    const errors = contactErrors(name, email, phone);
+    setFieldErrors(errors);
+    const firstBad = (['name', 'email', 'phone'] as ContactField[]).find((f) => errors[f]);
+    if (firstBad) {
+      const el = document.getElementById(`traveler-${firstBad}`);
+      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el?.focus({ preventScroll: true });
+      return;
+    }
 
     track('checkout_started', { tour_id: tourId, tour_name: tourTitle, travelers, currency, value: total, payment_type: paymentType });
 
@@ -305,16 +331,31 @@ export default function BookingWidget({
       </div>
 
       <div>
-        <label htmlFor="travelers" className="block text-sm font-medium mb-1">Travelers</label>
-        <input
-          id="travelers"
-          type="number"
-          min={1}
-          max={12}
-          value={travelers}
-          onChange={(e) => setTravelers(Math.max(1, Number(e.target.value)))}
-          className="w-full rounded border border-stone-300 px-3 py-2"
-        />
+        <p id="travelers-label" className="block text-sm font-medium mb-1">Travelers</p>
+        {/* − / + instead of a number box: on phones, clearing the box to type
+            a new number snapped it to 1, so "4" became "14". */}
+        <div id="travelers" role="group" aria-labelledby="travelers-label" className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setTravelers((t) => Math.max(1, t - 1))}
+            disabled={travelers <= 1}
+            aria-label="One fewer traveler"
+            className="h-11 w-11 rounded-full border border-stone-300 text-xl leading-none disabled:opacity-40"
+          >
+            −
+          </button>
+          <span aria-live="polite" className="min-w-8 text-center text-lg font-semibold">{travelers}</span>
+          <button
+            type="button"
+            onClick={() => setTravelers((t) => Math.min(MAX_TRAVELERS, t + 1))}
+            disabled={travelers >= MAX_TRAVELERS}
+            aria-label="One more traveler"
+            className="h-11 w-11 rounded-full border border-stone-300 text-xl leading-none disabled:opacity-40"
+          >
+            +
+          </button>
+          {travelers >= MAX_TRAVELERS && <span className="text-xs text-stone-500">Up to {MAX_TRAVELERS} per booking</span>}
+        </div>
         {pricingTiers.length > 0 && (
           <p className="text-xs text-stone-500 mt-1">
             {CURRENCY_SYMBOLS[currency]}{currentRate.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}/person for {travelers} {travelers === 1 ? 'traveler' : 'travelers'}
@@ -384,10 +425,17 @@ export default function BookingWidget({
             id="traveler-name"
             type="text"
             autoComplete="name"
+            placeholder="e.g. Priya Sharma"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded border border-stone-300 px-3 py-2"
+            onChange={(e) => {
+              setName(e.target.value);
+              if (fieldErrors.name) setFieldErrors((f) => ({ ...f, name: undefined }));
+            }}
+            aria-invalid={!!fieldErrors.name}
+            aria-describedby={fieldErrors.name ? 'traveler-name-error' : undefined}
+            className={`w-full rounded border px-3 py-2 ${fieldErrors.name ? 'border-red-500' : 'border-stone-300'}`}
           />
+          {fieldErrors.name && <p id="traveler-name-error" className="text-xs text-red-600 mt-1">{fieldErrors.name}</p>}
         </div>
         <div>
           <label htmlFor="traveler-email" className="block text-sm font-medium mb-1">Email</label>
@@ -395,10 +443,17 @@ export default function BookingWidget({
             id="traveler-email"
             type="email"
             autoComplete="email"
+            placeholder="you@example.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border border-stone-300 px-3 py-2"
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (fieldErrors.email) setFieldErrors((f) => ({ ...f, email: undefined }));
+            }}
+            aria-invalid={!!fieldErrors.email}
+            aria-describedby={fieldErrors.email ? 'traveler-email-error' : undefined}
+            className={`w-full rounded border px-3 py-2 ${fieldErrors.email ? 'border-red-500' : 'border-stone-300'}`}
           />
+          {fieldErrors.email && <p id="traveler-email-error" className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>}
         </div>
         <div>
           <label htmlFor="traveler-phone" className="block text-sm font-medium mb-1">Phone (with country code)</label>
@@ -406,10 +461,17 @@ export default function BookingWidget({
             id="traveler-phone"
             type="tel"
             autoComplete="tel"
+            placeholder="+44 7700 900123"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full rounded border border-stone-300 px-3 py-2"
+            onChange={(e) => {
+              setPhone(e.target.value);
+              if (fieldErrors.phone) setFieldErrors((f) => ({ ...f, phone: undefined }));
+            }}
+            aria-invalid={!!fieldErrors.phone}
+            aria-describedby={fieldErrors.phone ? 'traveler-phone-error' : undefined}
+            className={`w-full rounded border px-3 py-2 ${fieldErrors.phone ? 'border-red-500' : 'border-stone-300'}`}
           />
+          {fieldErrors.phone && <p id="traveler-phone-error" className="text-xs text-red-600 mt-1">{fieldErrors.phone}</p>}
         </div>
       </div>
 
@@ -505,6 +567,11 @@ export default function BookingWidget({
       >
         {loading ? 'Processing…' : 'Book & Pay'}
       </button>
+
+      <p className="text-xs text-stone-500">
+        By booking you agree to our <a href="/terms" className="text-brand-800 underline">Terms</a> and{' '}
+        <a href="/cancellation-refund-policy" className="text-brand-800 underline">Cancellation &amp; Refund Policy</a>.
+      </p>
 
       <div className="text-xs text-stone-500 space-y-0.5">
         <p>✓ Free cancellation up to 24 hours before your tour</p>
