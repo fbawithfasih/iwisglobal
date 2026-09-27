@@ -107,6 +107,11 @@ export default function BookingWidget({
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<ContactField, string>>>({});
+  // After Razorpay closes on success, while verify-payment saves the booking.
+  const [confirming, setConfirming] = useState(false);
+  // Paid, but the booking couldn't be saved automatically: the payment id,
+  // so the customer can quote it rather than pay again.
+  const [paidUnconfirmed, setPaidUnconfirmed] = useState<string | null>(null);
   const [couponOpen, setCouponOpen] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [coupon, setCoupon] = useState<Offer | null>(null);
@@ -227,34 +232,47 @@ export default function BookingWidget({
         name: 'IWIS Global',
         description: tourTitle,
         order_id: orderId,
+        // Square logo for Razorpay's header (it shows a letter without one).
+        // Always the live https URL: Razorpay's window won't load an http one.
+        image: 'https://www.iwisglobal.com/logo-globe.png',
         handler: async (response: {
           razorpay_payment_id: string;
           razorpay_order_id: string;
           razorpay_signature: string;
         }) => {
-          const verifyRes = await fetch('/api/verify-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...response,
-              travelerName: name,
-              travelerEmail: email,
-              travelerPhone: phone,
-            }),
-          });
-
-          if (!verifyRes.ok) {
-            const { error: msg } = await verifyRes.json();
-            setError(msg || 'Payment verification failed');
-            return;
+          setConfirming(true);
+          try {
+            const verifyRes = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ...response,
+                travelerName: name,
+                travelerEmail: email,
+                travelerPhone: phone,
+              }),
+            });
+            const body = await verifyRes.json().catch(() => ({}));
+            if (verifyRes.status === 409) {
+              // Date sold out while paying: the server has refunded (or says to
+              // contact us) — its message explains which.
+              setConfirming(false);
+              setLoading(false);
+              setError(body.error || 'This date just sold out. Please contact us.');
+              return;
+            }
+            if (!verifyRes.ok) throw new Error(body.error || 'verify failed');
+            setConfirmed(body.payment_id);
+            window.location.href = `/booking/confirmation?payment_id=${body.payment_id}`;
+          } catch {
+            setConfirming(false);
+            setLoading(false);
+            setPaidUnconfirmed(response.razorpay_payment_id);
           }
-
-          const { payment_id } = await verifyRes.json();
-          setConfirmed(payment_id);
-          window.location.href = `/booking/confirmation?payment_id=${payment_id}`;
         },
         modal: { ondismiss: () => setLoading(false) },
-        prefill: { name, email, contact: phone },
+        // Razorpay drops a prefilled number that contains spaces or dashes.
+        prefill: { name, email, contact: phone.replace(/[\s().-]/g, '') },
         theme: { color: '#6d28d9' },
       };
 
@@ -265,10 +283,11 @@ export default function BookingWidget({
         setError(resp.error.description || 'Payment failed');
         setLoading(false);
       });
+      // Stays "loading" (button locked) while the payment window is open;
+      // ondismiss, payment.failed or the handler above release it.
       rzp.open();
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
-    } finally {
       setLoading(false);
     }
   };
@@ -562,10 +581,10 @@ export default function BookingWidget({
 
       <button
         onClick={handleBook}
-        disabled={loading}
+        disabled={loading || confirming || !!paidUnconfirmed}
         className="w-full rounded-full bg-brand-800 hover:bg-brand-900 text-white py-3 font-medium disabled:opacity-60 transition"
       >
-        {loading ? 'Processing…' : 'Book & Pay'}
+        {confirming ? 'Confirming your payment…' : loading ? 'Processing…' : 'Book & Pay'}
       </button>
 
       <p className="text-xs text-stone-500">
@@ -577,6 +596,30 @@ export default function BookingWidget({
         <p>✓ Free cancellation up to 24 hours before your tour</p>
         <p>✓ Instant confirmation</p>
       </div>
+
+      {confirming && (
+        <p role="status" aria-live="polite" className="rounded-lg bg-brand-50 border border-brand-100 px-3 py-2 text-sm text-brand-900">
+          Payment received — confirming your booking. Please don't close this page.
+        </p>
+      )}
+
+      {paidUnconfirmed && (
+        <div role="alert" className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-3 text-sm text-amber-900 space-y-2">
+          <p>
+            Your payment went through (reference <span className="font-mono break-all">{paidUnconfirmed}</span>), but we
+            couldn't finish your booking automatically. Please WhatsApp us with this reference — you won't be charged twice.
+          </p>
+          <a
+            href={`https://wa.me/916399226633?text=${encodeURIComponent(`Hi! I paid for the ${tourTitle} on ${date} but my booking didn't confirm. Payment reference: ${paidUnconfirmed} (ref: PAY-UNCONFIRMED)`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-wa-ref="PAY-UNCONFIRMED"
+            className="inline-flex min-h-11 items-center rounded-full bg-[#25D366] px-5 font-semibold text-white"
+          >
+            WhatsApp us
+          </a>
+        </div>
+      )}
 
       {error && (
         <p role="alert" aria-live="polite" className="text-red-600 text-sm">
