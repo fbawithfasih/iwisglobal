@@ -94,9 +94,10 @@ const attractionJsonLd = {
 
     {tours.length > 0 && (
       <section class="mt-12">
-        <h2 class="text-2xl font-serif font-semibold mb-4">Tours that visit {name}</h2>
-        <div class="grid sm:grid-cols-2 gap-6">
-          {tours.map((tour) => <TourCard tour={tour} currency={currency} />)}
+        <h2 class="text-2xl font-serif font-semibold mb-4">Tours that visit {name === 'Taj Mahal' ? 'the Taj Mahal' : name}</h2>
+        <!-- Phones: a swipeable row (like the homepage and /agra) instead of stacked cards. -->
+        <div class="-mx-6 flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-6 px-6 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0">
+          {tours.map((tour) => <div class="w-64 shrink-0 snap-start sm:w-auto"><TourCard tour={tour} currency={currency} /></div>)}
         </div>
       </section>
     )}
