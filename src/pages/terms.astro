@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import GrievanceOfficer from '../components/GrievanceOfficer.astro';
 
 // Dynamic (not prerendered) because BaseLayout's nav/footer depend on
 // live per-request session and locale state via Astro.cookies.
@@ -24,7 +25,7 @@ const lastUpdated = '27 September 2026';
     <p class="text-stone-700 mb-6">
       These terms apply when you book a tour through this website, operated by IWIS Global ("we", "us"), a
       partnership firm based in Agra, Uttar Pradesh, India (GSTIN 09AAIFI6799J1ZH), whose registered address is
-      A-5, First Floor, Essar Mughal Apartment, Jyoti Nagar, Shaheed Nagar, Agra – 282001. By booking a tour,
+      A-5, First Floor, ESSAR Mughal Residency, Jyoti Nagar, Shaheed Nagar, Agra – 282001. By booking a tour,
       you agree to them.
     </p>
 
@@ -81,6 +82,8 @@ const lastUpdated = '27 September 2026';
       We may update these terms from time to time; the "last updated" date above reflects the most recent
       change. Continuing to use the site after an update means you accept the revised terms.
     </p>
+
+    <GrievanceOfficer />
 
     <h2 class="text-lg font-semibold mb-2">Governing law</h2>
     <p class="text-stone-700 mb-6">

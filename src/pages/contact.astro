@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import GrievanceOfficer from '../components/GrievanceOfficer.astro';
 
 // Required page for Razorpay card-network activation. Same contact details
 // as /about (registered address, GSTIN, email, phone) — keep them in sync.
@@ -31,7 +32,7 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have
       <a href={waHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONTACT" class="block rounded-xl border border-brand-100 bg-brand-50/60 p-5 hover:border-brand-300 transition">
         <p class="text-xs font-medium uppercase tracking-wide text-stone-500">WhatsApp</p>
         <p class="text-lg sm:text-base lg:text-lg font-semibold text-brand-800">Chat with us</p>
-        <p class="text-sm text-stone-600 mt-1">Fastest way to reach us</p>
+        <p class="text-sm text-stone-600 mt-1">We usually reply within 15 minutes</p>
       </a>
       <a href="tel:+916399226633" class="block rounded-xl border border-stone-200 bg-white p-5 hover:border-brand-300 transition">
         <p class="text-xs font-medium uppercase tracking-wide text-stone-500">Call</p>
@@ -48,12 +49,14 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have
     <h2 class="text-lg font-semibold mb-2">Registered address</h2>
     <p class="text-stone-700 mb-6">
       IWIS Global<br />
-      A-5, First Floor, Essar Mughal Apartment, Jyoti Nagar, Shaheed Nagar,<br />
+      A-5, First Floor, ESSAR Mughal Residency, Jyoti Nagar, Shaheed Nagar,<br />
       Agra – 282001, Uttar Pradesh, India
     </p>
 
     <h2 class="text-lg font-semibold mb-2">GST registration</h2>
     <p class="text-stone-700 mb-6">GSTIN: 09AAIFI6799J1ZH</p>
+
+    <GrievanceOfficer />
 
     <h2 class="text-lg font-semibold mb-2">Policies</h2>
     <ul class="list-disc pl-5 text-stone-700 space-y-1">
