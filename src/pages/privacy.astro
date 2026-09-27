@@ -9,7 +9,9 @@ export const prerender = false;
 // lawyer. Have it reviewed before relying on it for compliance (e.g. GDPR
 // for EU visitors). This used to be a public banner, removed 26 Sep 2026
 // because payment-network reviewers read it as an incomplete policy.
-const lastUpdated = '26 September 2026';
+// Apple sign-in is built but not switched on, so only Google is named
+// below (same in terms.astro); add Apple back when it is.
+const lastUpdated = '27 September 2026';
 ---
 
 <BaseLayout title="Privacy Policy — IWIS Global" description="How IWIS Global collects, uses, and protects your information when you book a tour or create an account.">
@@ -26,7 +28,7 @@ const lastUpdated = '26 September 2026';
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
       <li><strong>Booking details:</strong> when you book a tour, we collect your name, email address, and phone number, along with your chosen tour, travel date, and traveler count.</li>
       <li><strong>Payment:</strong> payments are processed by Razorpay. We never see or store your card, UPI, or bank details — Razorpay handles that directly, and we only receive confirmation that a payment succeeded.</li>
-      <li><strong>Account information (optional):</strong> if you sign in with Google or Apple, we receive your name, email address, and (for Google) profile photo from that provider, so you can view your booking history. If you create an account with an email and password instead, we store your email address and a one-way hash of your password — never the password itself.</li>
+      <li><strong>Account information (optional):</strong> if you sign in with Google, we receive your name, email address, and profile photo from Google, so you can view your booking history. If you create an account with an email and password instead, we store your email address and a one-way hash of your password — never the password itself.</li>
       <li><strong>Entry tickets:</strong> for tours that include monument entry tickets (or when you add them), we buy the tickets on the Archaeological Survey of India's (ASI) official website using the traveler names and nationalities its ticketing requires. We keep a copy of the e-ticket file with your booking and email it to you.</li>
       <li><strong>Questions to our AI guide:</strong> questions you type into the "YourGuide" box on our homepage are sent to Anthropic's Claude AI to write the answer. We don't store your questions; to limit how often the box can be used, we keep a one-way hash of your IP address (not the address itself) and the time of each question.</li>
       <li><strong>Preferences:</strong> your chosen language and currency are stored in cookies on your device so the site remembers them on your next visit.</li>
@@ -47,7 +49,7 @@ const lastUpdated = '26 September 2026';
     <h2 class="text-lg font-semibold mb-2">Who we share it with</h2>
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-2">
       <li><strong>Razorpay</strong> — to process payments.</li>
-      <li><strong>Google / Apple</strong> — only if you choose to sign in with them.</li>
+      <li><strong>Google</strong> — only if you choose to sign in with it.</li>
       <li><strong>Cloudflare</strong> — our hosting and database provider; your requests pass through their infrastructure to reach our servers.</li>
       <li><strong>Google</strong> — via Google Analytics and Google Tag Manager, for the site-usage analytics described above.</li>
       <li><strong>Resend</strong> — the email service that sends your booking confirmation and e-tickets (it receives your name, email address, and booking details).</li>
@@ -63,7 +65,7 @@ const lastUpdated = '26 September 2026';
       <li><code class="text-sm bg-stone-100 px-1 rounded">currency</code> and <code class="text-sm bg-stone-100 px-1 rounded">lang</code> — remember your preferred currency and language.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">customer_session</code> — keeps you signed in, if you have an account.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">admin_session</code> — staff-only, used to access the booking management system.</li>
-      <li><code class="text-sm bg-stone-100 px-1 rounded">oauth_state</code> — a short-lived cookie used only during Google/Apple sign-in, deleted immediately after.</li>
+      <li><code class="text-sm bg-stone-100 px-1 rounded">oauth_state</code> — a short-lived cookie used only during Google sign-in, deleted immediately after.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">_ga</code>, <code class="text-sm bg-stone-100 px-1 rounded">_ga_*</code> — set by Google Analytics to distinguish visitors and measure site usage.</li>
     </ul>
 

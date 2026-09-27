@@ -10,7 +10,10 @@ export const prerender = false;
 // the liability and governing-law sections. This used to be a public
 // banner, removed 26 Sep 2026 because payment-network reviewers read it as
 // an incomplete policy.
-const lastUpdated = '26 September 2026';
+// Apple sign-in is built but not switched on, so only Google and email are
+// named under Accounts (same in privacy.astro); add Apple back when it is.
+// The business details in the intro match /about and /contact.
+const lastUpdated = '27 September 2026';
 ---
 
 <BaseLayout title="Terms of Service — IWIS Global" description="The terms that apply when you book a tour with IWIS Global.">
@@ -19,8 +22,10 @@ const lastUpdated = '26 September 2026';
     <p class="text-sm text-stone-500 mb-6">Last updated: {lastUpdated}</p>
 
     <p class="text-stone-700 mb-6">
-      These terms apply when you book a tour through this website, operated by IWIS Global ("we", "us"). By
-      booking a tour, you agree to them.
+      These terms apply when you book a tour through this website, operated by IWIS Global ("we", "us"), a
+      partnership firm based in Agra, Uttar Pradesh, India (GSTIN 09AAIFI6799J1ZH), whose registered address is
+      A-5, First Floor, Essar Mughal Apartment, Jyoti Nagar, Shaheed Nagar, Agra – 282001. By booking a tour,
+      you agree to them.
     </p>
 
     <h2 class="text-lg font-semibold mb-2">Booking and payment</h2>
@@ -29,13 +34,14 @@ const lastUpdated = '26 September 2026';
       <li>Payments are processed securely by Razorpay. Prices are quoted in Indian Rupees (INR), with US Dollar (USD) pricing available for tours where we've set a USD rate.</li>
       <li>You can pay the full price, or a 25% deposit online to secure your booking with the balance paid on pickup. If you cancel, any refund is worked out on the amount you paid.</li>
       <li>Your booking is confirmed once payment succeeds; you'll receive confirmation immediately.</li>
-      <li>You don't need to create an account to book — an account is only needed if you want to view your booking history.</li>
+      <li>You don't need to create an account to book — an account is only needed if you want to see your booking history for tours you book while signed in.</li>
     </ul>
 
-    <h2 class="text-lg font-semibold mb-2">Same-day bookings</h2>
+    <h2 class="text-lg font-semibold mb-2">How late you can book</h2>
     <p class="text-stone-700 mb-6">
-      Same-day tours can be booked until 9 PM India Standard Time (IST) the night before, to allow time to
-      arrange your vehicle and guide. After that cutoff, the earliest available date is the next day.
+      Tours can be booked until 9 PM India Standard Time (IST) the night before, to allow time to arrange your
+      vehicle and guide. After 9 PM, the earliest date you can book is the day after tomorrow. Tours don't run
+      on Fridays, when the Taj Mahal is closed.
     </p>
 
     <h2 class="text-lg font-semibold mb-2">Cancellations, refunds, and date changes</h2>
@@ -57,13 +63,16 @@ const lastUpdated = '26 September 2026';
     <h2 class="text-lg font-semibold mb-2">Changes and disruptions</h2>
     <p class="text-stone-700 mb-6">
       Tours may occasionally be affected by circumstances outside our control — site closures, weather,
-      traffic, or local restrictions. Where this happens, we'll work with you to reschedule or resolve the
-      issue; we are not responsible for losses caused by such circumstances beyond our control.
+      traffic, or local restrictions. If we have to cancel your tour, you choose a full refund of everything
+      you've paid or a free change to a new date, as set out in our
+      <a href="/cancellation-refund-policy" class="text-brand-800 hover:underline">Cancellation &amp; Refund Policy</a>.
+      Otherwise, we'll work with you to resolve the issue; we are not responsible for losses caused by such
+      circumstances beyond our control.
     </p>
 
     <h2 class="text-lg font-semibold mb-2">Accounts</h2>
     <p class="text-stone-700 mb-6">
-      Signing in with Google, Apple, or an email and password is optional and only used to show you your own
+      Signing in with Google, or with an email and password, is optional and only used to show you your own
       booking history. You're responsible for keeping your sign-in details secure.
     </p>
 
