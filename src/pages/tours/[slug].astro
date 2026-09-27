@@ -144,10 +144,13 @@ const descriptionIntroHtml = renderDescriptionHtml(descriptionIntro);
 // flat tour.amount/tour.currency, which drifted from the real price once
 // currency toggling and group-size tiers existed.
 const tourUrl = `https://www.iwisglobal.com/tours/${tour.slug}`;
+// The price is the same "From" amount the page and tour cards show (the
+// cheapest group-size rate), so Google never displays a higher figure than
+// the visitor sees on the page.
 const tourOfferJsonLd = {
   '@type': 'Offer',
-  price: price.amount,
-  priceCurrency: price.currency,
+  price: fromPrice.amount,
+  priceCurrency: fromPrice.currency,
   availability: 'https://schema.org/InStock',
   url: tourUrl,
 };
