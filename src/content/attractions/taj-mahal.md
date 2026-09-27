@@ -1,6 +1,6 @@
 ---
 name: "Taj Mahal"
-description: "The white marble mausoleum Shah Jahan built for Mumtaz Mahal — Agra's centerpiece and a UNESCO World Heritage Site. Entry is ₹1,100 for foreign tourists (plus ₹200 for the mausoleum chamber); closed every Friday."
+description: "The white marble mausoleum Shah Jahan built for Mumtaz Mahal — Agra's centerpiece and a UNESCO World Heritage Site. Entry ₹1,300 for foreign; closed Fridays."
 ticketPriceForeign: "₹1,300 total (₹1,100 complex entry + ₹200 mausoleum chamber)"
 ticketPriceIndian: "₹250 total (₹50 complex entry + ₹200 mausoleum chamber)"
 hours: "Opens 30 minutes before sunrise, closes 30 minutes before sunset. Ticket windows: 1 hour before sunrise to 45 minutes before sunset."

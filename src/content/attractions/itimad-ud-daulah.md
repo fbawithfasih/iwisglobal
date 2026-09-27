@@ -1,6 +1,6 @@
 ---
 name: "Itimad-ud-Daulah's Tomb"
-description: "The \"Baby Taj\": a Mughal marble tomb in a walled garden on the Yamuna's left bank, completed in 1628 by Empress Nur Jahan for her father. Entry is ₹310 for foreign tourists; open sunrise to sunset, every day."
+description: "The \"Baby Taj\": a Mughal marble tomb built in 1628 by Empress Nur Jahan for her father. Entry ₹310 for foreign tourists; open sunrise to sunset daily."
 ticketPriceForeign: "₹310 (₹300 on Fridays)"
 ticketPriceIndian: "₹30 (₹25 on Fridays)"
 ticketPriceSaarc: "₹30 (₹25 on Fridays)"

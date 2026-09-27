@@ -1,5 +1,5 @@
 ---
-title: "What You Can't Bring Into the Taj Mahal: The Complete List"
+title: "What You Can't Bring Into the Taj Mahal"
 description: "The official ASI-published list of prohibited items, plus what you can bring, and the extra rules for night viewing."
 authorName: "IWIS Global"
 datePublished: 2026-09-21

@@ -1,5 +1,5 @@
 ---
-title: "Is One Day Enough to See the Taj Mahal from Delhi?"
+title: "Is One Day Enough for the Taj Mahal?"
 description: "Yes, for most travelers — an hour-by-hour look at what a same-day Delhi–Agra trip actually involves, not just 'yes, it's doable.'"
 authorName: "IWIS Global"
 datePublished: 2026-09-21

@@ -1,5 +1,5 @@
 ---
-title: "Best Month to Visit the Taj Mahal: A Month-by-Month Breakdown"
+title: "Best Month to Visit the Taj Mahal"
 description: "November through February is coolest, but not always clearest. Month-by-month temperature, pollution pattern, and sunrise timing — not just 'winter is best.'"
 authorName: "IWIS Global"
 datePublished: 2026-09-21

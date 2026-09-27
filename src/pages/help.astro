@@ -157,7 +157,7 @@ const faqJsonLd = {
   <section class="max-w-4xl mx-auto px-6 py-12">
     <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-brand-800 via-brand-700 to-brand-600 text-white p-8 flex items-center justify-between gap-6 flex-wrap">
       <div>
-        <h2 class="text-xl font-serif font-semibold mb-1">Have a question about an existing booking?</h2>
+        <p class="text-xl font-serif font-semibold mb-1">Have a question about an existing booking?</p>
         <p class="text-white/80 text-sm max-w-md">Message us on WhatsApp with your name or the booking ID from your confirmation email, and we'll pull up your booking.</p>
         <Button
           href={`https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have a question about an existing booking. (ref: HELP-HERO)')}`}
@@ -195,7 +195,7 @@ const faqJsonLd = {
     <div id="faq-grid" class="hidden sm:grid sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-10 mb-16">
       {categories.map((cat) => (
         <div class="faq-category">
-          <h3 class="font-semibold mb-3">{cat.title}</h3>
+          <h2 class="font-semibold mb-3">{cat.title}</h2>
           <ul class="space-y-2">
             {cat.items.map((item) => (
               <li data-search={searchText(cat.title, item)}>

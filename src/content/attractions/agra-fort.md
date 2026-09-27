@@ -1,6 +1,6 @@
 ---
 name: "Agra Fort"
-description: "The Mughal-era fortress Akbar built on the ruins of an earlier stronghold — a UNESCO World Heritage Site a short drive from the Taj Mahal, open every day including Fridays."
+description: "The Mughal-era fortress Akbar built on the ruins of an earlier stronghold — a UNESCO World Heritage Site near the Taj Mahal, open daily including Fridays."
 ticketPriceForeign: "₹650 (₹600 on Fridays)"
 ticketPriceIndian: "₹50 (₹40 on Fridays)"
 ticketPriceSaarc: "₹90 (₹40 on Fridays)"
