@@ -6,6 +6,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { resolveEnv } from '../../lib/env';
 import { listTours } from '../../lib/tours';
 import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
+import { sortGuides } from '../../lib/guides';
 import TourCard from '../../components/TourCard.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 
@@ -22,8 +23,12 @@ const attractions = (await getCollection('attractions')).sort(
   (a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug)
 );
 const openOnFriday = attractions.filter((a) => !a.data.closedFriday);
+// "A, B, and C" — reads correctly however many sites there are.
+const openOnFridayNames = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' }).format(
+  openOnFriday.map((a) => a.data.name)
+);
 
-const guides = await getCollection('guides');
+const guides = sortGuides(await getCollection('guides'));
 
 const env = resolveEnv(Astro.locals);
 const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
@@ -40,7 +45,7 @@ const faqs = [
   },
   {
     q: 'Is the Taj Mahal open on Fridays?',
-    a: `No. The Taj Mahal is closed every Friday. ${openOnFriday.map((a) => a.data.name).join(', ')} stay open on Fridays.`,
+    a: `No. The Taj Mahal is closed every Friday. ${openOnFridayNames} stay open on Fridays.`,
   },
   {
     q: 'Can you see the Taj Mahal and Agra Fort on the same day?',
@@ -158,6 +163,8 @@ const faqJsonLd = {
       A single day covers the Taj Mahal and Agra Fort comfortably — the Fort is a short drive away
       within the city, and most same-day itineraries pair the two. If time allows at the end of the
       day, Mehtab Bagh sits directly across the Yamuna from the Taj and is known for its sunset view.
+      <a href="/agra/itimad-ud-daulah" class="text-brand-800 underline">Itimad-ud-Daulah's Tomb</a>, the "Baby Taj",
+      is on the same side of the river, so the two pair well.
       Whether one day is enough depends on what you want to see; our guide on
       <a href="/guides/is-one-day-enough-taj-mahal" class="text-brand-800 underline">whether one day is enough for the Taj Mahal</a>
       walks through it.
@@ -170,7 +177,7 @@ const faqJsonLd = {
     </p>
     <h3 class="text-lg font-semibold mb-2">Visiting on a Friday</h3>
     <p class="text-stone-700 mb-12">
-      The Taj Mahal is <strong>closed every Friday</strong>. {openOnFriday.map((a) => a.data.name).join(', ')}
+      The Taj Mahal is <strong>closed every Friday</strong>. {openOnFridayNames}
       are all open, so a Friday in Agra still works — just plan the Taj for another day.
     </p>
 

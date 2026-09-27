@@ -4,24 +4,9 @@ export const prerender = false;
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
+import { sortGuides } from '../../lib/guides';
 
-// Trip-planning questions first (what travelers search for most), our own
-// comparison piece last. Guides not listed here follow, newest first.
-const ORDER = [
-  'taj-mahal-ticket-price-2026',
-  'best-time-to-visit-taj-mahal',
-  'is-one-day-enough-taj-mahal',
-  'what-not-to-bring-taj-mahal',
-  'taj-mahal-tripod-photography-rules',
-  'iwis-vs-viator-getyourguide',
-];
-const rank = (slug: string) => {
-  const i = ORDER.indexOf(slug);
-  return i === -1 ? ORDER.length : i;
-};
-const guides = (await getCollection('guides')).sort(
-  (a, b) => rank(a.slug) - rank(b.slug) || b.data.datePublished.getTime() - a.data.datePublished.getTime()
-);
+const guides = sortGuides(await getCollection('guides'));
 ---
 
 <BaseLayout title="Taj Mahal Travel Guides — IWIS Global" description="Practical, sourced answers to the questions travelers actually ask before a Taj Mahal trip — tickets, timing, what to bring, and more.">
