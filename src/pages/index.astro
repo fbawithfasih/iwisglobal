@@ -50,10 +50,23 @@ function highlightHref(id: string): string {
 <BaseLayout title="Private Taj Mahal & Agra Tours from Delhi — IWIS Global">
   <section class="relative isolate">
     <div class="absolute inset-0 -z-10 overflow-hidden" id="hero-frame">
+      <!-- The still behind the video (instead of a poster="" attribute, which
+           can't be responsive): phones load a 79 KB 720×720 copy rather than
+           the 577 KB 1920×1920 one. The video covers it once it plays; with
+           reduced motion or Save-Data it stays as the hero image. -->
+      <picture>
+        <source srcset="/hero-taj-mahal-720.jpg" media="(max-width: 767px)" />
+        <img
+          src="/hero-taj-mahal.jpg"
+          alt=""
+          fetchpriority="high"
+          decoding="async"
+          class="absolute inset-0 w-full h-full object-cover object-[center_35%]"
+        />
+      </picture>
       <video
         id="hero-video"
-        class="w-full h-full object-cover object-[center_35%]"
-        poster="/hero-taj-mahal.jpg"
+        class="relative w-full h-full object-cover object-[center_35%]"
         autoplay
         muted
         loop
@@ -262,11 +275,11 @@ function highlightHref(id: string): string {
   // The video itself provides motion now, so no CSS zoom/parallax/fake-cloud
   // effects are needed (those existed specifically to animate a static
   // image). Respect prefers-reduced-motion the same way the old effects
-  // did: freeze on the poster frame instead of autoplaying.
+  // did: don't autoplay (the still photo behind the video shows instead).
   const heroVideo = document.getElementById('hero-video') as HTMLVideoElement | null;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // Data-saver mode (Chrome/Android "Lite"/Save-Data): stop the download and
-  // keep the poster photo, same as reduced motion but also dropping sources.
+  // keep the still photo, same as reduced motion but also dropping sources.
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
   if (heroVideo && (reduceMotion || saveData)) {
     heroVideo.pause();

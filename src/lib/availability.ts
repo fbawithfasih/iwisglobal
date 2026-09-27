@@ -1,9 +1,10 @@
-// India-specific "book today / book tomorrow" signal. Same-day pickup for
-// the Agra tours needs early-morning coordination, so same-day booking is
-// only offered until 9 PM IST the night before. Computed in India Standard
-// Time (Asia/Kolkata) specifically — NOT the visitor's browser-local time,
-// since a traveler in the US/UK has a different clock than the pickup
-// location. Server-only: called once per page render, never on the client.
+// Earliest bookable travel date. Tours start with early-morning pickups, so
+// a date can be booked until 9 PM IST the night before (the rule stated in
+// Help, Terms and the Shipping policy) — never for the same day. Computed in
+// India Standard Time (Asia/Kolkata) specifically — NOT the visitor's
+// browser-local time, since a traveler in the US/UK has a different clock
+// than the pickup location. getAvailability is server-only: called once per
+// page render, never on the client.
 
 const CUTOFF_HOUR_IST = 21; // 9 PM
 
@@ -19,7 +20,6 @@ export function isFriday(value: string): boolean {
 
 export interface AvailabilityInfo {
   minBookableDate: string; // YYYY-MM-DD
-  sameDayAvailable: boolean;
   label: string;
 }
 
@@ -47,10 +47,10 @@ function toDateString(year: number, month: number, day: number): string {
 
 export function getAvailability(now: Date = new Date()): AvailabilityInfo {
   const { year, month, day, hour } = istDateParts(now);
-  // Days ahead of today (IST) of the earliest bookable date: today before
-  // the 9 PM cutoff, else tomorrow — then one more if that lands on a Friday.
-  // UTC arithmetic on the IST date parts is exact (India has no DST).
-  let offset = hour < CUTOFF_HOUR_IST ? 0 : 1;
+  // Days ahead of today (IST) of the earliest bookable date: tomorrow before
+  // the 9 PM cutoff, else the day after — then one more if that lands on a
+  // Friday. UTC arithmetic on the IST date parts is exact (India has no DST).
+  let offset = hour < CUTOFF_HOUR_IST ? 1 : 2;
   const dateAt = (o: number) => {
     const d = new Date(Date.UTC(year, month - 1, day + o));
     return toDateString(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
@@ -59,12 +59,10 @@ export function getAvailability(now: Date = new Date()): AvailabilityInfo {
   const minBookableDate = dateAt(offset);
 
   const label =
-    offset === 0
-      ? 'Book today'
-      : offset === 1
-        ? 'Book tomorrow'
-        : `Book for ${new Date(`${minBookableDate}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })}`;
-  return { minBookableDate, sameDayAvailable: offset === 0, label };
+    offset === 1
+      ? 'Book for tomorrow'
+      : `Book for ${new Date(`${minBookableDate}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })}`;
+  return { minBookableDate, label };
 }
 
 // Strict "YYYY-MM-DD" check that also rejects calendar-invalid dates (e.g.
@@ -78,8 +76,8 @@ export function isValidDateString(value: string): boolean {
 }
 
 // Server-side re-check of the same rule the date picker's `min` attribute
-// expresses client-side: a caller can't book a past date or a same-day slot
-// after the 9 PM IST cutoff by posting directly to the booking API.
+// expresses client-side: a caller can't book a past date, today, or
+// tomorrow after the 9 PM IST cutoff by posting directly to the booking API.
 export function isBookableDate(value: string, now: Date = new Date()): boolean {
   if (!isValidDateString(value) || isFriday(value)) return false;
   return value >= getAvailability(now).minBookableDate;
