@@ -28,7 +28,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   seasonal: 'Seasonal',
 };
 
-const dateFmt = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+// India time, like the /blog list (a late-evening IST post is still that day).
+const dateFmt = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+// "Updated" only when it's a different day: updatedAt is always a little
+// later than datePublished, even for a post never edited after publishing.
+const updatedLabel =
+  post.datePublished && dateFmt(post.updatedAt) !== dateFmt(post.datePublished) ? dateFmt(post.updatedAt) : null;
 
 const articleJsonLd = {
   '@context': 'https://schema.org',
@@ -54,7 +60,7 @@ const articleJsonLd = {
     <p class="text-sm text-stone-500 mb-4">
       By {post.authorName}
       {post.datePublished && <> · Published {dateFmt(post.datePublished)}</>}
-      {post.datePublished && post.updatedAt !== post.datePublished && <> · Updated {dateFmt(post.updatedAt)}</>}
+      {updatedLabel && <> · Updated {updatedLabel}</>}
     </p>
 
     <!-- Google "Preferred Sources" button — see /blog/index.astro's comment
@@ -62,7 +68,18 @@ const articleJsonLd = {
     <script async src="https://news.google.com/swg/js/v1/publisher.js"></script>
     <div google-add-preferred-source-btn data-theme="light" class="mb-8"></div>
 
-    {post.image && <img src={post.image} alt={post.title} class="w-full aspect-video object-cover rounded-xl mb-10" />}
+    {/* Phones get the 800px copy made for the /blog list (imageThumb). */}
+    {post.image && (
+      <img
+        src={post.image}
+        srcset={post.imageThumb ? `${post.imageThumb} 800w, ${post.image} 1200w` : undefined}
+        sizes="(min-width: 768px) 672px, calc(100vw - 48px)"
+        alt={post.title}
+        fetchpriority="high"
+        decoding="async"
+        class="w-full aspect-video object-cover rounded-xl mb-10"
+      />
+    )}
     <div class="prose prose-stone max-w-none prose-headings:font-serif prose-a:text-brand-700" set:html={bodyHtml} />
   </article>
 
