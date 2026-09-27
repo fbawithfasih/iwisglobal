@@ -64,7 +64,7 @@ export default function AiGuideBox() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           maxLength={MAX_LENGTH}
-          placeholder="YourGuide — ask me anything about your travel"
+          placeholder="Ask YourGuide about Agra"
           aria-label="Ask YourGuide a travel question"
           className="flex-1 min-w-0 h-11 bg-transparent text-stone-700 text-sm placeholder:text-stone-500 outline-none"
         />
@@ -86,7 +86,7 @@ export default function AiGuideBox() {
         </button>
       </form>
 
-      <a href="/tours" className="mx-auto mt-1 flex w-fit min-h-11 items-center px-3 text-sm text-white/80 hover:text-white transition">
+      <a href="/tours" className="mx-auto mt-4 flex w-fit min-h-11 items-center rounded-full bg-white px-6 font-semibold text-brand-800 shadow transition hover:bg-brand-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60">
         Browse tours →
       </a>
 

@@ -71,12 +71,15 @@ function highlightHref(id: string): string {
         muted
         loop
         playsinline
-        preload="auto"
+        preload="none"
       >
         <!-- Phones get a 720×720 centre crop (1.9 MB, what a portrait hero
-             actually shows) instead of the 19.3 MB 1080p original. -->
-        <source src="/hero-mobile.mp4" type="video/mp4" media="(max-width: 767px)" />
-        <source src="https://d2ol7oe51mr4n9.cloudfront.net/user_3DcNrqF8RYl6IEcXyvyHIz0mgUZ/77342590-7bb6-4f5c-a0dc-8c192a2db2bd.mp4" type="video/mp4" />
+             actually shows) instead of the 19.3 MB 1080p original. Sources use
+             data-src: the script below only attaches them (and plays) when
+             neither reduced motion nor Data Saver is on, so those visitors
+             never download the video at all. -->
+        <source data-src="/hero-mobile.mp4" type="video/mp4" media="(max-width: 767px)" />
+        <source data-src="https://d2ol7oe51mr4n9.cloudfront.net/user_3DcNrqF8RYl6IEcXyvyHIz0mgUZ/77342590-7bb6-4f5c-a0dc-8c192a2db2bd.mp4" type="video/mp4" />
       </video>
       <div class="absolute inset-0 bg-gradient-to-t from-brand-950/70 via-brand-900/25 to-transparent"></div>
       <!-- Phones: the headline sits right over the bright marble dome, where
@@ -281,12 +284,20 @@ function highlightHref(id: string): string {
   // Data-saver mode (Chrome/Android "Lite"/Save-Data): stop the download and
   // keep the still photo, same as reduced motion but also dropping sources.
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
-  if (heroVideo && (reduceMotion || saveData)) {
-    heroVideo.pause();
-    heroVideo.removeAttribute('autoplay');
-    if (saveData) {
-      heroVideo.querySelectorAll('source').forEach((s) => s.remove());
-      heroVideo.load();
-    }
+  if (heroVideo && !reduceMotion && !saveData) {
+    heroVideo.querySelectorAll<HTMLSourceElement>('source[data-src]').forEach((s) => {
+      s.src = s.dataset.src!;
+    });
+    heroVideo.preload = 'auto';
+    heroVideo.load();
+    // Start once it can play, and again whenever the page comes back into
+    // view (a background tab doesn't start media). If autoplay is blocked
+    // (e.g. Low Power Mode) the still photo simply stays.
+    const start = () => {
+      if (heroVideo.paused) heroVideo.play().catch(() => {});
+    };
+    heroVideo.addEventListener('canplay', start);
+    document.addEventListener('visibilitychange', start);
+    start();
   }
 </script>
