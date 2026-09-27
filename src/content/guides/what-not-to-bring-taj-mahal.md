@@ -22,7 +22,7 @@ Per ASI's official guidance, you cannot carry these inside:
 8. Wire
 9. Mobile phone chargers
 10. Electric goods, except still cameras
-11. Tripods (see our [full breakdown of the tripod rule](/guides/taj-mahal-tripod-photography-rules) — including the rare permission process for accredited photographers)
+11. Tripods, unless you have permission from ASI (see our [full breakdown of the tripod rule](/guides/taj-mahal-tripod-photography-rules))
 
 Drone cameras are separately and explicitly banned "inside and around the Taj Mahal" — this isn't limited to the complex itself.
 
