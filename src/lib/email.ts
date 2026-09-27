@@ -161,6 +161,8 @@ export interface EntryTicketEmailDetails {
   bookingId: string;
   fileName: string;
   fileBytes: ArrayBuffer;
+  // What's attached, from computeTicketsToBuy (src/lib/entryTickets.ts).
+  tickets?: { name: string; quantity: number }[];
 }
 
 function toBase64(bytes: ArrayBuffer): string {
@@ -179,17 +181,45 @@ export async function sendEntryTicketEmail(env: Record<string, any>, details: En
 
   const from = env.BOOKING_EMAIL_FROM || 'IWIS Global <info@iwisglobal.com>';
   const name = escapeHtml(details.travelerName || 'there');
+  const date = displayDate(details.travelDate);
+  // "Taj Mahal entry ticket (foreign visitor) × 2"
+  const ticketLines = (details.tickets ?? []).map((t) => `${t.name} × ${t.quantity}`);
+  const waUrl = whatsappHref(`Hi! Question about my entry tickets, booking ${details.bookingId}. (ref: EMAIL-TICKETS)`);
   const html = `
     <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
       <h2 style="color:#5b21b6; margin-bottom: 4px;">Your monument entry tickets</h2>
       <p>Hi ${name},</p>
-      <p>We've booked the monument entry tickets for your <strong>${escapeHtml(details.tourTitle)}</strong> on <strong>${escapeHtml(displayDate(details.travelDate))}</strong>. They're attached to this email.</p>
+      <p>We've booked the monument entry tickets for your <strong>${escapeHtml(details.tourTitle)}</strong> on <strong>${escapeHtml(date)}</strong>. They're attached to this email.</p>
+      ${
+        ticketLines.length
+          ? `<p style="margin-bottom:4px;">Attached:</p><ul style="margin-top:0; padding-left:20px;">${ticketLines.map((l) => `<li>${escapeHtml(l)}</li>`).join('')}</ul>`
+          : ''
+      }
       <p>Please keep this email handy on the day of your tour.</p>
       <p style="color:#78716c; font-size:13px;">Booking ID: ${escapeHtml(details.bookingId)}</p>
-      <p>Questions? Just reply to this email or message us on WhatsApp.</p>
-      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; www.iwisglobal.com</p>
+      <p style="margin-bottom:8px;">Questions? Just reply to this email, or:</p>
+      <p style="margin-top:0; line-height:2;">
+        <a href="${waUrl}" style="color:#15803d; font-weight:600;">WhatsApp us</a><br />
+        <a href="${PHONE_TEL}" style="color:#5b21b6;">Call ${PHONE_DISPLAY}</a><br />
+        <a href="mailto:${EMAIL}" style="color:#5b21b6;">${EMAIL}</a>
+      </p>
+      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; <a href="${SITE}" style="color:#a8a29e;">www.iwisglobal.com</a></p>
     </div>
   `;
+  const text = [
+    `Your monument entry tickets`,
+    ``,
+    `Hi ${details.travelerName || 'there'},`,
+    `We've booked the monument entry tickets for your ${details.tourTitle} on ${date}. They're attached to this email.`,
+    ...(ticketLines.length ? [``, `Attached:`, ...ticketLines.map((l) => `- ${l}`)] : []),
+    ``,
+    `Please keep this email handy on the day of your tour.`,
+    `Booking ID: ${details.bookingId}`,
+    ``,
+    `Questions? Reply to this email, WhatsApp us (${waUrl}), call ${PHONE_DISPLAY} or email ${EMAIL}.`,
+    ``,
+    `IWIS Global · ${SITE}`,
+  ].join('\n');
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -198,8 +228,10 @@ export async function sendEntryTicketEmail(env: Record<string, any>, details: En
       body: JSON.stringify({
         from,
         to: details.to,
-        subject: `Your entry tickets — ${details.tourTitle}, ${displayDate(details.travelDate)}`,
+        // Date first: phone inboxes cut long subjects off after ~40 characters.
+        subject: `Your entry tickets for ${displayDate(details.travelDate)} — ${details.tourTitle}`,
         html,
+        text,
         attachments: [{ filename: details.fileName, content: toBase64(details.fileBytes) }],
       }),
     });

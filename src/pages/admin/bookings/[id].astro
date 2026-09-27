@@ -75,6 +75,7 @@ if (Astro.request.method === 'POST') {
         bookingId: current.id,
         fileName: `entry-tickets-${current.travel_date}.${key.split('.').pop()}`,
         fileBytes: await new Response(object.body).arrayBuffer(),
+        tickets: tour ? computeTicketsToBuy(tour, current) : [],
       });
       if (sent) {
         await markTicketEmailed(db, id);
