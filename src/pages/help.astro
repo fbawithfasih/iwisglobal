@@ -66,6 +66,12 @@ const categories: FaqCategory[] = [
         answer: 'No hidden fees. The price shown on the tour page — including any add-ons you select — is exactly what you pay.',
       },
       {
+        id: 'discounts',
+        question: 'Do you have discounts or coupon codes?',
+        answer:
+          "Sometimes. Running offers show on the tour page and apply automatically. If you have a coupon code, enter it at checkout under \"Have a coupon code?\". One discount applies per booking, and you automatically get the biggest one.",
+      },
+      {
         id: 'deposit',
         question: 'Can I pay a deposit instead of the full price?',
         answer:
@@ -180,7 +186,7 @@ const faqJsonLd = {
         id="faq-search"
         type="search"
         placeholder="What can we help you with?"
-        class="w-full rounded-lg border border-stone-300 pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+        class="w-full rounded-lg border border-stone-300 pl-11 pr-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
       />
     </div>
 
