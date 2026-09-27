@@ -28,19 +28,19 @@ const lastUpdated = '27 September 2026';
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
       <li><strong>Booking details:</strong> when you book a tour, we collect your name, email address, and phone number, along with your chosen tour, travel date, and traveler count.</li>
       <li><strong>Payment:</strong> payments are processed by Razorpay. We never see or store your card, UPI, or bank details — Razorpay handles that directly, and we only receive confirmation that a payment succeeded.</li>
-      <li><strong>Account information (optional):</strong> if you sign in with Google, we receive your name, email address, and profile photo from Google, so you can view your booking history. If you create an account with an email and password instead, we store your email address and a one-way hash of your password — never the password itself.</li>
+      <li><strong>Account information (optional):</strong> if you sign in with Google, we receive your name, email address, and profile photo from Google, so you can view your booking history. If you create an account with an email and password instead, we store your email address and a one-way hash of your password — never the password itself. To block password guessing, we also record the IP address and number of failed attempts when someone signs in with an email and password.</li>
       <li><strong>Entry tickets:</strong> for tours that include monument entry tickets (or when you add them), we buy the tickets on the Archaeological Survey of India's (ASI) official website using the traveler names and nationalities its ticketing requires. We keep a copy of the e-ticket file with your booking and email it to you.</li>
       <li><strong>Questions to our AI guide:</strong> questions you type into the "YourGuide" box on our homepage are sent to Anthropic's Claude AI to write the answer. We don't store your questions; to limit how often the box can be used, we keep a one-way hash of your IP address (not the address itself) and the time of each question.</li>
       <li><strong>Preferences:</strong> your chosen language and currency are stored in cookies on your device so the site remembers them on your next visit.</li>
-      <li><strong>Contact via WhatsApp or email:</strong> if you message us on WhatsApp or by email, that conversation is governed by WhatsApp's (Meta's) or your email provider's own privacy practices, not this policy.</li>
-      <li><strong>Analytics:</strong> this site uses Google Analytics, loaded via Google Tag Manager, to understand how visitors use the site — for example, which pages are visited and general navigation patterns. This collects standard usage data (pages viewed, approximate location, device/browser type); it is not used to identify you personally.</li>
+      <li><strong>Enquiries by WhatsApp, phone or email:</strong> if you contact us before booking, we may record your name, contact details, message and the tour you're interested in, so we can follow up. The messages themselves also travel through WhatsApp (Meta) or your email provider, under their own privacy practices.</li>
+      <li><strong>Analytics:</strong> this site uses Google Analytics (with Google Tag Manager) to understand how visitors use the site — for example, which pages are visited and general navigation patterns. This collects standard usage data (pages viewed, approximate location, device/browser type). When you book, we also send Google Analytics the tour, amount, currency, number of travelers and payment reference, linked to your browser's analytics ID — never your name or contact details. It is not used to identify you personally.</li>
     </ul>
 
     <h2 class="text-lg font-semibold mb-2">How we use this information</h2>
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-2">
       <li>To process and confirm your booking, buy any entry tickets it includes, and contact you about it.</li>
       <li>To let you sign in and view your booking history, if you create an account.</li>
-      <li>To respond to questions you send us.</li>
+      <li>To respond to questions you send us, and follow up on enquiries.</li>
       <li>To meet legal and accounting obligations (e.g. retaining payment records).</li>
       <li>To understand overall site usage via Google Analytics, so we can improve the site.</li>
     </ul>
@@ -51,7 +51,7 @@ const lastUpdated = '27 September 2026';
       <li><strong>Razorpay</strong> — to process payments.</li>
       <li><strong>Google</strong> — only if you choose to sign in with it.</li>
       <li><strong>Cloudflare</strong> — our hosting and database provider; your requests pass through their infrastructure to reach our servers.</li>
-      <li><strong>Google</strong> — via Google Analytics and Google Tag Manager, for the site-usage analytics described above.</li>
+      <li><strong>Google</strong> — via Google Analytics and Google Tag Manager, for the site-usage and booking analytics described above.</li>
       <li><strong>Resend</strong> — the email service that sends your booking confirmation and e-tickets (it receives your name, email address, and booking details).</li>
       <li><strong>Archaeological Survey of India (ASI)</strong> — traveler names and nationalities, only when we buy monument entry tickets for your tour.</li>
       <li><strong>Anthropic</strong> — the text of questions you type into the YourGuide box, to generate the answer.</li>
@@ -60,7 +60,7 @@ const lastUpdated = '27 September 2026';
     <p class="text-stone-700 mb-6">We don't share your information with anyone else for marketing purposes.</p>
 
     <h2 class="text-lg font-semibold mb-2">Cookies</h2>
-    <p class="text-stone-700 mb-2">This site uses a small number of cookies, all for functionality rather than tracking or advertising:</p>
+    <p class="text-stone-700 mb-2">This site uses a small number of cookies — none for advertising. Most make the site work; the Google Analytics cookies measure site usage:</p>
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
       <li><code class="text-sm bg-stone-100 px-1 rounded">currency</code> and <code class="text-sm bg-stone-100 px-1 rounded">lang</code> — remember your preferred currency and language.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">customer_session</code> — keeps you signed in, if you have an account.</li>
