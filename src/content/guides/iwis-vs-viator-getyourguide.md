@@ -3,20 +3,20 @@ title: "IWIS Global vs. Booking Through Viator or GetYourGuide"
 description: "The real difference: Viator and GetYourGuide are marketplaces where local operators list and pay a commission. IWIS Global is the operator — you book us directly."
 authorName: "IWIS Global"
 datePublished: 2026-09-22
-dateModified: 2026-09-22
+dateModified: 2026-09-27
 ---
 
 **Viator and GetYourGuide don't run tours themselves** — they're marketplaces where operators like IWIS Global list. Booking through one adds a marketplace layer (and its commission) between you and the operator running your tour. Booking directly with IWIS Global removes that layer — same guides, same vehicles, no markup for a listing you don't need.
 
 ## What Viator and GetYourGuide actually are
 
-Both platforms are booking marketplaces, not tour operators. A local company — sometimes IWIS Global itself, sometimes a competitor — creates a listing, sets a price, and pays the platform a commission on each booking. Neither platform publishes a single fixed commission rate; it's negotiated per operator and can change. Industry sources tracking operator agreements report commissions commonly in the 20–30% range for both platforms, with GetYourGuide's own [supplier terms](https://www.getyourguide.com/c/supplier-terms-and-conditions/) defining commission as a percentage of the retail price set in the supplier's account. Whatever the exact number for a given listing, it's built into the price you see — the operator sets a price that covers the tour cost *and* the commission.
+Both platforms are booking marketplaces, not tour operators. A local company — sometimes IWIS Global itself, sometimes a competitor — creates a listing, sets a price, and pays the platform a commission on each booking. Neither platform publishes a single fixed commission rate. GetYourGuide's [supplier terms](https://www.getyourguide.com/c/supplier-terms-and-conditions/) define its commission as a percentage of the retail price, set in each supplier's account, and its [supplier site](https://supplier.getyourguide.com/) says rates vary by country. Viator describes its model as [pay-for-performance](https://operatorresources.viator.com/about-us/): the operator pays a commission when a booking is completed. Whatever the exact number for a given listing, it's built into the price you see — the operator sets a price that covers the tour cost *and* the commission.
 
 Booking directly with IWIS Global skips that layer. There's no marketplace commission to price in, because there's no marketplace.
 
 ## Cancellation policy: consistent vs. per-listing
 
-Both Viator and GetYourGuide offer free cancellation up to 24 hours before an experience — but only on listings marked that way. Viator's own [cancellation policy page](https://partnerhelp.viator.com/en/articles/86-what-are-viator-s-cancellation-policies) confirms a standard 24-hour window applies to *most* bookings, but listings can instead be marked "strict" (7 days' notice required) or "all sales final" (no cancellation at all). GetYourGuide's policy works the same way: 24-hour free cancellation is the common case, but individual activities can be listed as partially refundable or non-refundable instead. On either platform, you have to check the specific listing before assuming which policy applies.
+Both Viator and GetYourGuide offer free cancellation up to 24 hours before an experience — but only on listings set up that way. [Viator](https://www.viator.com/) promises a full refund for cancelling at least 24 hours ahead on *most* experiences, and its [developer documentation](https://docs.viator.com/partner-api/technical/) lists three policy types: standard (full refund up to 24 hours before), custom (terms set by the operator), and all sales final (no refund — around 10% of products, per the same documentation). GetYourGuide's [Help Center](https://www.getyourguide.com/contact/) says most activities have free cancellation up to 24 hours before, but depending on the provider a booking can instead be partially refundable or non-refundable. On either platform, you have to check the specific listing before assuming which policy applies.
 
 IWIS Global's cancellation policy is the same for every tour, every time: free cancellation until 24 hours before departure, with instant booking confirmation. Nothing to check listing-by-listing.
 
@@ -30,4 +30,4 @@ This page isn't saying every marketplace listing is overpriced, or that every op
 
 ---
 
-**Last updated:** 22 September 2026. Marketplace commission and cancellation-policy details sourced from [GetYourGuide's supplier terms and conditions](https://www.getyourguide.com/c/supplier-terms-and-conditions/) and [Viator's official cancellation policy page](https://partnerhelp.viator.com/en/articles/86-what-are-viator-s-cancellation-policies), cross-checked against independent OTA-industry reporting where the platforms' own pages didn't specify an exact figure. Commission rates are negotiated per operator and can change — treat the ranges above as directional, not a quote for any specific listing.
+**Checked on 27 September 2026** against the platforms' own pages: GetYourGuide's [supplier terms](https://www.getyourguide.com/c/supplier-terms-and-conditions/), [supplier site](https://supplier.getyourguide.com/) and [Help Center](https://www.getyourguide.com/contact/); Viator's [homepage](https://www.viator.com/), [Operator Resource Center](https://operatorresources.viator.com/about-us/) and [developer documentation](https://docs.viator.com/partner-api/technical/). Neither platform publishes its commission rates, which vary by operator and country.
