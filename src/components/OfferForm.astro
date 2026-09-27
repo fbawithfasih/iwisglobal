@@ -1,12 +1,13 @@
 ---
 // Admin form for an offer or coupon (/admin/offers/new and /[id]/edit).
 // Field names match parseOfferForm in src/lib/offers.ts.
-import type { Offer } from '../lib/offers';
+import type { OfferInput } from '../lib/offers';
 import type { ParsedTour } from '../lib/tours';
 import { formatTravelDate } from '../lib/format';
 
 interface Props {
-  offer?: Offer | null;
+  // The saved offer, or what was typed when a save failed.
+  offer?: OfferInput | null;
   tours: ParsedTour[];
   submitLabel: string;
 }
@@ -25,7 +26,7 @@ const recentPriceChange = (t: ParsedTour) => {
     ? { changed: formatTravelDate(changed.toISOString().slice(0, 10)), until: formatTravelDate(until.toISOString().slice(0, 10)) }
     : null;
 };
-const field = 'w-full rounded border border-stone-300 px-3 py-2';
+const field = 'w-full min-h-11 rounded border border-stone-300 px-3 py-2';
 ---
 
 <form method="POST" class="bg-white rounded-xl border border-stone-200 p-6 space-y-5 max-w-2xl text-sm">
@@ -124,7 +125,10 @@ const field = 'w-full rounded border border-stone-300 px-3 py-2';
     automatic offer and their coupon.
   </p>
 
-  <button type="submit" class="min-h-11 rounded bg-amber-800 text-white px-5">{submitLabel}</button>
+  <!-- Phones: pinned to the bottom of the screen, like the tour and blog editors. -->
+  <div class="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-white/95 border-t border-stone-200 md:static md:m-0 md:p-0 md:bg-transparent md:border-0">
+    <button type="submit" class="w-full md:w-auto min-h-11 rounded bg-amber-800 text-white px-5">{submitLabel}</button>
+  </div>
 </form>
 
 <script>

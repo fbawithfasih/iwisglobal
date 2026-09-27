@@ -5,7 +5,7 @@ import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import OfferForm from '../../../../components/OfferForm.astro';
 import { resolveEnv } from '../../../../lib/env';
 import { isAdminAuthenticated } from '../../../../lib/requireAdmin';
-import { getOffer, updateOffer, deleteOffer, parseOfferForm } from '../../../../lib/offers';
+import { getOffer, updateOffer, deleteOffer, parseOfferForm, type OfferInput } from '../../../../lib/offers';
 import { listTours } from '../../../../lib/tours';
 
 const env = resolveEnv(Astro.locals);
@@ -18,6 +18,7 @@ const { id } = Astro.params;
 if (!db || !id) return Astro.redirect('/admin/offers');
 
 let error: string | null = null;
+let typed: OfferInput | null = null; // shown again if the save fails
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   if (form.get('_action') === 'delete') {
@@ -26,8 +27,9 @@ if (Astro.request.method === 'POST') {
     return Astro.redirect('/admin/offers');
   }
   const parsed = parseOfferForm(form);
-  if (parsed.error || !parsed.input) {
-    error = parsed.error ?? 'Please check the form.';
+  typed = parsed.input;
+  if (parsed.error) {
+    error = parsed.error;
   } else {
     try {
       await updateOffer(db, id, parsed.input);
@@ -46,7 +48,7 @@ const tours = await listTours(db);
   <a href="/admin/offers" class="text-sm text-stone-500 hover:underline">&larr; Back to offers</a>
   <h1 class="text-2xl font-semibold mt-2 mb-6">Edit "{offer.name}"</h1>
   {error && <p role="alert" class="text-red-600 text-sm mb-4">{error}</p>}
-  <OfferForm offer={offer} tours={tours} submitLabel="Save changes" />
+  <OfferForm offer={typed ?? offer} tours={tours} submitLabel="Save changes" />
 
   <form method="POST" class="mt-4 max-w-2xl">
     <input type="hidden" name="_action" value="delete" />

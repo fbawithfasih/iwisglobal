@@ -60,15 +60,24 @@ export function offerValueLabel(offer: Offer, currency: Currency): string {
 }
 
 // The conditions a customer needs to know, e.g. "book by 5 Nov · travel
-// 1 Dec–31 Jan · 4+ travelers".
-export function offerConditions(offer: Offer): string {
+// 1 Dec–31 Jan · 4+ travelers". The admin list shows the booking window
+// separately (offerBookingWindow), so it passes includeBookBy: false.
+export function offerConditions(offer: Offer, { includeBookBy = true } = {}): string {
   const parts: string[] = [];
-  if (offer.endsOn) parts.push(`book by ${shortDate(offer.endsOn)}`);
+  if (includeBookBy && offer.endsOn) parts.push(`book by ${shortDate(offer.endsOn)}`);
   if (offer.travelFrom && offer.travelTo) parts.push(`travel ${shortDate(offer.travelFrom)}–${shortDate(offer.travelTo)}`);
   else if (offer.travelFrom) parts.push(`travel from ${shortDate(offer.travelFrom)}`);
   else if (offer.travelTo) parts.push(`travel by ${shortDate(offer.travelTo)}`);
   if (offer.minTravelers && offer.minTravelers > 1) parts.push(`${offer.minTravelers}+ travelers`);
   return parts.join(' · ');
+}
+
+// Admin list: "Bookable 1 Oct 2026 – 15 Dec 2026", or null with no limits.
+export function offerBookingWindow(offer: Offer): string | null {
+  if (offer.startsOn && offer.endsOn) return `Bookable ${shortDate(offer.startsOn)} – ${shortDate(offer.endsOn)}`;
+  if (offer.startsOn) return `Bookable from ${shortDate(offer.startsOn)}`;
+  if (offer.endsOn) return `Bookable until ${shortDate(offer.endsOn)}`;
+  return null;
 }
 
 // Short badge for a tour card, e.g. "Diwali Offer · 10% off", from the
@@ -269,9 +278,10 @@ export interface OfferInput {
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-// Reads and validates the admin offer form. Returns an error message or the
-// cleaned input.
-export function parseOfferForm(form: FormData): { input?: OfferInput; error?: string } {
+// Reads and validates the admin offer form. Always returns what was typed
+// (so the form can be shown again after an error), plus an error message
+// when it can't be saved.
+export function parseOfferForm(form: FormData): { input: OfferInput; error?: string } {
   const text = (k: string) => String(form.get(k) ?? '').trim();
   const int = (k: string) => (text(k) === '' ? null : Math.round(Number(text(k))));
   const date = (k: string) => (DATE.test(text(k)) ? text(k) : null);
@@ -295,14 +305,14 @@ export function parseOfferForm(form: FormData): { input?: OfferInput; error?: st
     active: form.get('active') === 'on',
   };
 
-  if (!name) return { error: 'Give the offer a name customers will see, e.g. "Diwali Offer".' };
-  if (code && !/^[A-Z0-9-]{3,20}$/.test(code)) return { error: 'Codes are 3–20 letters, numbers or dashes, e.g. DIWALI10.' };
-  if (kind === 'percent' && !(input.percent && input.percent >= 1 && input.percent <= 90)) return { error: 'Percentage must be between 1 and 90.' };
-  if (kind === 'fixed' && !(input.amountInr && input.amountInr > 0)) return { error: 'Enter the rupee amount off.' };
-  if (kind === 'fixed' && input.amountUsd != null && input.amountUsd <= 0) return { error: 'The dollar amount must be more than 0, or left blank.' };
-  if (input.startsOn && input.endsOn && input.endsOn < input.startsOn) return { error: 'The booking end date is before the start date.' };
-  if (input.travelFrom && input.travelTo && input.travelTo < input.travelFrom) return { error: 'The travel end date is before the travel start date.' };
-  if (input.minTravelers != null && input.minTravelers < 1) return { error: 'Minimum travelers must be at least 1, or left blank.' };
+  if (!name) return { input, error: 'Give the offer a name customers will see, e.g. "Diwali Offer".' };
+  if (code && !/^[A-Z0-9-]{3,20}$/.test(code)) return { input, error: 'Codes are 3–20 letters, numbers or dashes, e.g. DIWALI10.' };
+  if (kind === 'percent' && !(input.percent && input.percent >= 1 && input.percent <= 90)) return { input, error: 'Percentage must be between 1 and 90.' };
+  if (kind === 'fixed' && !(input.amountInr && input.amountInr > 0)) return { input, error: 'Enter the rupee amount off.' };
+  if (kind === 'fixed' && input.amountUsd != null && input.amountUsd <= 0) return { input, error: 'The dollar amount must be more than 0, or left blank.' };
+  if (input.startsOn && input.endsOn && input.endsOn < input.startsOn) return { input, error: 'The booking end date is before the start date.' };
+  if (input.travelFrom && input.travelTo && input.travelTo < input.travelFrom) return { input, error: 'The travel end date is before the travel start date.' };
+  if (input.minTravelers != null && input.minTravelers < 1) return { input, error: 'Minimum travelers must be at least 1, or left blank.' };
   return { input };
 }
 

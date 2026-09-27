@@ -5,7 +5,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import OfferForm from '../../../components/OfferForm.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
-import { createOffer, parseOfferForm } from '../../../lib/offers';
+import { createOffer, parseOfferForm, type OfferInput } from '../../../lib/offers';
 import { listTours } from '../../../lib/tours';
 
 const env = resolveEnv(Astro.locals);
@@ -17,10 +17,12 @@ const db = env.DB;
 if (!db) return Astro.redirect('/admin/offers');
 
 let error: string | null = null;
+let typed: OfferInput | null = null; // shown again if the save fails
 if (Astro.request.method === 'POST') {
   const parsed = parseOfferForm(await Astro.request.formData());
-  if (parsed.error || !parsed.input) {
-    error = parsed.error ?? 'Please check the form.';
+  typed = parsed.input;
+  if (parsed.error) {
+    error = parsed.error;
   } else {
     try {
       await createOffer(db, parsed.input);
@@ -37,5 +39,5 @@ const tours = await listTours(db);
   <a href="/admin/offers" class="text-sm text-stone-500 hover:underline">&larr; Back to offers</a>
   <h1 class="text-2xl font-semibold mt-2 mb-6">New offer or coupon</h1>
   {error && <p role="alert" class="text-red-600 text-sm mb-4">{error}</p>}
-  <OfferForm tours={tours} submitLabel="Create offer" />
+  <OfferForm offer={typed} tours={tours} submitLabel="Create offer" />
 </AdminLayout>
