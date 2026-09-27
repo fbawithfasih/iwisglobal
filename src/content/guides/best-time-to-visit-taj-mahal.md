@@ -69,7 +69,7 @@ So a winter sunrise visit starts nearly two hours later than a summer one. The T
 |---|---|
 | Coolest temperatures | December–January |
 | Clearer air, still mild | March |
-| Avoiding both extremes | Late October–November, or February–early March |
+| Avoiding both extremes | February–early March |
 | Don't mind the heat | May–August (hot, humid) |
 
 ---
