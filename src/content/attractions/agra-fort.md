@@ -2,7 +2,8 @@
 name: "Agra Fort"
 description: "The Mughal-era fortress Akbar built on the ruins of an earlier stronghold — a UNESCO World Heritage Site a short drive from the Taj Mahal, open every day including Fridays."
 ticketPriceForeign: "₹650 (₹600 on Fridays)"
-ticketPriceIndian: "₹50 (₹40 on Fridays); SAARC/BIMSTEC ₹90 (₹40 Fridays)"
+ticketPriceIndian: "₹50 (₹40 on Fridays)"
+ticketPriceSaarc: "₹90 (₹40 on Fridays)"
 hours: "6:00 AM – 6:00 PM, every day"
 closedFriday: false
 distanceFromTaj: "A short drive within Agra city — commonly paired with the Taj Mahal on the same day"

@@ -20,7 +20,7 @@ if (!entry) {
 }
 
 const { Content } = await entry.render();
-const { name, description, ticketPriceForeign, ticketPriceIndian, hours, closedFriday, dateModified, image } = entry.data;
+const { name, description, ticketPriceForeign, ticketPriceIndian, ticketPriceSaarc, hours, closedFriday, dateModified, image } = entry.data;
 
 const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
 if (Astro.url.searchParams.get('currency')) {
@@ -71,19 +71,25 @@ const attractionJsonLd = {
 
     <div class="grid sm:grid-cols-2 gap-4 mb-8 rounded-xl border border-stone-200 bg-white p-5 text-sm">
       <div>
-        <p class="text-stone-400 uppercase text-xs tracking-wide mb-1">Ticket (foreign tourist)</p>
+        <p class="text-stone-500 uppercase text-xs tracking-wide mb-1">Ticket (foreign tourist)</p>
         <p class="font-semibold">{ticketPriceForeign}</p>
       </div>
       <div>
-        <p class="text-stone-400 uppercase text-xs tracking-wide mb-1">Ticket (Indian national)</p>
+        <p class="text-stone-500 uppercase text-xs tracking-wide mb-1">Ticket (Indian national)</p>
         <p class="font-semibold">{ticketPriceIndian}</p>
       </div>
+      {ticketPriceSaarc && (
+        <div>
+          <p class="text-stone-500 uppercase text-xs tracking-wide mb-1">Ticket (SAARC / BIMSTEC national)</p>
+          <p class="font-semibold">{ticketPriceSaarc}</p>
+        </div>
+      )}
       <div>
-        <p class="text-stone-400 uppercase text-xs tracking-wide mb-1">Hours</p>
+        <p class="text-stone-500 uppercase text-xs tracking-wide mb-1">Hours</p>
         <p class="font-semibold">{hours}</p>
       </div>
       <div>
-        <p class="text-stone-400 uppercase text-xs tracking-wide mb-1">Friday</p>
+        <p class="text-stone-500 uppercase text-xs tracking-wide mb-1">Friday</p>
         <p class="font-semibold">{closedFriday ? 'Closed' : 'Open'}</p>
       </div>
     </div>

@@ -28,6 +28,8 @@ const attractions = defineCollection({
     description: z.string(),
     ticketPriceForeign: z.string(),
     ticketPriceIndian: z.string(),
+    // SAARC/BIMSTEC nationals' ticket, shown as its own row when set.
+    ticketPriceSaarc: z.string().optional(),
     hours: z.string(),
     closedFriday: z.boolean(),
     distanceFromTaj: z.string(),

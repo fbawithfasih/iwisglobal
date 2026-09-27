@@ -2,7 +2,8 @@
 name: "Fatehpur Sikri"
 description: "Akbar's abandoned Mughal capital, 37 km from Agra — a UNESCO World Heritage Site since 1986. Entry is ₹610 for foreign tourists; open sunrise to sunset, every day."
 ticketPriceForeign: "₹610 (₹600 on Fridays)"
-ticketPriceIndian: "₹50 (₹40 on Fridays); same for SAARC/BIMSTEC"
+ticketPriceIndian: "₹50 (₹40 on Fridays)"
+ticketPriceSaarc: "₹50 (₹40 on Fridays)"
 hours: "Sunrise to sunset, every day"
 closedFriday: false
 distanceFromTaj: "About 37 km from Agra — roughly 45 minutes to 1 hour by road"

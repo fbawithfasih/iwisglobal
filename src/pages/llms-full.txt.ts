@@ -84,7 +84,7 @@ export const GET: APIRoute = async ({ locals }) => {
       lines.push(`### ${attraction.data.name}`);
       lines.push(`URL: ${SITE}/agra/${attraction.slug}`);
       lines.push(
-        `Ticket (foreign tourist): ${attraction.data.ticketPriceForeign}. Ticket (Indian national): ${attraction.data.ticketPriceIndian}. Hours: ${attraction.data.hours}. Closed Fridays: ${attraction.data.closedFriday ? 'yes' : 'no'}.`
+        `Ticket (foreign tourist): ${attraction.data.ticketPriceForeign}. Ticket (Indian national): ${attraction.data.ticketPriceIndian}. ${attraction.data.ticketPriceSaarc ? `Ticket (SAARC/BIMSTEC national): ${attraction.data.ticketPriceSaarc}. ` : ''}Hours: ${attraction.data.hours}. Closed Fridays: ${attraction.data.closedFriday ? 'yes' : 'no'}.`
       );
       lines.push('');
       lines.push(attraction.body.trim());

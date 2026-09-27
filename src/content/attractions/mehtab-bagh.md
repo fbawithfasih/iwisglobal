@@ -2,7 +2,8 @@
 name: "Mehtab Bagh"
 description: "A Mughal garden directly across the Yamuna River from the Taj Mahal — the classic reflected/framed sunset view, without being inside the main complex."
 ticketPriceForeign: "₹300"
-ticketPriceIndian: "₹25; SAARC/BIMSTEC ₹25"
+ticketPriceIndian: "₹25"
+ticketPriceSaarc: "₹25"
 hours: "Sunrise to sunset, approximately 6:00 AM – 6:30 PM"
 closedFriday: false
 distanceFromTaj: "Directly across the Yamuna River, north of the Taj Mahal"
