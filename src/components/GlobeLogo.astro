@@ -1,0 +1,121 @@
+---
+// The logo's dotted globe, redrawn on a canvas so it can turn on its own
+// axis (a flat image can only spin in-plane or flip like a coin). Dots sit
+// on a latitude/longitude grid on a sphere; lighting is fixed on the left
+// so the halftone shading of logo.png stays put while the surface turns.
+// public/logo-globe.png (the globe cropped from logo.png) shows until the
+// canvas has drawn, and stays if JavaScript is off. Reduced-motion users
+// get one still frame. Decorative: the link it sits in carries the name.
+interface Props {
+  class?: string;
+  animate?: boolean;
+}
+const { class: className = '', animate = true } = Astro.props;
+---
+
+<span class:list={['relative inline-block shrink-0', className]}>
+  <img src="/logo-globe.png" alt="" width="174" height="174" class="globe-fallback absolute inset-0 h-full w-full object-contain" />
+  <canvas class="globe-canvas absolute inset-0 h-full w-full" data-animate={animate ? 'true' : 'false'} aria-hidden="true"></canvas>
+</span>
+
+<script>
+  // Cyan → blue-violet → purple, sampled from logo.png.
+  const STOPS: [number, number, number][] = [
+    [64, 190, 238],
+    [108, 116, 206],
+    [141, 74, 168],
+  ];
+  const TILT = -0.55; // axis leans right, as in the logo (radians, screen plane)
+  const PITCH = 0.3; // viewed slightly from above
+  const LIGHT = normalize([-0.62, 0.38, 0.69]); // from the left, above, in front
+  const LAT_STEP = (9 * Math.PI) / 180;
+  const LAT_MAX = (81 * Math.PI) / 180;
+  // Same count on every ring, so the dots line up along meridians that
+  // converge towards the pole, as in the logo.
+  const DOTS_PER_RING = 36;
+  const REVOLUTION_MS = 14000;
+  const FRAME_MS = 1000 / 30;
+
+  function normalize(v: number[]): number[] {
+    const l = Math.hypot(v[0], v[1], v[2]);
+    return v.map((c) => c / l);
+  }
+
+  function colour(t: number): string {
+    const s = Math.min(Math.max(t, 0), 1) * (STOPS.length - 1);
+    const i = Math.min(Math.floor(s), STOPS.length - 2);
+    const f = s - i;
+    const [a, b] = [STOPS[i], STOPS[i + 1]];
+    return `rgb(${a.map((c, k) => Math.round(c + (b[k] - c) * f)).join(',')})`;
+  }
+
+  function draw(canvas: HTMLCanvasElement, angle: number) {
+    const size = canvas.clientWidth;
+    if (!size) return;
+    const dpr = window.devicePixelRatio || 1;
+    const px = Math.round(size * dpr);
+    if (canvas.width !== px) canvas.width = canvas.height = px;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size, size);
+
+    const r = size * 0.47;
+    const c = size / 2;
+    const [cp, sp, ct, st] = [Math.cos(PITCH), Math.sin(PITCH), Math.cos(TILT), Math.sin(TILT)];
+    for (let lat = -LAT_MAX; lat <= LAT_MAX + 1e-6; lat += LAT_STEP) {
+      for (let k = 0; k < DOTS_PER_RING; k++) {
+        const lon = (k / DOTS_PER_RING) * Math.PI * 2 + angle;
+        const x = Math.cos(lat) * Math.sin(lon);
+        const y = Math.sin(lat);
+        const z = Math.cos(lat) * Math.cos(lon);
+        // Tip towards the viewer, then lean the axis.
+        const y1 = y * cp - z * sp;
+        const z1 = y * sp + z * cp;
+        if (z1 <= 0.02) continue; // far side
+        const x2 = x * ct - y1 * st;
+        const y2 = x * st + y1 * ct;
+        const shade = Math.max(0, x2 * LIGHT[0] + y2 * LIGHT[1] + z1 * LIGHT[2]);
+        // Smaller towards the poles, where the meridians crowd together.
+        const dot = r * 0.07 * (0.25 + 0.75 * shade) * Math.sqrt(z1) * (0.25 + 0.75 * Math.cos(lat));
+        if (dot < 0.25) continue;
+        ctx.fillStyle = colour(0.5 + 0.45 * x2 + 0.4 * y2); // cyan lower left, purple upper right
+        ctx.beginPath();
+        ctx.arc(c + x2 * r, c - y2 * r, dot, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  const canvases = [...document.querySelectorAll<HTMLCanvasElement>('canvas.globe-canvas')];
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const START_ANGLE = 0.6;
+
+  for (const canvas of canvases) {
+    draw(canvas, START_ANGLE);
+    canvas.previousElementSibling?.classList.add('invisible');
+    // The header logo shrinks on scroll; redraw at the new size.
+    new ResizeObserver(() => {
+      if (canvas.dataset.animate !== 'true' || still.matches) draw(canvas, START_ANGLE);
+    }).observe(canvas);
+  }
+
+  const spinning = canvases.filter((c) => c.dataset.animate === 'true');
+  let last = 0;
+  function tick(now: number) {
+    if (still.matches) return;
+    if (now - last >= FRAME_MS) {
+      last = now;
+      const angle = START_ANGLE + ((now % REVOLUTION_MS) / REVOLUTION_MS) * Math.PI * 2;
+      for (const canvas of spinning) draw(canvas, angle);
+    }
+    requestAnimationFrame(tick);
+  }
+  if (spinning.length) {
+    requestAnimationFrame(tick);
+    still.addEventListener('change', () => {
+      if (still.matches) spinning.forEach((c) => draw(c, START_ANGLE));
+      else requestAnimationFrame(tick);
+    });
+  }
+</script>

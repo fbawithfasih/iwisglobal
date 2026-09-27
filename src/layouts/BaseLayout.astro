@@ -4,6 +4,7 @@ import { getSessionCustomerId } from '../lib/requireCustomer';
 import { resolveLocale } from '../lib/i18n';
 import { getDictionary } from '../i18n/dictionaries';
 import LocaleSwitcher from '../components/LocaleSwitcher.astro';
+import GlobeLogo from '../components/GlobeLogo.astro';
 
 interface BreadcrumbItem {
   name: string;
@@ -197,7 +198,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500..700&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-stone-50 text-stone-900 antialiased">
     <!-- Google Tag Manager (noscript) -->
@@ -207,7 +208,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
     <header id="site-header" class="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur-sm transition-[box-shadow,height] duration-200">
       <div class="site-header-inner max-w-5xl mx-auto px-6 h-16 flex items-center justify-between transition-[height] duration-200">
         <a href="/" class="flex items-center gap-2 md:gap-2.5 min-w-0">
-          <img src="/logo.png" alt="IWIS Global" class="h-9 w-9 md:h-11 md:w-11 object-contain shrink-0" />
+          <GlobeLogo class="site-logo h-11 w-11 md:h-[3.25rem] md:w-[3.25rem] transition-[width,height] duration-200" />
           <span class="text-lg md:text-xl font-serif font-semibold tracking-tight truncate">IWIS Global</span>
         </a>
         <nav class="hidden md:flex items-center gap-6">
@@ -265,8 +266,8 @@ const websiteJsonLd = Astro.url.pathname === '/'
       <div class="max-w-5xl mx-auto px-6 py-12 grid gap-10 sm:grid-cols-2 md:grid-cols-3">
         <div>
           <a href="/" class="flex items-center gap-2.5 mb-4">
-            <img src="/logo.png" alt="IWIS Global" class="h-8 w-8 object-contain" />
-            <span class="text-base font-semibold tracking-tight">IWIS Global</span>
+            <GlobeLogo class="h-9 w-9" animate={false} />
+            <span class="text-base font-serif font-semibold tracking-tight">IWIS Global</span>
           </a>
           <p class="text-sm text-stone-500 leading-relaxed max-w-[240px]">
             Private Taj Mahal &amp; Agra tours from Delhi — booked online, guided in person.
@@ -387,6 +388,10 @@ const websiteJsonLd = Astro.url.pathname === '/'
   }
   #site-header.is-scrolled .site-header-inner {
     height: 3.25rem;
+  }
+  #site-header.is-scrolled .site-logo {
+    width: 2.5rem;
+    height: 2.5rem;
   }
 </style>
 

@@ -12,12 +12,13 @@ export default {
         // Reserved for offers/urgency only — not a second primary color.
         accent: colors.orange,
       },
-      // Cormorant Garamond is loaded in BaseLayout.astro's <head> and
+      // Source Serif 4 (clean, upright; replaced the slanted Cormorant
+      // Garamond on 27 Sep 2026) is loaded in BaseLayout.astro's <head> and
       // `font-serif` is used on every heading sitewide, but without this
       // override Tailwind's default serif stack (Georgia/Times) rendered
       // instead — the font was loaded but never actually applied.
       fontFamily: {
-        serif: ['"Cormorant Garamond"', 'ui-serif', 'Georgia', 'serif'],
+        serif: ['"Source Serif 4"', 'ui-serif', 'Georgia', 'serif'],
       },
     },
   },
