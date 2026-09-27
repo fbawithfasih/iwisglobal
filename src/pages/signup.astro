@@ -103,15 +103,18 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
       </div>
       <div>
         <label for="password" class="block text-xs font-medium text-stone-500 mb-1">Password</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          minlength="8"
-          autocomplete="new-password"
-          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
-        />
+        <div class="relative">
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            minlength="8"
+            autocomplete="new-password"
+            class="w-full rounded-lg border border-stone-300 pl-3 pr-16 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+          <button type="button" data-toggle-password="password" aria-pressed="false" aria-label="Show password" class="absolute inset-y-0 right-0 flex min-w-14 items-center justify-center px-3 text-sm font-medium text-brand-800">Show</button>
+        </div>
         <p class="text-xs text-stone-400 mt-1">At least 8 characters.</p>
       </div>
       <button
@@ -123,7 +126,22 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
     </form>
 
     <p class="text-sm text-stone-500 mt-4">
-      Already have an account? <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="text-brand-700 font-medium hover:underline">Sign in</a>
+      Already have an account? <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center text-brand-700 font-medium hover:underline">Sign in</a>
     </p>
   </section>
 </BaseLayout>
+
+<script>
+  // "Show" toggle inside the password field — hard to spot typos on a phone keyboard.
+  document.querySelectorAll<HTMLButtonElement>('[data-toggle-password]').forEach((btn) => {
+    const input = document.getElementById(btn.dataset.togglePassword!) as HTMLInputElement | null;
+    if (!input) return;
+    btn.addEventListener('click', () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.textContent = show ? 'Hide' : 'Show';
+      btn.setAttribute('aria-pressed', String(show));
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    });
+  });
+</script>
