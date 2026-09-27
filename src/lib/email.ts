@@ -7,6 +7,8 @@
 // so a failed or unconfigured email must never surface as a booking
 // failure. Every exported function here swallows its own errors and logs.
 
+import { formatTravelDate, formatMoneyMinor } from './format';
+
 export interface BookingEmailDetails {
   to: string;
   travelerName: string;
@@ -18,13 +20,27 @@ export interface BookingEmailDetails {
   bookingId: string;
   totalAmount: number; // backlog 0.4 — full tour price; equals amountPaid unless paymentType is 'deposit'
   paymentType: 'full' | 'deposit';
+  // Online bookings only: links the "View your booking" button to
+  // /booking/confirmation, which looks the booking up by payment id.
+  paymentId?: string | null;
   discountLabel?: string | null; // src/lib/offers.ts — the one discount applied
   discountAmount?: number | null; // smallest currency subunit
 }
 
-function formatAmount(amountPaid: number, currency: string): string {
-  const major = (amountPaid / 100).toFixed(2);
-  return currency === 'USD' ? `$${major}` : `₹${major}`;
+// "Mon, 12 Oct 2026" — travel dates arrive as YYYY-MM-DD.
+function displayDate(ymd: string): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(ymd) ? formatTravelDate(ymd) : ymd;
+}
+
+const SITE = 'https://www.iwisglobal.com';
+const PHONE_DISPLAY = '+91 6399226633';
+const PHONE_TEL = 'tel:+916399226633';
+const EMAIL = 'info@iwisglobal.com';
+const whatsappHref = (text: string) => `https://wa.me/916399226633?text=${encodeURIComponent(text)}`;
+
+// "₹13,258" / "$419", same formatting as the website.
+function formatAmount(amountMinor: number, currency: string): string {
+  return formatMoneyMinor(amountMinor, currency);
 }
 
 function escapeHtml(s: string): string {
@@ -42,6 +58,33 @@ export async function sendBookingConfirmationEmail(env: Record<string, any>, det
   const name = escapeHtml(details.travelerName || 'there');
   const isDeposit = details.paymentType === 'deposit';
   const balanceDue = details.totalAmount - details.amountPaid;
+  const date = displayDate(details.travelDate);
+  const hasDiscount = !!(details.discountLabel && details.discountAmount);
+  const tourPrice = details.totalAmount + (hasDiscount ? details.discountAmount! : 0);
+  const viewUrl = details.paymentId ? `${SITE}/booking/confirmation?payment_id=${encodeURIComponent(details.paymentId)}` : null;
+  const waUrl = whatsappHref(`Hi! Question about my booking ${details.bookingId}. (ref: EMAIL-CONFIRMATION)`);
+
+  // [label, value, value style]
+  const rows: [string, string, string?][] = [
+    ['Tour', details.tourTitle],
+    ['Date', date],
+    ['Travelers', String(details.travelers)],
+    ...(hasDiscount
+      ? ([
+          ['Tour price', formatAmount(tourPrice, details.currency)],
+          [details.discountLabel!, `−${formatAmount(details.discountAmount!, details.currency)}`, 'color:#15803d;'],
+        ] as [string, string, string?][])
+      : []),
+    [isDeposit ? 'Deposit paid' : 'Amount paid', amount, 'font-weight:600;'],
+    ...(isDeposit ? ([['Balance due on pickup', formatAmount(balanceDue, details.currency), 'font-weight:600;']] as [string, string, string?][]) : []),
+    ['Booking ID', details.bookingId, 'word-break:break-all;'],
+  ];
+  const cell = 'padding:6px 0; vertical-align:top;';
+  const depositNote = isDeposit
+    ? `You've paid a 25% deposit to secure this booking; the remaining ${formatAmount(balanceDue, details.currency)} is due on pickup. If you cancel less than 24 hours before your tour, 50% of the deposit is refunded.`
+    : '';
+  const cancelNote = 'Free cancellation up to 24 hours before your tour starts (50% refund after that; no refund for no-shows).';
+  const button = 'display:inline-block; padding:12px 20px; border-radius:999px; text-decoration:none; font-weight:600;';
 
   const html = `
     <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
@@ -49,31 +92,43 @@ export async function sendBookingConfirmationEmail(env: Record<string, any>, det
       <p>Hi ${name},</p>
       <p>Your booking with IWIS Global is confirmed. Here are the details:</p>
       <table style="width:100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;">
-        <tr><td style="padding:6px 0; color:#78716c;">Tour</td><td style="padding:6px 0; text-align:right;">${escapeHtml(details.tourTitle)}</td></tr>
-        <tr><td style="padding:6px 0; color:#78716c;">Date</td><td style="padding:6px 0; text-align:right;">${escapeHtml(details.travelDate)}</td></tr>
-        <tr><td style="padding:6px 0; color:#78716c;">Travelers</td><td style="padding:6px 0; text-align:right;">${details.travelers}</td></tr>
-        ${
-          details.discountLabel && details.discountAmount
-            ? `<tr><td style="padding:6px 0; color:#78716c;">${escapeHtml(details.discountLabel)}</td><td style="padding:6px 0; text-align:right; color:#15803d;">−${formatAmount(details.discountAmount, details.currency)}</td></tr>`
-            : ''
-        }
-        <tr><td style="padding:6px 0; color:#78716c;">${isDeposit ? 'Deposit paid' : 'Amount'}</td><td style="padding:6px 0; text-align:right;">${amount}</td></tr>
-        ${
-          isDeposit
-            ? `<tr><td style="padding:6px 0; color:#78716c;">Balance due on pickup</td><td style="padding:6px 0; text-align:right; font-weight:600;">${formatAmount(balanceDue, details.currency)}</td></tr>`
-            : ''
-        }
-        <tr><td style="padding:6px 0; color:#78716c;">Booking ID</td><td style="padding:6px 0; text-align:right;">${escapeHtml(details.bookingId)}</td></tr>
+        ${rows
+          .map(
+            ([label, value, style]) =>
+              `<tr><td style="${cell} color:#78716c; padding-right:12px;">${escapeHtml(label)}</td><td style="${cell} text-align:right; ${style ?? ''}">${escapeHtml(value)}</td></tr>`
+          )
+          .join('')}
       </table>
-      ${
-        isDeposit
-          ? `<p>You've paid a 25% deposit to secure this booking; the remaining ${formatAmount(balanceDue, details.currency)} is due on pickup. If you cancel less than 24 hours before your tour, 50% of the deposit is refunded.</p>`
-          : ''
-      }
-      <p>Free cancellation up to 24 hours before your tour starts (50% refund after that; no refund for no-shows). Questions? Just reply to this email or message us on WhatsApp.</p>
-      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; www.iwisglobal.com</p>
+      ${viewUrl ? `<p style="margin:20px 0;"><a href="${viewUrl}" style="${button} background:#5b21b6; color:#ffffff;">View your booking</a></p>` : ''}
+      ${depositNote ? `<p>${depositNote}</p>` : ''}
+      <p>${cancelNote}</p>
+      <p style="margin-bottom:8px;">Questions? Just reply to this email, or:</p>
+      <p style="margin-top:0; line-height:2;">
+        <a href="${waUrl}" style="color:#15803d; font-weight:600;">WhatsApp us</a><br />
+        <a href="${PHONE_TEL}" style="color:#5b21b6;">Call ${PHONE_DISPLAY}</a><br />
+        <a href="mailto:${EMAIL}" style="color:#5b21b6;">${EMAIL}</a>
+      </p>
+      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; <a href="${SITE}" style="color:#a8a29e;">www.iwisglobal.com</a></p>
     </div>
   `;
+
+  // Plain-text version, for text-only mail apps and spam filters.
+  const text = [
+    `Booking confirmed`,
+    ``,
+    `Hi ${details.travelerName || 'there'},`,
+    `Your booking with IWIS Global is confirmed.`,
+    ``,
+    ...rows.map(([label, value]) => `${label}: ${value}`),
+    ...(viewUrl ? [``, `View your booking: ${viewUrl}`] : []),
+    ...(depositNote ? [``, depositNote] : []),
+    ``,
+    cancelNote,
+    ``,
+    `Questions? Reply to this email, WhatsApp us (${waUrl}), call ${PHONE_DISPLAY} or email ${EMAIL}.`,
+    ``,
+    `IWIS Global · ${SITE}`,
+  ].join('\n');
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -87,6 +142,7 @@ export async function sendBookingConfirmationEmail(env: Record<string, any>, det
         to: details.to,
         subject: `Booking confirmed — ${details.tourTitle}`,
         html,
+        text,
       }),
     });
     if (!res.ok) {
@@ -127,7 +183,7 @@ export async function sendEntryTicketEmail(env: Record<string, any>, details: En
     <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
       <h2 style="color:#5b21b6; margin-bottom: 4px;">Your monument entry tickets</h2>
       <p>Hi ${name},</p>
-      <p>We've booked the monument entry tickets for your <strong>${escapeHtml(details.tourTitle)}</strong> on <strong>${escapeHtml(details.travelDate)}</strong>. They're attached to this email.</p>
+      <p>We've booked the monument entry tickets for your <strong>${escapeHtml(details.tourTitle)}</strong> on <strong>${escapeHtml(displayDate(details.travelDate))}</strong>. They're attached to this email.</p>
       <p>Please keep this email handy on the day of your tour.</p>
       <p style="color:#78716c; font-size:13px;">Booking ID: ${escapeHtml(details.bookingId)}</p>
       <p>Questions? Just reply to this email or message us on WhatsApp.</p>
@@ -142,7 +198,7 @@ export async function sendEntryTicketEmail(env: Record<string, any>, details: En
       body: JSON.stringify({
         from,
         to: details.to,
-        subject: `Your entry tickets — ${details.tourTitle}, ${details.travelDate}`,
+        subject: `Your entry tickets — ${details.tourTitle}, ${displayDate(details.travelDate)}`,
         html,
         attachments: [{ filename: details.fileName, content: toBase64(details.fileBytes) }],
       }),

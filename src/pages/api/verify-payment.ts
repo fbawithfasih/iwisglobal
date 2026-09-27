@@ -124,6 +124,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           amountPaid,
           currency: item.currency,
           bookingId: `bk_${verified.paymentId}`,
+          paymentId: verified.paymentId,
           totalAmount,
           paymentType: verified.paymentType,
           discountLabel: discountMajorUnits > 0 ? discountLabel : null,
