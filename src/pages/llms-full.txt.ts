@@ -97,7 +97,6 @@ export const GET: APIRoute = async ({ locals }) => {
   lines.push('## About');
   lines.push(`- [About IWIS Global](${SITE}/about): registered address, GST details, contact information.`);
   lines.push(`- [No-Commission Pledge](${SITE}/no-commission-pledge): what "no hidden commissions" means in practice.`);
-  lines.push(`- [Reviews](${SITE}/reviews)`);
   lines.push('');
 
   lines.push('## Optional');

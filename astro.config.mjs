@@ -94,8 +94,9 @@ export default defineConfig({
     sitemap({
       // Only indexable pages: admin/account/auth are robots-disallowed or
       // redirect, and login/signup/booking-confirmation have no search value.
+      // /reviews is noindex until there are real reviews to show on it.
       filter: (page) =>
-        !/^https:\/\/www\.iwisglobal\.com\/(admin|account|auth|login|signup|booking)(\/|$)/.test(page),
+        !/^https:\/\/www\.iwisglobal\.com\/(admin|account|auth|login|signup|booking|reviews)(\/|$)/.test(page),
       // Match src/middleware.ts, which 301s trailing-slash paths to bare ones.
       serialize: (item) => ({ ...item, url: item.url.replace(/(?<=\.com\/.+)\/$/, '') }),
       customPages: [
