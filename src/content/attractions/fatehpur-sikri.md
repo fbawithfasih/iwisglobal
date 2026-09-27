@@ -7,10 +7,10 @@ ticketPriceSaarc: "₹50 (₹40 on Fridays)"
 hours: "Sunrise to sunset, every day"
 closedFriday: false
 distanceFromTaj: "About 37 km from Agra — roughly 45 minutes to 1 hour by road"
-dateModified: 2026-09-26
+dateModified: 2026-09-28
 ---
 
-Fatehpur Sikri is the fortified city Mughal emperor Akbar built as his capital starting in 1571, on the site where the holy man Shaikh Salim Chishti reportedly predicted the birth of Akbar's son and heir. "Fatehpur" — city of victory — was added after Akbar's conquest of Gujarat in 1573. Akbar moved the capital to Lahore around 1585, and Fatehpur Sikri was largely abandoned soon after — which is why it survives today as a remarkably intact, un-rebuilt Mughal city rather than a monument that's been through centuries of reuse.
+Fatehpur Sikri is the fortified city Mughal emperor Akbar built as his capital starting in 1571, on the site where the holy man Shaikh Salim Chishti reportedly predicted the birth of Akbar's son and heir. "Fatehpur" — city of victory — was added after Akbar's conquest of Gujarat in 1573. Akbar moved the capital to Lahore around 1585, and Fatehpur Sikri was largely abandoned soon after — which is why it survives today as a remarkably intact, un-rebuilt Mughal city rather than a monument that's been through centuries of reuse. It was designated a UNESCO World Heritage Site in 1986.
 
 ## Ticket price
 
@@ -18,15 +18,11 @@ Foreign tourists pay ₹610 on regular days, ₹600 on Fridays. Indian and SAARC
 
 ## Hours
 
-Fatehpur Sikri is open sunrise to sunset, every day of the week — no Friday closure.
+Fatehpur Sikri is open sunrise to sunset, every day of the week — no Friday closure. Sunrise in Agra ranges from about 5:20 AM in June to about 7:10 AM in January; see the [month-by-month sunrise table](/guides/best-time-to-visit-taj-mahal#sunrise-timing-by-season).
 
 ## How much time to set aside
 
 A proper visit takes 2.5 to 3.5 hours; add more if you want to see the Jama Masjid and the Tomb of Salim Chishti within the complex without rushing.
-
-## History
-
-Fatehpur Sikri was Akbar's capital from roughly 1571 to 1585. It was designated a UNESCO World Heritage Site in 1986.
 
 ## Getting there
 
