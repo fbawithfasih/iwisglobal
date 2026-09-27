@@ -3,7 +3,7 @@ title: "What You Can't Bring Into the Taj Mahal: The Complete List"
 description: "The official ASI-published list of prohibited items, plus what to do with them if you brought them anyway."
 authorName: "IWIS Global"
 datePublished: 2026-09-21
-dateModified: 2026-09-21
+dateModified: 2026-09-27
 ---
 
 The Taj Mahal bans **arms and ammunition, anything related to fire or smoking, tobacco, liquor, food (including small snacks like toffees), headphones, knives, wire, mobile chargers, other electric goods (cameras are the exception), and tripods** — plus drones anywhere in or around the complex. This is the full list published on [ASI's official "Dos and Don'ts" page](https://www.tajmahal.gov.in/dos-and-donts.aspx), checked 21 September 2026.
@@ -29,7 +29,7 @@ Drone cameras are separately and explicitly banned "inside and around the Taj Ma
 ## What you *can* bring
 
 - Still cameras — allowed for day visits and night viewing, but **not inside the main mausoleum chamber itself**, where photography is prohibited outright
-- Small, transparent water bottles (and the ticket already includes a free 500 ml bottle)
+- Small, transparent water bottles (and the foreign-tourist ticket already includes a free bottle of water)
 - Mobile phones, as long as they're switched to silent or off inside the monument
 
 ## Rules beyond what to carry

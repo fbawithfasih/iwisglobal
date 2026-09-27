@@ -12,7 +12,7 @@ image:
   alt: The Taj Mahal's white marble mausoleum and minarets reflected in the long garden pool
   width: 1200
   height: 800
-dateModified: 2026-09-21
+dateModified: 2026-09-27
 ---
 
 The Taj Mahal is the white marble mausoleum Mughal emperor Shah Jahan built for his wife Mumtaz Mahal, on the south bank of the Yamuna River in Agra. It's Agra's reason most travelers come at all, and the monument most same-day Delhi trips are built around.
@@ -27,7 +27,7 @@ The monument opens 30 minutes before sunrise and closes 30 minutes before sunset
 
 ## What's included with your ticket
 
-The foreign-tourist ticket bundles in shoe covers, a 500 ml water bottle, a tourist guide map, and battery-bus transfer from the ticket counter to the gate.
+The foreign-tourist ticket bundles in shoe covers, a bottle of water, a tourist guide map of Agra, and battery bus and golf cart services. Shoe racks just below the main mausoleum are free for every visitor.
 
 ## Rules worth knowing before you go
 

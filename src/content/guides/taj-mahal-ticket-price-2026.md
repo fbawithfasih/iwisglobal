@@ -6,7 +6,7 @@ datePublished: 2026-09-21
 dateModified: 2026-09-27
 ---
 
-Foreign tourists pay **₹1,100** for Taj Mahal complex entry, plus a separate **₹200** ticket to enter the main mausoleum chamber — **₹1,300 total** per adult. Indian nationals pay ₹50 (complex) + ₹200 (mausoleum); SAARC/BIMSTEC nationals pay ₹540 + ₹200. Children under 15 enter free, for both tickets. Source: [ASI's official ticketing page](https://www.tajmahal.gov.in/ticketing.aspx), checked 21 September 2026.
+Foreign tourists pay **₹1,100** for Taj Mahal complex entry, plus a separate **₹200** ticket to enter the main mausoleum chamber — **₹1,300 total** per adult. Indian nationals pay ₹50 (complex) + ₹200 (mausoleum); SAARC/BIMSTEC nationals pay ₹540 + ₹200. Children under 15 enter free, for both tickets. Source: [ASI's official ticketing page](https://www.tajmahal.gov.in/ticketing.aspx), checked 27 September 2026.
 
 ## Why most answers stop at ₹1,100
 
@@ -26,11 +26,12 @@ Indian nationals: ₹50 + ₹200 = ₹250. SAARC/BIMSTEC nationals: ₹540 + ₹
 
 The ₹1,100 entry ticket bundles in a few things that aren't obvious from the price alone, per ASI's ticketing page:
 
-- Shoe covers (required before entering the marble platform)
-- A 500 ml bottle of water
-- A tourist guide map
-- Battery bus / golf cart transfer from the ticket counter to the gate
-- Shoe rack access at the main mausoleum
+- Shoe covers
+- A bottle of water
+- A tourist guide map of Agra
+- Battery bus and golf cart services
+
+Separately, shoe racks just below the main mausoleum are free for every visitor, whatever their ticket.
 
 ## Online vs. counter: is there a price difference?
 
@@ -46,4 +47,4 @@ For the monument itself — history, hours, and what to expect on arrival — se
 
 ---
 
-**Prices checked on 21 September 2026** against [tajmahal.gov.in/ticketing.aspx](https://www.tajmahal.gov.in/ticketing.aspx) (Archaeological Survey of India). ASI updates pricing periodically; verify before relying on this for a specific trip date.
+**Prices checked on 27 September 2026** against [tajmahal.gov.in/ticketing.aspx](https://www.tajmahal.gov.in/ticketing.aspx) (Archaeological Survey of India). ASI updates pricing periodically; verify before relying on this for a specific trip date.
