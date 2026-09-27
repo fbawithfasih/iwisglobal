@@ -46,6 +46,8 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
         {availability.label}
       </span>
       <p class="text-lg font-semibold text-stone-900">
+        {/* The cheapest rate (largest-group tier), so it's a "From" price. */}
+        <span class="text-xs font-normal text-stone-500">From</span>
         {CURRENCY_SYMBOLS[price.currency]}{price.amount.toLocaleString(price.currency === 'USD' ? 'en-US' : 'en-IN')}
         <span class="text-xs font-normal text-stone-500">/person</span>
       </p>
@@ -58,7 +60,11 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
       {tour.guideLanguage && <span>· {tour.guideLanguage} guide</span>}
       {/* Only when tickets are built into the price (not a pre-ticked add-on),
           so the "From" price really covers them. */}
-      {tour.entryTicketsInPrice.length > 0 && <span class="font-medium text-brand-700">· Entry tickets included</span>}
+      {tour.entryTicketsInPrice.length > 0 ? (
+        <span class="font-medium text-brand-700">· Entry tickets included</span>
+      ) : (
+        <span>· Entry tickets extra</span>
+      )}
       <span>· Free cancellation</span>
     </div>
   </div>
