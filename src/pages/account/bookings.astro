@@ -35,10 +35,13 @@ if (db) {
 // Today in India (tours run there), as YYYY-MM-DD for comparing travel dates.
 const todayIst = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 // Upcoming soonest first; past most recent first.
-const upcoming = bookings
+// Cancelled bookings get their own section, whatever the date.
+const cancelled = bookings.filter((b) => b.status === 'cancelled').sort((a, b) => b.travel_date.localeCompare(a.travel_date));
+const active = bookings.filter((b) => b.status !== 'cancelled');
+const upcoming = active
   .filter((b) => b.travel_date >= todayIst && b.status !== 'completed')
   .sort((a, b) => a.travel_date.localeCompare(b.travel_date));
-const past = bookings
+const past = active
   .filter((b) => !upcoming.includes(b))
   .sort((a, b) => b.travel_date.localeCompare(a.travel_date));
 
@@ -69,7 +72,7 @@ const changeHref = (b: CustomerBookingRow) => {
   const message =
     'Hi! I would like to change or cancel my booking: ' +
     `${tours.get(b.tour_id)?.title} on ${formatDate(b.travel_date)}. ` +
-    `Payment reference: ${b.payment_id} (ref: MYBOOKINGS)`;
+    `Booking ID: ${b.id} (ref: MYBOOKINGS)`;
   return 'https://wa.me/916399226633?text=' + encodeURIComponent(message);
 };
 
@@ -81,11 +84,12 @@ const withDetails = (list: CustomerBookingRow[]) =>
 const sections = [
   { title: 'Upcoming', items: withDetails(upcoming), canChange: true },
   { title: 'Past trips', items: withDetails(past), canChange: false },
+  { title: 'Cancelled', items: withDetails(cancelled), canChange: false },
 ].filter((s) => s.items.length > 0);
 ---
 
 <BaseLayout title="My Bookings — IWIS Global" noindex>
-  <section class="max-w-3xl mx-auto px-6 py-16">
+  <section class="max-w-3xl mx-auto px-6 pt-16 pb-28 md:pb-16">
     <div class="flex items-center justify-between gap-4 mb-2">
       <h1 class="text-3xl font-serif font-semibold">My Bookings</h1>
       <form method="POST" action="/auth/logout">
@@ -120,20 +124,33 @@ const sections = [
                   <p class="text-sm text-stone-600 mt-1">
                     {formatDate(b.travel_date)} · {b.travelers} traveler{b.travelers > 1 ? 's' : ''}
                   </p>
+                  {b.status === 'cancelled' ? (
+                    <p class="text-sm text-stone-600 mt-2">
+                      Any refund goes back to your original payment method —
+                      <a href="/cancellation-refund-policy" class="text-brand-800 underline">refund policy</a>.
+                    </p>
+                  ) : (
                   <p class="text-sm mt-2">
                     <span class="font-semibold">{formatMoney(b.amount_paid, b.currency)}</span>
                     <span class="text-stone-500"> paid</span>
                     {b.payment_type === 'deposit' && (
-                      <span class="text-amber-700"> · {formatMoney(b.total_amount - b.amount_paid, b.currency)} due on pickup</span>
+                      <>
+                        <span class="text-stone-500"> of {formatMoney(b.total_amount, b.currency)}</span>
+                        <span class="text-amber-700"> · {formatMoney(b.total_amount - b.amount_paid, b.currency)} due on pickup</span>
+                      </>
                     )}
                   </p>
-                  {b.discount_label && b.discount_amount ? (
+                  )}
+                  {b.status !== 'cancelled' && b.discount_label && b.discount_amount ? (
                     <p class="text-xs text-emerald-700 mt-0.5">{b.discount_label}: saved {formatMoney(b.discount_amount, b.currency)}</p>
                   ) : null}
+                  <p class="text-xs text-stone-500 mt-1 break-all">
+                    Booking ID: <span class="font-mono text-stone-700">{b.id}</span>
+                  </p>
                   {b.payment_id && (
-                    <p class="text-xs text-stone-500 mt-1 break-all">
-                      Payment reference: <span class="font-mono text-stone-700">{b.payment_id}</span>
-                    </p>
+                    <a href={`/booking/confirmation?payment_id=${encodeURIComponent(b.payment_id)}`} class="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-brand-800 underline">
+                      View booking
+                    </a>
                   )}
                   {section.canChange && b.status === 'confirmed' && (
                     <a
