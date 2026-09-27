@@ -431,6 +431,8 @@ export default function BookingWidget({
                 onChange={(e) => {
                   setCouponInput(e.target.value);
                   setCouponError(null);
+                  // Editing the code undoes the applied one, so Apply comes back.
+                  setCoupon(null);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -438,7 +440,7 @@ export default function BookingWidget({
                     applyCoupon();
                   }
                 }}
-                className="min-w-0 flex-1 rounded border border-stone-300 px-3 py-2 uppercase"
+                className="min-w-0 flex-1 rounded border border-stone-300 px-3 py-2 text-base uppercase"
               />
               {coupon ? (
                 <button
@@ -484,11 +486,15 @@ export default function BookingWidget({
           </span>
         )}
         {discount && (
-          <span className="block text-sm font-normal text-stone-500">
-            <s>{money(rawTotal)}</s>
-            {paymentType === 'deposit' && <> {money(total)} tour total</>}
-            <span className="text-amber-700"> · {discount.label} −{money(discount.amount)}</span>
-          </span>
+          <>
+            <span className="block text-sm font-normal text-stone-500">
+              <s>{money(rawTotal)}</s>
+              {paymentType === 'deposit' && <> {money(total)} tour total</>}
+            </span>
+            <span className="block text-sm font-normal text-amber-700">
+              {discount.label} <span className="whitespace-nowrap">−{money(discount.amount)}</span>
+            </span>
+          </>
         )}
       </div>
 
