@@ -3,30 +3,33 @@ title: "Is One Day Enough to See the Taj Mahal from Delhi?"
 description: "Yes, for most travelers — an hour-by-hour look at what a same-day Delhi–Agra trip actually involves, not just 'yes, it's doable.'"
 authorName: "IWIS Global"
 datePublished: 2026-09-21
-dateModified: 2026-09-21
+dateModified: 2026-09-27
 ---
 
-**Yes, one day is enough** to see the Taj Mahal, Agra Fort, and get back to Delhi the same night — it's a well-worn route, roughly 230 km each way via the Yamuna Expressway, about 3–4 hours' drive under normal conditions. The real question isn't whether it's *possible* in a day; it's how much of that day you spend in the car versus at the monuments, which depends heavily on your departure time.
+**Yes, one day is enough** to see the Taj Mahal, Agra Fort, and get back to Delhi the same night — it's a well-worn route, roughly 230 km each way via the Yamuna Expressway, and our own Same-Day tour allows about three hours on the road each way. The real question isn't whether it's *possible* in a day; it's how much of that day you spend in the car versus at the monuments, which depends heavily on your departure time.
 
 ## Distance and route
 
-Delhi to Agra via the Yamuna Expressway is approximately **230 km**, with a toll of roughly ₹285 across two plazas. Typical quoted driving time is **3–4 hours** each way in normal traffic.
+Central Delhi to Agra is roughly **230 km**, **165 km** of it on the [Yamuna Expressway](https://en.wikipedia.org/wiki/Yamuna_Expressway) from Greater Noida to Agra (speed limit 100 km/h for cars). A car pays **₹415 in tolls one way**, across three toll plazas — Jewar ₹120, Mathura ₹155 and Agra ₹140 — per the [Yamuna Expressway Authority's published rates](https://yamunaexpresswayauthority.com/About-Us/Infrastructure/yamuna-expressway/toll-rate-travel).
 
 ## An hour-by-hour view of a same-day trip
 
-This is the shape of a typical same-day departure — actual times shift with your pickup location, traffic, and season:
+Here's the schedule for our own [Same-Day Taj Mahal Tour from Delhi](/tours/same-day-agra-from-delhi) — actual times shift a little with your pickup location, traffic and season:
 
 | Time | What's happening |
 |---|---|
-| Early morning (pre-dawn) | Pickup from Delhi hotel or airport |
-| ~3–4 hours later | Arrive Agra |
-| Morning | Taj Mahal — this is when it's coolest and least crowded |
-| Midday | Agra Fort |
-| Afternoon | Lunch, optional stop |
-| Late afternoon | Depart for Delhi |
-| Evening | Arrive back in Delhi |
+| 5:30 AM | Pickup from your Delhi hotel or the airport |
+| 8:30 AM | Arrive in Agra, breakfast |
+| 9:30 AM | Taj Mahal, with your guide |
+| 12:00 PM | Agra Fort |
+| 1:30 PM | Lunch |
+| 2:30 PM | Optional art gallery / souvenir stop |
+| 4:00 PM | Depart for Delhi |
+| 7:30 PM | Drop-off in Delhi |
 
-<!-- TODO(fasih): this is the general shape only. Backlog 2.6 specifically asks for real transit-time variance by departure hour on the Yamuna Expressway — e.g. a 5:30 AM departure vs. an 8:00 AM departure hitting different traffic — which is exactly the kind of thing a daily operator has and a public source doesn't. That data should come from IWIS Global's own trip logs, not be estimated here. -->
+Getting to the Taj in the morning is deliberate: the official Taj Mahal website notes that visiting early lets you "avoid the heat during summer but also the crowds", and that there are usually more visitors at sunset than sunrise ([tajmahal.gov.in FAQs](https://www.tajmahal.gov.in/faqs.aspx)).
+
+<!-- TODO(fasih): this is the planned schedule. Real transit-time variance by departure hour (e.g. a 5:30 AM vs an 8:00 AM start) would need IWIS Global's own trip logs. -->
 
 ## Why departure time matters more than most guides mention
 
@@ -46,4 +49,4 @@ One day works well if you depart early, accept that most of the day is either at
 
 ---
 
-**Last updated:** 21 September 2026. Distance/route: publicly available road-trip data (see citations in our research). Friday closure: [ASI's official visiting-hours page](https://www.tajmahal.gov.in/visiting-hours.aspx). Hour-by-hour transit specifics flagged above as pending real operator data.
+**Checked on 27 September 2026.** Expressway length and speed limit: [Wikipedia](https://en.wikipedia.org/wiki/Yamuna_Expressway). Tolls: [Yamuna Expressway Authority](https://yamunaexpresswayauthority.com/About-Us/Infrastructure/yamuna-expressway/toll-rate-travel). Morning crowds: [tajmahal.gov.in FAQs](https://www.tajmahal.gov.in/faqs.aspx). Friday closure: [ASI's official visiting-hours page](https://www.tajmahal.gov.in/visiting-hours.aspx). Schedule: IWIS Global's Same-Day tour itinerary.
