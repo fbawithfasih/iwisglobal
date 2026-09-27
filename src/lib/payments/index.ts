@@ -19,6 +19,9 @@ export interface BookingRequest {
   // Backlog 0.4 — pay the full amount now, or a 25% deposit with the
   // balance due on pickup. Defaults to 'full' when omitted.
   paymentType?: 'full' | 'deposit';
+  // A coupon the customer entered (src/lib/offers.ts). The server checks it
+  // and picks the single biggest discount; an unusable code fails the order.
+  couponCode?: string;
 }
 
 export interface OrderResult {
@@ -49,6 +52,12 @@ export interface VerifiedBooking {
   // verify-payment applies the exact same 15% discount deterministically
   // rather than re-checking a count that may have moved on by then.
   foundingGuestDiscount?: boolean;
+  // The discount createOrder applied (src/lib/offers.ts), from the trusted
+  // order notes. `discount` is in major units; undefined on orders created
+  // before offers existed, which fall back to foundingGuestDiscount.
+  discount?: number;
+  offerId?: string;
+  discountLabel?: string;
 }
 
 export interface PaymentProvider {

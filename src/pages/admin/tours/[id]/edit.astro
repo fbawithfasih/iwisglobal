@@ -4,7 +4,7 @@ export const prerender = false;
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../../lib/env';
 import { isAdminAuthenticated } from '../../../../lib/requireAdmin';
-import { getTourById, updateTour, replaceAddOns, replacePricingTiers } from '../../../../lib/tours';
+import { getTourById, updateTour, replaceAddOns, replacePricingTiers, markTourPriceChanged } from '../../../../lib/tours';
 import {
   parseLines,
   parseItinerary,
@@ -72,7 +72,18 @@ if (Astro.request.method === 'POST') {
         entryTicketsInPrice: parseLines(String(form.get('entryTicketsInPrice') ?? '')),
       });
       await replaceAddOns(db, id, parseAddOns(String(form.get('addOns') ?? '')));
-      await replacePricingTiers(db, id, parsePricingTiers(String(form.get('pricingTiers') ?? '')));
+      const newTiers = parsePricingTiers(String(form.get('pricingTiers') ?? ''));
+      await replacePricingTiers(db, id, newTiers);
+      // For the offer form's 30-day struck-through-price warning.
+      const priceKey = (a: number, u: number | null, tiers: { travelers: number; amount: number; usdAmount?: number | null }[]) =>
+        JSON.stringify([a, u ?? null, tiers.map((t) => [t.travelers, t.amount, t.usdAmount ?? null])]);
+      if (
+        existing &&
+        priceKey(existing.amount, existing.usdAmount, existing.pricingTiers) !==
+          priceKey(amount, usdAmount != null && Number.isFinite(usdAmount) ? usdAmount : null, newTiers)
+      ) {
+        await markTourPriceChanged(db, id);
+      }
       return Astro.redirect(`/admin/tours/${id}/edit?saved=1`);
     } catch (err: any) {
       error = err?.message || 'Failed to save tour.';

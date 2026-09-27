@@ -14,7 +14,7 @@ export const prerender = false;
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const { tourId, date, travelers, addOnIds, currency, receipt, gaClientId, paymentType } = await request.json();
+    const { tourId, date, travelers, addOnIds, currency, receipt, gaClientId, paymentType, couponCode } = await request.json();
 
     if (!tourId || !date || !travelers) {
       return new Response(JSON.stringify({ error: 'Missing tourId, date, or travelers' }), {
@@ -57,6 +57,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         receipt,
         gaClientId: typeof gaClientId === 'string' ? gaClientId : undefined,
         paymentType: paymentType === 'deposit' ? 'deposit' : 'full',
+        couponCode: typeof couponCode === 'string' ? couponCode.slice(0, 40) : undefined,
       },
       env
     );

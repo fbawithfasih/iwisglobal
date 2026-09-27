@@ -1,4 +1,7 @@
-import { computeTotal, computeDepositAmount, applyFoundingGuestDiscount, FOUNDING_GUEST_SLOT_CAP } from '../catalog';
+import { computeTotal, computeDepositAmount, FOUNDING_GUEST_SLOT_CAP } from '../catalog';
+import { resolveBookingDiscount, FOUNDING_GUEST_OFFER_ID } from '../offers';
+import { todayIst } from '../availability';
+import type { Currency } from '../currency';
 import { getCatalogItem } from '../tours';
 import { countBookings } from '../db';
 import type { BookingRequest, OrderResult, VerifyRequest, VerifiedBooking, PaymentProvider } from './index';
@@ -39,7 +42,20 @@ export const razorpayProvider: PaymentProvider = {
     // trusted order notes below so verifyPayment applies the identical
     // discount rather than re-checking a count that may have moved on.
     const foundingGuestDiscount = env.DB ? (await countBookings(env.DB as any)) < FOUNDING_GUEST_SLOT_CAP : false;
-    const totalMajorUnits = applyFoundingGuestDiscount(rawTotalMajorUnits, foundingGuestDiscount);
+    // One discount per booking — the biggest of the Founding Guest Offer,
+    // any automatic offer and the entered coupon (src/lib/offers.ts).
+    // Throws CouponError for an unusable code rather than charging a price
+    // the customer wasn't shown.
+    const discount = env.DB
+      ? await resolveBookingDiscount(
+          env.DB as any,
+          { tourId: req.tourId, travelDate: req.date, travelers: req.travelers, currency: item.currency as Currency, today: todayIst() },
+          rawTotalMajorUnits,
+          foundingGuestDiscount,
+          req.couponCode
+        )
+      : null;
+    const totalMajorUnits = rawTotalMajorUnits - (discount?.amount ?? 0);
     const paymentType: 'full' | 'deposit' = req.paymentType === 'deposit' ? 'deposit' : 'full';
     // Backlog 0.4 — a deposit charges 25% of the total now; the rest is
     // paid on pickup, outside this payment flow entirely. The full total is
@@ -74,7 +90,9 @@ export const razorpayProvider: PaymentProvider = {
           currency: item.currency,
           totalAmount: String(Math.round(totalMajorUnits * 100)),
           paymentType,
-          foundingGuestDiscount: String(foundingGuestDiscount),
+          foundingGuestDiscount: String(discount?.offerId === FOUNDING_GUEST_OFFER_ID),
+          discount: String(discount?.amount ?? 0),
+          ...(discount ? { offerId: discount.offerId, discountLabel: discount.label } : {}),
           ...(req.gaClientId ? { gaClientId: req.gaClientId } : {}),
         },
       }),
@@ -137,6 +155,9 @@ export const razorpayProvider: PaymentProvider = {
       totalAmount: notes.totalAmount != null ? Number(notes.totalAmount) : order.amount,
       paymentType: notes.paymentType === 'deposit' ? 'deposit' : 'full',
       foundingGuestDiscount: notes.foundingGuestDiscount === 'true',
+      discount: notes.discount != null ? Number(notes.discount) : undefined,
+      offerId: notes.offerId || undefined,
+      discountLabel: notes.discountLabel || undefined,
     };
   },
 

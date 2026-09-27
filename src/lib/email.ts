@@ -18,6 +18,8 @@ export interface BookingEmailDetails {
   bookingId: string;
   totalAmount: number; // backlog 0.4 — full tour price; equals amountPaid unless paymentType is 'deposit'
   paymentType: 'full' | 'deposit';
+  discountLabel?: string | null; // src/lib/offers.ts — the one discount applied
+  discountAmount?: number | null; // smallest currency subunit
 }
 
 function formatAmount(amountPaid: number, currency: string): string {
@@ -50,6 +52,11 @@ export async function sendBookingConfirmationEmail(env: Record<string, any>, det
         <tr><td style="padding:6px 0; color:#78716c;">Tour</td><td style="padding:6px 0; text-align:right;">${escapeHtml(details.tourTitle)}</td></tr>
         <tr><td style="padding:6px 0; color:#78716c;">Date</td><td style="padding:6px 0; text-align:right;">${escapeHtml(details.travelDate)}</td></tr>
         <tr><td style="padding:6px 0; color:#78716c;">Travelers</td><td style="padding:6px 0; text-align:right;">${details.travelers}</td></tr>
+        ${
+          details.discountLabel && details.discountAmount
+            ? `<tr><td style="padding:6px 0; color:#78716c;">${escapeHtml(details.discountLabel)}</td><td style="padding:6px 0; text-align:right; color:#15803d;">−${formatAmount(details.discountAmount, details.currency)}</td></tr>`
+            : ''
+        }
         <tr><td style="padding:6px 0; color:#78716c;">${isDeposit ? 'Deposit paid' : 'Amount'}</td><td style="padding:6px 0; text-align:right;">${amount}</td></tr>
         ${
           isDeposit

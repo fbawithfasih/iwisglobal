@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { razorpayProvider } from '../../lib/payments/razorpay';
 import { computeTotal, computeDepositAmount, applyFoundingGuestDiscount } from '../../lib/catalog';
 import { getCatalogItem } from '../../lib/tours';
+import { FOUNDING_GUEST_OFFER_ID } from '../../lib/offers';
 import { insertVerifiedBooking, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
@@ -52,7 +53,14 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     // trusted order notes — never re-checked against a booking count that
     // may have moved on since the order was created.
     const rawTotalMajorUnits = computeTotal(item, verified.travelers, verified.addOnIds);
-    const totalMajorUnits = applyFoundingGuestDiscount(rawTotalMajorUnits, verified.foundingGuestDiscount ?? false);
+    // The discount createOrder decided (src/lib/offers.ts), from the order
+    // notes. Orders created before offers existed only carry the Founding
+    // Guest flag.
+    const discountMajorUnits =
+      verified.discount ?? (verified.foundingGuestDiscount ? rawTotalMajorUnits - applyFoundingGuestDiscount(rawTotalMajorUnits, true) : 0);
+    const totalMajorUnits = rawTotalMajorUnits - discountMajorUnits;
+    const discountLabel =
+      verified.discountLabel ?? (discountMajorUnits > 0 && verified.foundingGuestDiscount ? 'Founding Guest Offer (15% off)' : null);
     const totalAmount = Math.round(totalMajorUnits * 100);
     const chargeMajorUnits = verified.paymentType === 'deposit' ? computeDepositAmount(totalMajorUnits) : totalMajorUnits;
     const amountPaid = Math.round(chargeMajorUnits * 100);
@@ -78,6 +86,9 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           customerId,
           totalAmount,
           paymentType: verified.paymentType,
+          offerId: discountMajorUnits > 0 ? verified.offerId ?? FOUNDING_GUEST_OFFER_ID : null,
+          discountLabel: discountMajorUnits > 0 ? discountLabel : null,
+          discountAmount: discountMajorUnits > 0 ? Math.round(discountMajorUnits * 100) : null,
         },
         MAX_TRAVELERS_PER_DATE
       );
@@ -115,6 +126,8 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           bookingId: `bk_${verified.paymentId}`,
           totalAmount,
           paymentType: verified.paymentType,
+          discountLabel: discountMajorUnits > 0 ? discountLabel : null,
+          discountAmount: discountMajorUnits > 0 ? Math.round(discountMajorUnits * 100) : null,
         });
       }
     }

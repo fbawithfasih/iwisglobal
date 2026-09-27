@@ -144,6 +144,9 @@ const addOnNames = booking.add_on_ids
       <p><span class="text-stone-500">Email:</span> {booking.traveler_email}</p>
       <p><span class="text-stone-500">Phone:</span> {booking.traveler_phone}</p>
       <p><span class="text-stone-500">Amount paid:</span> {formatMoneyMinor(booking.amount_paid, booking.currency)} ({booking.payment_type === 'deposit' ? '25% deposit' : 'full'})</p>
+      {booking.discount_label && booking.discount_amount ? (
+        <p><span class="text-stone-500">Discount:</span> {booking.discount_label}, −{formatMoneyMinor(booking.discount_amount, booking.currency)}</p>
+      ) : null}
       {booking.payment_type === 'deposit' && (
         <p><span class="text-stone-500">Balance due on pickup:</span> {formatMoneyMinor(booking.total_amount - booking.amount_paid, booking.currency)}</p>
       )}

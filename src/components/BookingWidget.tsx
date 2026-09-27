@@ -1,7 +1,8 @@
 import { useState, type FocusEvent } from 'react';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
-import { isFriday, FRIDAY_CLOSED_MESSAGE } from '../lib/availability';
-import { pickPricingTier, computeDepositAmount, applyFoundingGuestDiscount, FOUNDING_GUEST_DISCOUNT_RATE, type PricingTier } from '../lib/catalog';
+import { isFriday, FRIDAY_CLOSED_MESSAGE, todayIst } from '../lib/availability';
+import { pickPricingTier, computeDepositAmount, type PricingTier } from '../lib/catalog';
+import { bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer } from '../lib/offers';
 
 declare global {
   interface Window {
@@ -56,6 +57,9 @@ interface BookingWidgetProps {
   // eligibility at payment time from a fresh count. 0 or undefined hides
   // the banner and applies no discount to the estimate.
   foundingGuestSlotsLeft?: number;
+  // Automatic offers live for this tour today (src/lib/offers.ts). Display
+  // only, like the rest of the estimate — create-order decides the charge.
+  offers?: Offer[];
 }
 
 export default function BookingWidget({
@@ -68,6 +72,7 @@ export default function BookingWidget({
   minDate,
   availabilityLabel,
   foundingGuestSlotsLeft = 0,
+  offers = [],
 }: BookingWidgetProps) {
   const foundingGuestEligible = foundingGuestSlotsLeft > 0;
   const [date, setDate] = useState(minDate);
@@ -84,6 +89,11 @@ export default function BookingWidget({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<string | null>(null);
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [coupon, setCoupon] = useState<Offer | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponChecking, setCouponChecking] = useState(false);
 
   // Same tier-matching logic computeTotal() uses server-side — this is a
   // display estimate only; the server independently recomputes it from its
@@ -96,9 +106,35 @@ export default function BookingWidget({
     return sum + (addOn.perTraveler ? addOn.amount * travelers : addOn.amount);
   }, 0);
   const rawTotal = currentRate * travelers + addOnsTotal;
-  // Mirrors razorpay.ts's createOrder / verify-payment.ts exactly — the
-  // discount applies to the full total (tour + add-ons), same rate.
-  const total = applyFoundingGuestDiscount(rawTotal, foundingGuestEligible);
+  // Same choice razorpay.ts's createOrder makes: one discount, the biggest
+  // of the Founding Guest Offer, automatic offers and the entered coupon,
+  // on the full total (tour + add-ons).
+  const bookingCtx = { tourId, travelDate: date, travelers, currency, today: todayIst() };
+  const couponProblem = coupon ? offerProblem(coupon, bookingCtx) : null;
+  const discount = bestDiscount(rawTotal, bookingCtx, coupon && !couponProblem ? [...offers, coupon] : offers, foundingGuestEligible);
+  const total = rawTotal - (discount?.amount ?? 0);
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponChecking(true);
+    setCouponError(null);
+    try {
+      const res = await fetch('/api/check-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, tourId }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "That code isn't valid.");
+      setCoupon(body.offer);
+    } catch (err: any) {
+      setCoupon(null);
+      setCouponError(err.message);
+    } finally {
+      setCouponChecking(false);
+    }
+  };
   const depositAmount = computeDepositAmount(total);
   const balanceDue = total - depositAmount;
   const amountDueNow = paymentType === 'deposit' ? depositAmount : total;
@@ -145,6 +181,8 @@ export default function BookingWidget({
           receipt: `rcpt_${Date.now()}`,
           gaClientId: getGaClientId(),
           paymentType,
+          // Only a code that fits this booking; the server re-checks it.
+          couponCode: coupon && !couponProblem ? coupon.code : undefined,
         }),
       });
 
@@ -235,6 +273,12 @@ export default function BookingWidget({
           {foundingGuestSlotsLeft === 1 ? 'spot' : 'spots'} left, no code needed.
         </div>
       )}
+      {offers.map((offer) => (
+        <div key={offer.id} className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+          <span className="font-semibold">{offer.name}:</span> {offerValueLabel(offer, currency)}
+          {offerConditions(offer) && <> · {offerConditions(offer)}</>}. No code needed.
+        </div>
+      ))}
       <div>
         <label htmlFor="travel-date" className="block text-sm font-medium mb-1">Travel date</label>
         <input
@@ -369,6 +413,69 @@ export default function BookingWidget({
         </div>
       </div>
 
+      <div className="text-sm">
+        {!couponOpen && !coupon ? (
+          <button type="button" onClick={() => setCouponOpen(true)} className="min-h-11 text-brand-800 underline">
+            Have a coupon code?
+          </button>
+        ) : (
+          <div>
+            <label htmlFor="coupon-code" className="block font-medium mb-1">Coupon code</label>
+            <div className="flex gap-2">
+              <input
+                id="coupon-code"
+                type="text"
+                autoCapitalize="characters"
+                autoComplete="off"
+                value={couponInput}
+                onChange={(e) => {
+                  setCouponInput(e.target.value);
+                  setCouponError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyCoupon();
+                  }
+                }}
+                className="min-w-0 flex-1 rounded border border-stone-300 px-3 py-2 uppercase"
+              />
+              {coupon ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCoupon(null);
+                    setCouponInput('');
+                  }}
+                  className="min-h-11 rounded border border-stone-300 px-4"
+                >
+                  Remove
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={applyCoupon}
+                  disabled={couponChecking || !couponInput.trim()}
+                  className="min-h-11 rounded bg-stone-900 px-4 text-white disabled:opacity-50"
+                >
+                  {couponChecking ? 'Checking…' : 'Apply'}
+                </button>
+              )}
+            </div>
+            <p role="status" aria-live="polite" className="mt-1 text-xs">
+              {couponError && <span className="text-red-600">{couponError}</span>}
+              {coupon && couponProblem && <span className="text-red-600">{couponProblem}</span>}
+              {coupon && !couponProblem && discount?.offerId === coupon.id && (
+                <span className="text-emerald-700">✓ {coupon.name} applied: −{money(discount.amount)}</span>
+              )}
+              {coupon && !couponProblem && discount && discount.offerId !== coupon.id && (
+                <span className="text-stone-600">Your {discount.label} already gives a bigger discount, so this code isn't needed.</span>
+              )}
+            </p>
+          </div>
+        )}
+      </div>
+
       <div className="text-lg font-semibold">
         {paymentType === 'deposit' ? 'Due now (deposit)' : 'Total'}: {CURRENCY_SYMBOLS[currency]}{amountDueNow.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}
         {paymentType === 'deposit' && (
@@ -376,11 +483,11 @@ export default function BookingWidget({
             + {CURRENCY_SYMBOLS[currency]}{balanceDue.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')} on pickup
           </span>
         )}
-        {total < rawTotal && (
+        {discount && (
           <span className="block text-sm font-normal text-stone-500">
             <s>{money(rawTotal)}</s>
             {paymentType === 'deposit' && <> {money(total)} tour total</>}
-            <span className="text-amber-700"> · Founding Guest Offer −{Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100)}%</span>
+            <span className="text-amber-700"> · {discount.label} −{money(discount.amount)}</span>
           </span>
         )}
       </div>

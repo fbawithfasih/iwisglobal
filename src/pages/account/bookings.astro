@@ -127,6 +127,9 @@ const sections = [
                       <span class="text-amber-700"> · {formatMoney(b.total_amount - b.amount_paid, b.currency)} due on pickup</span>
                     )}
                   </p>
+                  {b.discount_label && b.discount_amount ? (
+                    <p class="text-xs text-emerald-700 mt-0.5">{b.discount_label}: saved {formatMoney(b.discount_amount, b.currency)}</p>
+                  ) : null}
                   {b.payment_id && (
                     <p class="text-xs text-stone-500 mt-1 break-all">
                       Payment reference: <span class="font-mono text-stone-700">{b.payment_id}</span>

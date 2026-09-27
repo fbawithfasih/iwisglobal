@@ -58,6 +58,11 @@ export interface BookingRecord {
   // customerAuth.ts) at the time of booking, so it shows up on their "My
   // Bookings" page. Guest checkout leaves this null, same as today.
   customerId?: string | null;
+  // The one discount applied (src/lib/offers.ts), snapshotted; amount in
+  // the smallest unit. Null when the booking had no discount.
+  offerId?: string | null;
+  discountLabel?: string | null;
+  discountAmount?: number | null;
 }
 
 export type InsertBookingOutcome = 'inserted' | 'duplicate' | 'capacity_exceeded';
@@ -86,8 +91,8 @@ export async function insertVerifiedBooking(
         `INSERT INTO bookings
           (id, payment_id, order_id, tour_id, travel_date, travelers, add_on_ids,
            traveler_name, traveler_email, traveler_phone, amount_paid, currency, created_at, customer_id,
-           total_amount, payment_type)
-         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+           total_amount, payment_type, offer_id, discount_label, discount_amount)
+         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
          WHERE (SELECT COALESCE(SUM(travelers), 0) FROM bookings WHERE tour_id = ? AND travel_date = ?) + ? <= ?`
       )
       .bind(
@@ -107,6 +112,9 @@ export async function insertVerifiedBooking(
         booking.customerId ?? null,
         booking.totalAmount,
         booking.paymentType,
+        booking.offerId ?? null,
+        booking.discountLabel ?? null,
+        booking.discountAmount ?? null,
         booking.tourId,
         booking.travelDate,
         booking.travelers,

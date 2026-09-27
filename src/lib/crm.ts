@@ -29,6 +29,10 @@ export interface BookingRow {
   tickets_purchased_at: string | null;
   ticket_file_key: string | null;
   ticket_emailed_at: string | null;
+  // src/lib/offers.ts — the one discount applied; amount in paise/cents.
+  offer_id: string | null;
+  discount_label: string | null;
+  discount_amount: number | null;
 }
 
 export interface BookingFilters {

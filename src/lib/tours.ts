@@ -29,6 +29,7 @@ export interface TourRow {
   entry_tickets_in_price: string;
   created_at: string;
   updated_at: string;
+  price_changed_at: string | null;
 }
 
 export interface ItineraryStep {
@@ -64,6 +65,9 @@ export interface ParsedTour {
   entryTicketsInPrice: string[];
   createdAt: string;
   updatedAt: string;
+  // Last change to the price or group tiers (schema_offers.sql) — the offer
+  // form warns while it's under 30 days old.
+  priceChangedAt: string | null;
   addOns: AddOn[];
   pricingTiers: PricingTier[];
 }
@@ -134,6 +138,7 @@ async function parseTour(db: D1Like, row: TourRow): Promise<ParsedTour> {
     entryTicketsInPrice: safeJsonParse(row.entry_tickets_in_price, []),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    priceChangedAt: row.price_changed_at ?? null,
     addOns: await loadAddOns(db, row.id),
     pricingTiers: await loadPricingTiers(db, row.id),
   };
@@ -328,6 +333,10 @@ export async function updateTour(db: D1Like, id: string, input: TourInput): Prom
       id
     )
     .run();
+}
+
+export async function markTourPriceChanged(db: D1Like, id: string): Promise<void> {
+  await db.prepare(`UPDATE tours SET price_changed_at = ? WHERE id = ?`).bind(new Date().toISOString(), id).run();
 }
 
 export async function setTourStatus(db: D1Like, id: string, status: 'published' | 'draft'): Promise<void> {

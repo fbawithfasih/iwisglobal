@@ -5,7 +5,8 @@ import WeatherCard from '../../components/WeatherCard';
 import Icon, { type IconName } from '../../components/Icon.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 import { getTourBySlug } from '../../lib/tours';
-import { getAvailability } from '../../lib/availability';
+import { getAvailability, todayIst } from '../../lib/availability';
+import { listLiveAutomaticOffers, offerLiveFor, offerValueLabel, offerConditions } from '../../lib/offers';
 import { resolveEnv } from '../../lib/env';
 import { countBookings } from '../../lib/db';
 import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../../lib/catalog';
@@ -42,6 +43,11 @@ const fromPrice = resolveFromPrice(tour, requestedCurrency);
 const bookingCount = env.DB ? await countBookings(env.DB) : 0;
 const foundingGuestSlotsLeft = Math.max(0, FOUNDING_GUEST_SLOT_CAP - bookingCount);
 const foundingGuestPercent = Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100);
+// Automatic offers running on this tour today (src/lib/offers.ts) — shown
+// here and applied in the widget's estimate; create-order decides the charge.
+const tourOffers = env.DB
+  ? (await listLiveAutomaticOffers(env.DB, todayIst())).filter((o) => offerLiveFor(o, tour.id, todayIst()))
+  : [];
 
 // Mobile book bar's WhatsApp button. Ref follows BaseLayout's
 // "<location>-<page>" format so its clicks are attributed separately.
@@ -240,6 +246,14 @@ const tripJsonLd = {
             <span><strong>Founding Guest Offer:</strong> {foundingGuestPercent}% off automatically, {foundingGuestSlotsLeft} of {FOUNDING_GUEST_SLOT_CAP} spots left. No code needed.</span>
           </p>
         )}
+        {tourOffers.map((offer) => (
+          <p class="mt-4 flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm">
+            <Icon name="gift" class="h-5 w-5 shrink-0" />
+            <span>
+              <strong>{offer.name}:</strong> {offerValueLabel(offer, price.currency)}{offerConditions(offer) ? ` · ${offerConditions(offer)}` : ''}. No code needed.
+            </span>
+          </p>
+        ))}
       </div>
 
       {tour.highlights.length > 0 && (
@@ -395,6 +409,7 @@ const tripJsonLd = {
         minDate={availability.minBookableDate}
         availabilityLabel={availability.label}
         foundingGuestSlotsLeft={foundingGuestSlotsLeft}
+        offers={tourOffers}
       />
     </div>
   </section>

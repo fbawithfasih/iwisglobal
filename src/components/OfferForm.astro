@@ -1,0 +1,138 @@
+---
+// Admin form for an offer or coupon (/admin/offers/new and /[id]/edit).
+// Field names match parseOfferForm in src/lib/offers.ts.
+import type { Offer } from '../lib/offers';
+import type { ParsedTour } from '../lib/tours';
+import { formatTravelDate } from '../lib/format';
+
+interface Props {
+  offer?: Offer | null;
+  tours: ParsedTour[];
+  submitLabel: string;
+}
+const { offer, tours, submitLabel } = Astro.props;
+const kind = offer?.kind ?? 'percent';
+
+// Consumer Protection (E-Commerce) Amendment Rules 2026 (from 1 Jan 2027):
+// the struck-through "before" price must be the lowest of the previous 30
+// days, so flag tours whose price changed within the last 30 days.
+const DAY = 24 * 60 * 60 * 1000;
+const recentPriceChange = (t: ParsedTour) => {
+  if (!t.priceChangedAt) return null;
+  const changed = new Date(t.priceChangedAt);
+  const until = new Date(changed.getTime() + 30 * DAY);
+  return Date.now() < until.getTime()
+    ? { changed: formatTravelDate(changed.toISOString().slice(0, 10)), until: formatTravelDate(until.toISOString().slice(0, 10)) }
+    : null;
+};
+const field = 'w-full rounded border border-stone-300 px-3 py-2';
+---
+
+<form method="POST" class="bg-white rounded-xl border border-stone-200 p-6 space-y-5 max-w-2xl text-sm">
+  <div>
+    <label for="name" class="block text-stone-500 mb-1">Name customers see *</label>
+    <input id="name" name="name" required value={offer?.name ?? ''} placeholder="Diwali Offer" class={field} />
+  </div>
+
+  <div>
+    <label for="code" class="block text-stone-500 mb-1">Coupon code</label>
+    <input id="code" name="code" value={offer?.code ?? ''} placeholder="DIWALI10" class={`${field} uppercase`} />
+    <p class="text-xs text-stone-500 mt-1">
+      Leave blank for an <strong>automatic offer</strong>: shown on the tour page and card, and applied without a code.
+      With a code, only customers who enter it get the discount.
+    </p>
+  </div>
+
+  <fieldset>
+    <legend class="text-stone-500 mb-1">Discount *</legend>
+    <div class="flex flex-wrap gap-4 mb-2">
+      <label class="flex items-center gap-2 min-h-11"><input type="radio" name="kind" value="percent" checked={kind === 'percent'} /> Percentage off</label>
+      <label class="flex items-center gap-2 min-h-11"><input type="radio" name="kind" value="fixed" checked={kind === 'fixed'} /> Fixed amount off</label>
+    </div>
+    <div data-kind="percent" class:list={[{ hidden: kind !== 'percent' }]}>
+      <label for="percent" class="block text-stone-500 mb-1">Percentage (1–90)</label>
+      <input id="percent" type="number" name="percent" min="1" max="90" value={offer?.percent ?? ''} class={field} />
+    </div>
+    <div data-kind="fixed" class:list={['grid gap-3 sm:grid-cols-2', { hidden: kind !== 'fixed' }]}>
+      <div>
+        <label for="amountInr" class="block text-stone-500 mb-1">Rupees off</label>
+        <input id="amountInr" type="number" name="amountInr" min="1" value={offer?.amountInr ?? ''} class={field} />
+      </div>
+      <div>
+        <label for="amountUsd" class="block text-stone-500 mb-1">Dollars off (blank = not for USD payments)</label>
+        <input id="amountUsd" type="number" name="amountUsd" min="1" value={offer?.amountUsd ?? ''} class={field} />
+      </div>
+    </div>
+    <p class="text-xs text-stone-500 mt-1">Applies to the whole booking (tour and add-ons). A booking never drops below ₹1 / $1.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend class="text-stone-500 mb-1">Tours</legend>
+    <p class="text-xs text-stone-500 mb-2">Tick the tours it's for. Leave all unticked for every tour.</p>
+    <div class="space-y-1">
+      {tours.map((t) => {
+        const change = recentPriceChange(t);
+        return (
+          <div>
+            <label class="flex items-start gap-2 min-h-11 py-1">
+              <input type="checkbox" name="tourIds" value={t.id} checked={offer?.tourIds.includes(t.id)} class="mt-0.5" />
+              <span>{t.title}{t.status !== 'published' && <span class="text-stone-400"> (draft)</span>}</span>
+            </label>
+            {change && (
+              <p class="ml-6 mb-1 text-xs text-amber-700">
+                Price changed on {change.changed}. Until {change.until}, the struck-through price isn't yet the lowest of the last
+                30 days — from 1 Jan 2027 the law requires that, so avoid running an offer on this tour before then.
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </fieldset>
+
+  <div class="grid gap-3 sm:grid-cols-2">
+    <div>
+      <label for="startsOn" class="block text-stone-500 mb-1">Bookable from</label>
+      <input id="startsOn" type="date" name="startsOn" value={offer?.startsOn ?? ''} class={field} />
+    </div>
+    <div>
+      <label for="endsOn" class="block text-stone-500 mb-1">Bookable until</label>
+      <input id="endsOn" type="date" name="endsOn" value={offer?.endsOn ?? ''} class={field} />
+    </div>
+    <div>
+      <label for="travelFrom" class="block text-stone-500 mb-1">For travel from</label>
+      <input id="travelFrom" type="date" name="travelFrom" value={offer?.travelFrom ?? ''} class={field} />
+    </div>
+    <div>
+      <label for="travelTo" class="block text-stone-500 mb-1">For travel until</label>
+      <input id="travelTo" type="date" name="travelTo" value={offer?.travelTo ?? ''} class={field} />
+    </div>
+  </div>
+  <p class="text-xs text-stone-500 -mt-3">All dates are India time and inclusive. Leave any blank for no limit.</p>
+
+  <div>
+    <label for="minTravelers" class="block text-stone-500 mb-1">Minimum travelers</label>
+    <input id="minTravelers" type="number" name="minTravelers" min="1" value={offer?.minTravelers ?? ''} placeholder="No minimum" class={field} />
+  </div>
+
+  <label class="flex items-center gap-2 min-h-11">
+    <input type="checkbox" name="active" checked={offer ? offer.active : true} /> On (untick to pause without deleting)
+  </label>
+
+  <p class="text-xs text-stone-500">
+    Only one discount applies per booking: the customer automatically gets the biggest of the Founding Guest Offer, any
+    automatic offer and their coupon.
+  </p>
+
+  <button type="submit" class="min-h-11 rounded bg-amber-800 text-white px-5">{submitLabel}</button>
+</form>
+
+<script>
+  document.querySelectorAll<HTMLInputElement>('input[name="kind"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll<HTMLElement>('[data-kind]').forEach((el) => {
+        el.classList.toggle('hidden', el.dataset.kind !== radio.value);
+      });
+    });
+  });
+</script>

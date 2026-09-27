@@ -45,6 +45,12 @@ function toDateString(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+// Today's date in India, YYYY-MM-DD (offer booking windows use it).
+export function todayIst(now: Date = new Date()): string {
+  const { year, month, day } = istDateParts(now);
+  return toDateString(year, month, day);
+}
+
 export function getAvailability(now: Date = new Date()): AvailabilityInfo {
   const { year, month, day, hour } = istDateParts(now);
   // Days ahead of today (IST) of the earliest bookable date: tomorrow before

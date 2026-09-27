@@ -1,5 +1,7 @@
 ---
-import { getAvailability } from '../lib/availability';
+import { getAvailability, todayIst } from '../lib/availability';
+import { resolveEnv } from '../lib/env';
+import { liveAutomaticOffersForRequest, offerBadge } from '../lib/offers';
 import { resolveFromPrice, CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import type { ParsedTour } from '../lib/tours';
 
@@ -17,6 +19,9 @@ const availability = getAvailability();
 // has pricing tiers) — see backlog 0.2. Kept in sync with tours/[slug].astro's
 // "From" price via the same resolveFromPrice helper.
 const price = resolveFromPrice(tour, currency);
+// Automatic offer running on this tour, if any (src/lib/offers.ts).
+const db = resolveEnv(Astro.locals).DB;
+const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.request, todayIst()), tour.id, currency) : null;
 ---
 <a
   href={`/tours/${tour.slug}`}
@@ -31,6 +36,9 @@ const price = resolveFromPrice(tour, currency);
   </div>
 
   <div class="pt-3">
+    {badge && (
+      <p class="mb-1.5 inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">{badge}</p>
+    )}
     <h3 class="text-lg font-semibold mb-1 group-hover:underline">{tour.title}</h3>
 
     <div class="flex items-center justify-between mb-1.5">
