@@ -6,7 +6,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 // on 25 September 2026 (required page for Razorpay card-network activation).
 export const prerender = false;
 
-const lastUpdated = '25 September 2026';
+const lastUpdated = '27 September 2026';
 ---
 
 <BaseLayout
@@ -57,7 +57,8 @@ const lastUpdated = '25 September 2026';
       Email <a href="mailto:info@iwisglobal.com" class="text-brand-800 hover:underline">info@iwisglobal.com</a> or
       message us on
       <a href={`https://wa.me/916399226633?text=${encodeURIComponent("Hi! I'd like to cancel a booking. (ref: REFUND-POLICY)")}`} target="_blank" rel="noopener noreferrer" data-wa-ref="REFUND-POLICY" class="text-brand-800 hover:underline">WhatsApp (+91 6399226633)</a>
-      with your name and payment reference.
+      with your name and the booking ID from your confirmation email (or the payment reference in
+      <a href="/account/bookings" class="text-brand-800 hover:underline">My Bookings</a>).
     </p>
 
     <h2 class="text-lg font-semibold mb-2">If we cancel</h2>
@@ -79,7 +80,7 @@ const lastUpdated = '25 September 2026';
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
       <li>We initiate approved refunds within <strong>2 business days</strong>.</li>
       <li>Refunds go back to the <strong>original payment method</strong> through our payment processor, Razorpay.</li>
-      <li>Your bank or card issuer usually credits the amount within <strong>5–7 business days</strong> of it being initiated.</li>
+      <li>Your bank or card issuer usually credits the amount within <strong>7–10 business days</strong> of it being initiated (Razorpay's standard timeline for refunds).</li>
     </ul>
 
     <h2 class="text-lg font-semibold mb-2">Questions</h2>

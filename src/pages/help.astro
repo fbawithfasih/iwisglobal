@@ -52,7 +52,7 @@ const categories: FaqCategory[] = [
         id: 'payment-methods',
         question: 'What payment methods and currencies do you support?',
         answer:
-          'Payments are processed securely through Razorpay. Most tours can be paid in Indian Rupees (INR); tours with a US Dollar (USD) price set also let you pay in USD — use the currency toggle on the tour page to switch.',
+          "Payments are processed securely through Razorpay. You can pay in Indian Rupees (INR) or US Dollars (USD) — switch with the currency menu at the top of the page. If a tour has no USD price, it's shown and charged in INR.",
       },
       {
         id: 'payment-security',
@@ -80,14 +80,15 @@ const categories: FaqCategory[] = [
         id: 'cancellation',
         question: "What's your cancellation policy?",
         answer:
-          "Free cancellation up to 24 hours before your tour starts. Cancel less than 24 hours before and you get a 50% refund of what you paid; no-shows aren't refunded. Refunds are started within 2 business days and usually reach your account 5–7 business days after that. Full details are on our Cancellation & Refund Policy page.",
+          "Free cancellation up to 24 hours before your tour starts. Cancel less than 24 hours before and you get a 50% refund of what you paid; no-shows aren't refunded. Refunds are started within 2 business days and usually reach your account 7–10 business days after that. Full details are on our Cancellation & Refund Policy page.",
         links: [{ text: 'Cancellation & Refund Policy', href: '/cancellation-refund-policy' }],
       },
       {
         id: 'change-date',
         question: 'Can I change my tour date?',
         answer:
-          'Yes — free of charge up to 24 hours before your tour, subject to availability. If the new date or a change in group size costs more, you pay the difference. Just message us on WhatsApp or email with your name and payment reference.',
+          'Yes — free of charge up to 24 hours before your tour, subject to availability. If the new date or a change in group size costs more, you pay the difference. Just message us on WhatsApp or email with your name and the booking ID from your confirmation email (or the payment reference in My Bookings).',
+        links: [{ text: 'My Bookings', href: '/account/bookings' }],
       },
     ],
   },
@@ -98,7 +99,7 @@ const categories: FaqCategory[] = [
         id: 'included',
         question: "What's included in the price?",
         answer:
-          "Each tour page lists exactly what's included and excluded for that itinerary — things like private transport, guide, and entry tickets typically vary by tour. Check the \"Includes\" and \"Not included\" sections on the tour you're booking before you pay.",
+          "Every tour includes private transport and an English-speaking guide. Most also include Taj Mahal and Agra Fort entry tickets in the price; the tour card says \"Entry tickets included\" when they do. Check the \"Included\" and \"Not included\" sections on the tour you're booking before you pay.",
       },
     ],
   },
@@ -108,7 +109,7 @@ const categories: FaqCategory[] = [
       {
         id: 'contact',
         question: 'How do I contact you with a question?',
-        answer: 'The fastest way is WhatsApp — tap the green WhatsApp button on any page, or message us directly. You can also call or email us; everything is on our Contact Us page.',
+        answer: 'Message us on WhatsApp — tap the green WhatsApp button on any page. You can also call or email us; everything is on our Contact Us page.',
         links: [{ text: 'Contact Us', href: '/contact' }],
       },
     ],
@@ -151,7 +152,7 @@ const faqJsonLd = {
     <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-brand-800 via-brand-700 to-brand-600 text-white p-8 flex items-center justify-between gap-6 flex-wrap">
       <div>
         <h2 class="text-xl font-serif font-semibold mb-1">Have a question about an existing booking?</h2>
-        <p class="text-white/80 text-sm max-w-md">Message us on WhatsApp with your name or payment reference — we'll pull up your booking and help right away.</p>
+        <p class="text-white/80 text-sm max-w-md">Message us on WhatsApp with your name or the booking ID from your confirmation email, and we'll pull up your booking.</p>
         <Button
           href={`https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have a question about an existing booking. (ref: HELP-HERO)')}`}
           target="_blank"

@@ -328,7 +328,7 @@ export default function BookingWidget({
         </div>
         {paymentType === 'deposit' && (
           <p className="text-xs text-stone-500 mt-1">
-            The deposit is non-refundable within 24 hours of your tour, since your vehicle and guide are already committed by then.
+            If you cancel less than 24 hours before your tour, 50% of the deposit is refunded, since your vehicle and guide are already committed by then.
           </p>
         )}
       </div>
