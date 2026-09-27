@@ -100,3 +100,13 @@ const articleJsonLd = {
     </a>
   </MobileActionBar>
 </BaseLayout>
+
+<style is:global>
+  /* Phone numbers in posts (e.g. the Tourist Police post) are tapped on a
+     phone, often in a hurry: give them a full 44px tap area. */
+  .prose a[href^='tel:'] {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+</style>
