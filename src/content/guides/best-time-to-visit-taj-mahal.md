@@ -3,10 +3,10 @@ title: "Best Month to Visit the Taj Mahal: A Month-by-Month Breakdown"
 description: "November through February is coolest, but not always clearest. Month-by-month temperature, pollution pattern, and sunrise timing — not just 'winter is best.'"
 authorName: "IWIS Global"
 datePublished: 2026-09-21
-dateModified: 2026-09-21
+dateModified: 2026-09-27
 ---
 
-**November through February** has the most comfortable daytime temperatures (roughly 22–29°C highs), but also the worst air quality of the year, with morning fog common enough to sometimes delay sunrise visibility. **October and March** are a middle ground: warmer, but clearer. There's a real trade-off here, not a single "best" answer. It depends whether you're optimizing for comfort or for a clear view.
+**November through February** has the most comfortable daytime temperatures (roughly 22–29°C highs), but also the worst air quality of the year, with morning fog common enough to sometimes delay sunrise visibility. **March** is a middle ground: warmer, but clearer. There's a real trade-off here, not a single "best" answer. It depends whether you're optimizing for comfort or for a clear view.
 
 ## Month-by-month temperature
 
@@ -31,7 +31,7 @@ April through June regularly hits 40°C+ — outdoor walking on the marble platf
 
 ## The air quality trade-off winter doesn't advertise
 
-This is the part most "best time to visit" pages skip. Agra's air quality gets measurably worse starting around October and stays elevated through winter — the same months that are most comfortable temperature-wise. One dataset (IQAir, PM2.5, 2019) recorded January as the year's worst month at 113.6 µg/m³, against an annual average of 57.2 µg/m³ — both in the "unhealthy" range by WHO standards. This figure is from 2019 and may not reflect current air quality.
+This is the part most "best time to visit" pages skip. Agra's air quality gets measurably worse starting around October and stays elevated through winter — the same months that are most comfortable temperature-wise. One dataset (IQAir, PM2.5, 2019) recorded January as the year's worst month at 113.6 µg/m³, against an annual average of 57.2 µg/m³ — both far above the [WHO's annual guideline of 5 µg/m³](https://www.who.int/news-room/fact-sheets/detail/ambient-(outdoor)-air-quality-and-health). This figure is from 2019 and may not reflect current air quality.
 
 <!-- TODO(fasih): source a current-year (2026) monthly AQI dataset from CPCB's Agra station to replace this 2019 figure — see cpcb.nic.in/agra-air-quality-data-2. -->
 
@@ -41,24 +41,37 @@ Morning fog is also concentrated November through January and can reduce visibil
 
 ## Sunrise timing by season
 
-Sunrise time matters directly for planning a [sunrise tour](/tours/taj-mahal-sunrise-tour)'s pickup time. Two confirmed anchor points for 2026, from [timeanddate.com](https://www.timeanddate.com/sun/india/agra):
+Sunrise time matters directly for planning a [sunrise tour](/tours/taj-mahal-sunrise-tour)'s pickup time. Sunrise in Agra in 2026 (India Standard Time), from [timeanddate.com](https://www.timeanddate.com/sun/india/agra):
 
-- **Latest sunrise of the year:** 7:10 AM, around 12 January 2026 (winter)
-- **Earliest sunrise of the year:** around the 21 June 2026 summer solstice (longest day, 13h 51m of daylight)
+| Month | 1st | 15th |
+|---|---|---|
+| January | 7:07 AM | 7:08 AM |
+| February | 7:03 AM | 6:54 AM |
+| March | 6:42 AM | 6:27 AM |
+| April | 6:08 AM | 5:54 AM |
+| May | 5:39 AM | 5:29 AM |
+| June | 5:23 AM | 5:23 AM |
+| July | 5:26 AM | 5:33 AM |
+| August | 5:41 AM | 5:49 AM |
+| September | 5:57 AM | 6:03 AM |
+| October | 6:10 AM | 6:17 AM |
+| November | 6:27 AM | 6:37 AM |
+| December | 6:50 AM | 6:59 AM |
 
-So a winter sunrise pickup needs to be scheduled noticeably later than a summer one.
+- **Latest sunrise of the year:** 7:09 AM, around 11–13 January.
+- **Earliest sunrise of the year:** 5:22 AM, around 8–11 June. The longest day comes a little later, at the 21 June solstice (13h 51m of daylight).
 
-<!-- TODO(fasih): the exact sunrise time for each month wasn't retrievable from a scriptable source this session (timeanddate.com blocked automated fetches) — pull the specific month's time from that site directly when scheduling, rather than estimating. -->
+So a winter sunrise visit starts nearly two hours later than a summer one. The Taj Mahal itself opens 30 minutes before sunrise.
 
 ## So, when should you actually go?
 
 | Priority | Best window |
 |---|---|
 | Coolest temperatures | December–January |
-| Clearer air, still mild | October, March |
+| Clearer air, still mild | March |
 | Avoiding both extremes | Late October–November, or February–early March |
-| Willing to trade comfort for lower crowds | May–August (hot, humid, fewer tourists) |
+| Don't mind the heat | May–August (hot, humid) |
 
 ---
 
-**Last updated:** 21 September 2026. Temperature data: IMD 1991–2020 normals via Wikipedia. Air quality: IQAir historical data (2019 — flagged above as needing a current-year replacement). Sunrise: timeanddate.com.
+**Checked on 27 September 2026.** Temperature data: IMD 1991–2020 normals via Wikipedia. Air quality: IQAir historical data (2019 — flagged above as needing a current-year replacement). Sunrise: timeanddate.com (2026 times).
