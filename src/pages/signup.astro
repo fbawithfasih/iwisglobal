@@ -21,6 +21,7 @@ const redirectTarget = safeRedirectPath(Astro.url.searchParams.get('redirect'));
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 let error: string | null = null;
+let accountExists = false; // shows a Sign in link with the error
 let name = '';
 let email = '';
 
@@ -44,7 +45,8 @@ if (Astro.request.method === 'POST') {
     if (existing && existing.provider !== 'email') {
       error = `This email is already linked to ${existing.provider === 'google' ? 'Google' : 'Apple'} sign-in — use "Continue with ${existing.provider === 'google' ? 'Google' : 'Apple'}" on the sign-in page instead.`;
     } else if (existing) {
-      error = 'An account with this email already exists. Sign in instead.';
+      error = 'An account with this email already exists.';
+      accountExists = true;
     } else {
       const passwordSalt = generateSaltHex();
       const passwordHash = await hashPassword(password, passwordSalt);
@@ -70,9 +72,20 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
 <BaseLayout title="Create an account — IWIS Global" description="Create an IWIS Global account to view your booking history." noindex>
   <section class="max-w-sm mx-auto px-6 py-20 text-center">
     <h1 class="text-3xl font-serif font-semibold mb-2">Create an account</h1>
-    <p class="text-stone-600 mb-8">You don't need an account to book a tour — this is just to view your booking history later.</p>
+    <p class="text-stone-600 mb-3">You don't need an account to book a tour — this is just to see your booking history for tours you book while signed in.</p>
+    <p class="text-sm text-stone-600 mb-8 rounded-lg bg-brand-50 border border-brand-100 px-3 py-2">
+      Booked without an account? Use the <strong>View your booking</strong> link in your confirmation email — bookings made
+      without signing in don't appear in an account.
+    </p>
 
-    {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
+    {error && (
+      <p role="alert" class="text-red-600 text-sm mb-4">
+        {error}
+        {accountExists && (
+          <> <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center font-medium text-brand-800 underline">Sign in instead</a></>
+        )}
+      </p>
+    )}
 
     <OAuthButtons googleUrl={googleUrl} appleUrl={appleUrl} />
 
@@ -111,12 +124,17 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
             required
             minlength="8"
             autocomplete="new-password"
+            aria-describedby="password-hint"
             class="w-full rounded-lg border border-stone-300 pl-3 pr-16 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
           <button type="button" data-toggle-password="password" aria-pressed="false" aria-label="Show password" class="absolute inset-y-0 right-0 flex min-w-14 items-center justify-center px-3 text-sm font-medium text-brand-800">Show</button>
         </div>
-        <p class="text-xs text-stone-400 mt-1">At least 8 characters.</p>
+        <p id="password-hint" class="text-xs text-stone-500 mt-1">At least 8 characters.</p>
       </div>
+      <p class="text-xs text-stone-500">
+        By creating an account you agree to our <a href="/terms" class="text-brand-800 underline">Terms</a> and
+        <a href="/privacy" class="text-brand-800 underline">Privacy Policy</a>.
+      </p>
       <button
         type="submit"
         class="w-full rounded-lg bg-brand-800 text-white px-4 py-3 font-medium hover:bg-brand-900 transition"
