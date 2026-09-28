@@ -7,7 +7,7 @@ import { insertVerifiedBooking, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
 import { getTourById } from '../../lib/tours';
-import { sendBookingConfirmationEmail } from '../../lib/email';
+import { sendBookingConfirmationEmail, sendAdminBookingNotificationEmail } from '../../lib/email';
 
 export const prerender = false;
 
@@ -129,6 +129,20 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           paymentType: verified.paymentType,
           discountLabel: discountMajorUnits > 0 ? discountLabel : null,
           discountAmount: discountMajorUnits > 0 ? Math.round(discountMajorUnits * 100) : null,
+        });
+        await sendAdminBookingNotificationEmail(env, {
+          travelerName: travelerName || '',
+          travelerEmail: travelerEmail || '',
+          travelerPhone: travelerPhone || '',
+          tourTitle: tour?.title || verified.tourId,
+          travelDate: verified.date,
+          travelers: verified.travelers,
+          amountPaid,
+          totalAmount,
+          currency: item.currency,
+          bookingId: `bk_${verified.paymentId}`,
+          paymentType: verified.paymentType,
+          discountLabel: discountMajorUnits > 0 ? discountLabel : null,
         });
       }
     }

@@ -324,3 +324,77 @@ export async function sendReviewRequestEmail(env: Record<string, any>, details: 
     return false;
   }
 }
+
+export interface AdminBookingNotificationDetails {
+  travelerName: string;
+  travelerEmail: string;
+  travelerPhone: string;
+  tourTitle: string;
+  travelDate: string;
+  travelers: number;
+  amountPaid: number; // smallest currency subunit
+  totalAmount: number;
+  currency: string;
+  bookingId: string;
+  paymentType: 'full' | 'deposit';
+  discountLabel?: string | null;
+}
+
+// "New booking" alert to the business inbox, sent alongside the customer's
+// own confirmation email (sendBookingConfirmationEmail) for every online
+// booking. Same best-effort contract: never throws, never blocks the
+// booking on a delivery failure.
+export async function sendAdminBookingNotificationEmail(env: Record<string, any>, details: AdminBookingNotificationDetails): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const from = env.BOOKING_EMAIL_FROM || 'IWIS Global <info@iwisglobal.com>';
+  const to = env.ADMIN_NOTIFICATION_EMAIL || 'info@iwisglobal.com';
+  const date = displayDate(details.travelDate);
+  const amount = formatAmount(details.amountPaid, details.currency);
+  const adminUrl = `${SITE}/admin/bookings/${details.bookingId}`;
+  const depositNote = details.paymentType === 'deposit' ? ` (25% deposit; balance ${formatAmount(details.totalAmount - details.amountPaid, details.currency)} on pickup)` : '';
+
+  const rows: [string, string][] = [
+    ['Tour', details.tourTitle],
+    ['Date', date],
+    ['Travelers', String(details.travelers)],
+    ['Traveler', details.travelerName || '(not given)'],
+    ['Phone', details.travelerPhone || '(not given)'],
+    ['Email', details.travelerEmail || '(not given)'],
+    ...(details.discountLabel ? ([['Discount', details.discountLabel]] as [string, string][]) : []),
+    ['Amount paid', `${amount}${depositNote}`],
+    ['Booking ID', details.bookingId],
+  ];
+  const cell = 'padding:5px 0; vertical-align:top;';
+  const button = 'display:inline-block; padding:12px 20px; border-radius:999px; text-decoration:none; font-weight:600;';
+
+  const html = `
+    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
+      <h2 style="color:#5b21b6; margin-bottom: 4px;">New booking</h2>
+      <table style="width:100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;">
+        ${rows
+          .map(
+            ([label, value]) =>
+              `<tr><td style="${cell} color:#78716c; padding-right:12px;">${escapeHtml(label)}</td><td style="${cell} text-align:right;">${escapeHtml(value)}</td></tr>`
+          )
+          .join('')}
+      </table>
+      <p style="margin:20px 0;"><a href="${adminUrl}" style="${button} background:#5b21b6; color:#ffffff;">Open booking</a></p>
+    </div>
+  `;
+  const text = [`New booking`, ``, ...rows.map(([label, value]) => `${label}: ${value}`), ``, `Open booking: ${adminUrl}`].join('\n');
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to, subject: `New booking — ${details.tourTitle}, ${date}`, html, text }),
+    });
+    if (!res.ok) {
+      console.error('sendAdminBookingNotificationEmail: Resend API error', res.status, await res.text());
+    }
+  } catch (err) {
+    console.error('sendAdminBookingNotificationEmail: request failed', err);
+  }
+}
