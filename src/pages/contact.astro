@@ -28,20 +28,22 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have
 
     <!-- Separate Call and WhatsApp cards: one card used to say "WhatsApp /
          Phone" but only ever opened WhatsApp, never the dialer. -->
-    <div class="grid sm:grid-cols-3 gap-4 mb-10">
-      <a href={waHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONTACT" class="block rounded-xl border border-brand-100 bg-brand-50/60 p-5 hover:border-brand-300 transition">
+    <!-- WhatsApp full width, then Call + Email side by side: three columns
+         squeezed info@iwisglobal.com out of its card (sideways scroll on tablets). -->
+    <div class="grid sm:grid-cols-2 gap-4 mb-10">
+      <a href={waHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONTACT" class="sm:col-span-2 block rounded-xl border border-brand-100 bg-brand-50/60 p-5 hover:border-brand-300 transition">
         <p class="text-xs font-medium uppercase tracking-wide text-stone-500">WhatsApp</p>
-        <p class="text-lg sm:text-base lg:text-lg font-semibold text-brand-800">Chat with us</p>
+        <p class="text-lg font-semibold text-brand-800">Chat with us</p>
         <p class="text-sm text-stone-600 mt-1">We usually reply within 15 minutes</p>
       </a>
       <a href="tel:+916399226633" class="block rounded-xl border border-stone-200 bg-white p-5 hover:border-brand-300 transition">
         <p class="text-xs font-medium uppercase tracking-wide text-stone-500">Call</p>
-        <p class="text-lg sm:text-base lg:text-lg font-semibold text-brand-800">+91 6399226633</p>
+        <p class="text-lg font-semibold text-brand-800">+91 6399226633</p>
         <p class="text-sm text-stone-600 mt-1">Tap to call</p>
       </a>
       <a href="mailto:info@iwisglobal.com" class="block rounded-xl border border-stone-200 bg-white p-5 hover:border-brand-300 transition">
         <p class="text-xs font-medium uppercase tracking-wide text-stone-500">Email</p>
-        <p class="text-lg sm:text-base lg:text-lg font-semibold text-brand-800">info@iwisglobal.com</p>
+        <p class="text-lg font-semibold text-brand-800">info@iwisglobal.com</p>
         <p class="text-sm text-stone-600 mt-1">Bookings, cancellations, and general questions</p>
       </a>
     </div>
@@ -59,11 +61,18 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have
     <GrievanceOfficer />
 
     <h2 class="text-lg font-semibold mb-2">Policies</h2>
-    <ul class="list-disc pl-5 text-stone-700 space-y-1">
-      <li><a href="/terms" class="text-brand-800 hover:underline">Terms of Service</a></li>
-      <li><a href="/privacy" class="text-brand-800 hover:underline">Privacy Policy</a></li>
-      <li><a href="/cancellation-refund-policy" class="text-brand-800 hover:underline">Cancellation &amp; Refund Policy</a></li>
-      <li><a href="/shipping-policy" class="text-brand-800 hover:underline">Shipping, Delivery &amp; Exchange Policy</a></li>
+    <ul class="list-disc pl-5 text-stone-700">
+      <li><a href="/terms" class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Terms of Service</a></li>
+      <li><a href="/privacy" class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Privacy Policy</a></li>
+      <li><a href="/cancellation-refund-policy" class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Cancellation &amp; Refund Policy</a></li>
+      <li><a href="/shipping-policy" class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Shipping, Delivery &amp; Exchange Policy</a></li>
     </ul>
   </section>
 </BaseLayout>
+
+<style is:global>
+  /* The page has its own WhatsApp card, so drop the floating button. */
+  a[data-wa-ref^='FLOATING'] {
+    display: none;
+  }
+</style>
