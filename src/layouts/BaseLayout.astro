@@ -126,6 +126,12 @@ const orgJsonLd = {
 
 // Google reads the site name shown on search results from WebSite markup on
 // the homepage only.
+//
+// dateModified: a freshness signal for AI/Google crawlers, since the
+// homepage has no visible "last updated" line. Hand-maintained like the
+// legal pages' lastUpdated — bump it when the homepage's content changes
+// (not for unrelated site-wide edits).
+const HOMEPAGE_DATE_MODIFIED = '2026-09-28';
 const websiteJsonLd = Astro.url.pathname === '/'
   ? {
       '@context': 'https://schema.org',
@@ -133,6 +139,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
       name: 'IWIS Global',
       alternateName: 'iwisglobal',
       url: 'https://www.iwisglobal.com/',
+      dateModified: HOMEPAGE_DATE_MODIFIED,
       publisher: { '@id': 'https://www.iwisglobal.com/#organization' },
     }
   : null;
