@@ -1,0 +1,182 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { resolveEnv } from '../lib/env';
+import { getTourById } from '../lib/tours';
+import { todayIst } from '../lib/availability';
+import { formatTravelDate } from '../lib/format';
+import {
+  getBookingByReviewToken,
+  getReviewForBooking,
+  saveReview,
+  parseReviewForm,
+  canBeReviewed,
+  reviewDisplayName,
+  GOOGLE_REVIEW_URL,
+  MAX_COMMENT_LENGTH,
+} from '../lib/reviews';
+
+// Where the "How was your tour?" email lands. The private token in the link
+// (bookings.review_token) is the only way in, so no sign-in is needed.
+export const prerender = false;
+
+const env = resolveEnv(Astro.locals);
+const db = env.DB;
+const token = Astro.url.searchParams.get('t') ?? '';
+const booking = db && token ? await getBookingByReviewToken(db, token) : null;
+const open = booking ? canBeReviewed(booking, todayIst()) : false;
+
+let error: string | null = null;
+// What the guest typed, kept when the form comes back with an error.
+let draft: { rating: number; comment: string } | null = null;
+if (Astro.request.method === 'POST' && db && booking && open) {
+  const form = await Astro.request.formData();
+  const parsed = parseReviewForm(form);
+  if ('error' in parsed) {
+    error = parsed.error;
+    draft = { rating: Number(form.get('rating')) || 0, comment: String(form.get('comment') ?? '') };
+  } else {
+    await saveReview(db, booking, parsed);
+    return Astro.redirect(`/review?t=${encodeURIComponent(token)}&saved=1`, 303);
+  }
+}
+
+const existing = db && booking ? await getReviewForBooking(db, booking.id) : null;
+const tour = db && booking ? await getTourById(db, booking.tour_id) : null;
+const saved = Astro.url.searchParams.get('saved') === '1' && !!existing;
+const requested = Number(Astro.url.searchParams.get('rating'));
+const rating = draft?.rating ?? (Number.isInteger(requested) && requested >= 1 && requested <= 5 ? requested : existing?.rating ?? 0);
+const comment = draft?.comment ?? existing?.comment ?? '';
+const tourTitle = tour?.title ?? booking?.tour_id ?? '';
+const shownAs = booking ? reviewDisplayName(booking.traveler_name) : '';
+const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
+---
+<BaseLayout title="Rate your tour — IWIS Global" description="Rate your IWIS Global tour." noindex>
+  <section class="max-w-xl mx-auto px-6 py-16">
+    {!booking ? (
+      <div class="text-center">
+        <h1 class="text-3xl font-serif font-semibold mb-4">This review link isn't valid</h1>
+        <p class="text-stone-600 mb-8">Please use the link from your "How was your tour?" email, or contact us and we'll send a new one.</p>
+        <a href="/contact" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-6 font-semibold text-white hover:bg-brand-800">Contact us</a>
+      </div>
+    ) : !open ? (
+      <div class="text-center">
+        <h1 class="text-3xl font-serif font-semibold mb-4">{booking.status === 'cancelled' ? 'This booking was cancelled' : 'You can rate your tour after it'}</h1>
+        <p class="text-stone-600">
+          {booking.status === 'cancelled'
+            ? "Reviews are for tours that took place, so there's nothing to rate here."
+            : `Your ${tourTitle} is on ${formatTravelDate(booking.travel_date)}. Come back to this link after your tour.`}
+        </p>
+      </div>
+    ) : saved ? (
+      <div class="text-center">
+        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-700" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7"><path d="M20 6 9 17l-5-5" /></svg>
+        </div>
+        <h1 class="text-3xl font-serif font-semibold mb-4">Thank you for your review</h1>
+        <p class="text-stone-600 mb-2">
+          You gave your {tourTitle} <strong>{existing!.rating} out of 5</strong>. It will appear on our website, as {shownAs}, after a quick check.
+        </p>
+        <p class="text-stone-600 mb-8">Would you also share it on Google? It's one of the main ways travelers find a small operator like us.</p>
+        <div class="flex flex-col items-center gap-3">
+          <a href={GOOGLE_REVIEW_URL} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-6 font-semibold text-white hover:bg-brand-800">Review us on Google</a>
+          <a href={`/review?t=${encodeURIComponent(token)}`} class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Edit your review</a>
+        </div>
+      </div>
+    ) : (
+      <>
+        <h1 class="text-3xl font-serif font-semibold mb-2">How was your tour?</h1>
+        <p class="text-stone-600 mb-8">{tourTitle}, {formatTravelDate(booking.travel_date)}</p>
+
+        <form method="POST" class="space-y-6">
+          <fieldset>
+            <legend class="font-semibold mb-2">Your rating</legend>
+            <div class="stars">
+              {[5, 4, 3, 2, 1].map((n) => (
+                <>
+                  <input type="radio" name="rating" id={`star-${n}`} value={n} checked={rating === n} required class="sr-only" />
+                  <label for={`star-${n}`} title={starWords[n]}>
+                    <span aria-hidden="true">★</span>
+                    <span class="sr-only">{n} star{n > 1 ? 's' : ''}, {starWords[n]}</span>
+                  </label>
+                </>
+              ))}
+            </div>
+            <p class="text-sm text-stone-500 mt-1" id="star-word" aria-live="polite">{rating ? starWords[rating] : 'Tap a star'}</p>
+          </fieldset>
+
+          <div>
+            <label for="comment" class="block font-semibold mb-1">Tell other travelers about it <span class="font-normal text-stone-500">(optional)</span></label>
+            <textarea
+              id="comment"
+              name="comment"
+              rows="6"
+              maxlength={MAX_COMMENT_LENGTH}
+              placeholder="What did you enjoy? How was your guide, the driver, the timing?"
+              class="w-full rounded-lg border border-stone-300 px-3 py-2 text-base focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            >{comment}</textarea>
+          </div>
+
+          {error && <p class="text-red-600" role="alert">{error}</p>}
+
+          <p class="text-sm text-stone-500">
+            Your review will be shown on our website as <strong>{shownAs}</strong>, with your tour and travel month.
+            See our <a href="/privacy" class="text-brand-800 underline">Privacy Policy</a>.
+          </p>
+
+          <button type="submit" class="w-full min-h-12 rounded-full bg-brand-700 px-6 font-semibold text-white hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+            {existing ? 'Update your review' : 'Submit your review'}
+          </button>
+        </form>
+      </>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  /* Inputs run 5→1 in the DOM and are laid out reversed, so "checked ~ label"
+     lights the chosen star and every star to its left. */
+  .stars {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 0.25rem;
+  }
+  .stars label {
+    display: flex;
+    width: 3rem;
+    height: 3rem;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.25rem;
+    line-height: 1;
+    color: #d6d3d1;
+    cursor: pointer;
+    border-radius: 0.5rem;
+  }
+  .stars input:checked ~ label,
+  .stars label:hover,
+  .stars label:hover ~ label {
+    color: #f59e0b;
+  }
+  .stars input:focus-visible + label {
+    outline: 3px solid #a78bfa;
+    outline-offset: 2px;
+  }
+</style>
+
+<script>
+  const words = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
+  const out = document.getElementById('star-word');
+  document.querySelectorAll<HTMLInputElement>('.stars input').forEach((input) =>
+    input.addEventListener('change', () => {
+      if (out) out.textContent = words[Number(input.value)];
+    })
+  );
+</script>
+
+<style is:global>
+  /* Keep the floating WhatsApp button off the submit button. */
+  a[data-wa-ref^='FLOATING'] {
+    display: none;
+  }
+</style>

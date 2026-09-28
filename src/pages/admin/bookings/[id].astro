@@ -13,6 +13,7 @@ import {
   setTicketsPurchased,
   setTicketFile,
   markTicketEmailed,
+  markReviewRequested,
 } from '../../../lib/crm';
 import { getTourById } from '../../../lib/tours';
 import { formatTravelDate, formatMoneyMinor, formatDateTimeIst } from '../../../lib/format';
@@ -20,6 +21,17 @@ import { telHref, waHref } from '../../../lib/contact';
 import { computeTicketsToBuy, ASI_BOOKING_URL } from '../../../lib/entryTickets';
 import { uploadTicketFile } from '../../../lib/images';
 import { sendEntryTicketEmail } from '../../../lib/email';
+import {
+  requestReview,
+  ensureReviewToken,
+  reviewUrl,
+  reviewWhatsappMessage,
+  canBeReviewed,
+  getReviewForBooking,
+  REVIEW_REQUEST_MESSAGES,
+  SITE_URL,
+} from '../../../lib/reviews';
+import { todayIst } from '../../../lib/availability';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -87,6 +99,17 @@ if (Astro.request.method === 'POST') {
       return Astro.redirect(`/admin/bookings/${id}?ticket=error&msg=${encodeURIComponent(err?.message ?? 'Upload failed')}`);
     }
     return Astro.redirect(`/admin/bookings/${id}?ticket=${result}`);
+  } else if (action === 'review_email' || action === 'review_whatsapp') {
+    const current = await getBookingById(db, id);
+    if (!current) return Astro.redirect('/admin');
+    if (action === 'review_email') {
+      return Astro.redirect(`/admin/bookings/${id}?review=${await requestReview(env, db, current)}`);
+    }
+    // WhatsApp: create the private link, record the request, open the chat.
+    const wa = waHref(current.traveler_phone, reviewWhatsappMessage(current.traveler_name, reviewUrl(SITE_URL, await ensureReviewToken(db, current))));
+    if (!wa || !canBeReviewed(current, todayIst())) return Astro.redirect(`/admin/bookings/${id}?review=too_early`);
+    await markReviewRequested(db, id);
+    return Astro.redirect(wa, 303);
   }
   return Astro.redirect(`/admin/bookings/${id}`);
 }
@@ -106,6 +129,9 @@ const ticketMessages: Record<string, { text: string; ok: boolean }> = {
   error: { text: Astro.url.searchParams.get('msg') ?? 'Something went wrong.', ok: false },
 };
 const fmtTime = formatDateTimeIst;
+const reviewOpen = canBeReviewed(booking, todayIst());
+const review = await getReviewForBooking(db, id);
+const reviewResult = Astro.url.searchParams.get('review');
 
 // Pickup details for the customer on WhatsApp, built only from what's been
 // filled in under Itinerary / logistics (nothing when all three are empty).
@@ -255,6 +281,46 @@ const addOnNames = booking.add_on_ids
         )}
       </div>
     )}
+  </div>
+
+  <div class="bg-white rounded-xl border border-stone-200 p-6 mt-6 text-sm">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold">Review</h2>
+      {review ? (
+        <span class="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-800">{'★'.repeat(review.rating)} · {review.status}</span>
+      ) : booking.review_requested_at ? (
+        <span class="px-2 py-0.5 rounded text-xs bg-stone-100 text-stone-700">Requested {fmtTime(booking.review_requested_at)}</span>
+      ) : null}
+    </div>
+    {reviewResult && REVIEW_REQUEST_MESSAGES[reviewResult] && (
+      <p class={`mb-3 ${REVIEW_REQUEST_MESSAGES[reviewResult].ok ? 'text-green-700' : 'text-red-600'}`}>{REVIEW_REQUEST_MESSAGES[reviewResult].text}</p>
+    )}
+    {review && (
+      <div class="mb-4 rounded-lg bg-stone-50 p-3">
+        <p class="text-amber-500" aria-label={`${review.rating} out of 5`}>{'★'.repeat(review.rating)}<span class="text-stone-300">{'★'.repeat(5 - review.rating)}</span></p>
+        {review.comment && <p class="mt-1 whitespace-pre-line text-stone-700">{review.comment}</p>}
+        <a href="/admin/reviews" class="inline-flex min-h-11 items-center text-amber-800 hover:underline">Approve or hide on the Reviews page</a>
+      </div>
+    )}
+    {!reviewOpen ? (
+      <p class="text-stone-500">{booking.status === 'cancelled' ? 'Cancelled bookings are not asked for a review.' : `You can ask for a review after the tour (${formatTravelDate(booking.travel_date)}).`}</p>
+    ) : review ? null : (
+      <div class="flex flex-wrap gap-2">
+        <form method="POST">
+          <input type="hidden" name="_action" value="review_email" />
+          <button type="submit" class={actionBtn} disabled={!booking.traveler_email}>
+            {booking.review_requested_at ? 'Request for review again (email)' : 'Request for review (email)'}
+          </button>
+        </form>
+        {contactWa && (
+          <form method="POST" target="_blank" onsubmit="setTimeout(() => location.reload(), 1000)">
+            <input type="hidden" name="_action" value="review_whatsapp" />
+            <button type="submit" class="min-h-11 rounded bg-emerald-600 px-4 text-sm font-medium text-white">Request on WhatsApp</button>
+          </form>
+        )}
+      </div>
+    )}
+    {reviewOpen && !review && !booking.traveler_email && <p class="mt-2 text-xs text-stone-500">No email on file, so use WhatsApp.</p>}
   </div>
 
   <div class="bg-white rounded-xl border border-stone-200 p-6 mt-6 text-sm">

@@ -245,3 +245,82 @@ export async function sendEntryTicketEmail(env: Record<string, any>, details: En
     return false;
   }
 }
+
+export interface ReviewRequestEmailDetails {
+  to: string;
+  travelerName: string;
+  tourTitle: string;
+  travelDate: string;
+  // /review?t=<token> (src/lib/reviews.ts); each star adds &rating=N.
+  reviewUrl: string;
+  googleReviewUrl: string;
+}
+
+// "How was your tour?" — sent from the admin booking or Reviews page after
+// the trip. Returns whether it was sent, like sendEntryTicketEmail.
+export async function sendReviewRequestEmail(env: Record<string, any>, details: ReviewRequestEmailDetails): Promise<boolean> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey || !details.to) return false;
+
+  const from = env.BOOKING_EMAIL_FROM || 'IWIS Global <info@iwisglobal.com>';
+  const first = details.travelerName.trim().split(/\s+/)[0] || 'there';
+  const firstName = first.charAt(0).toUpperCase() + first.slice(1);
+  const name = escapeHtml(firstName);
+  const date = displayDate(details.travelDate);
+  const starUrl = (n: number) => `${details.reviewUrl}&rating=${n}`;
+  const button = 'display:inline-block; padding:12px 20px; border-radius:999px; text-decoration:none; font-weight:600;';
+  // Five big tappable stars; each opens the review page with that rating picked.
+  const stars = [1, 2, 3, 4, 5]
+    .map(
+      (n) =>
+        `<td style="padding:0 2px;"><a href="${starUrl(n)}" title="${n} star${n > 1 ? 's' : ''}" style="display:block; width:48px; line-height:48px; text-align:center; font-size:34px; color:#f59e0b; text-decoration:none;">&#9733;</a></td>`
+    )
+    .join('');
+
+  const html = `
+    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
+      <h2 style="color:#5b21b6; margin-bottom: 4px;">How was your tour?</h2>
+      <p>Hi ${name},</p>
+      <p>Thank you for touring with IWIS Global. How was your <strong>${escapeHtml(details.tourTitle)}</strong> on <strong>${escapeHtml(date)}</strong>? Your rating helps other travelers, and helps us get better.</p>
+      <p style="margin:20px 0 4px; color:#78716c; font-size:14px;">Tap a star to rate your tour:</p>
+      <table role="presentation" style="border-collapse:collapse; margin:0 0 16px;"><tr>${stars}</tr></table>
+      <p style="margin:20px 0;"><a href="${details.reviewUrl}" style="${button} background:#5b21b6; color:#ffffff;">Rate your tour</a></p>
+      <p>You can also review us on Google: <a href="${details.googleReviewUrl}" style="color:#5b21b6;">leave a Google review</a>.</p>
+      <p style="margin-bottom:8px;">Something not right? Just reply to this email, or:</p>
+      <p style="margin-top:0; line-height:2;">
+        <a href="${whatsappHref('Hi! About my recent tour. (ref: EMAIL-REVIEW)')}" style="color:#15803d; font-weight:600;">WhatsApp us</a><br />
+        <a href="${PHONE_TEL}" style="color:#5b21b6;">Call ${PHONE_DISPLAY}</a>
+      </p>
+      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; <a href="${SITE}" style="color:#a8a29e;">www.iwisglobal.com</a></p>
+    </div>
+  `;
+  const text = [
+    `How was your tour?`,
+    ``,
+    `Hi ${firstName},`,
+    `Thank you for touring with IWIS Global. How was your ${details.tourTitle} on ${date}? Your rating helps other travelers, and helps us get better.`,
+    ``,
+    `Rate your tour: ${details.reviewUrl}`,
+    `Or review us on Google: ${details.googleReviewUrl}`,
+    ``,
+    `Something not right? Reply to this email, WhatsApp us or call ${PHONE_DISPLAY}.`,
+    ``,
+    `IWIS Global · ${SITE}`,
+  ].join('\n');
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: details.to, subject: `How was your tour? — ${details.tourTitle}`, html, text }),
+    });
+    if (!res.ok) {
+      console.error('sendReviewRequestEmail: Resend API error', res.status, await res.text());
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('sendReviewRequestEmail: request failed', err);
+    return false;
+  }
+}

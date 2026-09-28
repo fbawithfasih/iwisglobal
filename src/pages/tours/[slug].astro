@@ -4,6 +4,8 @@ import BookingWidget from '../../components/BookingWidget.tsx';
 import WeatherCard from '../../components/WeatherCard';
 import Icon, { type IconName } from '../../components/Icon.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
+import ReviewList from '../../components/ReviewList.astro';
+import { listApprovedReviews, averageRating } from '../../lib/reviews';
 import { getTourBySlug } from '../../lib/tours';
 import { getAvailability, todayIst } from '../../lib/availability';
 import { listLiveAutomaticOffers, offerLiveFor, offerValueLabel, offerConditions } from '../../lib/offers';
@@ -51,6 +53,10 @@ const tourOffers = env.DB
 // Phones: the offer banners sit far down the page, so the title area and the
 // bottom Book bar also carry the first automatic offer.
 const offerTag = tourOffers[0] ? offerValueLabel(tourOffers[0], price.currency) : null;
+
+// Approved guest reviews (src/lib/reviews.ts); nothing shows until there's one.
+const reviews = env.DB ? await listApprovedReviews(env.DB, tour.id) : [];
+const avgRating = averageRating(reviews);
 
 // Mobile book bar's WhatsApp button. Ref follows BaseLayout's
 // "<location>-<page>" format so its clicks are attributed separately.
@@ -207,6 +213,11 @@ const tripJsonLd = {
         <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-accent-50 text-accent-700">
           {availability.label}
         </span>
+        {avgRating && (
+          <a href="#reviews" class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800">
+            <span aria-hidden="true" class="text-amber-500">★</span> {avgRating.toFixed(1)} · {reviews.length} review{reviews.length > 1 ? 's' : ''}
+          </a>
+        )}
         {tourOffers[0] && offerTag && (
           <a href="#booking" class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
             <Icon name="gift" class="h-3.5 w-3.5" /> {tourOffers[0].name} · {offerTag}
@@ -401,6 +412,16 @@ const tripJsonLd = {
               </ul>
             </div>
           )}
+        </div>
+      )}
+
+      {reviews.length > 0 && (
+        <div id="reviews" class="mt-10 scroll-mt-24">
+          <h2 class="text-xl font-serif font-semibold mb-1">Guest reviews</h2>
+          <p class="text-sm text-stone-600 mb-4">
+            <span class="text-amber-500" aria-hidden="true">★</span> {avgRating!.toFixed(1)} out of 5 from {reviews.length} review{reviews.length > 1 ? 's' : ''} by guests who booked this tour with us
+          </p>
+          <ReviewList reviews={reviews} />
         </div>
       )}
     </div>

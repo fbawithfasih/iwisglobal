@@ -24,6 +24,7 @@ export interface BookingRow {
   vehicle: string;
   created_at: string;
   review_requested_at: string | null;
+  review_token: string | null; // src/lib/reviews.ts — private /review link
   total_amount: number;
   payment_type: string;
   tickets_purchased_at: string | null;

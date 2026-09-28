@@ -1,36 +1,59 @@
 ---
-// Backlog 1.7. No AggregateRating schema — CLAUDE.md hard rule 2 (never
-// publish fake/aggregate ratings) and this repo's own history (the "no
-// fabricated ratings/reviews, ever" decision recorded in
-// SESSION_HANDOFF.md). This page stays an honest empty state until real
-// reviews exist on Google to actually link to or quote.
+// Approved guest reviews (src/lib/reviews.ts), written through the private
+// link in the "How was your tour?" email, so each comes from a real booking.
+// No AggregateRating schema: CLAUDE.md hard rule 2, and Google doesn't show
+// review stars for a business's reviews of itself anyway.
 //
-// noindex (and left out of the sitemap and llms.txt) until then: as a search
-// entry point, "no reviews yet" doesn't help anyone deciding whether to book.
-// Remove the noindex, the sitemap filter entry in astro.config.mjs, and
-// re-add the llms.txt lines once real reviews are shown here.
+// noindex while there are no approved reviews: as a search entry point,
+// "no reviews yet" doesn't help anyone deciding whether to book. (Left out
+// of the sitemap either way, since it changes as reviews are approved.)
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Button from '../components/Button.astro';
+import ReviewList from '../components/ReviewList.astro';
+import { resolveEnv } from '../lib/env';
+import { listApprovedReviews, averageRating, GOOGLE_REVIEW_URL } from '../lib/reviews';
+import { listTours } from '../lib/tours';
+
+const db = resolveEnv(Astro.locals).DB;
+const reviews = db ? await listApprovedReviews(db) : [];
+const avg = averageRating(reviews);
+const tourNames = new Map((db && reviews.length ? await listTours(db) : []).map((t) => [t.id, t.title]));
 ---
 
 <BaseLayout
   title="Reviews — IWIS Global"
-  description="We're a new operator and don't have reviews to show yet — here's where they'll go as real guests leave them."
-  noindex
+  description={reviews.length
+    ? `Reviews from guests who booked a Taj Mahal or Agra tour with IWIS Global: ${avg!.toFixed(1)} out of 5 from ${reviews.length} review${reviews.length > 1 ? 's' : ''}.`
+    : "We're a new operator and don't have reviews to show yet — here's where they'll go as real guests leave them."}
+  noindex={reviews.length === 0}
 >
   <section class="max-w-2xl mx-auto px-6 py-16 text-center">
     <h1 class="text-3xl font-serif font-semibold mb-4">Reviews</h1>
-    <p class="text-stone-600 mb-8">
-      We're a newly-launched operator, so we don't have reviews to show here yet — and we're not going to make any
-      up. As real guests leave reviews on Google, we'll link to them here.
-    </p>
-    <p class="text-stone-600 mb-10">
-      Traveled with us already? We'd genuinely appreciate a review — it's one of the main ways new travelers decide
-      whether to trust a small operator they haven't heard of before.
-    </p>
-    <Button href="https://share.google/LOqFXgGLF8KWXdMNn" target="_blank" rel="noopener noreferrer">
+    {reviews.length > 0 ? (
+      <>
+        <p class="text-stone-600 mb-8">
+          <span class="text-amber-500" aria-hidden="true">★</span> {avg!.toFixed(1)} out of 5 from {reviews.length} review{reviews.length > 1 ? 's' : ''}.
+          Every review here was written by a guest who booked and took the tour with us, through a private link we
+          send after the trip. We publish every genuine review, good or bad.
+        </p>
+        <div class="text-left mb-10"><ReviewList reviews={reviews} tourNames={tourNames} /></div>
+        <p class="text-stone-600 mb-6">Traveled with us? You can also review us on Google.</p>
+      </>
+    ) : (
+      <>
+        <p class="text-stone-600 mb-8">
+          We're a newly-launched operator, so we don't have reviews to show here yet — and we're not going to make any
+          up. After each tour we ask our guests to rate it, and their reviews will appear here.
+        </p>
+        <p class="text-stone-600 mb-10">
+          Traveled with us already? We'd genuinely appreciate a review — it's one of the main ways new travelers decide
+          whether to trust a small operator they haven't heard of before.
+        </p>
+      </>
+    )}
+    <Button href={GOOGLE_REVIEW_URL} target="_blank" rel="noopener noreferrer">
       Leave us a review on Google
     </Button>
 
