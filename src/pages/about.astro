@@ -10,12 +10,13 @@ export const prerender = false;
   <section class="max-w-2xl mx-auto px-6 py-16">
     <h1 class="text-3xl font-serif font-semibold mb-1">About IWIS Global</h1>
     <p class="text-stone-700 mt-6 mb-6">
-      IWIS Global is a private Taj Mahal &amp; Agra tour operator based in Agra, India. We run private,
+      IWIS Global is a Taj Mahal &amp; Agra tour operator based in Agra, India. We run private,
       guided same-day tours from Delhi to the Taj Mahal and Agra, by car or on the Gatimaan Express
       train — booked and paid for online, with transparent pricing and no hidden commissions. See our
       <a href="/no-commission-pledge" class="text-brand-800 hover:underline">No-Commission Pledge</a> for what
       that means in practice.
     </p>
+    <p class="text-stone-700 mb-6">IWIS Global is run by Fasih Ahmer (Partner) from Agra.</p>
 
     <h2 class="text-lg font-semibold mb-2">Registered address</h2>
     <p class="text-stone-700 mb-6">
@@ -64,3 +65,10 @@ export const prerender = false;
     </div>
   </section>
 </BaseLayout>
+
+<style is:global>
+  /* The page has its own WhatsApp card, so drop the floating button. */
+  a[data-wa-ref^='FLOATING'] {
+    display: none;
+  }
+</style>
