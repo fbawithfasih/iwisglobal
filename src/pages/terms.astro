@@ -14,7 +14,7 @@ export const prerender = false;
 // Apple sign-in is built but not switched on, so only Google and email are
 // named under Accounts (same in privacy.astro); add Apple back when it is.
 // The business details in the intro match /about and /contact.
-const lastUpdated = '27 September 2026';
+const lastUpdated = '28 September 2026';
 ---
 
 <BaseLayout title="Terms of Service — IWIS Global" description="The terms and conditions that apply when you book a Taj Mahal or Agra tour with IWIS Global.">
@@ -31,11 +31,20 @@ const lastUpdated = '27 September 2026';
 
     <h2 class="text-lg font-semibold mb-2">Booking and payment</h2>
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
-      <li>The price shown on the tour page at checkout — including any add-ons you select — is the price you pay. There are no hidden fees.</li>
+      <li>The price shown on the tour page at checkout — including any add-ons you select, and after any discount — is the price you pay. There are no hidden fees.</li>
       <li>Payments are processed securely by Razorpay. Prices are quoted in Indian Rupees (INR), with US Dollar (USD) pricing available for tours where we've set a USD rate.</li>
       <li>You can pay the full price, or a 25% deposit online to secure your booking with the balance paid on pickup. If you cancel, any refund is worked out on the amount you paid.</li>
       <li>Your booking is confirmed once payment succeeds; you'll receive confirmation immediately.</li>
       <li>You don't need to create an account to book — an account is only needed if you want to see your booking history for tours you book while signed in.</li>
+    </ul>
+
+    <h2 class="text-lg font-semibold mb-2">Offers and coupon codes</h2>
+    <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
+      <li>Only one discount applies per booking. If more than one offer or code could apply, you automatically get the biggest one.</li>
+      <li>An offer or code can be limited to certain tours, booking dates, travel dates, or group sizes. The conditions are shown with the offer, or when you apply the code.</li>
+      <li>A discount applies only if it's valid when you pay. It can't be added to a booking after payment.</li>
+      <li>We can end or change an offer at any time. This doesn't affect bookings already paid for.</li>
+      <li>If you cancel, any refund is worked out on the amount you actually paid, after the discount.</li>
     </ul>
 
     <h2 class="text-lg font-semibold mb-2">How late you can book</h2>
