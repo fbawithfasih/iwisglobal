@@ -29,12 +29,12 @@ if (Astro.url.searchParams.get('currency')) {
   Astro.cookies.set('currency', currency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
 }
 // Tours with this site as an actual itinerary stop (not just a mention in
-// the description), cheapest first like /tours.
+// the description, and not an optional add-on stop), cheapest first like /tours.
 const env = resolveEnv(Astro.locals);
 const siteName = name.toLowerCase();
 const tours = sortByFromPrice(
   (env.DB ? await listTours(env.DB, { status: 'published' }) : []).filter((t) =>
-    t.itinerary.some((step) => step.activity.toLowerCase().includes(siteName))
+    t.itinerary.some((step) => step.activity.toLowerCase().includes(siteName) && !/optional|add-on/i.test(step.time))
   ),
   currency
 );
