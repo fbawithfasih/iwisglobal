@@ -1,0 +1,21 @@
+---
+// The Founding Guest offer (src/lib/catalog.ts), shown on listing pages.
+// Display only: create-order decides the real discount at payment time.
+// Renders nothing once the spots are used.
+import { resolveEnv } from '../lib/env';
+import { countBookings } from '../lib/db';
+import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../lib/catalog';
+
+interface Props {
+  class?: string;
+}
+
+const db = resolveEnv(Astro.locals).DB;
+const slotsLeft = db ? Math.max(0, FOUNDING_GUEST_SLOT_CAP - (await countBookings(db))) : 0;
+const percent = Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100);
+---
+{slotsLeft > 0 && (
+  <p class:list={['max-w-2xl rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900', Astro.props.class]}>
+    <span class="font-semibold">Founding Guest offer:</span>{` ${percent}% off for our first ${FOUNDING_GUEST_SLOT_CAP} guests, ${slotsLeft} ${slotsLeft === 1 ? 'spot' : 'spots'} left. No code needed; it comes off at checkout.`}
+  </p>
+)}

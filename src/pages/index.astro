@@ -3,7 +3,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import TourCard from '../components/TourCard.astro';
 import WeatherCard from '../components/WeatherCard';
 import AiGuideBox from '../components/AiGuideBox';
-import { listTours } from '../lib/tours';
+import { listTours, sharedTourFacts } from '../lib/tours';
+import FoundingGuestNote from '../components/FoundingGuestNote.astro';
 import { listAgraHighlights } from '../lib/agraHighlights';
 import { resolveEnv } from '../lib/env';
 import { resolveCurrency, sortByFromPrice } from '../lib/currency';
@@ -22,6 +23,9 @@ if (Astro.url.searchParams.get('currency')) {
 
 // Cheapest first, same as /tours (see sortByFromPrice).
 const tours = sortByFromPrice(featuredTours, currency);
+// The hero already promises the facts every tour shares (guide, private
+// car, pickup, free cancellation), so the cards show only what differs.
+const sharedFactsShown = sharedTourFacts(tours).length > 0;
 
 const locale = resolveLocale(Astro.url.searchParams, Astro.cookies.get('lang')?.value);
 const t = getDictionary(locale);
@@ -99,7 +103,7 @@ function highlightHref(id: string): string {
 
   <section class="max-w-5xl mx-auto px-6 py-12 md:py-16">
     <div data-carousel>
-      <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center justify-between mb-4">
         <h2 class="text-2xl font-serif font-semibold">{t.recommendations.title}</h2>
         <div class="hidden md:flex items-center gap-2">
           <button type="button" data-carousel-prev aria-label="Previous" class="h-9 w-9 rounded-full border border-stone-300 flex items-center justify-center hover:bg-stone-50 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
@@ -114,10 +118,11 @@ function highlightHref(id: string): string {
           </button>
         </div>
       </div>
+      <FoundingGuestNote class="mb-6" />
       <div data-carousel-row class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-px-6 scroll-smooth pb-2 -mx-6 px-6 carousel-row">
         {tours.map((tour) => (
           <div class="w-64 sm:w-72 shrink-0 snap-start">
-            <TourCard tour={tour} currency={currency} />
+            <TourCard tour={tour} currency={currency} sharedFactsShown={sharedFactsShown} />
           </div>
         ))}
       </div>
@@ -141,39 +146,55 @@ function highlightHref(id: string): string {
       <div class="max-w-md">
         <WeatherCard client:load />
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 auto-rows-fr">
-        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5 flex flex-col justify-center">
-          <svg class="h-5 w-5 text-brand-700 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+      <ul class="grid gap-5 sm:grid-cols-2 content-center">
+        <li class="flex gap-3">
+          <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-brand-700 shadow-sm">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v3m0 12v3m9-9h-3M6 12H3m14.4-6.4-2.1 2.1M8.7 15.3l-2.1 2.1m0-10.8 2.1 2.1m8.7 8.7 2.1 2.1" />
           </svg>
-          <p class="text-[13px] font-semibold text-stone-900 mb-1">{t.trust.curatedTitle}</p>
-          <p class="text-xs leading-relaxed text-stone-500">{t.trust.curatedDesc}</p>
-        </div>
-        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5 flex flex-col justify-center">
-          <svg class="h-5 w-5 text-brand-700 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          </span>
+          <div>
+            <p class="text-[15px] font-semibold text-stone-900">{t.trust.curatedTitle}</p>
+            <p class="mt-0.5 text-sm leading-relaxed text-stone-600">{t.trust.curatedDesc}</p>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-brand-700 shadow-sm">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <circle cx="12" cy="12" r="9" stroke-linecap="round" stroke-linejoin="round" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3" />
           </svg>
-          <p class="text-[13px] font-semibold text-stone-900 mb-1">{t.trust.bookTitle}</p>
-          <p class="text-xs leading-relaxed text-stone-500">{t.trust.bookDesc}</p>
-        </div>
-        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5 flex flex-col justify-center">
-          <svg class="h-5 w-5 text-brand-700 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          </span>
+          <div>
+            <p class="text-[15px] font-semibold text-stone-900">{t.trust.bookTitle}</p>
+            <p class="mt-0.5 text-sm leading-relaxed text-stone-600">{t.trust.bookDesc}</p>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-brand-700 shadow-sm">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M20.6 12.6 12.9 20.3a1.5 1.5 0 0 1-2.1 0l-7.1-7.1a1.5 1.5 0 0 1 0-2.1L11.4 3.4a1.5 1.5 0 0 1 1.05-.44H19a1.5 1.5 0 0 1 1.5 1.5v6.55a1.5 1.5 0 0 1-.44 1.05Z" />
             <circle cx="16" cy="8" r="1" fill="currentColor" stroke="none" />
           </svg>
-          <p class="text-[13px] font-semibold text-stone-900 mb-1">{t.trust.pricingTitle}</p>
-          <p class="text-xs leading-relaxed text-stone-500">{t.trust.pricingDesc}</p>
-        </div>
-        <div class="rounded-xl border border-stone-100 bg-white shadow-sm p-5 flex flex-col justify-center">
-          <svg class="h-5 w-5 text-brand-700 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          </span>
+          <div>
+            <p class="text-[15px] font-semibold text-stone-900">{t.trust.pricingTitle}</p>
+            <p class="mt-0.5 text-sm leading-relaxed text-stone-600">{t.trust.pricingDesc}</p>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-brand-700 shadow-sm">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3.5 5 6v6c0 4.2 2.9 7.3 7 8.5 4.1-1.2 7-4.3 7-8.5V6l-7-2.5Z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="m9.5 12 1.8 1.8L14.5 10" />
           </svg>
-          <p class="text-[13px] font-semibold text-stone-900 mb-1">{t.trust.promiseTitle}</p>
-          <p class="text-xs leading-relaxed text-stone-500">{t.trust.promiseDesc}</p>
-        </div>
-      </div>
+          </span>
+          <div>
+            <p class="text-[15px] font-semibold text-stone-900">{t.trust.promiseTitle}</p>
+            <p class="mt-0.5 text-sm leading-relaxed text-stone-600">{t.trust.promiseDesc}</p>
+          </div>
+        </li>
+      </ul>
     </div>
   </section>
 

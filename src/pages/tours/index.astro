@@ -2,11 +2,10 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import TourCard from '../../components/TourCard.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
-import { listTours } from '../../lib/tours';
+import { listTours, sharedTourFacts } from '../../lib/tours';
+import FoundingGuestNote from '../../components/FoundingGuestNote.astro';
 import { resolveEnv } from '../../lib/env';
 import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
-import { countBookings } from '../../lib/db';
-import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../../lib/catalog';
 import Icon from '../../components/Icon.astro';
 
 export const prerender = false;
@@ -23,18 +22,9 @@ if (Astro.url.searchParams.get('currency')) {
 const tours = sortByFromPrice(publishedTours, currency);
 
 // Facts every tour shares are listed once above the cards, which then show
-// only what differs. If any tour lacks one, the cards list everything.
-const guideLanguage = tours[0]?.guideLanguage;
-const sharedFactsShown =
-  tours.length > 1 &&
-  tours.every((t) => t.pickupIncluded && t.privateTour && t.guideLanguage && t.guideLanguage === guideLanguage);
-const sharedFacts = sharedFactsShown
-  ? ['Private, just your group', 'Hotel pickup', `${guideLanguage}-speaking guide`, 'Free cancellation up to 24 hours before']
-  : [];
-
-// Founding Guest offer (display only; create-order decides the discount).
-const foundingGuestSlotsLeft = env.DB ? Math.max(0, FOUNDING_GUEST_SLOT_CAP - (await countBookings(env.DB))) : 0;
-const foundingGuestPercent = Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100);
+// only what differs (see sharedTourFacts).
+const sharedFacts = sharedTourFacts(tours);
+const sharedFactsShown = sharedFacts.length > 0;
 ---
 <BaseLayout
   title="Taj Mahal Tours — Private, Guided Agra Trips | IWIS Global"
@@ -57,12 +47,7 @@ const foundingGuestPercent = Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100);
         ))}
       </ul>
     )}
-    {foundingGuestSlotsLeft > 0 && (
-      <p class="mb-8 max-w-2xl rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
-        <span class="font-semibold">Founding Guest offer:</span> {foundingGuestPercent}% off for our first {FOUNDING_GUEST_SLOT_CAP} guests,
-        {foundingGuestSlotsLeft} {foundingGuestSlotsLeft === 1 ? 'spot' : 'spots'} left. No code needed; it comes off at checkout.
-      </p>
-    )}
+    <FoundingGuestNote class="mb-8" />
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       {tours.map((tour, i) => <TourCard tour={tour} currency={currency} loading={i === 0 ? "eager" : "lazy"} sharedFactsShown={sharedFactsShown} />)}
     </div>

@@ -44,11 +44,13 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
     )}
     <h2 class="text-lg font-semibold mb-1 group-hover:underline">{tour.title}</h2>
 
-    <div class="flex items-center justify-between mb-1.5">
-      <span class="text-[11px] font-semibold uppercase tracking-wide text-brand-700 border-b-2 border-brand-600 pb-0.5">
+    <!-- Wraps to two lines on narrow cards (the homepage carousel) rather
+         than breaking the label or "/person" mid-phrase. -->
+    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-1.5">
+      <span class="whitespace-nowrap text-[11px] font-semibold uppercase tracking-wide text-brand-700 border-b-2 border-brand-600 pb-0.5">
         {availability.label}
       </span>
-      <p class="text-lg font-semibold text-stone-900">
+      <p class="whitespace-nowrap text-lg font-semibold text-stone-900">
         {/* The cheapest rate (largest-group tier), so it's a "From" price. */}
         <span class="text-xs font-normal text-stone-500">From</span>
         {CURRENCY_SYMBOLS[price.currency]}{price.amount.toLocaleString(price.currency === 'USD' ? 'en-US' : 'en-IN')}

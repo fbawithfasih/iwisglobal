@@ -386,3 +386,13 @@ export async function replacePricingTiers(db: D1Like, tourId: string, tiers: Pri
       .run();
   }
 }
+
+// Facts every listed tour shares (private, pickup, guide language, free
+// cancellation), so a listing can state them once and let each card show
+// only what differs. Empty when any tour lacks one: cards then list all.
+export function sharedTourFacts(tours: Pick<ParsedTour, 'pickupIncluded' | 'privateTour' | 'guideLanguage'>[]): string[] {
+  const language = tours[0]?.guideLanguage;
+  const shared =
+    tours.length > 1 && tours.every((t) => t.pickupIncluded && t.privateTour && t.guideLanguage && t.guideLanguage === language);
+  return shared ? ['Private, just your group', 'Hotel pickup', `${language}-speaking guide`, 'Free cancellation up to 24 hours before'] : [];
+}
