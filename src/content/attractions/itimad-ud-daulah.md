@@ -1,13 +1,13 @@
 ---
 name: "Itimad-ud-Daulah's Tomb"
 description: "The \"Baby Taj\": a Mughal marble tomb built in 1628 by Empress Nur Jahan for her father. Entry ₹310 for foreign tourists; open sunrise to sunset daily."
-ticketPriceForeign: "₹310 (₹300 on Fridays)"
+ticketPriceForeign: "₹310 (₹300 on Fridays, or after visiting the Taj Mahal that day)"
 ticketPriceIndian: "₹30 (₹25 on Fridays)"
-ticketPriceSaarc: "₹30 (₹25 on Fridays)"
+ticketPriceSaarc: "₹30 (₹25 on Fridays, or after visiting the Taj Mahal that day)"
 hours: "Sunrise to sunset, every day"
 closedFriday: false
 distanceFromTaj: "On the Yamuna's left bank, next to Chini-ka-Rauza — across the river from central Agra"
-dateModified: 2026-09-28
+dateModified: 2026-09-30
 ---
 
 Itimad-ud-Daulah's Tomb — often called the "Baby Taj" — is the tomb of Mirza Ghiyath Beg, father of the Mughal empress Nur Jahan. "Itimad-ud-Daulah" was the title he was given: he served as Lord of the Treasury and later rose to wazir under Emperor Jahangir. Nur Jahan completed the tomb in 1628, about seven years after his death, a few years before work began on the Taj Mahal.
@@ -15,6 +15,8 @@ Itimad-ud-Daulah's Tomb — often called the "Baby Taj" — is the tomb of Mirza
 ## Ticket price
 
 Foreign tourists pay ₹310 on regular days, ₹300 on Fridays. Indian and SAARC/BIMSTEC nationals pay ₹30 (₹25 on Fridays). Children under 15 enter free, all nationalities.
+
+If you visit after the Taj Mahal on the same day, ASI's table lists a lower rate: ₹300 for foreign tourists and ₹25 for SAARC/BIMSTEC nationals.
 
 ## Hours
 
@@ -30,4 +32,4 @@ The tomb is on the left bank of the Yamuna, next to Chini-ka-Rauza — the same 
 
 ---
 
-Ticket prices sourced from [ASI's official ticketing page](https://www.tajmahal.gov.in/ticketing.aspx); history and opening hours from [ASI Agra Circle's page on the tomb](https://asiagracircle.in/itmad-ud-daula-tomb.html).
+Ticket prices sourced from [ASI's official ticketing page](https://www.tajmahal.gov.in/ticketing.aspx), checked 30 September 2026; history and opening hours from [ASI Agra Circle's page on the tomb](https://asiagracircle.in/itmad-ud-daula-tomb.html).
