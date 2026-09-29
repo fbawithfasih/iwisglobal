@@ -11,6 +11,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 import { resolveEnv } from '../../lib/env';
 import { getBlogPostBySlug, renderBlogBody } from '../../lib/blog';
+import { getCollection } from 'astro:content';
+import { sortGuides } from '../../lib/guides';
 
 const { slug } = Astro.params;
 const env = resolveEnv(Astro.locals);
@@ -21,6 +23,12 @@ if (!post || post.status !== 'published') {
 }
 
 const bodyHtml = renderBlogBody(post.body);
+
+// "Keep reading": the first guides in the site's reading order that this
+// post doesn't already link to.
+const keepReading = sortGuides(await getCollection('guides'))
+  .filter((g) => !bodyHtml.includes(`/guides/${g.slug}`))
+  .slice(0, 3);
 
 const CATEGORY_LABELS: Record<string, string> = {
   news: 'News',
@@ -44,6 +52,7 @@ const articleJsonLd = {
   author: { '@type': 'Organization', name: post.authorName },
   datePublished: post.datePublished ? new Date(post.datePublished).toISOString() : undefined,
   dateModified: new Date(post.updatedAt).toISOString(),
+  image: post.image ? new URL(post.image, Astro.site ?? 'https://www.iwisglobal.com').toString() : undefined,
   publisher: { '@type': 'Organization', name: 'IWIS Global', logo: { '@type': 'ImageObject', url: 'https://www.iwisglobal.com/logo.png' } },
 };
 ---
@@ -86,6 +95,22 @@ const articleJsonLd = {
       </figure>
     )}
     <div class="prose prose-stone max-w-none prose-headings:font-serif prose-a:text-brand-700" set:html={bodyHtml} />
+
+    {keepReading.length > 0 && (
+      <section class="mt-12 border-t border-stone-200 pt-8" aria-labelledby="keep-reading">
+        <h2 id="keep-reading" class="text-xl font-serif font-semibold mb-4">Keep reading</h2>
+        <ul class="space-y-3">
+          {keepReading.map((g) => (
+            <li>
+              <a href={`/guides/${g.slug}`} class="block rounded-xl border border-stone-200 bg-white p-4 hover:border-brand-300 transition">
+                <span class="block font-semibold text-stone-900">{g.data.title}</span>
+                <span class="mt-1 block text-sm text-stone-600">{g.data.description}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
   </article>
 
   <!-- Phones: WhatsApp moves into this bar so the floating button doesn't
