@@ -11,9 +11,12 @@ interface Props {
   // Lazy by default (cards are mostly below the fold); pass "eager" for a
   // card that is the page's main image, e.g. the first card on /tours.
   loading?: 'lazy' | 'eager';
+  // The page already lists what every tour has (pickup, private, guide,
+  // free cancellation), so the card shows only what differs.
+  sharedFactsShown?: boolean;
 }
 
-const { tour, currency, loading = 'lazy' } = Astro.props;
+const { tour, currency, loading = 'lazy', sharedFactsShown = false } = Astro.props;
 const availability = getAvailability();
 // Cheapest available per-person rate (the largest-group tier when the tour
 // has pricing tiers) — see backlog 0.2. Kept in sync with tours/[slug].astro's
@@ -55,9 +58,9 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
 
     <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500">
       <span>{tour.durationLabel}</span>
-      {tour.pickupIncluded && <span>· Hotel pickup</span>}
-      {tour.privateTour && <span>· Private tour</span>}
-      {tour.guideLanguage && <span>· {tour.guideLanguage} guide</span>}
+      {!sharedFactsShown && tour.pickupIncluded && <span>· Hotel pickup</span>}
+      {!sharedFactsShown && tour.privateTour && <span>· Private tour</span>}
+      {!sharedFactsShown && tour.guideLanguage && <span>· {tour.guideLanguage} guide</span>}
       {/* Only when tickets are built into the price (not a pre-ticked add-on),
           so the "From" price really covers them. */}
       {tour.entryTicketsInPrice.length > 0 ? (
@@ -65,7 +68,7 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
       ) : (
         <span>· Entry tickets extra</span>
       )}
-      <span>· Free cancellation</span>
+      {!sharedFactsShown && <span>· Free cancellation</span>}
     </div>
   </div>
 </a>

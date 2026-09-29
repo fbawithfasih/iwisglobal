@@ -15,6 +15,11 @@ export const ASI_BOOKING_URL = 'https://asi.paygov.org.in/asi-webapp/#/ticketboo
 
 const TICKET_ADDON = /entry ticket/i;
 
+// Whether an add-on is a monument entry ticket (by its name).
+export function isEntryTicketAddOn(name: string): boolean {
+  return TICKET_ADDON.test(name);
+}
+
 export interface TicketLine {
   name: string;
   quantity: number;

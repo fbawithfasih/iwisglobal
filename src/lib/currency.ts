@@ -2,6 +2,8 @@
 // admin per tour/add-on (never auto-converted), so a NULL usdAmount means
 // "no USD price set" and callers fall back to INR rather than guessing.
 
+import { isEntryTicketAddOn } from './entryTickets';
+
 export type Currency = 'INR' | 'USD';
 
 export const CURRENCY_SYMBOLS: Record<Currency, string> = { INR: '₹', USD: '$' };
@@ -84,11 +86,21 @@ export function resolveFromPrice(
   return { amount: Math.min(...tiers.map((t) => t.amount)), currency: base.currency };
 }
 
-// Cheapest first by that same "From" price (in the visitor's currency), so
-// listings lead with the entry-level tour. Used by /tours and the homepage.
-export function sortByFromPrice<T extends PricedItem & { pricingTiers?: PricedTier[] }>(
-  tours: T[],
-  currency: Currency
-): T[] {
-  return [...tours].sort((a, b) => resolveFromPrice(a, currency).amount - resolveFromPrice(b, currency).amount);
+// Cheapest first by what a traveler pays for the day: the "From" price
+// (in the visitor's currency) plus, for a tour that leaves monument tickets
+// out of its price, its per-person entry-ticket add-ons. Without that, a
+// tour without tickets looked cheaper than one that includes them even
+// when it cost more in total. Used by /tours, the homepage and /agra.
+export function sortByFromPrice<
+  T extends PricedItem & { pricingTiers?: PricedTier[]; addOns?: PricedAddOn[]; entryTicketsInPrice?: string[] },
+>(tours: T[], currency: Currency): T[] {
+  const dayCost = (tour: T) => {
+    const from = resolveFromPrice(tour, currency);
+    if (tour.entryTicketsInPrice?.length) return from.amount;
+    const tickets = resolveAddOns(tour.addOns ?? [], from.currency)
+      .filter((a) => a.perTraveler && isEntryTicketAddOn(a.name))
+      .reduce((sum, a) => sum + a.amount, 0);
+    return from.amount + tickets;
+  };
+  return [...tours].sort((a, b) => dayCost(a) - dayCost(b));
 }

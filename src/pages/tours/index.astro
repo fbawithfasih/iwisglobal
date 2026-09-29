@@ -5,6 +5,9 @@ import MobileActionBar from '../../components/MobileActionBar.astro';
 import { listTours } from '../../lib/tours';
 import { resolveEnv } from '../../lib/env';
 import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
+import { countBookings } from '../../lib/db';
+import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../../lib/catalog';
+import Icon from '../../components/Icon.astro';
 
 export const prerender = false;
 
@@ -16,8 +19,22 @@ if (Astro.url.searchParams.get('currency')) {
   Astro.cookies.set('currency', currency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
 }
 
-// Cheapest first (see sortByFromPrice).
+// Cheapest first, counting tickets a tour leaves out (see sortByFromPrice).
 const tours = sortByFromPrice(publishedTours, currency);
+
+// Facts every tour shares are listed once above the cards, which then show
+// only what differs. If any tour lacks one, the cards list everything.
+const guideLanguage = tours[0]?.guideLanguage;
+const sharedFactsShown =
+  tours.length > 1 &&
+  tours.every((t) => t.pickupIncluded && t.privateTour && t.guideLanguage && t.guideLanguage === guideLanguage);
+const sharedFacts = sharedFactsShown
+  ? ['Private, just your group', 'Hotel pickup', `${guideLanguage}-speaking guide`, 'Free cancellation up to 24 hours before']
+  : [];
+
+// Founding Guest offer (display only; create-order decides the discount).
+const foundingGuestSlotsLeft = env.DB ? Math.max(0, FOUNDING_GUEST_SLOT_CAP - (await countBookings(env.DB))) : 0;
+const foundingGuestPercent = Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100);
 ---
 <BaseLayout
   title="Taj Mahal Tours — Private, Guided Agra Trips | IWIS Global"
@@ -25,13 +42,29 @@ const tours = sortByFromPrice(publishedTours, currency);
 >
   <section class="max-w-6xl mx-auto px-6 py-16">
     <h1 class="text-3xl font-serif font-semibold mb-2">Taj Mahal tours</h1>
-    <p class="text-stone-600 mb-8 max-w-2xl">
-      Private, professionally guided same-day Taj Mahal &amp; Agra tours from Delhi, run and
-      guided by IWIS Global directly (not a marketplace re-listing). Not sure what a ticket costs first?
+    <p class="text-stone-600 mb-6 max-w-2xl">
+      Private, guided same-day Taj Mahal and Agra tours from Delhi, booked and run directly by IWIS Global,
+      not through a marketplace. Not sure what a ticket costs first?
       <a href="/guides/taj-mahal-ticket-price-2026" class="text-brand-700 hover:underline">See the full Taj Mahal ticket price breakdown</a>.
     </p>
+    {sharedFacts.length > 0 && (
+      <ul class="flex flex-wrap gap-x-5 gap-y-2 mb-6 text-sm text-stone-700" aria-label="Every tour includes">
+        {sharedFacts.map((fact) => (
+          <li class="flex items-center gap-1.5">
+            <Icon name="check" class="h-4 w-4 shrink-0 text-brand-700" strokeWidth={2.5} />
+            {fact}
+          </li>
+        ))}
+      </ul>
+    )}
+    {foundingGuestSlotsLeft > 0 && (
+      <p class="mb-8 max-w-2xl rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
+        <span class="font-semibold">Founding Guest offer:</span> {foundingGuestPercent}% off for our first {FOUNDING_GUEST_SLOT_CAP} guests,
+        {foundingGuestSlotsLeft} {foundingGuestSlotsLeft === 1 ? 'spot' : 'spots'} left. No code needed; it comes off at checkout.
+      </p>
+    )}
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {tours.map((tour, i) => <TourCard tour={tour} currency={currency} loading={i === 0 ? "eager" : "lazy"} />)}
+      {tours.map((tour, i) => <TourCard tour={tour} currency={currency} loading={i === 0 ? "eager" : "lazy"} sharedFactsShown={sharedFactsShown} />)}
     </div>
   </section>
 
