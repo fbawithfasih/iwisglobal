@@ -3,7 +3,7 @@ title: "How to Avoid Taj Mahal Scams (2026)"
 description: "The scams that actually catch visitors between Delhi and the Taj Mahal, from fake ticket websites to 'skip the line' guides, and how to check any operator before you pay."
 authorName: "IWIS Global"
 datePublished: 2026-09-29
-dateModified: 2026-09-29
+dateModified: 2026-09-30
 ---
 
 **Most Taj Mahal scams work the same way: someone offers to solve a problem you don't actually have.** Your ticket is "invalid", the queue is "impossible", your hotel is "closed", the train is "cancelled". The fix is also the same every time: check the claim yourself, using an official source, before you hand over money. In September 2026 alone, Agra police arrested 50 people in a 15-day crackdown on tourist scams near the Taj Mahal ([Amar Ujala, 11 September 2026](https://www.amarujala.com/video/uttar-pradesh/agra/video-tourist-scammers-target-taj-mahal-visitors-50-arrested-in-15-day-crackdown-agra-up-2026-09-11)), so these aren't rare stories. Here are the ones that matter, in the order you'd meet them.
@@ -63,4 +63,4 @@ Save these numbers before you travel. Our guide to the [Agra Tourist Police](/bl
 
 ## How we do it
 
-IWIS Global is a registered partnership firm in Agra (GSTIN 09AAIFI6799J1ZH). You can check that number with the GST portal's tool above, and our address and grievance officer are on our [contact page](/contact). Every tour has a fixed price shown before you pay, with monument tickets included on most tours, and you pay online through Razorpay. There are no shopping stops on our tours; our [No-Commission Pledge](/no-commission-pledge) explains why. If you'd like a guided day without the guesswork, see our [private tours from Delhi](/tours).
+IWIS Global is a registered partnership firm in Agra (GSTIN 09AAIFI6799J1ZH). You can check that number with the GST portal's tool above, and our address and grievance officer are on our [contact page](/contact). Every tour has a fixed price shown before you pay, with monument tickets included on most tours, and you pay online through Razorpay. No stop on our tours earns us a commission, and any shop stop is optional: skip it and nothing about your day or price changes. Our [No-Commission Pledge](/no-commission-pledge) explains this. If you'd like a guided day without the guesswork, see our [private tours from Delhi](/tours).
