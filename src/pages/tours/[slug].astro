@@ -470,4 +470,9 @@ const tripJsonLd = {
   // Backlog 2.8 — product-marketing-context.md §9's "Key events" list.
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ event: 'tour_viewed', tour_id: tourId, tour_name: tourName, currency, value });
+  // Meta Pixel, sent only if the visitor accepts cookies (CookieConsent.astro).
+  (window.iwisPixelQueue = window.iwisPixelQueue || []).push([
+    'ViewContent',
+    { content_ids: [tourId], content_name: tourName, content_type: 'product', currency, value },
+  ]);
 </script>

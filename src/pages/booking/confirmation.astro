@@ -41,6 +41,12 @@ const isDeposit = booking?.payment_type === 'deposit';
 const discount = booking?.discount_label && booking.discount_amount ? { label: booking.discount_label, amount: booking.discount_amount } : null;
 // Reached right after paying and, later, from the email's "View your
 // booking" button — so say what the booking's status is now.
+// Meta Pixel Purchase: only on the visit right after paying (the booking is
+// under 30 minutes old), not when the guest reopens this page from the email.
+const freshPurchase =
+  booking && booking.status !== 'cancelled' && Date.now() - new Date(booking.created_at).getTime() < 30 * 60 * 1000
+    ? { eventID: booking.payment_id, tourId: booking.tour_id, value: booking.amount_paid / 100, currency: booking.currency }
+    : null;
 const status = booking?.status === 'cancelled' ? 'cancelled' : booking?.status === 'completed' ? 'completed' : 'confirmed';
 const bookingSummary = booking ? `${tourTitle} on ${formatDate(booking.travel_date)}, booking ID ${booking.id}` : '';
 const waLink = (text: string) => 'https://wa.me/916399226633?text=' + encodeURIComponent(text);
@@ -154,3 +160,14 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
     display: none;
   }
 </style>
+
+{freshPurchase && (
+  <script is:inline define:vars={{ purchase: freshPurchase }}>
+    // Sent only if the visitor accepts cookies (CookieConsent.astro).
+    (window.iwisPixelQueue = window.iwisPixelQueue || []).push([
+      'Purchase',
+      { content_ids: [purchase.tourId], content_type: 'product', value: purchase.value, currency: purchase.currency },
+      { eventID: purchase.eventID },
+    ]);
+  </script>
+)}

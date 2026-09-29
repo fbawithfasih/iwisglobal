@@ -11,7 +11,7 @@ export const prerender = false;
 // because payment-network reviewers read it as an incomplete policy.
 // Apple sign-in is built but not switched on, so only Google is named
 // below (same in terms.astro); add Apple back when it is.
-const lastUpdated = '28 September 2026';
+const lastUpdated = '30 September 2026';
 ---
 
 <BaseLayout title="Privacy Policy — IWIS Global" description="How IWIS Global collects, uses, and protects your information when you book a tour or create an account.">
@@ -35,6 +35,7 @@ const lastUpdated = '28 September 2026';
       <li><strong>Preferences:</strong> your chosen language and currency are stored in cookies on your device so the site remembers them on your next visit.</li>
       <li><strong>Enquiries by WhatsApp, phone or email:</strong> if you contact us before booking, we may record your name, contact details, message and the tour you're interested in, so we can follow up. The messages themselves also travel through WhatsApp (Meta) or your email provider, under their own privacy practices.</li>
       <li><strong>Analytics:</strong> this site uses Google Analytics (with Google Tag Manager) to understand how visitors use the site — for example, which pages are visited and general navigation patterns. This collects standard usage data (pages viewed, approximate location, device/browser type). When you book, we also send Google Analytics the tour, amount, currency, number of travelers and payment reference, linked to your browser's analytics ID — never your name or contact details. It is not used to identify you personally.</li>
+      <li><strong>Advertising (only if you accept):</strong> if you tap Accept on our cookie banner, the Meta Pixel records which pages you visit and, when you book, the tour, amount paid, currency and payment reference, so we can show our tours to you on Instagram and Facebook and measure which ads lead to bookings. We never send Meta your name, email or phone number. If you tap Reject, the Meta Pixel doesn't load.</li>
     </ul>
 
     <h2 class="text-lg font-semibold mb-2">How we use this information</h2>
@@ -54,6 +55,7 @@ const lastUpdated = '28 September 2026';
       <li><strong>Google</strong> — only if you choose to sign in with it.</li>
       <li><strong>Cloudflare</strong> — our hosting and database provider; your requests pass through their infrastructure to reach our servers.</li>
       <li><strong>Google</strong> — via Google Analytics and Google Tag Manager, for the site-usage and booking analytics described above.</li>
+      <li><strong>Meta (Facebook, Instagram)</strong> — via the Meta Pixel, only if you accept advertising cookies, for the advertising described above.</li>
       <li><strong>Resend</strong> — the email service that sends your booking confirmation, e-tickets and review requests (it receives your name, email address, and booking details).</li>
       <li><strong>Archaeological Survey of India (ASI)</strong> — traveler names and nationalities, only when we buy monument entry tickets for your tour.</li>
       <li><strong>Anthropic</strong> — the text of questions you type into the YourGuide box, to generate the answer.</li>
@@ -61,15 +63,18 @@ const lastUpdated = '28 September 2026';
     </ul>
     <p class="text-stone-700 mb-6">We don't share your information with anyone else for marketing purposes.</p>
 
-    <h2 class="text-lg font-semibold mb-2">Cookies</h2>
-    <p class="text-stone-700 mb-2">This site uses a small number of cookies — none for advertising. Most make the site work; the Google Analytics cookies measure site usage:</p>
+    <h2 id="cookies" class="text-lg font-semibold mb-2 scroll-mt-24">Cookies</h2>
+    <p class="text-stone-700 mb-2">This site uses a small number of cookies. Most make the site work, and the Google Analytics cookies measure site usage. The Meta advertising cookies are set only if you tap Accept on our cookie banner:</p>
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
       <li><code class="text-sm bg-stone-100 px-1 rounded">currency</code> and <code class="text-sm bg-stone-100 px-1 rounded">lang</code> — remember your preferred currency and language.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">customer_session</code> — keeps you signed in, if you have an account.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">admin_session</code> — staff-only, used to access the booking management system.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">oauth_state</code> — a short-lived cookie used only during Google sign-in, deleted immediately after.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">_ga</code>, <code class="text-sm bg-stone-100 px-1 rounded">_ga_*</code> — set by Google Analytics to distinguish visitors and measure site usage.</li>
+      <li><code class="text-sm bg-stone-100 px-1 rounded">cookie_consent</code> — remembers whether you accepted or rejected advertising cookies, for 180 days.</li>
+      <li><code class="text-sm bg-stone-100 px-1 rounded">_fbp</code>, <code class="text-sm bg-stone-100 px-1 rounded">_fbc</code> — set by the Meta Pixel, only if you accept, to recognise your browser for Instagram and Facebook ads.</li>
     </ul>
+    <p class="text-stone-700 mb-6">You can change your choice at any time with “Cookie settings” at the bottom of every page. Rejecting removes the Meta cookies from this site.</p>
 
     <h2 class="text-lg font-semibold mb-2">Data retention</h2>
     <p class="text-stone-700 mb-6">We keep booking records for as long as needed for accounting, legal, and customer-support purposes. You can ask us to delete your account and associated personal data by contacting us — see below.</p>
@@ -77,7 +82,8 @@ const lastUpdated = '28 September 2026';
     <h2 class="text-lg font-semibold mb-2">Your choices</h2>
     <p class="text-stone-700 mb-6">
       You can book a tour as a guest without creating an account. If you do sign in, you can stop using that
-      account at any time, and can ask us to delete your data by contacting us.
+      account at any time, and can ask us to delete your data by contacting us. You can accept or reject
+      advertising cookies, and change that choice later, with “Cookie settings” at the bottom of every page.
     </p>
 
     <h2 class="text-lg font-semibold mb-2">Contact us</h2>
