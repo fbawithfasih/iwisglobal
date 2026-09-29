@@ -457,15 +457,14 @@ const websiteJsonLd = Astro.url.pathname === '/'
     window.addEventListener('scroll', updateScrolled, { passive: true });
   }
 
-  // Backlog 2.8/2.9 — dataLayer events, product-marketing-context.md §9.
-  window.dataLayer = window.dataLayer || [];
+  // Backlog 2.8/2.9 — Google Analytics events, product-marketing-context.md §9.
 
   // whatsapp_clicked: delegated so it covers every wa.me link site-wide
   // (footer, floating button, and any page-specific ones like /help's),
   // as long as it carries data-wa-ref.
   document.addEventListener('click', (e) => {
     const link = (e.target as Element)?.closest?.('[data-wa-ref]');
-    if (link) window.dataLayer.push({ event: 'whatsapp_clicked', ref: link.getAttribute('data-wa-ref') });
+    if (link) window.gtag?.('event', 'whatsapp_clicked', { ref: link.getAttribute('data-wa-ref') });
   });
 
   // currency_switched / language_switched: the switcher does a full
@@ -473,7 +472,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
   // destination page's first load — exactly the signal to fire on.
   const params = new URLSearchParams(location.search);
   const switchedCurrency = params.get('currency');
-  if (switchedCurrency) window.dataLayer.push({ event: 'currency_switched', currency: switchedCurrency });
+  if (switchedCurrency) window.gtag?.('event', 'currency_switched', { currency: switchedCurrency });
   const switchedLang = params.get('lang');
-  if (switchedLang) window.dataLayer.push({ event: 'language_switched', language: switchedLang });
+  if (switchedLang) window.gtag?.('event', 'language_switched', { language: switchedLang });
 </script>

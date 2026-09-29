@@ -12,12 +12,6 @@ interface Exchange {
   a: string;
 }
 
-declare global {
-  interface Window {
-    dataLayer: any[];
-  }
-}
-
 export default function AiGuideBox() {
   const [message, setMessage] = useState('');
   const [history, setHistory] = useState<Exchange[]>([]);
@@ -32,8 +26,7 @@ export default function AiGuideBox() {
     setLoading(true);
     setAnswer(null);
 
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ event: 'ai_guide_asked' });
+    window.gtag?.('event', 'ai_guide_asked');
 
     try {
       const res = await fetch('/api/ai-guide', {

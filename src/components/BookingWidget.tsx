@@ -24,22 +24,20 @@ function contactErrors(name: string, email: string, phone: string): Partial<Reco
 declare global {
   interface Window {
     Razorpay: any;
-    dataLayer: any[];
   }
 }
 
-// Thin wrapper around GTM's dataLayer (backlog 2.8/2.9's "Key events" list
-// — product-marketing-context.md §9). `purchase` is deliberately NOT pushed
+// Sends a Google Analytics event through gtag.js (backlog 2.8/2.9's "Key
+// events" list — product-marketing-context.md §9). `purchase` is deliberately NOT pushed
 // here: on a redirect-based payment flow the browser can navigate away
 // before this would fire, which undercounts. That event is server-side
 // only, via the Razorpay webhook (src/pages/api/webhooks/razorpay.ts).
 function track(event: string, params: Record<string, unknown> = {}): void {
   if (typeof window === 'undefined') return;
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({ event, ...params });
+  window.gtag?.('event', event, params);
 }
 
-// GA4's client_id, read from the _ga cookie it sets once GTM's GA4 tag has
+// GA4's client_id, read from the _ga cookie it sets once the Google tag has
 // loaded (format: GA1.1.<part1>.<part2> — the id itself is the last two
 // segments). Passed to /api/create-order so the eventual webhook-fired
 // purchase event can be attributed to this same GA4 user (backlog 2.8).
