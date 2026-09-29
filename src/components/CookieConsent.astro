@@ -81,7 +81,7 @@
     window.iwisPixelQueue = { push: ([name, params, options]: QueuedEvent) => window.fbq('track', name, params || {}, options || {}) } as any;
   };
 
-  // Tells Google tags (gtag and Tag Manager) the visitor's choice.
+  // Tells the Google tag the visitor's choice.
   const updateGoogleConsent = (value: 'granted' | 'denied') =>
     window.gtag?.('consent', 'update', {
       analytics_storage: value,

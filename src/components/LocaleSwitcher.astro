@@ -59,6 +59,9 @@ function hrefFor(param: string, value: string): string {
       {LOCALES.map((l) => (
         <a
           href={hrefFor('lang', l.code)}
+          data-switch="language"
+          data-value={l.code}
+          data-current={l.code === locale ? '' : undefined}
           class={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition ${l.code === locale ? 'bg-brand-50 text-brand-800' : 'hover:bg-stone-50'}`}
         >
           <span>
@@ -78,6 +81,9 @@ function hrefFor(param: string, value: string): string {
       {CURRENCIES.map((c) => (
         <a
           href={hrefFor('currency', c.code)}
+          data-switch="currency"
+          data-value={c.code}
+          data-current={c.code === currency ? '' : undefined}
           class={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition ${c.code === currency ? 'bg-brand-50 text-brand-800' : 'hover:bg-stone-50'}`}
         >
           <span class="font-medium">{c.code} {c.symbol}</span>
