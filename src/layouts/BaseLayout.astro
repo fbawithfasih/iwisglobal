@@ -151,6 +151,21 @@ const websiteJsonLd = Astro.url.pathname === '/'
 <!doctype html>
 <html lang={locale} class="scroll-smooth">
   <head>
+    <!-- Google consent defaults, before any Google tag loads: analytics and
+         ad cookies stay off until the visitor taps Accept on the cookie
+         banner (CookieConsent.astro), which remembers the choice in the
+         cookie_consent cookie. -->
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      var consentState = /(?:^|; )cookie_consent=granted/.test(document.cookie) ? 'granted' : 'denied';
+      gtag('consent', 'default', {
+        analytics_storage: consentState,
+        ad_storage: consentState,
+        ad_user_data: consentState,
+        ad_personalization: consentState,
+      });
+    </script>
     <!-- Google Tag Manager -->
     <script is:inline>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -161,8 +176,6 @@ const websiteJsonLd = Astro.url.pathname === '/'
     <!-- Google tag (gtag.js) -->
     <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-3CCCVSYT7D"></script>
     <script is:inline>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
       gtag('config', 'G-3CCCVSYT7D');

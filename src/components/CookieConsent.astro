@@ -1,8 +1,8 @@
 ---
-// Cookie consent for the Meta Pixel (Instagram/Facebook retargeting). The
-// pixel sets advertising cookies, so it loads only after the visitor taps
-// Accept (UK PECR; see /privacy). Rejecting keeps the site working as
-// before. The choice is kept in a first-party `cookie_consent` cookie for
+// Cookie consent for Google Analytics and the Meta Pixel. Neither sets
+// cookies until the visitor taps Accept (UK PECR; see /privacy): Google's
+// consent defaults are set to denied in BaseLayout's <head>, and the Meta
+// Pixel doesn't load at all. Rejecting keeps the site working as before. The choice is kept in a first-party `cookie_consent` cookie for
 // 180 days; "Cookie settings" in the footer reopens the banner.
 //
 // Pages queue pixel events before (or without) consent:
@@ -18,8 +18,8 @@
   style="padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
 >
   <p class="text-sm text-stone-700">
-    Can we use Meta advertising cookies? They let us show our tours to you on Instagram and Facebook after
-    your visit. The site works the same either way.
+    Can we use cookies for analytics and advertising? Google Analytics shows us how the site is used, and
+    Meta cookies let us show you our tours on Instagram and Facebook. The site works the same either way.
     <a href="/privacy#cookies" class="text-brand-800 underline">Privacy Policy</a>
   </p>
   <div class="mt-3 flex gap-2">
@@ -43,6 +43,7 @@
   declare global {
     interface Window {
       fbq?: any;
+      gtag?: (...args: unknown[]) => void;
       _fbq?: any;
       iwisPixelQueue?: QueuedEvent[];
     }
@@ -80,11 +81,25 @@
     window.iwisPixelQueue = { push: ([name, params, options]: QueuedEvent) => window.fbq('track', name, params || {}, options || {}) } as any;
   };
 
-  // Withdrawing consent: stop sending and clear Meta's cookies.
-  const clearMetaCookies = () => {
-    for (const name of ['_fbp', '_fbc']) {
+  // Tells Google tags (gtag and Tag Manager) the visitor's choice.
+  const updateGoogleConsent = (value: 'granted' | 'denied') =>
+    window.gtag?.('consent', 'update', {
+      analytics_storage: value,
+      ad_storage: value,
+      ad_user_data: value,
+      ad_personalization: value,
+    });
+
+  // Withdrawing consent: stop sending and clear Google's and Meta's cookies.
+  const clearTrackingCookies = () => {
+    const names = document.cookie
+      .split('; ')
+      .map((c) => c.split('=')[0])
+      .filter((name) => name === '_fbp' || name === '_fbc' || name === '_ga' || name.startsWith('_ga_') || name.startsWith('_gcl_'));
+    const domain = location.hostname.replace(/^www\./, '');
+    for (const name of names) {
       document.cookie = `${name}=; Max-Age=0; Path=/`;
-      document.cookie = `${name}=; Max-Age=0; Path=/; Domain=.${location.hostname.replace(/^www\./, '')}`;
+      document.cookie = `${name}=; Max-Age=0; Path=/; Domain=.${domain}`;
     }
   };
 
@@ -100,11 +115,12 @@
       const choice = button.dataset.consent as 'granted' | 'denied';
       saveChoice(choice);
       banner.hidden = true;
+      updateGoogleConsent(choice);
       if (choice === 'granted') {
         apply(choice);
       } else {
         window.fbq?.('consent', 'revoke');
-        clearMetaCookies();
+        clearTrackingCookies();
       }
     })
   );
