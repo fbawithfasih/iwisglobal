@@ -8,8 +8,10 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 import TourCard from '../../components/TourCard.astro';
+import SharedTourFacts from '../../components/SharedTourFacts.astro';
+import FoundingGuestNote from '../../components/FoundingGuestNote.astro';
 import { resolveEnv } from '../../lib/env';
-import { listTours } from '../../lib/tours';
+import { listTours, sharedTourFacts } from '../../lib/tours';
 import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
 
 const { slug } = Astro.params;
@@ -36,6 +38,8 @@ const tours = sortByFromPrice(
   ),
   currency
 );
+// Listed once above the tours; the cards then show only what differs.
+const sharedFacts = sharedTourFacts(tours);
 
 const attractionJsonLd = {
   '@context': 'https://schema.org',
@@ -100,10 +104,12 @@ const attractionJsonLd = {
 
     {tours.length > 0 && (
       <section class="mt-12">
-        <h2 class="text-2xl font-serif font-semibold mb-4">Tours that visit {name === 'Taj Mahal' ? 'the Taj Mahal' : name}</h2>
+        <h2 class="text-2xl font-serif font-semibold mb-3">Tours that visit {name === 'Taj Mahal' ? 'the Taj Mahal' : name}</h2>
+        <SharedTourFacts facts={sharedFacts} class="mb-4" />
+        <FoundingGuestNote class="mb-4" />
         <!-- Phones: a swipeable row (like the homepage and /agra) instead of stacked cards. -->
         <div class="-mx-6 flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-6 px-6 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0">
-          {tours.map((tour) => <div class="w-64 shrink-0 snap-start sm:w-auto"><TourCard tour={tour} currency={currency} headingLevel="h3" /></div>)}
+          {tours.map((tour) => <div class="w-64 shrink-0 snap-start sm:w-auto"><TourCard tour={tour} currency={currency} headingLevel="h3" sharedFactsShown={sharedFacts.length > 0} /></div>)}
         </div>
       </section>
     )}

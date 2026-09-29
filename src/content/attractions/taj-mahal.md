@@ -3,6 +3,7 @@ name: "Taj Mahal"
 description: "The white marble mausoleum Shah Jahan built for Mumtaz Mahal — Agra's centerpiece and a UNESCO World Heritage Site. Entry ₹1,300 for foreign; closed Fridays."
 ticketPriceForeign: "₹1,300 total (₹1,100 complex entry + ₹200 mausoleum chamber)"
 ticketPriceIndian: "₹250 total (₹50 complex entry + ₹200 mausoleum chamber)"
+ticketPriceSaarc: "₹740 total (₹540 complex entry + ₹200 mausoleum chamber)"
 hours: "Opens 30 minutes before sunrise, closes 30 minutes before sunset. Ticket windows: 1 hour before sunrise to 45 minutes before sunset."
 closedFriday: true
 distanceFromTaj: "—"
@@ -12,10 +13,10 @@ image:
   alt: The Taj Mahal's white marble mausoleum and minarets reflected in the long garden pool
   width: 1200
   height: 800
-dateModified: 2026-09-27
+dateModified: 2026-09-30
 ---
 
-The Taj Mahal is the white marble mausoleum Mughal emperor Shah Jahan built for his wife Mumtaz Mahal, on the south bank of the Yamuna River in Agra. It's Agra's reason most travelers come at all, and the monument most same-day Delhi trips are built around.
+The Taj Mahal is the white marble mausoleum Mughal emperor Shah Jahan built for his wife Mumtaz Mahal, on the south bank of the Yamuna River in Agra. It's the main reason most travelers visit Agra, and the monument most same-day Delhi trips are built around.
 
 ## Ticket price
 
@@ -35,7 +36,7 @@ Tripods, drones, food, tobacco, and several other items are banned — see our [
 
 ## Getting there
 
-Most international visitors see the Taj Mahal as part of a same-day trip from Delhi, roughly 230 km via the Yamuna Expressway. IWIS Global runs both a [Same-Day Taj Mahal Tour from Delhi](/tours/same-day-agra-from-delhi) and a [Taj Mahal Sunrise Tour](/tours/taj-mahal-sunrise-tour), with private transport and an English-speaking guide.
+Most international visitors see the Taj Mahal as part of a same-day trip from Delhi, roughly 230 km via the Yamuna Expressway. IWIS Global runs private [tours from Delhi](/tours) that visit the Taj Mahal, by car or on the Gatimaan Express train, each with an English-speaking guide; they're listed below.
 
 ---
 
