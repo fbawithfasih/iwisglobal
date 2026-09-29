@@ -14,9 +14,13 @@ interface Props {
   // The page already lists what every tour has (pickup, private, guide,
   // free cancellation), so the card shows only what differs.
   sharedFactsShown?: boolean;
+  // h3 when the card sits under a section heading (homepage, /agra);
+  // h2 on /tours, where the cards sit directly under the page's h1.
+  headingLevel?: 'h2' | 'h3';
 }
 
-const { tour, currency, loading = 'lazy', sharedFactsShown = false } = Astro.props;
+const { tour, currency, loading = 'lazy', sharedFactsShown = false, headingLevel = 'h2' } = Astro.props;
+const Heading = headingLevel;
 const availability = getAvailability();
 // Cheapest available per-person rate (the largest-group tier when the tour
 // has pricing tiers) — see backlog 0.2. Kept in sync with tours/[slug].astro's
@@ -42,7 +46,7 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
     {badge && (
       <p class="mb-1.5 inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">{badge}</p>
     )}
-    <h2 class="text-lg font-semibold mb-1 group-hover:underline">{tour.title}</h2>
+    <Heading class="text-lg font-semibold mb-1 group-hover:underline">{tour.title}</Heading>
 
     <!-- Wraps to two lines on narrow cards (the homepage carousel) rather
          than breaking the label or "/person" mid-phrase. -->
