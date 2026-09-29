@@ -2,6 +2,9 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Button from '../components/Button.astro';
 import MobileActionBar from '../components/MobileActionBar.astro';
+import { resolveEnv } from '../lib/env';
+import { countBookings } from '../lib/db';
+import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../lib/catalog';
 
 // Was prerender = true (static) — flipped to per-request now that
 // BaseLayout's nav reflects live sign-in state via Astro.cookies, which
@@ -21,6 +24,13 @@ interface FaqCategory {
   title: string;
   items: FaqItem[];
 }
+
+// The Founding Guest offer is mentioned only while spots remain.
+const db = resolveEnv(Astro.locals).DB;
+const foundingGuestOpen = db ? (await countBookings(db)) < FOUNDING_GUEST_SLOT_CAP : false;
+const foundingGuestLine = foundingGuestOpen
+  ? ` Right now, our first ${FOUNDING_GUEST_SLOT_CAP} guests get ${Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100)}% off automatically, with no code needed (the Founding Guest offer).`
+  : '';
 
 const categories: FaqCategory[] = [
   {
@@ -42,6 +52,13 @@ const categories: FaqCategory[] = [
         id: 'account',
         question: 'Do I need to create an account?',
         answer: "No account or sign-up needed. You just enter your name, email, and phone number at checkout — that's it.",
+      },
+      {
+        id: 'scams',
+        question: 'How do I avoid Taj Mahal scams?',
+        answer:
+          "Buy monument tickets only through ASI's official channels, agree any guide's full price before you start, and don't book anything at an office a driver takes you to. Before paying any tour company, check its GST number on the government's GST portal. Our guide to avoiding Taj Mahal scams covers the common ones, from fake ticket websites to gate touts.",
+        links: [{ text: 'guide to avoiding Taj Mahal scams', href: '/guides/how-to-avoid-taj-mahal-scams' }],
       },
     ],
   },
@@ -69,7 +86,7 @@ const categories: FaqCategory[] = [
         id: 'discounts',
         question: 'Do you have discounts or coupon codes?',
         answer:
-          "Sometimes. Running offers show on the tour page and apply automatically. If you have a coupon code, enter it at checkout under \"Have a coupon code?\". One discount applies per booking, and you automatically get the biggest one.",
+          `Sometimes. Running offers show on our tour pages and apply automatically.${foundingGuestLine} If you have a coupon code, enter it at checkout under "Have a coupon code?". One discount applies per booking, and you automatically get the biggest one.`,
       },
       {
         id: 'deposit',
@@ -105,7 +122,7 @@ const categories: FaqCategory[] = [
         id: 'included',
         question: "What's included in the price?",
         answer:
-          "Every tour includes private transport and an English-speaking guide. Most also include Taj Mahal and Agra Fort entry tickets in the price; the tour card says \"Entry tickets included\" when they do. Check the \"Included\" and \"Not included\" sections on the tour you're booking before you pay.",
+          "Every tour is private to your group, with an English-speaking guide and a private car (on the Gatimaan tour you travel to Agra on the scheduled express train). Most also include Taj Mahal and Agra Fort entry tickets in the price; the tour card says \"Entry tickets included\" when they do. Check the \"Included\" and \"Not included\" sections on the tour you're booking before you pay.",
       },
     ],
   },
@@ -115,7 +132,7 @@ const categories: FaqCategory[] = [
       {
         id: 'contact',
         question: 'How do I contact you with a question?',
-        answer: 'Message us on WhatsApp — tap the green WhatsApp button on any page; we usually reply within 15 minutes. You can also call or email us; everything is on our Contact Us page.',
+        answer: 'Message us on WhatsApp — tap any WhatsApp link, or the WhatsApp button at the bottom of the page; we usually reply within 15 minutes. You can also call or email us; everything is on our Contact Us page.',
         links: [{ text: 'Contact Us', href: '/contact' }],
       },
     ],
