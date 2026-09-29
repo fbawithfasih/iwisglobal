@@ -5,6 +5,7 @@ import { resolveLocale } from '../lib/i18n';
 import { getDictionary } from '../i18n/dictionaries';
 import LocaleSwitcher from '../components/LocaleSwitcher.astro';
 import GlobeLogo from '../components/GlobeLogo.astro';
+import { hasApprovedReviews } from '../lib/reviews';
 
 interface BreadcrumbItem {
   name: string;
@@ -68,6 +69,8 @@ const ogImageURL = Astro.site ? new URL(image, Astro.site).toString() : image;
 
 const env = resolveEnv(Astro.locals);
 const isSignedIn = !!(await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET));
+// Footer links to /reviews only once there's an approved review to show.
+const showReviewsLink = env.DB ? await hasApprovedReviews(env.DB).catch(() => false) : false;
 
 const locale = resolveLocale(Astro.url.searchParams, Astro.cookies.get('lang')?.value);
 if (Astro.url.searchParams.get('lang')) {
@@ -327,6 +330,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
             <li><a href="/guides" class="text-stone-600 hover:text-brand-800 transition">Travel guides</a></li>
             <li><a href="/about" class="text-stone-600 hover:text-brand-800 transition">About us</a></li>
             <li><a href="/no-commission-pledge" class="text-stone-600 hover:text-brand-800 transition">No-commission pledge</a></li>
+            {showReviewsLink && <li><a href="/reviews" class="text-stone-600 hover:text-brand-800 transition">Guest reviews</a></li>}
           </ul>
         </div>
       </div>

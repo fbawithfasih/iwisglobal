@@ -161,6 +161,12 @@ export async function listApprovedReviews(db: D1Like, tourId?: string): Promise<
   return results.map(toReview);
 }
 
+// Whether /reviews has anything to show; the footer links to it only then.
+export async function hasApprovedReviews(db: D1Like): Promise<boolean> {
+  const row = await db.prepare(`SELECT 1 AS found FROM tour_reviews WHERE status = 'approved' LIMIT 1`).bind().first<{ found: number }>();
+  return !!row;
+}
+
 export async function setReviewStatus(db: D1Like, id: string, status: string): Promise<void> {
   if (!REVIEW_STATUSES.includes(status as ReviewStatus)) throw new Error('Invalid status');
   await db.prepare(`UPDATE tour_reviews SET status = ? WHERE id = ?`).bind(status, id).run();

@@ -29,8 +29,8 @@ const tourNames = new Map((db && reviews.length ? await listTours(db) : []).map(
     : "We're a new operator and don't have reviews to show yet — here's where they'll go as real guests leave them."}
   noindex={reviews.length === 0}
 >
-  <section class="max-w-2xl mx-auto px-6 py-16 text-center">
-    <h1 class="text-3xl font-serif font-semibold mb-4">Reviews</h1>
+  <section class="max-w-2xl mx-auto px-6 py-16">
+    <h1 class="text-3xl font-serif font-semibold mb-4 text-center">Reviews</h1>
     {reviews.length > 0 ? (
       <>
         <p class="text-stone-600 mb-8">
@@ -38,7 +38,7 @@ const tourNames = new Map((db && reviews.length ? await listTours(db) : []).map(
           Every review here was written by a guest who booked and took the tour with us, through a private link we
           send after the trip. We publish every genuine review, good or bad.
         </p>
-        <div class="text-left mb-10"><ReviewList reviews={reviews} tourNames={tourNames} /></div>
+        <div class="mb-10"><ReviewList reviews={reviews} tourNames={tourNames} /></div>
         <p class="text-stone-600 mb-6">Traveled with us? You can also review us on Google.</p>
       </>
     ) : (
@@ -53,12 +53,14 @@ const tourNames = new Map((db && reviews.length ? await listTours(db) : []).map(
         </p>
       </>
     )}
-    <Button href={GOOGLE_REVIEW_URL} target="_blank" rel="noopener noreferrer">
-      Leave us a review on Google
-    </Button>
+    <div class="text-center">
+      <Button href={GOOGLE_REVIEW_URL} target="_blank" rel="noopener noreferrer">
+        Leave us a review on Google
+      </Button>
+    </div>
 
-    <div class="mt-14 border-t border-stone-200 pt-8">
-      <p class="text-stone-600 mb-4">In the meantime, here's how we work:</p>
+    <div class="mt-14 border-t border-stone-200 pt-8 text-center">
+      <p class="text-stone-600 mb-4">{reviews.length > 0 ? "Here's how we work:" : "In the meantime, here's how we work:"}</p>
       <div class="flex flex-col sm:flex-row sm:justify-center gap-3">
         <a href="/no-commission-pledge" class="inline-flex min-h-11 items-center justify-center rounded-full border border-stone-300 bg-white px-5 font-medium text-brand-800 hover:border-brand-300 transition">No-commission pledge</a>
         <a href="/about" class="inline-flex min-h-11 items-center justify-center rounded-full border border-stone-300 bg-white px-5 font-medium text-brand-800 hover:border-brand-300 transition">About us</a>
@@ -67,3 +69,11 @@ const tourNames = new Map((db && reviews.length ? await listTours(db) : []).map(
     </div>
   </section>
 </BaseLayout>
+
+<style is:global>
+  /* The floating WhatsApp button sat on top of "View tours" on phones;
+     the footer still has the WhatsApp link. */
+  a[data-wa-ref^='FLOATING'] {
+    display: none;
+  }
+</style>
