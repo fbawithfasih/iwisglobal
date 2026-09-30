@@ -7,6 +7,11 @@ import LocaleSwitcher from '../components/LocaleSwitcher.astro';
 import GlobeLogo from '../components/GlobeLogo.astro';
 import CookieConsent from '../components/CookieConsent.astro';
 import { hasApprovedReviews } from '../lib/reviews';
+// Heading font, self-hosted (was a render-blocking Google Fonts stylesheet on
+// two extra origins). Only the Latin file is preloaded; other scripts'
+// subsets download on demand via unicode-range.
+import '@fontsource-variable/source-serif-4/wght.css';
+import serifLatinUrl from '@fontsource-variable/source-serif-4/files/source-serif-4-latin-wght-normal.woff2?url';
 
 interface BreadcrumbItem {
   name: string;
@@ -213,9 +218,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
     {websiteJsonLd && <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />}
     {breadcrumbJsonLd && <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />}
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500..700&display=swap" rel="stylesheet" />
+    <link rel="preload" href={serifLatinUrl} as="font" type="font/woff2" crossorigin />
   </head>
   <body class="bg-stone-50 text-stone-900 antialiased">
     <header id="site-header" class="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur-sm transition-[box-shadow,height] duration-200">

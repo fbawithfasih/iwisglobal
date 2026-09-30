@@ -89,7 +89,10 @@ const blogSlugs = await fetchD1Slugs("SELECT slug FROM blog_posts WHERE status =
 
 export default defineConfig({
   integrations: [
-    tailwind(),
+    // Every layout (BaseLayout, AdminLayout, admin/login) already has its own
+    // @tailwind directives; the default injected copy shipped the whole
+    // stylesheet a second time (two ~54 KB render-blocking CSS files).
+    tailwind({ applyBaseStyles: false }),
     react(),
     sitemap({
       // Only indexable pages: admin/account/auth are robots-disallowed or

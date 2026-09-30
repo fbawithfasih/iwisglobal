@@ -77,7 +77,7 @@ function highlightHref(id: string): string {
         playsinline
         preload="none"
       >
-        <!-- Phones get a 720×720 centre crop (1.9 MB, what a portrait hero
+        <!-- Phones get a 720×720 centre crop (1.2 MB, what a portrait hero
              actually shows) instead of the 19.3 MB 1080p original. Sources use
              data-src: the script below only attaches them (and plays) when
              neither reduced motion nor Data Saver is on, so those visitors
@@ -144,7 +144,7 @@ function highlightHref(id: string): string {
   <section class="bg-brand-50 py-14">
     <div class="max-w-5xl mx-auto px-6 grid gap-8 md:grid-cols-2">
       <div class="max-w-md">
-        <WeatherCard client:load />
+        <WeatherCard client:visible />
       </div>
       <ul class="grid gap-5 sm:grid-cols-2 content-center">
         <li class="flex gap-3">
@@ -305,7 +305,11 @@ function highlightHref(id: string): string {
   // Data-saver mode (Chrome/Android "Lite"/Save-Data): stop the download and
   // keep the still photo, same as reduced motion but also dropping sources.
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
-  if (heroVideo && !reduceMotion && !saveData) {
+  // Wait for the page to finish loading first: the video (1.2 MB on phones)
+  // otherwise competes for bandwidth with the stylesheet, font and hero
+  // still, delaying the first paint. The still shows until the video plays.
+  const attachVideo = () => {
+    if (!heroVideo) return;
     heroVideo.querySelectorAll<HTMLSourceElement>('source[data-src]').forEach((s) => {
       s.src = s.dataset.src!;
     });
@@ -320,5 +324,9 @@ function highlightHref(id: string): string {
     heroVideo.addEventListener('canplay', start);
     document.addEventListener('visibilitychange', start);
     start();
+  };
+  if (heroVideo && !reduceMotion && !saveData) {
+    if (document.readyState === 'complete') attachVideo();
+    else window.addEventListener('load', attachVideo, { once: true });
   }
 </script>

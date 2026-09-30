@@ -18,7 +18,7 @@ export default {
       // override Tailwind's default serif stack (Georgia/Times) rendered
       // instead — the font was loaded but never actually applied.
       fontFamily: {
-        serif: ['"Source Serif 4"', 'ui-serif', 'Georgia', 'serif'],
+        serif: ['"Source Serif 4 Variable"', 'ui-serif', 'Georgia', 'serif'],
       },
     },
   },
