@@ -102,6 +102,16 @@ export async function getBookingByReviewToken(db: D1Like, token: string): Promis
   return db.prepare(`SELECT * FROM bookings WHERE review_token = ?`).bind(token).first<BookingRow>();
 }
 
+// Which of these bookings already have a review (any status).
+export async function reviewedBookingIds(db: D1Like, bookingIds: string[]): Promise<Set<string>> {
+  if (bookingIds.length === 0) return new Set();
+  const { results } = await db
+    .prepare(`SELECT booking_id FROM tour_reviews WHERE booking_id IN (${bookingIds.map(() => '?').join(', ')})`)
+    .bind(...bookingIds)
+    .all<{ booking_id: string }>();
+  return new Set(results.map((r) => r.booking_id));
+}
+
 export async function getReviewForBooking(db: D1Like, bookingId: string): Promise<Review | null> {
   const row = await db.prepare(`SELECT * FROM tour_reviews WHERE booking_id = ?`).bind(bookingId).first<ReviewRow>();
   return row ? toReview(row) : null;
