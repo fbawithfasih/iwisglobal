@@ -11,10 +11,21 @@ import { depositTermsNote } from '../../lib/email';
 export const prerender = false;
 
 // Where the booking widget lands after a verified payment
-// (?payment_id=pay_…). Shows the trip and amounts only — no name, phone or
+// (?payment_id=pay_…, kept in a cookie — see below). Shows the trip and amounts only — no name, phone or
 // full email — since anyone holding the link can open it.
 const env = resolveEnv(Astro.locals);
-const paymentId = Astro.url.searchParams.get('payment_id');
+
+// Every way in (the booking form after paying, the email, My Bookings, the
+// calendar file) links here with ?payment_id=. It moves straight into a
+// cookie and the address loses it, so analytics and the Meta Pixel (both
+// record page addresses) never get a key to this booking.
+const BOOKING_COOKIE = 'booking_ref';
+const fromLink = Astro.url.searchParams.get('payment_id');
+if (fromLink) {
+  Astro.cookies.set(BOOKING_COOKIE, fromLink, { httpOnly: true, secure: true, sameSite: 'lax', path: '/booking', maxAge: 60 * 60 * 24 * 30 });
+  return Astro.redirect('/booking/confirmation', 303);
+}
+const paymentId = Astro.cookies.get(BOOKING_COOKIE)?.value ?? null;
 const db = env.DB;
 const booking = paymentId && db ? await getBookingByPaymentId(db, paymentId) : null;
 const tour = booking && db ? await getTourById(db, booking.tour_id) : null;
