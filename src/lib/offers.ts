@@ -7,6 +7,7 @@
 // it in the trusted order notes), so the two can't drift. The DB functions
 // at the bottom are server-only.
 import type { D1Like } from './db';
+import { forRequest } from './requestCache';
 import type { Currency } from './currency';
 import { CURRENCY_SYMBOLS } from './currency';
 import { applyFoundingGuestDiscount, FOUNDING_GUEST_DISCOUNT_RATE } from './catalog';
@@ -217,14 +218,8 @@ export async function listLiveAutomaticOffers(db: D1Like, today: string): Promis
 }
 
 // The same list, fetched once per page request however many tour cards ask.
-const perRequest = new WeakMap<Request, Promise<Offer[]>>();
 export function liveAutomaticOffersForRequest(db: D1Like, request: Request, today: string): Promise<Offer[]> {
-  let offers = perRequest.get(request);
-  if (!offers) {
-    offers = listLiveAutomaticOffers(db, today).catch(() => []);
-    perRequest.set(request, offers);
-  }
-  return offers;
+  return forRequest(request, 'liveAutomaticOffers', () => listLiveAutomaticOffers(db, today).catch(() => []));
 }
 
 // A coupon the customer typed, checked for this tour on today's date. The

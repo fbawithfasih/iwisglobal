@@ -1,3 +1,5 @@
+import { forRequest } from './requestCache';
+
 // Cloudflare D1 access for bookings. `DB` is the binding configured in
 // wrangler.toml ([[d1_databases]] binding = "DB").
 //
@@ -151,4 +153,9 @@ export async function travelersBookedOn(db: D1Like, tourId: string, travelDate: 
 export async function countBookings(db: D1Like): Promise<number> {
   const row = await db.prepare(`SELECT COUNT(*) as count FROM bookings`).bind().first<{ count: number }>();
   return row?.count ?? 0;
+}
+
+// Once per page request (Founding Guest note; pages can start it early).
+export function countBookingsForRequest(db: D1Like, request: Request): Promise<number> {
+  return forRequest(request, 'countBookings', () => countBookings(db));
 }

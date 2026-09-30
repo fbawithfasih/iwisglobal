@@ -6,6 +6,10 @@ import AiGuideBox from '../components/AiGuideBox';
 import { listTours, sharedTourFacts } from '../lib/tours';
 import FoundingGuestNote from '../components/FoundingGuestNote.astro';
 import { listAgraHighlights } from '../lib/agraHighlights';
+import { liveAutomaticOffersForRequest } from '../lib/offers';
+import { hasApprovedReviewsForRequest } from '../lib/reviews';
+import { countBookingsForRequest } from '../lib/db';
+import { todayIst } from '../lib/availability';
 import { resolveEnv } from '../lib/env';
 import { resolveCurrency, sortByFromPrice } from '../lib/currency';
 import { resolveLocale } from '../lib/i18n';
@@ -14,7 +18,20 @@ import { getDictionary } from '../i18n/dictionaries';
 export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
-const featuredTours = env.DB ? (await listTours(env.DB, { status: 'published' })).filter((t) => t.featured) : [];
+// Every D1 query this page needs, started together: one after another they
+// cost ~2 s before the first byte (each is a round trip to the database in
+// North America). The layout, tour cards and Founding Guest note read the
+// per-request results of the last three instead of querying again.
+const [allTours, highlights] = env.DB
+  ? await Promise.all([
+      listTours(env.DB, { status: 'published' }),
+      listAgraHighlights(env.DB),
+      liveAutomaticOffersForRequest(env.DB, Astro.request, todayIst()),
+      hasApprovedReviewsForRequest(env.DB, Astro.request),
+      countBookingsForRequest(env.DB, Astro.request).catch(() => 0),
+    ])
+  : [[], []];
+const featuredTours = allTours.filter((t) => t.featured);
 
 const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
 if (Astro.url.searchParams.get('currency')) {
@@ -34,7 +51,7 @@ const t = getDictionary(locale);
 // Managed from /admin/agra-highlights (src/lib/agraHighlights.ts); a card
 // without an uploaded image falls back to the same "No image yet"
 // placeholder TourCard.astro uses for tours without a photo.
-const AGRA_HIGHLIGHTS = env.DB ? await listAgraHighlights(env.DB) : [];
+const AGRA_HIGHLIGHTS = highlights;
 
 // Backlog 2.7 — link each card to its own attraction landing page (real,
 // sourced ticket-price/hours content) instead of a generic /tours page.
@@ -326,6 +343,11 @@ function highlightHref(id: string): string {
     start();
   };
   if (heroVideo && !reduceMotion && !saveData) {
+    // The still (already loading, responsive) doubles as the video's poster,
+    // so the hero counts as painted when the photo shows, not seconds later
+    // when the video's first frame does.
+    const still = document.querySelector<HTMLImageElement>('#hero-frame picture img');
+    if (still?.currentSrc) heroVideo.poster = still.currentSrc;
     if (document.readyState === 'complete') attachVideo();
     else window.addEventListener('load', attachVideo, { once: true });
   }

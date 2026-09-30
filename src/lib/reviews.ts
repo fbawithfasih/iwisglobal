@@ -5,6 +5,7 @@
 // the admin publishes every genuine review, good or bad.
 
 import type { D1Like } from './db';
+import { forRequest } from './requestCache';
 import { markReviewRequested, type BookingRow } from './crm';
 import { sendReviewRequestEmail } from './email';
 import { getTourById } from './tours';
@@ -165,6 +166,11 @@ export async function listApprovedReviews(db: D1Like, tourId?: string): Promise<
 export async function hasApprovedReviews(db: D1Like): Promise<boolean> {
   const row = await db.prepare(`SELECT 1 AS found FROM tour_reviews WHERE status = 'approved' LIMIT 1`).bind().first<{ found: number }>();
   return !!row;
+}
+
+// Once per page request (the layout asks on every page; pages can start it early).
+export function hasApprovedReviewsForRequest(db: D1Like, request: Request): Promise<boolean> {
+  return forRequest(request, 'hasApprovedReviews', () => hasApprovedReviews(db).catch(() => false));
 }
 
 export async function setReviewStatus(db: D1Like, id: string, status: string): Promise<void> {

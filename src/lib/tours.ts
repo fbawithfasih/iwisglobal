@@ -114,6 +114,7 @@ async function loadPricingTiers(db: D1Like, tourId: string): Promise<PricingTier
 }
 
 async function parseTour(db: D1Like, row: TourRow): Promise<ParsedTour> {
+  const [addOns, pricingTiers] = await Promise.all([loadAddOns(db, row.id), loadPricingTiers(db, row.id)]);
   return {
     id: row.id,
     slug: row.slug,
@@ -139,8 +140,8 @@ async function parseTour(db: D1Like, row: TourRow): Promise<ParsedTour> {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     priceChangedAt: row.price_changed_at ?? null,
-    addOns: await loadAddOns(db, row.id),
-    pricingTiers: await loadPricingTiers(db, row.id),
+    addOns,
+    pricingTiers,
   };
 }
 

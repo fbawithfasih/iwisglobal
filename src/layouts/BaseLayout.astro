@@ -6,7 +6,7 @@ import { getDictionary } from '../i18n/dictionaries';
 import LocaleSwitcher from '../components/LocaleSwitcher.astro';
 import GlobeLogo from '../components/GlobeLogo.astro';
 import CookieConsent from '../components/CookieConsent.astro';
-import { hasApprovedReviews } from '../lib/reviews';
+import { hasApprovedReviewsForRequest } from '../lib/reviews';
 // Heading font, self-hosted (was a render-blocking Google Fonts stylesheet on
 // two extra origins). Only the Latin file is preloaded; other scripts'
 // subsets download on demand via unicode-range.
@@ -76,7 +76,7 @@ const ogImageURL = Astro.site ? new URL(image, Astro.site).toString() : image;
 const env = resolveEnv(Astro.locals);
 const isSignedIn = !!(await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET));
 // Footer links to /reviews only once there's an approved review to show.
-const showReviewsLink = env.DB ? await hasApprovedReviews(env.DB).catch(() => false) : false;
+const showReviewsLink = env.DB ? await hasApprovedReviewsForRequest(env.DB, Astro.request) : false;
 
 const locale = resolveLocale(Astro.url.searchParams, Astro.cookies.get('lang')?.value);
 if (Astro.url.searchParams.get('lang')) {
