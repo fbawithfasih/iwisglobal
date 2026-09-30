@@ -39,9 +39,9 @@ interface ReviewRow {
   updated_at: string;
 }
 
-// Google Business Profile link (the one the owner shared). If GBP's "Get
-// more reviews" gives a dedicated write-a-review short link, swap it in.
-export const GOOGLE_REVIEW_URL = 'https://share.google/LOqFXgGLF8KWXdMNn';
+// Google Business Profile's "write a review" link (from GBP's "Get more
+// reviews"): opens the review box directly.
+export const GOOGLE_REVIEW_URL = 'https://g.page/r/CWpAZOfs5QvgEBM/review';
 
 export const MAX_COMMENT_LENGTH = 2000;
 export const REVIEW_STATUSES: ReviewStatus[] = ['pending', 'approved', 'hidden'];
