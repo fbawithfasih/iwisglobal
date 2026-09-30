@@ -8,12 +8,13 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { listTours } from '../lib/tours';
 import { resolveEnv } from '../lib/env';
+import { edgeCached } from '../lib/edgeCache';
 
 export const prerender = false;
 
 const SITE = 'https://www.iwisglobal.com';
 
-export const GET: APIRoute = async ({ locals }) => {
+const build = async (locals: unknown): Promise<Response> => {
   const env = resolveEnv(locals);
   const tours = env.DB ? await listTours(env.DB, { status: 'published' }) : [];
   const guides = await getCollection('guides');
@@ -67,3 +68,7 @@ export const GET: APIRoute = async ({ locals }) => {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
   });
 };
+
+// Cached at the edge (see edgeCache.ts); HEAD answered too, not a 404.
+export const GET: APIRoute = (context) => edgeCached(context, () => build(context.locals));
+export const HEAD = GET;
