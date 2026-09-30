@@ -122,6 +122,20 @@ const orgJsonLd = {
   image: 'https://www.iwisglobal.com/logo.png',
   telephone: '+91 6399226633',
   email: 'info@iwisglobal.com',
+  // WhatsApp/phone/email support hours, as stated on /contact: 8 AM–10 PM
+  // India time, every day (Fridays too, though no tours run then).
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer service',
+    telephone: '+91 6399226633',
+    email: 'info@iwisglobal.com',
+    hoursAvailable: {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+      opens: '08:00',
+      closes: '22:00',
+    },
+  },
   sameAs: ['https://share.google/UoeRHRhy0YWsmUpKh'],
   address: {
     '@type': 'PostalAddress',
