@@ -6,3 +6,6 @@
 # Resized copies of the Agra highlight photos: a changed photo gets a new id.
 /agra-highlights/*
   Cache-Control: public, max-age=31536000, immutable
+
+/tour-images/*
+  Cache-Control: public, max-age=31536000, immutable

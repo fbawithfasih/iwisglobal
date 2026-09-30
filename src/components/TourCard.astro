@@ -1,5 +1,6 @@
 ---
 import { getAvailability, todayIst } from '../lib/availability';
+import { resizedSrcset } from '../lib/resizedImages';
 import { resolveEnv } from '../lib/env';
 import { liveAutomaticOffersForRequest, offerBadge } from '../lib/offers';
 import { resolveFromPrice, CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
@@ -36,7 +37,7 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
 >
   <div class="aspect-[4/3] bg-brand-50 rounded-xl overflow-hidden">
     {tour.image ? (
-      <img src={tour.image} alt={tour.title} loading={loading} decoding="async" class="w-full h-full object-cover transition group-hover:opacity-90" />
+      <img src={tour.image} srcset={resizedSrcset(tour.image)} sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" alt={tour.title} loading={loading} decoding="async" class="w-full h-full object-cover transition group-hover:opacity-90" />
     ) : (
       <div class="w-full h-full flex items-center justify-center text-brand-300 text-sm">No image yet</div>
     )}
