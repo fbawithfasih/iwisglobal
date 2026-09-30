@@ -68,6 +68,13 @@ export function firstNameOf(fullName: string): string {
 }
 
 // "Aliza Khan" -> "Aliza K." (first name and last initial only).
+// A review's text as shown on the site: star emoji a guest typed at the very
+// start ("⭐⭐⭐⭐⭐ Great tour") repeat the rating stars already shown, so
+// they're dropped for display. The stored text is never changed.
+export function displayComment(comment: string): string {
+  return comment.replace(/^[\s⭐🌟★☆\uFE0F]+/u, '');
+}
+
 export function reviewDisplayName(fullName: string): string {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return 'Guest';

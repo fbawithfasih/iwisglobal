@@ -5,8 +5,8 @@
 // review stars for a business's reviews of itself anyway.
 //
 // noindex while there are no approved reviews: as a search entry point,
-// "no reviews yet" doesn't help anyone deciding whether to book. (Left out
-// of the sitemap either way, since it changes as reviews are approved.)
+// "no reviews yet" doesn't help anyone deciding whether to book. The sitemap
+// lists it once there's an approved review (astro.config.mjs).
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -23,14 +23,14 @@ const tourNames = new Map((db && reviews.length ? await listTours(db) : []).map(
 ---
 
 <BaseLayout floatingWhatsApp={false}
-  title="Reviews — IWIS Global"
+  title="Guest reviews — IWIS Global"
   description={reviews.length
     ? `Reviews from guests who booked a Taj Mahal or Agra tour with IWIS Global: ${avg!.toFixed(1)} out of 5 from ${reviews.length} review${reviews.length > 1 ? 's' : ''}.`
     : "We're a new operator and don't have reviews to show yet — here's where they'll go as real guests leave them."}
   noindex={reviews.length === 0}
 >
-  <section class="max-w-2xl mx-auto px-6 py-16">
-    <h1 class="text-3xl font-serif font-semibold mb-4 text-center">Reviews</h1>
+  <section class="max-w-2xl mx-auto px-6 pt-8 pb-16 md:pt-16">
+    <h1 class="text-3xl font-serif font-semibold mb-4 text-center">Guest reviews</h1>
     {reviews.length > 0 ? (
       <>
         <p class="text-stone-600 mb-8">

@@ -49,15 +49,14 @@ function readEnvVar(name) {
   }
 }
 
-// Shared by tours and blog_posts — both are D1-backed with the same
-// id/slug/status shape, so one query-runner covers both sitemap gaps.
-async function fetchD1Slugs(sql) {
-  // Still non-fatal (a sitemap gap shouldn't block a deploy), but never
-  // silent: live sitemaps shipped with zero tour/blog URLs unnoticed.
-  // "::error::" surfaces as an annotation on the GitHub Actions run.
+// Runs one read-only query against D1 at build time, for the sitemap.
+// Returns the rows, or null on any failure (logged, never silent, never
+// fatal: a sitemap gap shouldn't block a deploy). "::error::" surfaces as an
+// annotation on the GitHub Actions run.
+async function queryD1(sql) {
   const fail = (reason) => {
-    console.error(`::error::Sitemap D1 slug query failed (${sql}): ${reason}`);
-    return [];
+    console.error(`::error::Sitemap D1 query failed (${sql}): ${reason}`);
+    return null;
   };
   const token = readEnvVar('CLOUDFLARE_API_TOKEN');
   if (!token) return fail('CLOUDFLARE_API_TOKEN missing from .env');
@@ -73,19 +72,31 @@ async function fetchD1Slugs(sql) {
     );
     const json = await res.json().catch(() => null);
     if (!res.ok) return fail(`HTTP ${res.status} ${JSON.stringify(json?.errors ?? '')}`);
-    const rows = json?.result?.[0]?.results ?? [];
-    const slugs = rows.map((r) => r.slug).filter(Boolean);
-    if (slugs.length === 0) return fail('query returned no published slugs');
-    return slugs;
+    return json?.result?.[0]?.results ?? [];
   } catch (err) {
     return fail(String(err));
   }
+}
+
+// Shared by tours and blog_posts — both are D1-backed with the same
+// id/slug/status shape. Live sitemaps once shipped with zero tour/blog URLs
+// unnoticed, so an empty result is reported too.
+async function fetchD1Slugs(sql) {
+  const rows = await queryD1(sql);
+  if (!rows) return [];
+  const slugs = rows.map((r) => r.slug).filter(Boolean);
+  if (slugs.length === 0) console.error(`::error::Sitemap D1 slug query returned no published slugs (${sql})`);
+  return slugs;
 }
 
 const tourSlugs = await fetchD1Slugs("SELECT slug FROM tours WHERE status = 'published'");
 // /blog/[slug] posts are D1-backed too (schema_blog_posts.sql) — same gap,
 // same fix as tours.
 const blogSlugs = await fetchD1Slugs("SELECT slug FROM blog_posts WHERE status = 'published'");
+// /reviews is indexable once a review is approved (it's noindex while empty),
+// so it's in the sitemap only then. Checked at each build, like the slugs.
+const reviewsRows = await queryD1("SELECT 1 AS found FROM tour_reviews WHERE status = 'approved' LIMIT 1");
+const hasApprovedReviews = (reviewsRows?.length ?? 0) > 0;
 
 export default defineConfig({
   integrations: [
@@ -97,10 +108,11 @@ export default defineConfig({
     sitemap({
       // Only indexable pages: admin/account/auth are robots-disallowed or
       // redirect, and login/signup/booking-confirmation have no search value.
-      // /reviews is noindex while it has no approved reviews; /review is a
-      // guest's private rating page.
+      // /review is a guest's private rating page; /reviews is listed only
+      // once it has an approved review (see hasApprovedReviews).
       filter: (page) =>
-        !/^https:\/\/www\.iwisglobal\.com\/(admin|account|auth|login|signup|forgot-password|reset-password|booking|reviews?)(\/|$)/.test(page),
+        !/^https:\/\/www\.iwisglobal\.com\/(admin|account|auth|login|signup|forgot-password|reset-password|booking|review)(\/|$)/.test(page) &&
+        (hasApprovedReviews || !/^https:\/\/www\.iwisglobal\.com\/reviews(\/|$)/.test(page)),
       // Match src/middleware.ts, which 301s trailing-slash paths to bare ones.
       serialize: (item) => ({ ...item, url: item.url.replace(/(?<=\.com\/.+)\/$/, '') }),
       customPages: [
