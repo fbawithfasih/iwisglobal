@@ -341,7 +341,7 @@ export default function BookingWidget({
           <p className="text-xs text-red-600 mt-1" role="alert">{FRIDAY_CLOSED_MESSAGE}</p>
         ) : (
           <p className="text-xs text-stone-500 mt-1">
-            {availabilityLabel && <span className="text-accent-600">{availabilityLabel} · </span>}
+            {availabilityLabel && <span className="text-accent-700">{availabilityLabel} · </span>}
             No tours on Fridays (Taj Mahal closed)
           </p>
         )}

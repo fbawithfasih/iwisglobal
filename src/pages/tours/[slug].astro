@@ -5,12 +5,13 @@ import WeatherCard from '../../components/WeatherCard';
 import Icon, { type IconName } from '../../components/Icon.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 import ReviewList from '../../components/ReviewList.astro';
-import { listApprovedReviews, averageRating } from '../../lib/reviews';
+import { listApprovedReviews, averageRating, hasApprovedReviewsForRequest } from '../../lib/reviews';
 import { getTourBySlug } from '../../lib/tours';
+import { resizedSrcset, uploadedImageSize } from '../../lib/resizedImages';
 import { getAvailability, todayIst } from '../../lib/availability';
 import { listLiveAutomaticOffers, offerLiveFor, offerValueLabel, offerConditions } from '../../lib/offers';
 import { resolveEnv } from '../../lib/env';
-import { countBookings } from '../../lib/db';
+import { countBookingsForRequest } from '../../lib/db';
 import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../../lib/catalog';
 import { resolveCurrency, resolvePrice, resolveAddOns, resolvePricingTiers, resolveFromPrice, CURRENCY_SYMBOLS } from '../../lib/currency';
 
@@ -18,7 +19,17 @@ export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
 const { slug } = Astro.params;
-const tour = env.DB && slug ? await getTourBySlug(env.DB, slug) : null;
+// Every lookup that doesn't need the tour starts alongside it (each is a
+// round trip to D1); reviews follow once the tour's id is known. The layout
+// reads the review flag from the same per-request result.
+const [tour, bookingCount, liveOffers] = env.DB && slug
+  ? await Promise.all([
+      getTourBySlug(env.DB, slug),
+      countBookingsForRequest(env.DB, Astro.request).catch(() => 0),
+      listLiveAutomaticOffers(env.DB, todayIst()).catch(() => []),
+      hasApprovedReviewsForRequest(env.DB, Astro.request),
+    ])
+  : [null, 0, []];
 
 if (!tour || tour.status !== 'published') {
   return Astro.redirect('/tours');
@@ -42,14 +53,11 @@ const fromPrice = resolveFromPrice(tour, requestedCurrency);
 // decision (and the actual discount applied) happens server-side at
 // payment time in razorpay.ts's createOrder, from a fresh count at that
 // exact moment. This is just for showing the banner/estimate.
-const bookingCount = env.DB ? await countBookings(env.DB) : 0;
 const foundingGuestSlotsLeft = Math.max(0, FOUNDING_GUEST_SLOT_CAP - bookingCount);
 const foundingGuestPercent = Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100);
 // Automatic offers running on this tour today (src/lib/offers.ts) — shown
 // here and applied in the widget's estimate; create-order decides the charge.
-const tourOffers = env.DB
-  ? (await listLiveAutomaticOffers(env.DB, todayIst())).filter((o) => offerLiveFor(o, tour.id, todayIst()))
-  : [];
+const tourOffers = liveOffers.filter((o) => offerLiveFor(o, tour.id, todayIst()));
 // Phones: the offer banners sit far down the page, so the title area and the
 // bottom Book bar also carry the first automatic offer.
 const offerTag = tourOffers[0] ? offerValueLabel(tourOffers[0], price.currency) : null;
@@ -195,10 +203,21 @@ const tripJsonLd = {
 <BaseLayout title={`${tour.title} — IWIS Global`} description={tour.summary} breadcrumbs={[{ name: 'Tours', path: '/tours' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(tripJsonLd)} />
 
-  <section class="max-w-5xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-10 items-start">
+  <section class="max-w-5xl mx-auto px-6 pt-8 pb-16 md:pt-16 grid md:grid-cols-3 gap-10 items-start">
     <div class="md:col-span-2">
+      <!-- The photo is the page's largest element: sized up front (no jump
+           when it loads), fetched first, and phones get a copy sized for the
+           screen. -->
       {tour.image ? (
-        <img src={tour.image} alt={tour.title} class="w-full rounded-2xl mb-6 object-cover max-h-96 shadow-lg shadow-stone-200/60" />
+        <img
+          src={tour.image}
+          srcset={resizedSrcset(tour.image)}
+          sizes="(min-width: 1024px) 640px, (min-width: 768px) 66vw, 100vw"
+          {...uploadedImageSize(tour.image)}
+          alt={tour.title}
+          fetchpriority="high"
+          class="w-full h-auto rounded-2xl mb-6 object-cover max-h-96 shadow-lg shadow-stone-200/60"
+        />
       ) : (
         <div class="w-full aspect-[16/7] rounded-2xl mb-6 bg-gradient-to-br from-brand-100 via-brand-50 to-accent-50 flex items-center justify-center text-brand-300 text-sm">
           No image yet
@@ -206,10 +225,14 @@ const tripJsonLd = {
       )}
       <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-2">{tour.title}</h1>
       <div class="h-1 w-16 rounded-full bg-gradient-to-r from-brand-600 to-accent-500 mb-4"></div>
-      <div class="flex flex-wrap items-center gap-2 text-sm text-stone-600 mb-4">
+      <!-- Location and live weather on a line of their own: the weather text
+           loads (or fails) after the page, and must not reflow the badges. -->
+      <div class="flex items-center gap-2 text-sm text-stone-600 mb-2 min-h-6">
         <span class="inline-flex items-center gap-1"><Icon name="map-pin" class="h-4 w-4 text-brand-600" /> Agra, India</span>
         <span aria-hidden="true">·</span>
         <WeatherCard client:load variant="inline" />
+      </div>
+      <div class="flex flex-wrap items-center gap-2 text-sm text-stone-600 mb-4">
         <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-accent-50 text-accent-700">
           {availability.label}
         </span>

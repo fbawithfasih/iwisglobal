@@ -91,31 +91,49 @@ const { class: className = '', animate = true } = Astro.props;
   const still = window.matchMedia('(prefers-reduced-motion: reduce)');
   const START_ANGLE = 0.6;
 
-  for (const canvas of canvases) {
-    draw(canvas, START_ANGLE);
-    canvas.previousElementSibling?.classList.add('invisible');
-    // The header logo shrinks on scroll; redraw at the new size.
-    new ResizeObserver(() => {
-      if (canvas.dataset.animate !== 'true' || still.matches) draw(canvas, START_ANGLE);
-    }).observe(canvas);
+  // Started after the page has loaded: the first draw measures layout, which
+  // on a long page blocked phones for ~0.8 s mid-load. The identical PNG
+  // shows until then. Only globes on screen are redrawn each frame (the
+  // footer one sits idle until scrolled to).
+  function start() {
+    const visible = new Set<HTMLCanvasElement>();
+    const onScreen = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const canvas = entry.target as HTMLCanvasElement;
+        if (entry.isIntersecting) visible.add(canvas);
+        else visible.delete(canvas);
+      }
+    });
+
+    for (const canvas of canvases) {
+      draw(canvas, START_ANGLE);
+      canvas.previousElementSibling?.classList.add('invisible');
+      // The header logo shrinks on scroll; redraw at the new size.
+      new ResizeObserver(() => {
+        if (canvas.dataset.animate !== 'true' || still.matches) draw(canvas, START_ANGLE);
+      }).observe(canvas);
+      if (canvas.dataset.animate === 'true') onScreen.observe(canvas);
+    }
+
+    let last = 0;
+    function tick(now: number) {
+      if (still.matches) return;
+      if (now - last >= FRAME_MS) {
+        last = now;
+        const angle = START_ANGLE + ((now % REVOLUTION_MS) / REVOLUTION_MS) * Math.PI * 2;
+        for (const canvas of visible) draw(canvas, angle);
+      }
+      requestAnimationFrame(tick);
+    }
+    if (canvases.some((c) => c.dataset.animate === 'true')) {
+      requestAnimationFrame(tick);
+      still.addEventListener('change', () => {
+        if (still.matches) canvases.forEach((c) => draw(c, START_ANGLE));
+        else requestAnimationFrame(tick);
+      });
+    }
   }
 
-  const spinning = canvases.filter((c) => c.dataset.animate === 'true');
-  let last = 0;
-  function tick(now: number) {
-    if (still.matches) return;
-    if (now - last >= FRAME_MS) {
-      last = now;
-      const angle = START_ANGLE + ((now % REVOLUTION_MS) / REVOLUTION_MS) * Math.PI * 2;
-      for (const canvas of spinning) draw(canvas, angle);
-    }
-    requestAnimationFrame(tick);
-  }
-  if (spinning.length) {
-    requestAnimationFrame(tick);
-    still.addEventListener('change', () => {
-      if (still.matches) spinning.forEach((c) => draw(c, START_ANGLE));
-      else requestAnimationFrame(tick);
-    });
-  }
+  if (document.readyState === 'complete') start();
+  else window.addEventListener('load', start, { once: true });
 </script>
