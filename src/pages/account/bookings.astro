@@ -23,6 +23,8 @@ if (!customer) {
 }
 
 const bookings = db ? await listCustomerBookings(db, customerId) : [];
+// Set by /reset-password after a new password is saved.
+const passwordChanged = Astro.url.searchParams.get('password') === 'changed';
 const tours = new Map<string, ParsedTour | null>();
 if (db) {
   const tourIds = [...new Set(bookings.map((b) => b.tour_id))];
@@ -114,6 +116,11 @@ const sections = [
         <button type="submit" class="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-4 text-sm text-stone-600 hover:border-brand-300 hover:text-brand-800 transition cursor-pointer">Sign out</button>
       </form>
     </div>
+    {passwordChanged && (
+      <p role="status" class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+        Your password has been changed.
+      </p>
+    )}
     <p class="text-stone-600 mb-8 break-words">Signed in as {customer.name} ({customer.email})</p>
 
     {bookings.length === 0 && (

@@ -456,3 +456,49 @@ export async function sendPasswordResetEmail(env: Record<string, any>, details: 
     return false;
   }
 }
+
+// Security alert after a password reset, so the owner hears about it if it
+// wasn't them. Deliberately carries no link to act on.
+export async function sendPasswordChangedEmail(env: Record<string, any>, details: { to: string; name: string }): Promise<boolean> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey || !details.to) return false;
+
+  const from = env.BOOKING_EMAIL_FROM || 'IWIS Global <info@iwisglobal.com>';
+  const first = details.name.trim().split(/\s+/)[0] || 'there';
+  const html = `
+    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
+      <h2 style="color:#5b21b6; margin-bottom: 4px;">Your password was changed</h2>
+      <p>Hi ${escapeHtml(first)},</p>
+      <p>The password for your IWIS Global account was just changed using a reset link.</p>
+      <p>If this was you, there's nothing else to do.</p>
+      <p><strong>If it wasn't you</strong>, reply to this email or <a href="${whatsappHref('Hi! My IWIS Global password was changed and it was not me. (ref: EMAIL-PASSWORD-CHANGED)')}" style="color:#15803d; font-weight:600;">WhatsApp us</a> straight away.</p>
+      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; <a href="${SITE}" style="color:#a8a29e;">www.iwisglobal.com</a></p>
+    </div>
+  `;
+  const text = [
+    `Your password was changed`,
+    ``,
+    `Hi ${first},`,
+    `The password for your IWIS Global account was just changed using a reset link.`,
+    `If this was you, there's nothing else to do.`,
+    `If it wasn't you, reply to this email or WhatsApp us on ${PHONE_DISPLAY} straight away.`,
+    ``,
+    `IWIS Global · ${SITE}`,
+  ].join('\n');
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: details.to, subject: 'Your IWIS Global password was changed', html, text }),
+    });
+    if (!res.ok) {
+      console.error('sendPasswordChangedEmail: Resend API error', res.status, await res.text());
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('sendPasswordChangedEmail: request failed', err);
+    return false;
+  }
+}

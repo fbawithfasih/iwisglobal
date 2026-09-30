@@ -49,19 +49,24 @@ export async function createPasswordResetLink(
 }
 
 // The account a still-valid link belongs to, or null.
-export async function customerForResetToken(db: D1Like, token: string): Promise<{ id: string; email: string } | null> {
+export async function customerForResetToken(db: D1Like, token: string): Promise<{ id: string; email: string; name: string } | null> {
   if (!token || token.length > 100) return null;
   const row = await db
     .prepare(`SELECT customer_id FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?`)
     .bind(await sha256Hex(token), new Date().toISOString())
     .first<{ customer_id: string }>();
   const customer = row ? await getCustomerById(db, row.customer_id) : null;
-  return customer && customer.provider === 'email' ? { id: customer.id, email: customer.email } : null;
+  return customer && customer.provider === 'email' ? { id: customer.id, email: customer.email, name: customer.name } : null;
 }
 
 // Sets the new password and retires every open link for the account. Returns
-// the customer id, or null if the link is no longer valid.
-export async function resetPassword(db: D1Like, token: string, newPassword: string): Promise<string | null> {
+// the account (for the "password changed" email), or null if the link is no
+// longer valid.
+export async function resetPassword(
+  db: D1Like,
+  token: string,
+  newPassword: string
+): Promise<{ id: string; email: string; name: string } | null> {
   const customer = await customerForResetToken(db, token);
   if (!customer) return null;
   const salt = generateSaltHex();
@@ -69,5 +74,5 @@ export async function resetPassword(db: D1Like, token: string, newPassword: stri
   const now = new Date().toISOString();
   await db.prepare(`UPDATE customers SET password_hash = ?, password_salt = ? WHERE id = ?`).bind(hash, salt, customer.id).run();
   await db.prepare(`UPDATE password_resets SET used_at = ? WHERE customer_id = ? AND used_at IS NULL`).bind(now, customer.id).run();
-  return customer.id;
+  return customer;
 }
