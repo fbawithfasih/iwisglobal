@@ -2,11 +2,11 @@ import { defineMiddleware } from 'astro:middleware';
 
 // D1 read replication (turned on 30 Sep 2026): replicas only serve reads
 // made through a session. Public pages may read from the nearest replica;
-// admin, account, sign-in, booking and API routes stay on the primary so a
+// admin, account, sign-in (and password reset), booking and API routes stay on the primary so a
 // save or payment is never followed by a stale read. After any write (a
 // non-GET request), the session's bookmark goes into a short-lived cookie so
 // that visitor's next pages read at least that fresh ("read your writes").
-const PRIMARY_PATHS = /^\/(admin|account|auth|login|signup|booking|api)(\/|$)/;
+const PRIMARY_PATHS = /^\/(admin|account|auth|login|signup|forgot-password|reset-password|booking|api)(\/|$)/;
 const BOOKMARK_COOKIE = 'd1_bookmark';
 
 type Session = { getBookmark(): string | null };

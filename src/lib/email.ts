@@ -403,3 +403,56 @@ export async function sendAdminBookingNotificationEmail(env: Record<string, any>
     console.error('sendAdminBookingNotificationEmail: request failed', err);
   }
 }
+
+export interface PasswordResetEmailDetails {
+  to: string;
+  name: string;
+  link: string; // /reset-password?t=… (src/lib/passwordReset.ts), valid one hour
+}
+
+// "Forgot password" link for an email/password account.
+export async function sendPasswordResetEmail(env: Record<string, any>, details: PasswordResetEmailDetails): Promise<boolean> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey || !details.to) return false;
+
+  const from = env.BOOKING_EMAIL_FROM || 'IWIS Global <info@iwisglobal.com>';
+  const first = details.name.trim().split(/\s+/)[0] || 'there';
+  const button = 'display:inline-block; padding:12px 20px; border-radius:999px; text-decoration:none; font-weight:600;';
+  const html = `
+    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
+      <h2 style="color:#5b21b6; margin-bottom: 4px;">Reset your password</h2>
+      <p>Hi ${escapeHtml(first)},</p>
+      <p>Someone (hopefully you) asked to reset the password for your IWIS Global account. Tap the button to choose a new one. The link works once, within the next hour.</p>
+      <p style="margin:20px 0;"><a href="${details.link}" style="${button} background:#5b21b6; color:#ffffff;">Choose a new password</a></p>
+      <p>If you didn't ask for this, you can ignore this email; your password stays the same.</p>
+      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; <a href="${SITE}" style="color:#a8a29e;">www.iwisglobal.com</a></p>
+    </div>
+  `;
+  const text = [
+    `Reset your password`,
+    ``,
+    `Hi ${first},`,
+    `Someone (hopefully you) asked to reset the password for your IWIS Global account. Open this link to choose a new one. It works once, within the next hour:`,
+    details.link,
+    ``,
+    `If you didn't ask for this, you can ignore this email; your password stays the same.`,
+    ``,
+    `IWIS Global · ${SITE}`,
+  ].join('\n');
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: details.to, subject: 'Reset your IWIS Global password', html, text }),
+    });
+    if (!res.ok) {
+      console.error('sendPasswordResetEmail: Resend API error', res.status, await res.text());
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('sendPasswordResetEmail: request failed', err);
+    return false;
+  }
+}

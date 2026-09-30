@@ -3,7 +3,7 @@ import { resolveEnv } from '../../../lib/env';
 import { exchangeGoogleCode } from '../../../lib/oauth/google';
 import { upsertCustomer } from '../../../lib/customers';
 import { createCustomerSessionToken } from '../../../lib/customerAuth';
-import { CUSTOMER_COOKIE, OAUTH_STATE_COOKIE, safeRedirectPath } from '../../../lib/requireCustomer';
+import { CUSTOMER_COOKIE, OAUTH_STATE_COOKIE, safeRedirectPath, SignInError } from '../../../lib/requireCustomer';
 
 export const prerender = false;
 
@@ -15,13 +15,13 @@ export const GET: APIRoute = async ({ url, cookies, locals, redirect }) => {
   cookies.delete(OAUTH_STATE_COOKIE, { path: '/auth' });
 
   try {
-    if (!code || !state || !stateCookieRaw) throw new Error('Sign-in session expired. Please try again.');
+    if (!code || !state || !stateCookieRaw) throw new SignInError('expired');
     const parsedState = JSON.parse(stateCookieRaw);
-    if (parsedState.nonce !== state) throw new Error('Sign-in session expired. Please try again.');
+    if (parsedState.nonce !== state) throw new SignInError('expired');
     const redirectTarget = safeRedirectPath(parsedState.redirect);
 
     const db = env.DB;
-    if (!db || !env.CUSTOMER_SESSION_SECRET) throw new Error('Accounts are not available right now.');
+    if (!db || !env.CUSTOMER_SESSION_SECRET) throw new SignInError('unavailable');
 
     const profile = await exchangeGoogleCode(env, code, `${url.origin}/auth/google/callback`);
     const customer = await upsertCustomer(db, {
@@ -42,7 +42,8 @@ export const GET: APIRoute = async ({ url, cookies, locals, redirect }) => {
     });
 
     return redirect(redirectTarget);
-  } catch (error: any) {
-    return redirect(`/login?error=${encodeURIComponent(error?.message || 'Sign-in failed. Please try again.')}`);
+  } catch (error) {
+    if (!(error instanceof SignInError)) console.error('google sign-in failed:', error);
+    return redirect(`/login?error=${error instanceof SignInError ? error.code : 'failed'}`);
   }
 };

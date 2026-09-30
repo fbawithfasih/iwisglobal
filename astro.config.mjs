@@ -100,7 +100,7 @@ export default defineConfig({
       // /reviews is noindex while it has no approved reviews; /review is a
       // guest's private rating page.
       filter: (page) =>
-        !/^https:\/\/www\.iwisglobal\.com\/(admin|account|auth|login|signup|booking|reviews?)(\/|$)/.test(page),
+        !/^https:\/\/www\.iwisglobal\.com\/(admin|account|auth|login|signup|forgot-password|reset-password|booking|reviews?)(\/|$)/.test(page),
       // Match src/middleware.ts, which 301s trailing-slash paths to bare ones.
       serialize: (item) => ({ ...item, url: item.url.replace(/(?<=\.com\/.+)\/$/, '') }),
       customPages: [
