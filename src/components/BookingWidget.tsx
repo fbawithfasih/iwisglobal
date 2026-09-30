@@ -612,7 +612,7 @@ export default function BookingWidget({
             target="_blank"
             rel="noopener noreferrer"
             data-wa-ref="PAY-UNCONFIRMED"
-            className="inline-flex min-h-11 items-center rounded-full bg-[#25D366] px-5 font-semibold text-white"
+            className="inline-flex min-h-11 items-center rounded-full bg-green-700 px-5 font-semibold text-white hover:bg-green-800"
           >
             WhatsApp us
           </a>

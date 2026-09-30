@@ -32,6 +32,15 @@ function bareAddOnId(id: string, tourId: string): string {
   return id.startsWith(`${tourId}_`) ? id.slice(tourId.length + 1) : id;
 }
 
+// Names of the add-ons a booking chose (bookings.add_on_ids, comma-separated
+// or as sent at checkout), in the tour's own order. Shown to the guest on the
+// confirmation page and email.
+export function chosenAddOnNames(tour: Pick<ParsedTour, 'id' | 'addOns'>, addOnIds: string | string[]): string[] {
+  const ids = typeof addOnIds === 'string' ? addOnIds.split(',') : addOnIds;
+  const chosen = new Set(ids.map((s) => s.trim()).filter(Boolean).map((id) => bareAddOnId(id, tour.id)));
+  return tour.addOns.filter((addOn) => chosen.has(bareAddOnId(addOn.id, tour.id))).map((addOn) => addOn.name);
+}
+
 export function computeTicketsToBuy(
   tour: Pick<ParsedTour, 'id' | 'entryTicketsInPrice' | 'addOns'>,
   booking: { add_on_ids: string; travelers: number }

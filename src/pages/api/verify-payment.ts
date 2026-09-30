@@ -8,6 +8,7 @@ import { resolveEnv } from '../../lib/env';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
 import { getTourById } from '../../lib/tours';
 import { sendBookingConfirmationEmail, sendAdminBookingNotificationEmail } from '../../lib/email';
+import { chosenAddOnNames } from '../../lib/entryTickets';
 
 export const prerender = false;
 
@@ -129,6 +130,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           paymentType: verified.paymentType,
           discountLabel: discountMajorUnits > 0 ? discountLabel : null,
           discountAmount: discountMajorUnits > 0 ? Math.round(discountMajorUnits * 100) : null,
+          addOnNames: tour ? chosenAddOnNames(tour, verified.addOnIds) : [],
         });
         await sendAdminBookingNotificationEmail(env, {
           travelerName: travelerName || '',

@@ -25,6 +25,12 @@ export interface BookingEmailDetails {
   paymentId?: string | null;
   discountLabel?: string | null; // src/lib/offers.ts — the one discount applied
   discountAmount?: number | null; // smallest currency subunit
+  addOnNames?: string[]; // the add-ons chosen (entryTickets.ts chosenAddOnNames)
+}
+
+// The deposit terms, worded once for the email and the confirmation page.
+export function depositTermsNote(balanceLabel: string): string {
+  return `You've paid a 25% deposit to secure this booking; the remaining ${balanceLabel} is due on pickup. If you cancel less than 24 hours before your tour, 50% of the deposit is refunded.`;
 }
 
 // "Mon, 12 Oct 2026" — travel dates arrive as YYYY-MM-DD.
@@ -69,6 +75,7 @@ export async function sendBookingConfirmationEmail(env: Record<string, any>, det
     ['Tour', details.tourTitle],
     ['Date', date],
     ['Travelers', String(details.travelers)],
+    ...(details.addOnNames?.length ? ([['Add-ons', details.addOnNames.join(', ')]] as [string, string, string?][]) : []),
     ...(hasDiscount
       ? ([
           ['Tour price', formatAmount(tourPrice, details.currency)],
@@ -80,9 +87,7 @@ export async function sendBookingConfirmationEmail(env: Record<string, any>, det
     ['Booking ID', details.bookingId, 'word-break:break-all;'],
   ];
   const cell = 'padding:6px 0; vertical-align:top;';
-  const depositNote = isDeposit
-    ? `You've paid a 25% deposit to secure this booking; the remaining ${formatAmount(balanceDue, details.currency)} is due on pickup. If you cancel less than 24 hours before your tour, 50% of the deposit is refunded.`
-    : '';
+  const depositNote = isDeposit ? depositTermsNote(formatAmount(balanceDue, details.currency)) : '';
   const cancelNote = 'Free cancellation up to 24 hours before your tour starts (50% refund after that; no refund for no-shows).';
   const button = 'display:inline-block; padding:12px 20px; border-radius:999px; text-decoration:none; font-weight:600;';
 
