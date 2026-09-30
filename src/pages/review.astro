@@ -21,7 +21,19 @@ export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
 const db = env.DB;
-const token = Astro.url.searchParams.get('t') ?? '';
+
+// The link's private token moves straight into a cookie and the address
+// loses it, so it never reaches analytics or the Meta Pixel (both record page
+// addresses) — anyone holding it could change the guest's review. The cookie
+// lasts a month so "Edit your review" keeps working.
+const REVIEW_COOKIE = 'review_token';
+const fromLink = Astro.url.searchParams.get('t');
+if (fromLink) {
+  Astro.cookies.set(REVIEW_COOKIE, fromLink, { httpOnly: true, secure: true, sameSite: 'lax', path: '/review', maxAge: 60 * 60 * 24 * 30 });
+  const star = Astro.url.searchParams.get('rating');
+  return Astro.redirect(star && /^[1-5]$/.test(star) ? `/review?rating=${star}` : '/review', 303);
+}
+const token = Astro.cookies.get(REVIEW_COOKIE)?.value ?? '';
 const booking = db && token ? await getBookingByReviewToken(db, token) : null;
 const open = booking ? canBeReviewed(booking, todayIst()) : false;
 
@@ -36,7 +48,7 @@ if (Astro.request.method === 'POST' && db && booking && open) {
     draft = { rating: Number(form.get('rating')) || 0, comment: String(form.get('comment') ?? '') };
   } else {
     await saveReview(db, booking, parsed);
-    return Astro.redirect(`/review?t=${encodeURIComponent(token)}&saved=1`, 303);
+    return Astro.redirect('/review?saved=1', 303);
   }
 }
 
@@ -51,7 +63,7 @@ const shownAs = booking ? reviewDisplayName(booking.traveler_name) : '';
 const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
 ---
 <BaseLayout floatingWhatsApp={false} title="Rate your tour — IWIS Global" description="Rate your IWIS Global tour." noindex>
-  <section class="max-w-xl mx-auto px-6 py-16">
+  <section class="max-w-xl mx-auto px-6 pt-8 pb-16 md:pt-16">
     {!booking ? (
       <div class="text-center">
         <h1 class="text-3xl font-serif font-semibold mb-4">This review link isn't valid</h1>
@@ -76,10 +88,16 @@ const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
         <p class="text-stone-600 mb-2">
           You gave your {tourTitle} <strong>{existing!.rating} out of 5</strong>. It will appear on our website, as {shownAs}, after a quick check.
         </p>
+        {existing!.rating <= 3 && (
+          <p class="text-stone-600 mb-4">
+            Sorry it wasn't better. Want to tell us what went wrong?
+            <a href={`https://wa.me/916399226633?text=${encodeURIComponent(`Hi! About my ${tourTitle} on ${formatTravelDate(booking.travel_date)} (booking ID ${booking.id}). (ref: REVIEW-FOLLOWUP)`)}`} target="_blank" rel="noopener noreferrer" data-wa-ref="REVIEW-FOLLOWUP" class="font-semibold text-green-800 underline">WhatsApp us</a>.
+          </p>
+        )}
         <p class="text-stone-600 mb-8">Would you also share it on Google? It's one of the main ways travelers find a small operator like us.</p>
         <div class="flex flex-col items-center gap-3">
           <a href={GOOGLE_REVIEW_URL} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-6 font-semibold text-white hover:bg-brand-800">Review us on Google</a>
-          <a href={`/review?t=${encodeURIComponent(token)}`} class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Edit your review</a>
+          <a href="/review" class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Edit your review</a>
         </div>
       </div>
     ) : (
@@ -91,7 +109,7 @@ const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
           <fieldset>
             <legend class="font-semibold mb-2">Your rating</legend>
             <div class="stars">
-              {[5, 4, 3, 2, 1].map((n) => (
+              {[1, 2, 3, 4, 5].map((n) => (
                 <>
                   <input type="radio" name="rating" id={`star-${n}`} value={n} checked={rating === n} required class="sr-only" />
                   <label for={`star-${n}`} title={starWords[n]}>
@@ -120,7 +138,7 @@ const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
 
           <p class="text-sm text-stone-500">
             Your review will be shown on our website as <strong>{shownAs}</strong>, with your tour and travel month.
-            See our <a href="/privacy" class="text-brand-800 underline">Privacy Policy</a>.
+            See our <a href="/privacy" class="-my-3 inline-block py-3 text-brand-800 underline">Privacy Policy</a>.
           </p>
 
           <button type="submit" class="w-full min-h-12 rounded-full bg-brand-700 px-6 font-semibold text-white hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
@@ -133,12 +151,12 @@ const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
 </BaseLayout>
 
 <style>
-  /* Inputs run 5→1 in the DOM and are laid out reversed, so "checked ~ label"
-     lights the chosen star and every star to its left. */
+  /* Stars run 1→5 in the page (what screen readers and arrow keys follow).
+     The chosen star and every star before it light up: "input:checked +
+     label" is the chosen one, "label:has(~ input:checked)" the ones before.
+     Browsers without :has() light just the chosen star. */
   .stars {
     display: flex;
-    flex-direction: row-reverse;
-    justify-content: flex-end;
     gap: 0.25rem;
   }
   .stars label {
@@ -153,10 +171,20 @@ const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
     cursor: pointer;
     border-radius: 0.5rem;
   }
-  .stars input:checked ~ label,
-  .stars label:hover,
-  .stars label:hover ~ label {
+  .stars input:checked + label,
+  .stars label:has(~ input:checked) {
     color: #f59e0b;
+  }
+  /* Mouse only (a tap would leave a "stuck" hover on phones): preview the
+     rating under the pointer. */
+  @media (hover: hover) {
+    .stars:has(label:hover) label {
+      color: #d6d3d1;
+    }
+    .stars:has(label:hover) label:hover,
+    .stars:has(label:hover) label:has(~ label:hover) {
+      color: #f59e0b;
+    }
   }
   .stars input:focus-visible + label {
     outline: 3px solid #a78bfa;
