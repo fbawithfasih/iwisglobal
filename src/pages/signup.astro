@@ -93,7 +93,9 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
           {accountExists && (
             <p class="flex flex-wrap gap-x-4">
               <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center font-medium text-brand-800 underline">Sign in instead</a>
-              <a href={`/forgot-password?email=${encodeURIComponent(email)}`} class="inline-flex min-h-11 items-center font-medium text-brand-800 underline">Forgot password?</a>
+              <!-- Sends the reset email straight away. The email travels in the
+                   form, not the link, so it never appears in a page address. -->
+              <button type="submit" form="reset-from-signup" class="inline-flex min-h-11 items-center font-medium text-brand-800 underline cursor-pointer">Email me a reset link</button>
             </p>
           )}
         </div>
@@ -150,6 +152,12 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
         Create account
       </button>
     </form>
+
+    {accountExists && (
+      <form id="reset-from-signup" method="POST" action="/forgot-password" class="hidden">
+        <input type="hidden" name="email" value={email} />
+      </form>
+    )}
 
     <p class="text-sm text-stone-500 mt-4">
       Already have an account? <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center text-brand-700 font-medium hover:underline">Sign in</a>
