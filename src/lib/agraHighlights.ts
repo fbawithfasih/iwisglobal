@@ -101,3 +101,22 @@ export async function updateAgraHighlight(db: D1Like, id: string, input: AgraHig
 export async function deleteAgraHighlight(db: D1Like, id: string): Promise<void> {
   await db.prepare(`DELETE FROM agra_highlights WHERE id = ?`).bind(id).run();
 }
+
+// Phone-sized copies (480 and 800 px wide) of the current highlight photos,
+// in public/agra-highlights/ — the uploads are 1200 px (200–270 KB each)
+// but show as ~256–288 px cards. Keyed by the upload's file id, so a photo
+// replaced in admin (new id) simply falls back to the full-size original
+// until copies are made for it.
+const RESIZED_IDS = new Set([
+  'f2a6b315-3c45-48dc-9d67-69ac1f6c7a67',
+  'b5870a3b-2e17-41f3-8e25-0544a9d4f156',
+  '97aa9d29-f4d1-406a-8234-20e0b024bfbc',
+  '70661fe9-799e-44c6-ba50-0910110b9a27',
+  'be03c4be-a53a-41f0-95c4-b5560485ecdd',
+]);
+
+export function highlightSrcset(image: string): string | undefined {
+  const id = /^\/images\/agra-highlights\/([0-9a-f-]+)\.webp$/.exec(image)?.[1];
+  if (!id || !RESIZED_IDS.has(id)) return undefined;
+  return `/agra-highlights/${id}-480.webp 480w, /agra-highlights/${id}-800.webp 800w`;
+}

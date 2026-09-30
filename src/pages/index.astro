@@ -5,7 +5,7 @@ import WeatherCard from '../components/WeatherCard';
 import AiGuideBox from '../components/AiGuideBox';
 import { listTours, sharedTourFacts } from '../lib/tours';
 import FoundingGuestNote from '../components/FoundingGuestNote.astro';
-import { listAgraHighlights } from '../lib/agraHighlights';
+import { listAgraHighlights, highlightSrcset } from '../lib/agraHighlights';
 import { liveAutomaticOffersForRequest } from '../lib/offers';
 import { hasApprovedReviewsForRequest } from '../lib/reviews';
 import { countBookingsForRequest } from '../lib/db';
@@ -237,7 +237,7 @@ function highlightHref(id: string): string {
           <a href={highlightHref(item.id)} class="group w-64 sm:w-72 shrink-0 snap-start block">
             <div class="aspect-[4/3] bg-brand-50 rounded-xl overflow-hidden">
               {item.image ? (
-                <img src={item.image} alt={item.name} loading="lazy" decoding="async" class="w-full h-full object-cover transition group-hover:opacity-90" />
+                <img src={item.image} srcset={highlightSrcset(item.image)} sizes="(min-width: 640px) 288px, 256px" alt={item.name} loading="lazy" decoding="async" class="w-full h-full object-cover transition group-hover:opacity-90" />
               ) : (
                 <div class="w-full h-full flex items-center justify-center text-brand-300 text-sm">No image yet</div>
               )}
