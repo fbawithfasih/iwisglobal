@@ -9,6 +9,7 @@ import { startOAuthSignIn } from '../lib/oauth/start';
 import { getCustomerByEmail, createCustomerWithPassword } from '../lib/customers';
 import { hashPassword, generateSaltHex } from '../lib/passwordHash';
 import { createCustomerSessionToken } from '../lib/customerAuth';
+import { checkSignupLimit, recordSignup } from '../lib/customerLoginAttempts';
 
 const env = resolveEnv(Astro.locals);
 
@@ -32,8 +33,12 @@ if (Astro.request.method === 'POST') {
   email = String(form.get('email') ?? '').trim();
   const password = String(form.get('password') ?? '');
 
+  const ip = Astro.request.headers.get('cf-connecting-ip') ?? 'unknown';
+  const waitMs = db ? await checkSignupLimit(db, ip) : null;
   if (!db || !env.CUSTOMER_SESSION_SECRET) {
     error = 'Accounts are not available right now.';
+  } else if (waitMs) {
+    error = `Too many new accounts from this connection. Try again in ${Math.ceil(waitMs / 60000)} minute(s).`;
   } else if (!name) {
     error = 'Please enter your name.';
   } else if (!EMAIL_RE.test(email)) {
@@ -51,6 +56,7 @@ if (Astro.request.method === 'POST') {
       const passwordSalt = generateSaltHex();
       const passwordHash = await hashPassword(password, passwordSalt);
       const customer = await createCustomerWithPassword(db, { email, name, passwordHash, passwordSalt });
+      await recordSignup(db, ip);
 
       const token = await createCustomerSessionToken(customer.id, env.CUSTOMER_SESSION_SECRET);
       Astro.cookies.set(CUSTOMER_COOKIE, token, {
@@ -69,8 +75,8 @@ if (Astro.request.method === 'POST') {
 const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.origin, redirectTarget);
 ---
 
-<BaseLayout title="Create an account — IWIS Global" description="Create an IWIS Global account to view your booking history." noindex>
-  <section class="max-w-sm mx-auto px-6 py-20 text-center">
+<BaseLayout floatingWhatsApp={false} title="Create an account — IWIS Global" description="Create an IWIS Global account to view your booking history." noindex>
+  <section class="max-w-sm mx-auto px-6 pt-10 pb-20 md:pt-20 text-center">
     <h1 class="text-3xl font-serif font-semibold mb-2">Create an account</h1>
     <p class="text-stone-600 mb-3">You don't need an account to book a tour — this is just to see your booking history for tours you book while signed in.</p>
     <p class="text-sm text-stone-600 mb-8 rounded-lg bg-brand-50 border border-brand-100 px-3 py-2">
@@ -78,18 +84,20 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
       without signing in don't appear in an account.
     </p>
 
-    {error && (
-      <p role="alert" class="text-red-600 text-sm mb-4">
-        {error}
-        {accountExists && (
-          <> <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center font-medium text-brand-800 underline">Sign in instead</a></>
-        )}
-      </p>
-    )}
-
     <OAuthButtons googleUrl={googleUrl} appleUrl={appleUrl} />
 
     <form method="POST" class="space-y-3 text-left">
+      {error && (
+        <div role="alert" class="text-red-600 text-sm">
+          <p>{error}</p>
+          {accountExists && (
+            <p class="flex flex-wrap gap-x-4">
+              <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center font-medium text-brand-800 underline">Sign in instead</a>
+              <a href={`/forgot-password?email=${encodeURIComponent(email)}`} class="inline-flex min-h-11 items-center font-medium text-brand-800 underline">Forgot password?</a>
+            </p>
+          )}
+        </div>
+      )}
       <div>
         <label for="name" class="block text-xs font-medium text-stone-500 mb-1">Name</label>
         <input
@@ -132,8 +140,8 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
         <p id="password-hint" class="text-xs text-stone-500 mt-1">At least 8 characters.</p>
       </div>
       <p class="text-xs text-stone-500">
-        By creating an account you agree to our <a href="/terms" class="text-brand-800 underline">Terms</a> and
-        <a href="/privacy" class="text-brand-800 underline">Privacy Policy</a>.
+        By creating an account you agree to our <a href="/terms" class="-my-3 inline-block py-3 text-brand-800 underline">Terms</a> and
+        <a href="/privacy" class="-my-3 inline-block py-3 text-brand-800 underline">Privacy Policy</a>.
       </p>
       <button
         type="submit"

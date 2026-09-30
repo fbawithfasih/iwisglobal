@@ -9,7 +9,7 @@ export const prerender = false;
 const waHref = `https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have a question. (ref: CONTACT)')}`;
 ---
 
-<BaseLayout
+<BaseLayout floatingWhatsApp={false}
   title="Contact Us — IWIS Global"
   description="Contact IWIS Global, a private Taj Mahal & Agra tour operator based in Agra: email, phone and WhatsApp, and our registered address."
 >
@@ -69,10 +69,3 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have
     </ul>
   </section>
 </BaseLayout>
-
-<style is:global>
-  /* The page has its own WhatsApp card, so drop the floating button. */
-  a[data-wa-ref^='FLOATING'] {
-    display: none;
-  }
-</style>

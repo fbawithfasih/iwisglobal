@@ -91,7 +91,7 @@ const googleCalendarHref = booking
 const icsHref = booking ? `/booking/calendar.ics?payment_id=${encodeURIComponent(booking.payment_id)}` : '';
 const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for touring with us', cancelled: 'This booking was cancelled' }[status];
 ---
-<BaseLayout title={booking ? `${heading} — IWIS Global` : "Booking not found — IWIS Global"} noindex>
+<BaseLayout floatingWhatsApp={false} title={booking ? `${heading} — IWIS Global` : "Booking not found — IWIS Global"} noindex>
   <section class="max-w-xl mx-auto px-6 pt-8 pb-16 md:pt-16">
     {booking ? (
       <>
@@ -223,13 +223,6 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
     )}
   </section>
 </BaseLayout>
-
-<style is:global>
-  /* The page has its own big WhatsApp button, so drop the floating one. */
-  a[data-wa-ref^='FLOATING'] {
-    display: none;
-  }
-</style>
 
 {freshPurchase && (
   <script is:inline define:vars={{ purchase: freshPurchase }}>

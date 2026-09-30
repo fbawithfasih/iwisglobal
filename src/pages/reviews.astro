@@ -22,7 +22,7 @@ const avg = averageRating(reviews);
 const tourNames = new Map((db && reviews.length ? await listTours(db) : []).map((t) => [t.id, t.title]));
 ---
 
-<BaseLayout
+<BaseLayout floatingWhatsApp={false}
   title="Reviews — IWIS Global"
   description={reviews.length
     ? `Reviews from guests who booked a Taj Mahal or Agra tour with IWIS Global: ${avg!.toFixed(1)} out of 5 from ${reviews.length} review${reviews.length > 1 ? 's' : ''}.`
@@ -69,11 +69,3 @@ const tourNames = new Map((db && reviews.length ? await listTours(db) : []).map(
     </div>
   </section>
 </BaseLayout>
-
-<style is:global>
-  /* The floating WhatsApp button sat on top of "View tours" on phones;
-     the footer still has the WhatsApp link. */
-  a[data-wa-ref^='FLOATING'] {
-    display: none;
-  }
-</style>

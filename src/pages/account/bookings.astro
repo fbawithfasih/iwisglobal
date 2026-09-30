@@ -106,7 +106,7 @@ const sections = [
 ].filter((s) => s.items.length > 0);
 ---
 
-<BaseLayout title="My Bookings — IWIS Global" noindex>
+<BaseLayout floatingWhatsApp={false} title="My Bookings — IWIS Global" noindex>
   <section class="max-w-3xl mx-auto px-6 pt-8 pb-28 md:pt-16 md:pb-16">
     <div class="flex items-center justify-between gap-4 mb-2">
       <h1 class="text-3xl font-serif font-semibold">My Bookings</h1>
@@ -197,11 +197,3 @@ const sections = [
     ))}
   </section>
 </BaseLayout>
-
-<style is:global>
-  /* Upcoming bookings have their own WhatsApp button and the footer has
-     another; the floating one covered the cards while scrolling. */
-  a[data-wa-ref^='FLOATING'] {
-    display: none;
-  }
-</style>

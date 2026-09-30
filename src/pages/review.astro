@@ -50,7 +50,7 @@ const tourTitle = tour?.title ?? booking?.tour_id ?? '';
 const shownAs = booking ? reviewDisplayName(booking.traveler_name) : '';
 const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
 ---
-<BaseLayout title="Rate your tour — IWIS Global" description="Rate your IWIS Global tour." noindex>
+<BaseLayout floatingWhatsApp={false} title="Rate your tour — IWIS Global" description="Rate your IWIS Global tour." noindex>
   <section class="max-w-xl mx-auto px-6 py-16">
     {!booking ? (
       <div class="text-center">
@@ -173,10 +173,3 @@ const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
     })
   );
 </script>
-
-<style is:global>
-  /* Keep the floating WhatsApp button off the submit button. */
-  a[data-wa-ref^='FLOATING'] {
-    display: none;
-  }
-</style>

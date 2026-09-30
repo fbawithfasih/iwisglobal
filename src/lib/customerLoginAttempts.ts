@@ -5,9 +5,15 @@
 
 import type { D1Like } from './db';
 
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 15 * 60 * 1000; // failed attempts older than this don't count
-const LOCKOUT_MS = 15 * 60 * 1000; // how long an IP is locked out once it hits MAX_ATTEMPTS
+interface Limits {
+  max: number; // attempts allowed within the window
+  windowMs: number; // attempts older than this don't count
+  lockoutMs: number; // how long the key is locked once it hits max
+}
+const LOGIN_LIMITS: Limits = { max: 5, windowMs: 15 * 60 * 1000, lockoutMs: 15 * 60 * 1000 };
+// /signup: new accounts per IP (keyed "signup:<ip>" in the same table), so a
+// script can't create accounts in bulk.
+const SIGNUP_LIMITS: Limits = { max: 5, windowMs: 60 * 60 * 1000, lockoutMs: 60 * 60 * 1000 };
 
 interface AttemptRow {
   attempts: number;
@@ -27,17 +33,17 @@ export async function checkCustomerLoginLock(db: D1Like, ip: string): Promise<nu
   return remaining > 0 ? remaining : null;
 }
 
-export async function recordFailedCustomerLogin(db: D1Like, ip: string): Promise<void> {
+export async function recordFailedCustomerLogin(db: D1Like, ip: string, limits: Limits = LOGIN_LIMITS): Promise<void> {
   const now = new Date();
   const row = await db
     .prepare(`SELECT attempts, window_started_at, locked_until FROM customer_login_attempts WHERE ip = ?`)
     .bind(ip)
     .first<AttemptRow>();
 
-  const windowExpired = !row || now.getTime() - new Date(row.window_started_at).getTime() > WINDOW_MS;
+  const windowExpired = !row || now.getTime() - new Date(row.window_started_at).getTime() > limits.windowMs;
   const attempts = windowExpired ? 1 : row!.attempts + 1;
   const windowStartedAt = windowExpired ? now.toISOString() : row!.window_started_at;
-  const lockedUntil = attempts >= MAX_ATTEMPTS ? new Date(now.getTime() + LOCKOUT_MS).toISOString() : null;
+  const lockedUntil = attempts >= limits.max ? new Date(now.getTime() + limits.lockoutMs).toISOString() : null;
 
   await db
     .prepare(
@@ -51,4 +57,13 @@ export async function recordFailedCustomerLogin(db: D1Like, ip: string): Promise
 
 export async function clearCustomerLoginAttempts(db: D1Like, ip: string): Promise<void> {
   await db.prepare(`DELETE FROM customer_login_attempts WHERE ip = ?`).bind(ip).run();
+}
+
+// Remaining wait in ms if this IP has made too many accounts lately, else null.
+export function checkSignupLimit(db: D1Like, ip: string): Promise<number | null> {
+  return checkCustomerLoginLock(db, `signup:${ip}`);
+}
+
+export function recordSignup(db: D1Like, ip: string): Promise<void> {
+  return recordFailedCustomerLogin(db, `signup:${ip}`, SIGNUP_LIMITS);
 }
