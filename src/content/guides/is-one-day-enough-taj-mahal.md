@@ -14,7 +14,7 @@ Central Delhi to Agra is roughly **230 km**, **165 km** of it on the [Yamuna Exp
 
 ## An hour-by-hour view of a same-day trip
 
-Here's the schedule for our own [Same-Day Taj Mahal Tour from Delhi](/tours/same-day-agra-from-delhi) — actual times shift a little with your pickup location, traffic and season:
+Here's the schedule for our own [Delhi to Agra Same-Day Taj Mahal Tour by Car](/tours/same-day-agra-from-delhi) — actual times shift a little with your pickup location, traffic and season:
 
 | Time | What's happening |
 |---|---|
