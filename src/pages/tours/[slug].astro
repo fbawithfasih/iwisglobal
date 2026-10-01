@@ -199,8 +199,11 @@ const tripJsonLd = {
     },
   ],
 };
+// Google shows about 60 characters of a title: drop the brand suffix when it
+// would push a long tour name past that, so the tour name is never cut off.
+const BRAND_SUFFIX = ' — IWIS Global';
 ---
-<BaseLayout title={`${tour.title} — IWIS Global`} description={tour.summary} breadcrumbs={[{ name: 'Tours', path: '/tours' }]}>
+<BaseLayout title={tour.title.length + BRAND_SUFFIX.length > 60 ? tour.title : `${tour.title}${BRAND_SUFFIX}`} description={tour.summary} breadcrumbs={[{ name: 'Tours', path: '/tours' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(tripJsonLd)} />
 
   <section class="max-w-5xl mx-auto px-6 pt-8 pb-16 md:pt-16 grid md:grid-cols-3 gap-10 items-start">

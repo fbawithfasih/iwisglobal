@@ -1,6 +1,6 @@
 ---
 title: "How to Avoid Taj Mahal Scams (2026)"
-description: "The scams that actually catch visitors between Delhi and the Taj Mahal, from fake ticket websites to 'skip the line' guides, and how to check any operator before you pay."
+description: "The scams that catch visitors between Delhi and the Taj Mahal, from fake ticket sites to 'skip the line' guides, and how to check any operator."
 authorName: "IWIS Global"
 datePublished: 2026-09-29
 dateModified: 2026-09-30

@@ -1,6 +1,6 @@
 ---
 title: "IWIS Global vs. Viator or GetYourGuide"
-description: "The real difference: Viator and GetYourGuide are marketplaces where local operators list and pay a commission. IWIS Global is the operator — you book us directly."
+description: "Viator and GetYourGuide are marketplaces where local operators list and pay a commission. IWIS Global is the operator: you book us directly."
 authorName: "IWIS Global"
 datePublished: 2026-09-22
 dateModified: 2026-09-27

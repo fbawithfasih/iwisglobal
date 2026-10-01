@@ -55,9 +55,12 @@ const articleJsonLd = {
   image: post.image ? new URL(post.image, Astro.site ?? 'https://www.iwisglobal.com').toString() : undefined,
   publisher: { '@type': 'Organization', name: 'IWIS Global', logo: { '@type': 'ImageObject', url: 'https://www.iwisglobal.com/logo.png' } },
 };
+// Google shows about 60 characters of a title: drop the brand suffix when it
+// would push a long post title past that, so the title is never cut off.
+const BRAND_SUFFIX = ' — IWIS Global';
 ---
 
-<BaseLayout title={`${post.title} — IWIS Global`} description={post.description} image={post.image ?? undefined} breadcrumbs={[{ name: 'Blog', path: '/blog' }]}>
+<BaseLayout title={post.title.length + BRAND_SUFFIX.length > 60 ? post.title : `${post.title}${BRAND_SUFFIX}`} description={post.description} image={post.image ?? undefined} breadcrumbs={[{ name: 'Blog', path: '/blog' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
 
   <article class="max-w-3xl mx-auto px-6 py-16">
