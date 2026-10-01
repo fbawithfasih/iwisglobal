@@ -43,6 +43,12 @@ const categories: FaqCategory[] = [
           "Choose a tour, pick your travel date and number of travelers, and pay securely online. You'll get instant confirmation by email as soon as your payment goes through — no waiting for a callback.",
       },
       {
+        id: 'after-booking',
+        question: 'What happens after I book?',
+        answer:
+          "You get a confirmation email right away, with a link to view your booking any time. Then send us your hotel or pickup address on WhatsApp — and, if your tour includes entry tickets, each traveler's full name and nationality, which the Archaeological Survey of India (ASI) needs for the tickets. You can also add the tour to your calendar from the booking page.",
+      },
+      {
         id: 'same-day',
         question: 'How late can I book?',
         answer:
@@ -51,7 +57,9 @@ const categories: FaqCategory[] = [
       {
         id: 'account',
         question: 'Do I need to create an account?',
-        answer: "No account or sign-up needed. You just enter your name, email, and phone number at checkout — that's it.",
+        answer:
+          "No — you can book without one; you just enter your name, email and phone number at checkout. If you'd like all your bookings in one place, create an account with the same email you booked with and confirm it (or use Continue with Google): bookings you've already made will show in My Bookings too.",
+        links: [{ text: 'Create an account', href: '/signup' }],
       },
       {
         id: 'scams',
