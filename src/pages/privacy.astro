@@ -11,7 +11,7 @@ export const prerender = false;
 // because payment-network reviewers read it as an incomplete policy.
 // Apple sign-in is built but not switched on, so only Google is named
 // below (same in terms.astro); add Apple back when it is.
-const lastUpdated = '30 September 2026';
+const lastUpdated = '2 October 2026';
 ---
 
 <BaseLayout title="Privacy Policy — IWIS Global" description="How IWIS Global collects, uses, and protects your information when you book a tour or create an account.">
@@ -56,6 +56,7 @@ const lastUpdated = '30 September 2026';
       <li><strong>Cloudflare</strong> — our hosting and database provider; your requests pass through their infrastructure to reach our servers.</li>
       <li><strong>Google</strong> — via Google Analytics, for the site-usage and booking analytics described above.</li>
       <li><strong>Meta (Facebook, Instagram)</strong> — via the Meta Pixel, only if you accept advertising cookies, for the advertising described above.</li>
+      <li><strong>Metricool</strong> — a marketing analytics service; only if you accept cookies, it records which pages you visit and how you arrived (for example from one of our social media posts), so we can see which posts and campaigns bring visitors.</li>
       <li><strong>Resend</strong> — the email service that sends your booking confirmation, e-tickets and review requests (it receives your name, email address, and booking details).</li>
       <li><strong>Archaeological Survey of India (ASI)</strong> — traveler names and nationalities, only when we buy monument entry tickets for your tour.</li>
       <li><strong>Anthropic</strong> — the text of questions you type into the YourGuide box, to generate the answer.</li>
@@ -73,6 +74,7 @@ const lastUpdated = '30 September 2026';
       <li><code class="text-sm bg-stone-100 px-1 rounded">_ga</code>, <code class="text-sm bg-stone-100 px-1 rounded">_ga_*</code> — set by Google Analytics, only if you accept, to distinguish visitors and measure site usage.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">cookie_consent</code> — remembers whether you accepted or rejected analytics and advertising cookies, for 180 days.</li>
       <li><code class="text-sm bg-stone-100 px-1 rounded">_fbp</code>, <code class="text-sm bg-stone-100 px-1 rounded">_fbc</code> — set by the Meta Pixel, only if you accept, to recognise your browser for Instagram and Facebook ads.</li>
+      <li>Metricool's tracker — loads only if you accept, and may set its own cookies or local storage to count your visits.</li>
     </ul>
     <p class="text-stone-700 mb-6">You can change your choice at any time with “Cookie settings” at the bottom of every page. Rejecting removes the Google Analytics and Meta cookies from this site.</p>
 
