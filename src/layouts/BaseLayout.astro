@@ -232,6 +232,8 @@ const websiteJsonLd = Astro.url.pathname === '/'
     <meta name="twitter:image" content={ogImageURL} />
 
     <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <!-- Pinterest website claim (Pinterest business account). -->
+    <meta name="p:domain_verify" content="a469947eb399df092262ab86abbc91a5" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 
     <script type="application/ld+json" set:html={JSON.stringify(orgJsonLd)} />
