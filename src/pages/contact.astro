@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import SocialLinks from '../components/SocialLinks.astro';
 import GrievanceOfficer from '../components/GrievanceOfficer.astro';
 
 // Required page for Razorpay card-network activation. Same contact details
@@ -46,6 +47,9 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have
         <p class="text-sm text-stone-600 mt-1">Bookings, cancellations, and general questions</p>
       </a>
     </div>
+
+    <h2 class="text-lg font-semibold mb-1">Follow us</h2>
+    <SocialLinks showNames class="mb-8" />
 
     <h2 class="text-lg font-semibold mb-2">Registered address</h2>
     <p class="text-stone-700 mb-6">
