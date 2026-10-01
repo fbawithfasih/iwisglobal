@@ -502,3 +502,51 @@ export async function sendPasswordChangedEmail(env: Record<string, any>, details
     return false;
   }
 }
+
+// "Confirm your email" for a new email/password account, so bookings made
+// with this email (before or after signing up) can show in My Bookings.
+export async function sendEmailVerificationEmail(env: Record<string, any>, details: { to: string; name: string; link: string }): Promise<boolean> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey || !details.to) return false;
+
+  const from = env.BOOKING_EMAIL_FROM || 'IWIS Global <info@iwisglobal.com>';
+  const first = details.name.trim().split(/\s+/)[0] || 'there';
+  const button = 'display:inline-block; padding:12px 20px; border-radius:999px; text-decoration:none; font-weight:600;';
+  const html = `
+    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
+      <h2 style="color:#5b21b6; margin-bottom: 4px;">Confirm your email</h2>
+      <p>Hi ${escapeHtml(first)},</p>
+      <p>Thanks for creating an IWIS Global account. Confirm this is your email and any tour you've booked with it, before or after signing up, will show in My Bookings.</p>
+      <p style="margin:20px 0;"><a href="${details.link}" style="${button} background:#5b21b6; color:#ffffff;">Confirm my email</a></p>
+      <p>The link works within the next 24 hours. If you didn't create an account, you can ignore this email.</p>
+      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; <a href="${SITE}" style="color:#a8a29e;">www.iwisglobal.com</a></p>
+    </div>
+  `;
+  const text = [
+    `Confirm your email`,
+    ``,
+    `Hi ${first},`,
+    `Thanks for creating an IWIS Global account. Confirm this is your email and any tour you've booked with it, before or after signing up, will show in My Bookings:`,
+    details.link,
+    ``,
+    `The link works within the next 24 hours. If you didn't create an account, you can ignore this email.`,
+    ``,
+    `IWIS Global · ${SITE}`,
+  ].join('\n');
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: details.to, subject: 'Confirm your email — IWIS Global', html, text }),
+    });
+    if (!res.ok) {
+      console.error('sendEmailVerificationEmail: Resend API error', res.status, await res.text());
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('sendEmailVerificationEmail: request failed', err);
+    return false;
+  }
+}

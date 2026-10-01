@@ -6,6 +6,9 @@ export interface OAuthProfile {
   email: string;
   name: string;
   avatarUrl?: string | null;
+  // The provider vouches that this email belongs to the account (id_token
+  // email_verified claim). Only then are guest bookings with it linked.
+  emailVerified: boolean;
 }
 
 // Decodes (but does NOT verify the signature of) an id_token's payload.

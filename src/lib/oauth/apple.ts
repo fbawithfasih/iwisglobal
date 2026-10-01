@@ -104,5 +104,7 @@ export async function exchangeAppleCode(
     }
   }
 
-  return { providerSub: claims.sub, email: claims.email, name, avatarUrl: null };
+  // Apple sends email_verified as a boolean or the string "true".
+  const emailVerified = claims.email_verified === true || claims.email_verified === 'true';
+  return { providerSub: claims.sub, email: claims.email, name, avatarUrl: null, emailVerified };
 }

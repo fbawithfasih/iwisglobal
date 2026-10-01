@@ -10,6 +10,8 @@ import { getCustomerByEmail, createCustomerWithPassword } from '../lib/customers
 import { hashPassword, generateSaltHex } from '../lib/passwordHash';
 import { createCustomerSessionToken } from '../lib/customerAuth';
 import { checkSignupLimit, recordSignup } from '../lib/customerLoginAttempts';
+import { createEmailVerificationLink } from '../lib/emailVerification';
+import { sendEmailVerificationEmail } from '../lib/email';
 
 const env = resolveEnv(Astro.locals);
 
@@ -57,6 +59,16 @@ if (Astro.request.method === 'POST') {
       const passwordHash = await hashPassword(password, passwordSalt);
       const customer = await createCustomerWithPassword(db, { email, name, passwordHash, passwordSalt });
       await recordSignup(db, ip);
+      // "Confirm your email": once confirmed, bookings made with this email
+      // (before or after signing up) show in My Bookings. Sent in the
+      // background so it doesn't hold up the redirect.
+      const link = await createEmailVerificationLink(db, customer.id, Astro.url.origin);
+      if (link) {
+        const sending = sendEmailVerificationEmail(env, { to: customer.email, name: customer.name, link });
+        const ctx = (Astro.locals as { runtime?: { ctx?: { waitUntil(p: Promise<unknown>): void } } }).runtime?.ctx;
+        if (ctx) ctx.waitUntil(sending);
+        else await sending;
+      }
 
       const token = await createCustomerSessionToken(customer.id, env.CUSTOMER_SESSION_SECRET);
       Astro.cookies.set(CUSTOMER_COOKIE, token, {

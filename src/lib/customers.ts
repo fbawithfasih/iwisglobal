@@ -14,6 +14,7 @@ export interface CustomerRow {
   password_hash: string | null;
   password_salt: string | null;
   created_at: string;
+  email_verified_at: string | null;
 }
 
 export interface CustomerProfile {
@@ -22,6 +23,7 @@ export interface CustomerProfile {
   email: string;
   name: string;
   avatarUrl?: string | null;
+  emailVerified?: boolean;
 }
 
 // Finds an existing customer for this provider identity, or creates one.
@@ -32,16 +34,23 @@ export async function upsertCustomer(db: D1Like, profile: CustomerProfile): Prom
     .prepare(`SELECT * FROM customers WHERE provider = ? AND provider_sub = ?`)
     .bind(profile.provider, profile.providerSub)
     .first<CustomerRow>();
-  if (existing) return existing;
+  const verifiedAt = profile.emailVerified ? new Date().toISOString() : null;
+  if (existing) {
+    if (verifiedAt && !existing.email_verified_at) {
+      await db.prepare(`UPDATE customers SET email_verified_at = ? WHERE id = ?`).bind(verifiedAt, existing.id).run();
+      return { ...existing, email_verified_at: verifiedAt };
+    }
+    return existing;
+  }
 
   const id = `cust_${crypto.randomUUID()}`;
   const now = new Date().toISOString();
   await db
     .prepare(
-      `INSERT INTO customers (id, email, name, avatar_url, provider, provider_sub, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO customers (id, email, name, avatar_url, provider, provider_sub, created_at, email_verified_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    .bind(id, profile.email, profile.name, profile.avatarUrl ?? null, profile.provider, profile.providerSub, now)
+    .bind(id, profile.email, profile.name, profile.avatarUrl ?? null, profile.provider, profile.providerSub, now, verifiedAt)
     .run();
 
   return {
@@ -54,6 +63,7 @@ export async function upsertCustomer(db: D1Like, profile: CustomerProfile): Prom
     password_hash: null,
     password_salt: null,
     created_at: now,
+    email_verified_at: verifiedAt,
   };
 }
 
@@ -103,6 +113,7 @@ export async function createCustomerWithPassword(db: D1Like, input: EmailSignupI
     password_hash: input.passwordHash,
     password_salt: input.passwordSalt,
     created_at: now,
+    email_verified_at: null,
   };
 }
 

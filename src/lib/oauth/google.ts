@@ -44,5 +44,6 @@ export async function exchangeGoogleCode(env: Record<string, unknown>, code: str
     email: claims.email,
     name: claims.name || claims.email,
     avatarUrl: claims.picture ?? null,
+    emailVerified: claims.email_verified === true,
   };
 }

@@ -6,20 +6,12 @@
 import type { D1Like } from './db';
 import { getCustomerByEmail, getCustomerById } from './customers';
 import { hashPassword, generateSaltHex } from './passwordHash';
+import { newLinkToken, hashLinkToken } from './oneTimeLinks';
+import { markEmailVerified } from './emailVerification';
 
 const LINK_TTL_MS = 60 * 60 * 1000;
 const MAX_LINKS_PER_HOUR = 3;
 export const MIN_PASSWORD_LENGTH = 8; // same rule as /signup
-
-async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function newToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
 
 // A new link for this email, or null when there's no email/password account
 // for it or it has asked for too many in the last hour (the caller shows the
@@ -39,11 +31,11 @@ export async function createPasswordResetLink(
     .first<{ n: number }>();
   if ((recent?.n ?? 0) >= MAX_LINKS_PER_HOUR) return null;
 
-  const token = newToken();
+  const token = newLinkToken();
   const now = new Date();
   await db
     .prepare(`INSERT INTO password_resets (token_hash, customer_id, created_at, expires_at) VALUES (?, ?, ?, ?)`)
-    .bind(await sha256Hex(token), customer.id, now.toISOString(), new Date(now.getTime() + LINK_TTL_MS).toISOString())
+    .bind(await hashLinkToken(token), customer.id, now.toISOString(), new Date(now.getTime() + LINK_TTL_MS).toISOString())
     .run();
   return { to: customer.email, name: customer.name, link: `${site}/reset-password?t=${encodeURIComponent(token)}` };
 }
@@ -53,7 +45,7 @@ export async function customerForResetToken(db: D1Like, token: string): Promise<
   if (!token || token.length > 100) return null;
   const row = await db
     .prepare(`SELECT customer_id FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?`)
-    .bind(await sha256Hex(token), new Date().toISOString())
+    .bind(await hashLinkToken(token), new Date().toISOString())
     .first<{ customer_id: string }>();
   const customer = row ? await getCustomerById(db, row.customer_id) : null;
   return customer && customer.provider === 'email' ? { id: customer.id, email: customer.email, name: customer.name } : null;
@@ -74,5 +66,7 @@ export async function resetPassword(
   const now = new Date().toISOString();
   await db.prepare(`UPDATE customers SET password_hash = ?, password_salt = ? WHERE id = ?`).bind(hash, salt, customer.id).run();
   await db.prepare(`UPDATE password_resets SET used_at = ? WHERE customer_id = ? AND used_at IS NULL`).bind(now, customer.id).run();
+  // Opening the emailed link proves the inbox, same as confirming the email.
+  await markEmailVerified(db, customer.id);
   return customer;
 }

@@ -30,6 +30,7 @@ export const GET: APIRoute = async ({ url, cookies, locals, redirect }) => {
       email: profile.email,
       name: profile.name,
       avatarUrl: profile.avatarUrl,
+      emailVerified: profile.emailVerified,
     });
 
     const token = await createCustomerSessionToken(customer.id, env.CUSTOMER_SESSION_SECRET);
