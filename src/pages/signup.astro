@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ShowPasswordButton from '../components/ShowPasswordButton.astro';
 import { resolveEnv } from '../lib/env';
 import OAuthButtons from '../components/OAuthButtons.astro';
 import { getSessionCustomerId, CUSTOMER_COOKIE, safeRedirectPath } from '../lib/requireCustomer';
@@ -138,20 +139,20 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
       </div>
       <div>
         <label for="password" class="block text-xs font-medium text-stone-500 mb-1">Password</label>
-        <div class="relative">
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            minlength="8"
-            autocomplete="new-password"
-            aria-describedby="password-hint"
-            class="w-full rounded-lg border border-stone-300 pl-3 pr-16 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-          <button type="button" data-toggle-password="password" aria-pressed="false" aria-label="Show password" class="absolute inset-y-0 right-0 flex min-w-14 items-center justify-center px-3 text-sm font-medium text-brand-800">Show</button>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          minlength="8"
+          autocomplete="new-password"
+          aria-describedby="password-hint"
+          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+        <div class="flex items-center justify-between gap-3">
+          <p id="password-hint" class="text-xs text-stone-500">At least 8 characters.</p>
+          <ShowPasswordButton for="password" />
         </div>
-        <p id="password-hint" class="text-xs text-stone-500 mt-1">At least 8 characters.</p>
       </div>
       <p class="text-xs text-stone-500">
         By creating an account you agree to our <a href="/terms" class="-my-3 inline-block py-3 text-brand-800 underline">Terms</a> and
@@ -176,18 +177,3 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
     </p>
   </section>
 </BaseLayout>
-
-<script>
-  // "Show" toggle inside the password field — hard to spot typos on a phone keyboard.
-  document.querySelectorAll<HTMLButtonElement>('[data-toggle-password]').forEach((btn) => {
-    const input = document.getElementById(btn.dataset.togglePassword!) as HTMLInputElement | null;
-    if (!input) return;
-    btn.addEventListener('click', () => {
-      const show = input.type === 'password';
-      input.type = show ? 'text' : 'password';
-      btn.textContent = show ? 'Hide' : 'Show';
-      btn.setAttribute('aria-pressed', String(show));
-      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
-    });
-  });
-</script>

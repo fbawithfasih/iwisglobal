@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ShowPasswordButton from '../components/ShowPasswordButton.astro';
 import { resolveEnv } from '../lib/env';
 import OAuthButtons from '../components/OAuthButtons.astro';
 import { getSessionCustomerId, CUSTOMER_COOKIE, safeRedirectPath, signInErrorMessage } from '../lib/requireCustomer';
@@ -104,17 +105,15 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
           <label for="password" class="block text-xs font-medium text-stone-500">Password</label>
           <a href="/forgot-password" class="-my-2 py-2 pl-3 text-xs font-medium text-brand-800 hover:underline">Forgot password?</a>
         </div>
-        <div class="relative">
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autocomplete="current-password"
-            class="w-full rounded-lg border border-stone-300 pl-3 pr-16 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-          <button type="button" data-toggle-password="password" aria-pressed="false" aria-label="Show password" class="absolute inset-y-0 right-0 flex min-w-14 items-center justify-center px-3 text-sm font-medium text-brand-800">Show</button>
-        </div>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          autocomplete="current-password"
+          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+        <div class="flex justify-end"><ShowPasswordButton for="password" /></div>
       </div>
       <button
         type="submit"
@@ -129,18 +128,3 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
     </p>
   </section>
 </BaseLayout>
-
-<script>
-  // "Show" toggle inside the password field — hard to spot typos on a phone keyboard.
-  document.querySelectorAll<HTMLButtonElement>('[data-toggle-password]').forEach((btn) => {
-    const input = document.getElementById(btn.dataset.togglePassword!) as HTMLInputElement | null;
-    if (!input) return;
-    btn.addEventListener('click', () => {
-      const show = input.type === 'password';
-      input.type = show ? 'text' : 'password';
-      btn.textContent = show ? 'Hide' : 'Show';
-      btn.setAttribute('aria-pressed', String(show));
-      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
-    });
-  });
-</script>
