@@ -23,7 +23,7 @@ const tourNames = new Map((db && reviews.length ? await listTours(db) : []).map(
 ---
 
 <BaseLayout floatingWhatsApp={false}
-  title="Guest reviews — IWIS Global"
+  title="Guest Reviews for India Tours — IWIS Global"
   description={reviews.length
     ? `Reviews from guests who booked a Taj Mahal or Agra tour with IWIS Global: ${avg!.toFixed(1)} out of 5 from ${reviews.length} review${reviews.length > 1 ? 's' : ''}.`
     : "We're a new operator and don't have reviews to show yet — here's where they'll go as real guests leave them."}
