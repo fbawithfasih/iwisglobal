@@ -59,6 +59,7 @@ function hrefFor(param: string, value: string): string {
       {LOCALES.map((l) => (
         <a
           href={hrefFor('lang', l.code)}
+          rel="nofollow"
           data-switch="language"
           data-value={l.code}
           data-current={l.code === locale ? '' : undefined}
@@ -81,6 +82,7 @@ function hrefFor(param: string, value: string): string {
       {CURRENCIES.map((c) => (
         <a
           href={hrefFor('currency', c.code)}
+          rel="nofollow"
           data-switch="currency"
           data-value={c.code}
           data-current={c.code === currency ? '' : undefined}
