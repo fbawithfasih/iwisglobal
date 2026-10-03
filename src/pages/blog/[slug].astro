@@ -10,7 +10,7 @@ export const prerender = false;
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 import { resolveEnv } from '../../lib/env';
-import { getBlogPostBySlug, renderBlogBody } from '../../lib/blog';
+import { getBlogPostBySlug, listBlogPosts, renderBlogBody } from '../../lib/blog';
 import { getCollection } from 'astro:content';
 import { sortGuides } from '../../lib/guides';
 
@@ -23,6 +23,14 @@ if (!post || post.status !== 'published') {
 }
 
 const bodyHtml = renderBlogBody(post.body);
+
+// "More from the blog": the newest other posts this one doesn't already link
+// to, so every post gets links from (and to) its neighbours.
+const morePosts = env.DB
+  ? (await listBlogPosts(env.DB, { status: 'published' }))
+      .filter((p) => p.slug !== post.slug && !bodyHtml.includes(`/blog/${p.slug}`))
+      .slice(0, 3)
+  : [];
 
 // "Keep reading": the first guides in the site's reading order that this
 // post doesn't already link to.
@@ -87,6 +95,8 @@ const BRAND_SUFFIX = ' — IWIS Global';
           src={post.image}
           srcset={post.imageThumb ? `${post.imageThumb} 800w, ${post.image} 1200w` : undefined}
           sizes="(min-width: 768px) 672px, calc(100vw - 48px)"
+          width="1200"
+          height="675"
           alt={post.imageIsIllustration ? `Illustration for: ${post.title}` : post.title}
           fetchpriority="high"
           decoding="async"
@@ -98,6 +108,22 @@ const BRAND_SUFFIX = ' — IWIS Global';
       </figure>
     )}
     <div class="prose prose-stone max-w-none prose-headings:font-serif prose-a:text-brand-700" set:html={bodyHtml} />
+
+    {morePosts.length > 0 && (
+      <section class="mt-12 border-t border-stone-200 pt-8" aria-labelledby="more-posts">
+        <h2 id="more-posts" class="text-xl font-serif font-semibold mb-4">More from the blog</h2>
+        <ul class="space-y-3">
+          {morePosts.map((p) => (
+            <li>
+              <a href={`/blog/${p.slug}`} class="block rounded-xl border border-stone-200 bg-white p-4 hover:border-brand-300 transition">
+                <span class="block font-semibold text-stone-900">{p.title}</span>
+                <span class="mt-1 block text-sm text-stone-600">{p.description}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
 
     {keepReading.length > 0 && (
       <section class="mt-12 border-t border-stone-200 pt-8" aria-labelledby="keep-reading">

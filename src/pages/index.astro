@@ -6,7 +6,7 @@ import AiGuideBox from '../components/AiGuideBox';
 import { listTours, sharedTourFacts } from '../lib/tours';
 import FoundingGuestNote from '../components/FoundingGuestNote.astro';
 import { listAgraHighlights } from '../lib/agraHighlights';
-import { resizedSrcset } from '../lib/resizedImages';
+import { resizedSrcset, uploadedImageSize } from '../lib/resizedImages';
 import { liveAutomaticOffersForRequest } from '../lib/offers';
 import { hasApprovedReviewsForRequest } from '../lib/reviews';
 import { countBookingsForRequest } from '../lib/db';
@@ -80,6 +80,8 @@ function highlightHref(id: string): string {
         <source srcset="/hero-taj-mahal-720.jpg" media="(max-width: 767px)" />
         <img
           src="/hero-taj-mahal.jpg"
+          width="1920"
+          height="1920"
           alt=""
           fetchpriority="high"
           decoding="async"
@@ -238,7 +240,7 @@ function highlightHref(id: string): string {
           <a href={highlightHref(item.id)} class="group w-64 sm:w-72 shrink-0 snap-start block">
             <div class="aspect-[4/3] bg-brand-50 rounded-xl overflow-hidden">
               {item.image ? (
-                <img src={item.image} srcset={resizedSrcset(item.image)} sizes="(min-width: 640px) 288px, 256px" alt={item.name} loading="lazy" decoding="async" class="w-full h-full object-cover transition group-hover:opacity-90" />
+                <img src={item.image} srcset={resizedSrcset(item.image)} sizes="(min-width: 640px) 288px, 256px" {...uploadedImageSize(item.image)} alt={item.name} loading="lazy" decoding="async" class="w-full h-full object-cover transition group-hover:opacity-90" />
               ) : (
                 <div class="w-full h-full flex items-center justify-center text-brand-300 text-sm">No image yet</div>
               )}
@@ -282,6 +284,13 @@ function highlightHref(id: string): string {
         IWIS Global is a registered partnership firm based in Agra. We run the tours ourselves rather than reselling
         them through a marketplace, and we take no commission from any shop or stop on the way. The Taj Mahal is closed
         on Fridays, so tours do not run that day.
+      </p>
+      <p class="text-stone-700">
+        Planning the journey? Read our guides to the
+        <a href="/blog/how-to-travel-by-train-from-delhi-to-agra" class="text-brand-700 hover:underline">train from Delhi to Agra</a>,
+        the <a href="/blog/gatimaan-express-delhi-to-agra-timetable-fares-booking" class="text-brand-700 hover:underline">Gatimaan Express timetable</a>,
+        <a href="/blog/how-long-does-it-take-delhi-to-agra" class="text-brand-700 hover:underline">how long the drive takes</a>
+        and whether a <a href="/blog/taj-mahal-sunrise-tour-from-delhi-worth-it" class="text-brand-700 hover:underline">sunrise start is worth it</a>.
       </p>
       <p class="text-stone-700">
         Compare our <a href="/tours" class="text-brand-700 hover:underline">private Taj Mahal tours</a>, read the

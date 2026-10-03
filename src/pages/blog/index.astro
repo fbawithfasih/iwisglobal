@@ -51,6 +51,8 @@ const formatDate = (iso: string) =>
                   src={post.imageThumb ?? post.image}
                   srcset={post.imageThumb ? `${post.imageThumb} 800w, ${post.image} 1200w` : undefined}
                   sizes="(min-width: 768px) 672px, calc(100vw - 48px)"
+                  width="800"
+                  height="450"
                   alt=""
                   loading={i === 0 ? 'eager' : 'lazy'}
                   decoding="async"
