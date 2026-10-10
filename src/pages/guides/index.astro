@@ -11,27 +11,30 @@ const guides = sortGuides(await getCollection('guides'));
 
 <BaseLayout title="Taj Mahal Travel Guides — IWIS Global" description="Practical, sourced answers to the questions travelers actually ask before a Taj Mahal trip — tickets, timing, what to bring, and more.">
   <section class="max-w-3xl mx-auto px-6 py-16">
-    <h1 class="text-3xl font-serif font-semibold mb-2">Taj Mahal travel guides</h1>
-    <p class="text-stone-600 mb-10">Practical, sourced answers to the questions travelers actually ask before a Taj Mahal trip.</p>
+    <div class="mb-10 rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/20 sm:p-8">
+      <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-100">Travel guides</span>
+      <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-2">Taj Mahal travel guides</h1>
+      <p class="text-white/90">Practical, sourced answers to the questions travelers actually ask before a Taj Mahal trip.</p>
+    </div>
 
-    <div class="space-y-6">
+    <div class="space-y-4">
       {guides.map((guide) => (
-        <a href={`/guides/${guide.slug}`} class="block rounded-xl border border-stone-200 bg-white p-6 hover:shadow-md transition">
-          <h2 class="text-lg font-semibold mb-1">{guide.data.title}</h2>
+        <a href={`/guides/${guide.slug}`} class="group block rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/60 to-white p-6 shadow-sm shadow-brand-900/5 hover:border-brand-300 hover:shadow-md transition">
+          <h2 class="mb-1 font-serif text-xl font-semibold text-brand-900 group-hover:underline">{guide.data.title}</h2>
           <p class="text-sm text-stone-600">{guide.data.description}</p>
           {/* Guides carry prices and rules, so show how recent each one is. */}
-          <p class="text-xs text-stone-500 mt-2">
+          <p class="mt-3 inline-block rounded-full border border-brand-100 bg-white px-2.5 py-0.5 text-xs text-stone-500">
             Updated {guide.data.dateModified.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
           </p>
         </a>
       ))}
     </div>
 
-    <h2 class="text-2xl font-serif font-semibold mt-14 mb-3">Where to start</h2>
+    <h2 class="mt-14 mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Where to start</h2>
     <p class="text-stone-700 mb-4">
       If you are planning a first visit, these four guides answer most of the questions we hear before a booking:
     </p>
-    <ul class="list-disc pl-5 text-stone-700 space-y-2 mb-8">
+    <ul class="list-disc pl-5 text-stone-700 space-y-2 mb-8 marker:text-brand-500">
       <li><a href="/guides/taj-mahal-ticket-price-2026" class="text-brand-700 hover:underline">Taj Mahal ticket prices</a>: what each ticket costs and which one you need.</li>
       <li><a href="/guides/best-time-to-visit-taj-mahal" class="text-brand-700 hover:underline">The best month to visit</a>: temperature, air quality and sunrise times.</li>
       <li><a href="/guides/is-one-day-enough-taj-mahal" class="text-brand-700 hover:underline">Is one day enough?</a> An hour-by-hour look at a same-day trip from Delhi.</li>
@@ -42,20 +45,20 @@ const guides = sortGuides(await getCollection('guides'));
       planning from abroad, so we explain details a local would take for granted, such as which railway station a train
       leaves from, how the different ticket types work, and what the opening hours mean in practice on the day.
     </p>
-    <h2 class="text-2xl font-serif font-semibold mb-3">Why read a guide before you book</h2>
+    <h2 class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Why read a guide before you book</h2>
     <p class="text-stone-700 mb-8">
       A day trip from Delhi to Agra is long, and a small mistake can cost hours: turning up on a Friday when the Taj
       Mahal is closed, buying the wrong ticket, bringing something that is not allowed inside, or trusting a stranger
       who offers a shortcut. These guides are written to help you avoid those problems, whether you book with us
       or arrange the trip yourself.
     </p>
-    <h2 class="text-2xl font-serif font-semibold mb-3">How we write these guides</h2>
+    <h2 class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">How we write these guides</h2>
     <p class="text-stone-700 mb-4">
       Ticket prices come from the Archaeological Survey of India, visiting hours from the official Taj Mahal website,
       and each guide shows the date it was last updated, because prices and rules change. If you spot something out of
       date, tell us on <a href="/contact" class="text-brand-700 hover:underline">WhatsApp or email</a> and we will check it.
     </p>
-    <p class="text-stone-700">
+    <p class="rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-stone-700">
       Ready to plan the day? See our <a href="/tours" class="text-brand-700 hover:underline">private Delhi to Agra tours</a>,
       or read the <a href="/blog/how-to-travel-by-train-from-delhi-to-agra" class="text-brand-700 hover:underline">step-by-step guide to the train from Delhi to Agra</a>.
     </p>
