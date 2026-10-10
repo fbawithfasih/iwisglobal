@@ -157,10 +157,10 @@ export default function WeatherCard({ variant = 'full' }: { variant?: 'full' | '
 
   if (status === 'loading' || !data) {
     return (
-      <div className="rounded-xl border border-stone-100 bg-white shadow-sm p-6 animate-pulse" aria-hidden="true">
-        <div className="h-3 w-28 bg-stone-100 rounded mb-3"></div>
-        <div className="h-7 w-16 bg-stone-100 rounded mb-2"></div>
-        <div className="h-3 w-40 bg-stone-100 rounded"></div>
+      <div className="rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 shadow-lg shadow-brand-900/25 animate-pulse" aria-hidden="true">
+        <div className="h-3 w-28 bg-white/20 rounded mb-3"></div>
+        <div className="h-7 w-16 bg-white/20 rounded mb-2"></div>
+        <div className="h-3 w-40 bg-white/20 rounded"></div>
       </div>
     );
   }
@@ -175,61 +175,67 @@ export default function WeatherCard({ variant = 'full' }: { variant?: 'full' | '
         : null;
 
   return (
-    <div className="rounded-xl border border-stone-100 bg-white shadow-sm p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-        </span>
-        <h3 className="text-xs font-semibold tracking-wide text-stone-400 uppercase">Agra right now</h3>
-      </div>
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/25">
+      {/* Soft decorative circles; purely visual. */}
+      <span aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10"></span>
+      <span aria-hidden="true" className="pointer-events-none absolute -bottom-16 left-10 h-32 w-32 rounded-full bg-amber-300/10"></span>
 
-      <div className="flex items-center gap-4 mb-4">
-        <span className="text-4xl leading-none" aria-hidden="true">{icon}</span>
-        <div>
-          <p className="text-3xl font-serif font-semibold leading-none text-stone-900">{Math.round(data.temperatureC)}°C</p>
-          <p className="text-xs text-stone-500 mt-1">{label}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 text-xs text-stone-600 mb-4">
-        <p>Humidity: {Math.round(data.humidityPct)}%</p>
-        <p>Wind: {Math.round(data.windSpeedKmh)} km/h</p>
-        {rainNote && <p className="col-span-2">{rainNote}</p>}
-      </div>
-
-      {aqiInfo && (
+      <div className="relative">
         <div className="flex items-center gap-2 mb-4">
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${aqiInfo.className}`}>
-            AQI {data.aqi} · {aqiInfo.label}
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span>
           </span>
-          {data.pm25 !== null && <span className="text-xs text-stone-500">PM2.5: {data.pm25} µg/m³</span>}
+          <h3 className="text-xs font-semibold tracking-widest text-amber-200 uppercase">Agra right now</h3>
         </div>
-      )}
 
-      {data.forecast.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 pt-4 border-t border-stone-100">
-          {data.forecast.map((day) => {
-            const dayInfo = describeWeatherCode(day.weatherCode);
-            return (
-              <div key={day.date} className="text-center">
-                <p className="text-xs text-stone-500">
-                  {new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' })}
-                </p>
-                <p className="text-lg leading-none my-1" aria-hidden="true">{dayInfo.icon}</p>
-                <p className="text-xs text-stone-700">
-                  {Math.round(day.maxC)}° <span className="text-stone-400">{Math.round(day.minC)}°</span>
-                </p>
-              </div>
-            );
-          })}
+        <div className="flex items-center gap-4 mb-5">
+          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/15 text-4xl leading-none ring-2 ring-white/20" aria-hidden="true">{icon}</span>
+          <div>
+            <p className="text-4xl font-serif font-semibold leading-none">{Math.round(data.temperatureC)}°C</p>
+            <p className="text-sm text-brand-100 mt-1.5">{label}</p>
+          </div>
         </div>
-      )}
 
-      <p className="text-xs text-stone-400 mt-4">
-        Updated {new Date(data.fetchedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} ·
-        Source: Open-Meteo
-      </p>
+        <div className="grid grid-cols-2 gap-2 text-xs text-brand-50 mb-4">
+          <p className="rounded-lg bg-white/10 px-3 py-2">Humidity: {Math.round(data.humidityPct)}%</p>
+          <p className="rounded-lg bg-white/10 px-3 py-2">Wind: {Math.round(data.windSpeedKmh)} km/h</p>
+          {rainNote && <p className="col-span-2 rounded-lg bg-white/10 px-3 py-2">{rainNote}</p>}
+        </div>
+
+        {aqiInfo && (
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${aqiInfo.className}`}>
+              AQI {data.aqi} · {aqiInfo.label}
+            </span>
+            {data.pm25 !== null && <span className="text-xs text-brand-100">PM2.5: {data.pm25} µg/m³</span>}
+          </div>
+        )}
+
+        {data.forecast.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/15">
+            {data.forecast.map((day) => {
+              const dayInfo = describeWeatherCode(day.weatherCode);
+              return (
+                <div key={day.date} className="text-center rounded-lg bg-white/10 py-2">
+                  <p className="text-xs font-medium text-brand-100">
+                    {new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' })}
+                  </p>
+                  <p className="text-lg leading-none my-1" aria-hidden="true">{dayInfo.icon}</p>
+                  <p className="text-xs font-semibold text-white">
+                    {Math.round(day.maxC)}° <span className="font-normal text-brand-200">{Math.round(day.minC)}°</span>
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <p className="text-xs text-brand-200 mt-4">
+          Updated {new Date(data.fetchedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} ·
+          Source: Open-Meteo
+        </p>
+      </div>
     </div>
   );
 }
