@@ -214,7 +214,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
 <BaseLayout title={tour.title.length + BRAND_SUFFIX.length > 60 ? tour.title : `${tour.title}${BRAND_SUFFIX}`} description={tour.summary} breadcrumbs={[{ name: 'Tours', path: '/tours' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(tripJsonLd)} />
 
-  <section class="max-w-5xl mx-auto px-6 pt-8 pb-16 md:pt-16 grid lg:grid-cols-3 gap-10 items-start">
+  <section class="max-w-5xl 2xl:max-w-6xl min-[2200px]:max-w-7xl mx-auto px-6 pt-8 pb-16 md:pt-16 2xl:pt-20 grid lg:grid-cols-3 gap-10 2xl:gap-14 items-start">
     <div class="lg:col-span-2">
       <!-- The photo is the page's largest element: sized up front (no jump
            when it loads), fetched first, and phones get a copy sized for the
@@ -227,14 +227,14 @@ const BRAND_SUFFIX = ' — IWIS Global';
           {...uploadedImageSize(tour.image)}
           alt={tour.title}
           fetchpriority="high"
-          class="w-full h-auto rounded-2xl mb-6 object-cover max-h-96 shadow-lg shadow-brand-900/15"
+          class="w-full h-auto rounded-2xl mb-6 object-cover max-h-96 2xl:max-h-[30rem] min-[2200px]:max-h-[36rem] shadow-lg shadow-brand-900/15"
         />
       ) : (
         <div class="w-full aspect-[16/7] rounded-2xl mb-6 bg-gradient-to-br from-brand-100 via-brand-50 to-accent-50 flex items-center justify-center text-brand-300 text-sm">
           No image yet
         </div>
       )}
-      <h1 class="text-3xl md:text-4xl font-serif font-semibold text-brand-950 mb-2">{tour.title}</h1>
+      <h1 class="text-3xl md:text-4xl 2xl:text-5xl min-[2200px]:text-6xl font-serif font-semibold text-brand-950 mb-2">{tour.title}</h1>
       <div class="h-1 w-16 rounded-full bg-gradient-to-r from-brand-600 to-accent-500 mb-4"></div>
       <!-- Location and live weather on a line of their own: the weather text
            loads (or fails) after the page, and must not reflow the badges. -->
@@ -261,7 +261,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
       {requestedCurrency === 'USD' && price.currency === 'INR' && (
         <p class="text-xs text-stone-500 mb-2">USD price not set for this tour — showing INR</p>
       )}
-      <p class="text-stone-700 text-lg leading-relaxed mb-6">{tour.summary}</p>
+      <p class="text-stone-700 text-lg 2xl:text-xl min-[2200px]:text-2xl leading-relaxed mb-6">{tour.summary}</p>
 
       <ul class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6" aria-label="Key facts">
         {factTiles.map((tile) => (
