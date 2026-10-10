@@ -512,14 +512,21 @@ export async function sendEmailVerificationEmail(env: Record<string, any>, detai
   const from = env.BOOKING_EMAIL_FROM || 'IWIS Global <info@iwisglobal.com>';
   const first = details.name.trim().split(/\s+/)[0] || 'there';
   const button = 'display:inline-block; padding:12px 20px; border-radius:999px; text-decoration:none; font-weight:600;';
+  // Inline styles and a solid header colour (no gradient): mail apps ignore
+  // stylesheets and most drop gradients.
   const html = `
-    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
-      <h2 style="color:#5b21b6; margin-bottom: 4px;">Confirm your email</h2>
-      <p>Hi ${escapeHtml(first)},</p>
-      <p>Thanks for creating an IWIS Global account. Confirm this is your email and any tour you've booked with it, before or after signing up, will show in My Bookings.</p>
-      <p style="margin:20px 0;"><a href="${details.link}" style="${button} background:#5b21b6; color:#ffffff;">Confirm my email</a></p>
-      <p>The link works within the next 24 hours. If you didn't create an account, you can ignore this email.</p>
-      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; <a href="${SITE}" style="color:#a8a29e;">www.iwisglobal.com</a></p>
+    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917; border:1px solid #ede9fe; border-radius:16px; overflow:hidden;">
+      <div style="background:#4c1d95; padding:22px 24px; text-align:center;">
+        <p style="margin:0; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:#ddd6fe;">IWIS Global</p>
+        <h2 style="margin:6px 0 0; color:#ffffff; font-size:22px;">Confirm your email</h2>
+      </div>
+      <div style="padding:24px; line-height:1.55;">
+        <p style="margin-top:0;">Hi ${escapeHtml(first)},</p>
+        <p>Thanks for creating an IWIS Global account. Confirm this is your email and any tour you've booked with it, before or after signing up, will show in My Bookings.</p>
+        <p style="margin:24px 0; text-align:center;"><a href="${details.link}" style="${button} background:#6d28d9; color:#ffffff; padding:14px 28px;">Confirm my email</a></p>
+        <p style="background:#f5f3ff; border-radius:10px; padding:10px 14px; font-size:13px; color:#44403c;">The link works within the next 24 hours. If you didn't create an account, you can ignore this email.</p>
+      </div>
+      <p style="margin:0; padding:14px 24px; background:#faf9ff; color:#a8a29e; font-size:12px; text-align:center;">IWIS Global &middot; <a href="${SITE}" style="color:#7c3aed;">www.iwisglobal.com</a></p>
     </div>
   `;
   const text = [

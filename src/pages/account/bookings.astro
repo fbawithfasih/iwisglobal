@@ -148,17 +148,19 @@ const sections = [
       </form>
     </div>
     {emailParam === 'confirmed' && !emailUnconfirmed && (
-      <p role="status" class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
-        Email confirmed. Bookings made with {customer.email} now show here.
+      <p role="status" class="mb-4 flex items-start gap-2 rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-white px-4 py-3 text-sm font-medium text-green-800 shadow-sm">
+        <span aria-hidden="true" class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs text-white">&#10003;</span>
+        <span>Email confirmed. Bookings made with {customer.email} now show here.</span>
       </p>
     )}
     {emailParam === 'link-expired' && emailUnconfirmed && (
-      <p role="alert" class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        That confirmation link has expired or was already used. Send a new one below.
+      <p role="alert" class="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white px-4 py-3 text-sm text-amber-900 shadow-sm">
+        <span aria-hidden="true" class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-amber-950">!</span>
+        <span>That confirmation link has expired or was already used. Send a new one below.</span>
       </p>
     )}
     {emailUnconfirmed && (
-      <div class="mb-6 rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+      <div class="mb-6 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-4 shadow-sm shadow-brand-900/5 sm:p-5">
         <p class="text-sm text-stone-700">
           <span class="font-semibold text-stone-900">Confirm your email to see bookings made before you signed up.</span>
           We'll email a confirmation link to <span class="font-medium break-all">{customer.email}</span>.
@@ -167,14 +169,15 @@ const sections = [
         {resent === 'limit' && <p role="alert" class="mt-2 text-sm text-amber-900">We've sent several links in the last hour. Please use the latest one, or try again later.</p>}
         {resent !== 'sent' && (
           <form method="POST" class="mt-3">
-            <button type="submit" class="inline-flex min-h-11 items-center rounded-full bg-brand-700 px-5 text-sm font-semibold text-white hover:bg-brand-800 transition cursor-pointer">Email me a confirmation link</button>
+            <button type="submit" class="inline-flex min-h-11 items-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-5 text-sm font-semibold text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 cursor-pointer">Email me a confirmation link</button>
           </form>
         )}
       </div>
     )}
     {passwordChanged && (
-      <p role="status" class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
-        Your password has been changed.
+      <p role="status" class="mb-4 flex items-start gap-2 rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-white px-4 py-3 text-sm font-medium text-green-800 shadow-sm">
+        <span aria-hidden="true" class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs text-white">&#10003;</span>
+        <span>Your password has been changed.</span>
       </p>
     )}
     <p class="text-stone-600 mb-6 break-words">Signed in as {customer.name} ({customer.email})</p>
