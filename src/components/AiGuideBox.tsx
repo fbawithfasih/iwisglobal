@@ -50,7 +50,7 @@ export default function AiGuideBox() {
     <div className="w-full max-w-md mx-auto">
       <form
         onSubmit={submit}
-        className="flex items-center justify-between gap-4 w-full bg-white rounded-full pl-6 pr-2 py-2 shadow-lg hover:shadow-xl transition"
+        className="flex items-center justify-between gap-2 w-full bg-white rounded-full pl-5 pr-1.5 py-1.5 shadow-lg hover:shadow-xl transition md:gap-4 md:pl-6 md:pr-2 md:py-2"
       >
         <input
           type="text"
@@ -59,13 +59,13 @@ export default function AiGuideBox() {
           maxLength={MAX_LENGTH}
           placeholder="Ask YourGuide about Agra"
           aria-label="Ask YourGuide a travel question"
-          className="flex-1 min-w-0 h-11 bg-transparent text-stone-700 text-sm placeholder:text-stone-500 outline-none"
+          className="flex-1 min-w-0 h-10 bg-transparent text-stone-700 text-sm placeholder:text-stone-500 outline-none md:h-11"
         />
         <button
           type="submit"
           disabled={loading}
           aria-label="Ask YourGuide"
-          className="flex items-center justify-center h-11 w-11 rounded-full bg-brand-800 text-white shrink-0 disabled:opacity-60 transition"
+          className="flex items-center justify-center h-10 w-10 rounded-full bg-brand-800 text-white shrink-0 disabled:opacity-60 transition md:h-11 md:w-11"
         >
           {loading ? (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 animate-spin">
@@ -79,7 +79,7 @@ export default function AiGuideBox() {
         </button>
       </form>
 
-      <a href="/tours" className="mx-auto mt-4 flex w-fit min-h-11 items-center rounded-full bg-white px-6 font-semibold text-brand-800 shadow transition hover:bg-brand-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60">
+      <a href="/tours" className="mx-auto mt-3 flex w-fit min-h-11 items-center rounded-full bg-amber-300 px-6 text-sm font-semibold text-brand-950 shadow-md transition hover:bg-amber-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60 md:mt-4 md:text-base">
         Browse tours →
       </a>
 
