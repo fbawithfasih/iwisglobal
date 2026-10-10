@@ -92,7 +92,7 @@ const formatMoney = (minor: number, currency: string) => {
 
 type StatusStyle = { label: string; cls: string };
 const STATUS: Record<string, StatusStyle> = {
-  confirmed: { label: 'Confirmed', cls: 'bg-green-100 text-green-800' },
+  confirmed: { label: 'Confirmed', cls: 'bg-green-100 text-green-800 ring-1 ring-green-200' },
   completed: { label: 'Completed', cls: 'bg-stone-200 text-stone-700' },
   cancelled: { label: 'Cancelled', cls: 'bg-red-100 text-red-800' },
 };
@@ -141,8 +141,11 @@ const sections = [
 
 <BaseLayout floatingWhatsApp={false} title="My Bookings — IWIS Global" noindex>
   <section class="max-w-3xl mx-auto px-6 pt-8 pb-28 md:pt-16 md:pb-16">
-    <div class="flex items-center justify-between gap-4 mb-2">
-      <h1 class="text-3xl font-serif font-semibold">My Bookings</h1>
+    <div class="flex items-center justify-between gap-4 mb-4">
+      <div>
+        <span class="mb-2 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Your account</span>
+        <h1 class="text-3xl md:text-4xl font-serif font-semibold">My Bookings</h1>
+      </div>
       <form method="POST" action="/auth/logout">
         <button type="submit" class="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-4 text-sm text-stone-600 hover:border-brand-300 hover:text-brand-800 transition cursor-pointer">Sign out</button>
       </form>
@@ -180,7 +183,10 @@ const sections = [
         <span>Your password has been changed.</span>
       </p>
     )}
-    <p class="text-stone-600 mb-6 break-words">Signed in as {customer.name} ({customer.email})</p>
+    <p class="mb-6 flex items-center gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3 shadow-sm shadow-brand-900/5">
+      <span aria-hidden="true" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-base font-semibold text-white">{(customer.name.trim().charAt(0) || customer.email.charAt(0)).toUpperCase()}</span>
+      <span class="min-w-0 text-sm text-stone-600"><span class="block font-semibold text-stone-900 break-words">{customer.name}</span><span class="block break-all">{customer.email}</span></span>
+    </p>
 
     <form method="POST" class="mb-8 rounded-xl border border-brand-100 bg-brand-50/60 p-4">
       <input type="hidden" name="_action" value="phone" />
@@ -196,9 +202,9 @@ const sections = [
     </form>
 
     {bookings.length === 0 && (
-      <div class="rounded-xl border border-stone-200 bg-white p-8 text-center">
+      <div class="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-8 text-center shadow-sm shadow-brand-900/5">
         <p class="text-stone-600 mb-4">No bookings on this account yet. Bookings you make while signed in will show up here.</p>
-        <a href="/tours" class="inline-flex min-h-11 items-center rounded-full bg-brand-800 hover:bg-brand-900 text-white px-5 text-sm font-medium transition">
+        <a href="/tours" class="inline-flex min-h-11 items-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 px-5 text-sm font-semibold">
           Browse tours
         </a>
       </div>
@@ -206,10 +212,10 @@ const sections = [
 
     {sections.map((section) => (
         <div class="mb-10">
-          <h2 class="text-lg font-semibold mb-3">{section.title}</h2>
+          <h2 class="mb-3 flex items-center gap-2 font-serif text-xl font-semibold">{section.title} <span class="rounded-full bg-brand-100 px-2.5 py-0.5 font-sans text-xs font-semibold text-brand-800">{section.items.length}</span></h2>
           <div class="space-y-3">
             {section.items.map(({ b, title, href, status, addOns, reviewHref, hasReview }) => (
-                <div class="rounded-xl border border-stone-200 bg-white p-5">
+                <div class="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm shadow-brand-900/5 transition hover:shadow-md">
                   <div class="flex items-start justify-between gap-3">
                     {href ? (
                       <a href={href} class="group min-w-0">
@@ -242,7 +248,7 @@ const sections = [
                     {b.payment_type === 'deposit' && (
                       <>
                         <span class="text-stone-500"> of {formatMoney(b.total_amount, b.currency)}</span>
-                        <span class="text-amber-700"> · {formatMoney(b.total_amount - b.amount_paid, b.currency)} due on pickup</span>
+                        <span class="ml-1 inline-block rounded-full bg-amber-300 px-2 py-0.5 text-xs font-semibold text-brand-950">{formatMoney(b.total_amount - b.amount_paid, b.currency)} due on pickup</span>
                       </>
                     )}
                   </p>
@@ -254,7 +260,7 @@ const sections = [
                     Booking ID: <span class="font-mono text-stone-700">{b.id}</span>
                   </p>
                   {reviewHref && (
-                    <a href={reviewHref} class="mt-3 inline-flex min-h-11 items-center rounded-full bg-brand-700 px-4 text-sm font-semibold text-white hover:bg-brand-800 transition">
+                    <a href={reviewHref} class="mt-3 inline-flex min-h-11 items-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 px-4 text-sm font-semibold">
                       {hasReview ? 'Edit your review' : 'Rate your tour'}
                     </a>
                   )}
