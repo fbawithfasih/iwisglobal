@@ -373,23 +373,18 @@ export async function sendAdminBookingNotificationEmail(env: Record<string, any>
     ['Amount paid', `${amount}${depositNote}`],
     ['Booking ID', details.bookingId],
   ];
-  const cell = 'padding:5px 0; vertical-align:top;';
-  const button = 'display:inline-block; padding:12px 20px; border-radius:999px; text-decoration:none; font-weight:600;';
+  const cell = 'padding:6px 0; vertical-align:top;';
 
-  const html = `
-    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
-      <h2 style="color:#5b21b6; margin-bottom: 4px;">New booking</h2>
-      <table style="width:100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;">
-        ${rows
-          .map(
-            ([label, value]) =>
-              `<tr><td style="${cell} color:#78716c; padding-right:12px;">${escapeHtml(label)}</td><td style="${cell} text-align:right;">${escapeHtml(value)}</td></tr>`
-          )
-          .join('')}
-      </table>
-      <p style="margin:20px 0;"><a href="${adminUrl}" style="${button} background:#5b21b6; color:#ffffff;">Open booking</a></p>
-    </div>
-  `;
+  const html = emailHtml('New booking', `
+        <table style="width:100%; border-collapse: collapse; margin: 0 0 16px; font-size: 14px; background:#faf9ff; border:1px solid #ede9fe; border-radius:12px;">
+          ${rows
+            .map(
+              ([label, value]) =>
+                `<tr><td style="${cell} color:#78716c; padding-left:14px; padding-right:12px;">${escapeHtml(label)}</td><td style="${cell} text-align:right; padding-right:14px; word-break:break-all;${label === 'Amount paid' ? ' font-weight:600;' : ''}">${escapeHtml(value)}</td></tr>`
+            )
+            .join('')}
+        </table>
+        <p style="margin:24px 0 0; text-align:center;"><a href="${adminUrl}" style="${EMAIL_BUTTON}">Open booking</a></p>`);
   const text = [`New booking`, ``, ...rows.map(([label, value]) => `${label}: ${value}`), ``, `Open booking: ${adminUrl}`].join('\n');
 
   try {
