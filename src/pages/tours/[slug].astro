@@ -217,7 +217,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
   <!-- Ultrawide screens: the whole section scales up together with CSS zoom (photo,
        tiles, text and booking form), so nothing stays small in the middle of a wide
        window. A browser without zoom simply keeps the 2xl size. -->
-  <section class="max-w-5xl 2xl:max-w-6xl mx-auto px-6 pt-8 pb-16 md:pt-16 2xl:pt-20 grid lg:grid-cols-3 gap-10 2xl:gap-14 items-start min-[2200px]:[zoom:1.25] min-[3000px]:[zoom:1.5]">
+  <section class="max-w-5xl 2xl:max-w-6xl mx-auto px-6 pt-8 pb-16 md:pt-16 [@media(max-height:500px)]:pt-3 2xl:pt-20 grid lg:grid-cols-3 gap-10 2xl:gap-14 items-start min-[2200px]:[zoom:1.25] min-[3000px]:[zoom:1.5]">
     <div class="lg:col-span-2">
       <!-- The photo is the page's largest element: sized up front (no jump
            when it loads), fetched first, and phones get a copy sized for the
@@ -230,7 +230,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
           {...uploadedImageSize(tour.image)}
           alt={tour.title}
           fetchpriority="high"
-          class="w-full h-auto rounded-2xl mb-6 object-cover max-h-96 [@media(max-height:500px)]:max-h-[45vh] 2xl:max-h-[30rem] shadow-lg shadow-brand-900/15"
+          class="w-full h-auto rounded-2xl mb-6 object-cover max-h-96 [@media(max-height:500px)]:max-h-[36vh] [@media(max-height:500px)]:mb-4 2xl:max-h-[30rem] shadow-lg shadow-brand-900/15"
         />
       ) : (
         <div class="w-full aspect-[16/7] rounded-2xl mb-6 bg-gradient-to-br from-brand-100 via-brand-50 to-accent-50 flex items-center justify-center text-brand-300 text-sm">
