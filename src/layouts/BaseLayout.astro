@@ -247,32 +247,32 @@ const websiteJsonLd = Astro.url.pathname === '/'
     <link rel="preload" href={serifLatinUrl} as="font" type="font/woff2" crossorigin />
   </head>
   <body class="bg-stone-50 text-stone-900 antialiased">
-    <header id="site-header" class="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur-sm transition-[box-shadow,height] duration-200">
+    <header id="site-header" class="sticky top-0 z-40 border-b border-brand-100 bg-white/90 backdrop-blur-sm transition-[box-shadow,height] duration-200">
       <div class="site-header-inner max-w-5xl mx-auto px-6 h-16 flex items-center justify-between transition-[height] duration-200">
         <a href="/" class="flex items-center gap-2 md:gap-2.5 min-w-0">
           <GlobeLogo class="site-logo h-11 w-11 md:h-[3.25rem] md:w-[3.25rem] transition-[width,height] duration-200" />
           <span class="text-lg md:text-xl font-serif font-semibold tracking-tight truncate">IWIS Global</span>
         </a>
         <nav class="hidden md:flex items-center gap-6">
-          <a href="/tours" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">{t.nav.tours}</a>
-          <a href="/blog" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">{t.nav.blog}</a>
-          <a href="/help" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">{t.nav.help}</a>
+          <a href="/tours" class="rounded-full px-3 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-brand-50 hover:text-brand-800">{t.nav.tours}</a>
+          <a href="/blog" class="rounded-full px-3 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-brand-50 hover:text-brand-800">{t.nav.blog}</a>
+          <a href="/help" class="rounded-full px-3 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-brand-50 hover:text-brand-800">{t.nav.help}</a>
           {isSignedIn ? (
             <>
-              <a href="/account/bookings" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">{t.nav.myBookings}</a>
+              <a href="/account/bookings" class="rounded-full px-3 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-brand-50 hover:text-brand-800">{t.nav.myBookings}</a>
               <form method="POST" action="/auth/logout">
                 <button type="submit" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition cursor-pointer">{t.nav.signOut}</button>
               </form>
             </>
           ) : (
-            <a href="/login" class="text-sm font-medium text-stone-600 hover:text-brand-800 transition">{t.nav.signIn}</a>
+            <a href="/login" class="rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-4 py-1.5 text-sm font-semibold text-white shadow-md shadow-brand-900/20 transition hover:brightness-110">{t.nav.signIn}</a>
           )}
           <LocaleSwitcher />
         </nav>
         <button
           type="button"
           id="mobile-nav-trigger"
-          class="md:hidden flex items-center justify-center h-9 w-9 shrink-0 rounded-lg text-stone-600 hover:bg-stone-100 transition"
+          class="md:hidden flex items-center justify-center h-9 w-9 shrink-0 rounded-full text-brand-800 hover:bg-brand-50 transition"
           aria-haspopup="true"
           aria-expanded="false"
           aria-controls="mobile-nav-panel"
@@ -283,42 +283,42 @@ const websiteJsonLd = Astro.url.pathname === '/'
           </svg>
         </button>
       </div>
-      <div id="mobile-nav-panel" class="hidden md:hidden border-t border-stone-200 bg-white px-6 py-4 space-y-3">
-        <a href="/tours" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.tours}</a>
-        <a href="/blog" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.blog}</a>
-        <a href="/help" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.help}</a>
+      <div id="mobile-nav-panel" class="hidden md:hidden border-t border-brand-100 bg-white px-4 py-3 space-y-1 shadow-lg shadow-brand-900/10">
+        <a href="/tours" class="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-brand-50 hover:text-brand-800">{t.nav.tours}</a>
+        <a href="/blog" class="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-brand-50 hover:text-brand-800">{t.nav.blog}</a>
+        <a href="/help" class="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-brand-50 hover:text-brand-800">{t.nav.help}</a>
         {isSignedIn ? (
           <>
-            <a href="/account/bookings" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.myBookings}</a>
+            <a href="/account/bookings" class="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-brand-50 hover:text-brand-800">{t.nav.myBookings}</a>
             <form method="POST" action="/auth/logout">
-              <button type="submit" class="text-sm font-medium text-stone-700 hover:text-brand-800 transition cursor-pointer">{t.nav.signOut}</button>
+              <button type="submit" class="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-brand-50 hover:text-brand-800 cursor-pointer">{t.nav.signOut}</button>
             </form>
           </>
         ) : (
-          <a href="/login" class="block text-sm font-medium text-stone-700 hover:text-brand-800 transition">{t.nav.signIn}</a>
+          <a href="/login" class="block rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-brand-50 hover:text-brand-800">{t.nav.signIn}</a>
         )}
-        <div class="pt-2 border-t border-stone-100">
+        <div class="mt-2 border-t border-brand-100 px-3 pt-3">
           <LocaleSwitcher />
         </div>
       </div>
     </header>
     <slot />
 
-    <footer class="border-t border-stone-200 bg-white">
+    <footer class="bg-gradient-to-b from-brand-900 to-brand-950 text-violet-100">
       <div class="max-w-5xl mx-auto px-6 py-12 grid gap-10 sm:grid-cols-2 md:grid-cols-3">
         <div>
           <a href="/" class="flex items-center gap-2.5 mb-4">
             <GlobeLogo class="h-9 w-9" animate={false} />
-            <span class="text-base font-serif font-semibold tracking-tight">IWIS Global</span>
+            <span class="text-base font-serif font-semibold tracking-tight text-white">IWIS Global</span>
           </a>
-          <p class="text-sm text-stone-500 leading-relaxed max-w-[240px]">
+          <p class="text-sm text-violet-300 leading-relaxed max-w-[240px]">
             Private Taj Mahal &amp; Agra tours from Delhi — booked online, guided in person.
           </p>
-          <SocialLinks class="mt-3 -ml-3" />
+          <SocialLinks class="mt-3 -ml-3 [&_a]:text-violet-200 [&_a:hover]:text-white" />
         </div>
 
         <div>
-          <h2 class="text-xs font-semibold tracking-wide text-stone-500 uppercase mb-4">Get help</h2>
+          <h2 class="text-xs font-semibold tracking-wide text-violet-300 uppercase mb-4">Get help</h2>
           <ul class="space-y-3 text-sm">
             <li>
               <a
@@ -326,7 +326,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
                 target="_blank"
                 rel="noopener noreferrer"
                 data-wa-ref={whatsappRef('FOOTER')}
-                class="flex items-center gap-2 text-stone-600 hover:text-brand-800 transition"
+                class="flex items-center gap-2 text-violet-100 hover:text-white transition"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-4 w-4 shrink-0" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h8M8 14h5m-9 6 2.5-2.5H18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 .5 1.3" />
@@ -335,7 +335,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
               </a>
             </li>
             <li>
-              <a href="mailto:info@iwisglobal.com" class="flex items-center gap-2 text-stone-600 hover:text-brand-800 transition">
+              <a href="mailto:info@iwisglobal.com" class="flex items-center gap-2 text-violet-100 hover:text-white transition">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-4 w-4 shrink-0" aria-hidden="true">
                   <rect x="3" y="5" width="18" height="14" rx="2"></rect>
                   <path stroke-linecap="round" stroke-linejoin="round" d="m3 7 9 6 9-6" />
@@ -344,7 +344,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
               </a>
             </li>
             <li>
-              <a href="/help" class="flex items-center gap-2 text-stone-600 hover:text-brand-800 transition">
+              <a href="/help" class="flex items-center gap-2 text-violet-100 hover:text-white transition">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-4 w-4 shrink-0" aria-hidden="true">
                   <circle cx="12" cy="12" r="9"></circle>
                   <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 1.7-2 3.5M12 17h.01" stroke-linecap="round" stroke-linejoin="round" />
@@ -356,30 +356,30 @@ const websiteJsonLd = Astro.url.pathname === '/'
         </div>
 
         <div>
-          <h2 class="text-xs font-semibold tracking-wide text-stone-500 uppercase mb-4">Explore</h2>
+          <h2 class="text-xs font-semibold tracking-wide text-violet-300 uppercase mb-4">Explore</h2>
           <ul class="space-y-3 text-sm">
-            <li><a href="/tours" class="text-stone-600 hover:text-brand-800 transition">All tours</a></li>
-            <li><a href="/agra" class="text-stone-600 hover:text-brand-800 transition">Things to do in Agra</a></li>
-            <li><a href="/guides" class="text-stone-600 hover:text-brand-800 transition">Travel guides</a></li>
-            <li><a href="/about" class="text-stone-600 hover:text-brand-800 transition">About us</a></li>
-            <li><a href="/no-commission-pledge" class="text-stone-600 hover:text-brand-800 transition">No-commission pledge</a></li>
-            {showReviewsLink && <li><a href="/reviews" class="text-stone-600 hover:text-brand-800 transition">Guest reviews</a></li>}
+            <li><a href="/tours" class="text-violet-100 hover:text-white transition">All tours</a></li>
+            <li><a href="/agra" class="text-violet-100 hover:text-white transition">Things to do in Agra</a></li>
+            <li><a href="/guides" class="text-violet-100 hover:text-white transition">Travel guides</a></li>
+            <li><a href="/about" class="text-violet-100 hover:text-white transition">About us</a></li>
+            <li><a href="/no-commission-pledge" class="text-violet-100 hover:text-white transition">No-commission pledge</a></li>
+            {showReviewsLink && <li><a href="/reviews" class="text-violet-100 hover:text-white transition">Guest reviews</a></li>}
           </ul>
         </div>
       </div>
 
-      <div class="border-t border-stone-200">
+      <div class="border-t border-white/10">
         <!-- pb-24 on phones: keeps the last line clear of the floating WhatsApp button. -->
-        <div class="max-w-5xl mx-auto px-6 pt-6 pb-24 md:pb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-xs text-stone-500">
+        <div class="max-w-5xl mx-auto px-6 pt-6 pb-24 md:pb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-xs text-violet-300">
           <!-- Policy links: Razorpay's card-network activation checks for all
                five (Terms, Privacy, Cancellation & Refund, Shipping, Contact). -->
           <nav aria-label="Legal" class="flex flex-wrap gap-x-4 gap-y-2">
-            <a href="/terms" class="hover:text-brand-800 transition">Terms</a>
-            <a href="/privacy" class="hover:text-brand-800 transition">Privacy</a>
-            <a href="/cancellation-refund-policy" class="hover:text-brand-800 transition">Cancellation &amp; Refunds</a>
-            <a href="/shipping-policy" class="hover:text-brand-800 transition">Shipping &amp; Exchange</a>
-            <a href="/contact" class="hover:text-brand-800 transition">Contact Us</a>
-            <button type="button" data-cookie-settings class="hover:text-brand-800 transition">Cookie settings</button>
+            <a href="/terms" class="hover:text-white transition">Terms</a>
+            <a href="/privacy" class="hover:text-white transition">Privacy</a>
+            <a href="/cancellation-refund-policy" class="hover:text-white transition">Cancellation &amp; Refunds</a>
+            <a href="/shipping-policy" class="hover:text-white transition">Shipping &amp; Exchange</a>
+            <a href="/contact" class="hover:text-white transition">Contact Us</a>
+            <button type="button" data-cookie-settings class="hover:text-white transition">Cookie settings</button>
           </nav>
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
             <p>&copy; {new Date().getFullYear()} IWIS Global</p>
