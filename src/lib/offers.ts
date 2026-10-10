@@ -60,6 +60,11 @@ export function offerValueLabel(offer: Offer, currency: Currency): string {
   return `${CURRENCY_SYMBOLS[cur]}${amount.toLocaleString(cur === 'USD' ? 'en-US' : 'en-IN')} off`;
 }
 
+// The value for a round "OFF" badge: "10%" or "₹500" (the label without " off").
+export function offerBadgeValue(offer: Offer, currency: Currency): string {
+  return offerValueLabel(offer, currency).replace(/ off$/, '');
+}
+
 // The conditions a customer needs to know, e.g. "book by 5 Nov · travel
 // 1 Dec–31 Jan · 4+ travelers". The admin list shows the booking window
 // separately (offerBookingWindow), so it passes includeBookBy: false.

@@ -3,7 +3,7 @@ import PhoneInput from './PhoneInput';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import { isFriday, FRIDAY_CLOSED_MESSAGE, todayIst } from '../lib/availability';
 import { pickPricingTier, computeDepositAmount, FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE, type PricingTier } from '../lib/catalog';
-import { bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer } from '../lib/offers';
+import { bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer, offerBadgeValue } from '../lib/offers';
 
 // Same as MAX_TRAVELERS_PER_DATE in src/lib/db.ts (one vehicle per date);
 // the server enforces it — this only keeps the stepper in range.
@@ -348,12 +348,31 @@ export default function BookingWidget({
           </div>
         </div>
       )}
-      {offers.map((offer) => (
-        <div key={offer.id} className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
-          <span className="font-semibold">{offer.name}:</span> {offerValueLabel(offer, currency)}
-          {offerConditions(offer) && <> · {offerConditions(offer)}</>}. No code needed.
-        </div>
-      ))}
+      {offers.map((offer) => {
+        const badgeValue = offerBadgeValue(offer, currency);
+        const conditions = offerConditions(offer);
+        return (
+          <div
+            key={offer.id}
+            role="note"
+            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-4 text-white shadow-lg shadow-brand-900/25"
+          >
+            <span aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10"></span>
+            <div className="relative flex items-center gap-2.5">
+              <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-full bg-amber-300 leading-none text-brand-950 shadow-md ring-4 ring-white/20">
+                <span className={`font-extrabold ${badgeValue.length > 5 ? 'text-[10px]' : 'text-sm'}`}>{badgeValue}</span>
+                <span className="mt-0.5 text-[8px] font-bold tracking-widest">OFF</span>
+              </span>
+              <div className="min-w-0">
+                <p className="font-serif text-[15px] font-semibold leading-tight">{offer.name}</p>
+                <p className="mt-0.5 text-[11px] leading-snug text-brand-50">
+                  {conditions ? `${conditions}. ` : ''}No code needed; it comes off at checkout.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
       <div>
         <label htmlFor="travel-date" className="block text-sm font-medium mb-1">Travel date</label>
         <input

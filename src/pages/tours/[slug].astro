@@ -9,7 +9,7 @@ import { listApprovedReviews, averageRating, hasApprovedReviewsForRequest } from
 import { getTourBySlug } from '../../lib/tours';
 import { resizedSrcset, uploadedImageSize } from '../../lib/resizedImages';
 import { getAvailability, todayIst } from '../../lib/availability';
-import { listLiveAutomaticOffers, offerLiveFor, offerValueLabel, offerConditions } from '../../lib/offers';
+import { listLiveAutomaticOffers, offerLiveFor, offerValueLabel, offerConditions, offerBadgeValue } from '../../lib/offers';
 import { resolveEnv } from '../../lib/env';
 import { countBookingsForRequest } from '../../lib/db';
 import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../../lib/catalog';
@@ -297,14 +297,22 @@ const BRAND_SUFFIX = ' — IWIS Global';
             </p>
           </div>
         )}
-        {tourOffers.map((offer) => (
-          <p class="mt-4 flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm">
-            <Icon name="gift" class="h-5 w-5 shrink-0" />
-            <span>
-              <strong>{offer.name}:</strong> {offerValueLabel(offer, price.currency)}{offerConditions(offer) ? ` · ${offerConditions(offer)}` : ''}. No code needed.
-            </span>
-          </p>
-        ))}
+        {tourOffers.map((offer) => {
+          const badgeValue = offerBadgeValue(offer, price.currency);
+          const conditions = offerConditions(offer);
+          return (
+            <div class="mt-4 flex items-center gap-3 rounded-xl bg-white/10 px-3 py-2.5 ring-1 ring-white/15">
+              <span class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-full bg-amber-300 leading-none text-brand-950 shadow-md">
+                <span class:list={['font-extrabold', badgeValue.length > 5 ? 'text-[10px]' : 'text-sm']}>{badgeValue}</span>
+                <span class="mt-0.5 text-[8px] font-bold tracking-widest">OFF</span>
+              </span>
+              <p class="text-sm leading-snug text-brand-50">
+                <strong class="font-serif text-base font-semibold text-white">{offer.name}</strong><br />
+                {conditions ? `${conditions}. ` : ''}Applied automatically, no code needed.
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       {tour.highlights.length > 0 && (
