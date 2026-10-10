@@ -76,6 +76,8 @@ interface BookingWidgetProps {
   // Automatic offers live for this tour today (src/lib/offers.ts). Display
   // only, like the rest of the estimate — create-order decides the charge.
   offers?: Offer[];
+  // Saved on the signed-in customer's account ("+<code> <number>").
+  initialPhone?: string;
 }
 
 export default function BookingWidget({
@@ -89,6 +91,7 @@ export default function BookingWidget({
   availabilityLabel,
   foundingGuestSlotsLeft = 0,
   offers = [],
+  initialPhone = '',
 }: BookingWidgetProps) {
   const foundingGuestEligible = foundingGuestSlotsLeft > 0;
   const [date, setDate] = useState(minDate);
@@ -100,7 +103,7 @@ export default function BookingWidget({
   );
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(initialPhone);
   const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('full'); // backlog 0.4
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -528,6 +531,7 @@ export default function BookingWidget({
           <PhoneInput
             id="traveler-phone"
             value={phone}
+            defaultValue={initialPhone || undefined}
             onChange={(next) => {
               setPhone(next);
               if (fieldErrors.phone) setFieldErrors((f) => ({ ...f, phone: undefined }));

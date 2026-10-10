@@ -12,6 +12,8 @@ import { getAvailability, todayIst } from '../../lib/availability';
 import { listLiveAutomaticOffers, offerLiveFor, offerValueLabel, offerConditions, offerBadgeValue } from '../../lib/offers';
 import { resolveEnv } from '../../lib/env';
 import { countBookingsForRequest } from '../../lib/db';
+import { getSessionCustomerId } from '../../lib/requireCustomer';
+import { getCustomerById } from '../../lib/customers';
 import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../../lib/catalog';
 import { resolveCurrency, resolvePrice, resolveAddOns, resolvePricingTiers, resolveFromPrice, CURRENCY_SYMBOLS } from '../../lib/currency';
 
@@ -19,6 +21,11 @@ export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
 const { slug } = Astro.params;
+// A signed-in customer's saved phone number pre-fills the booking form. The
+// page then carries personal data, so it must never be cached for others.
+const customerId = await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET);
+const savedPhone = customerId && env.DB ? ((await getCustomerById(env.DB, customerId))?.phone ?? undefined) : undefined;
+if (savedPhone) Astro.response.headers.set('Cache-Control', 'private, no-store');
 // Every lookup that doesn't need the tour starts alongside it (each is a
 // round trip to D1); reviews follow once the tour's id is known. The layout
 // reads the review flag from the same per-request result.
@@ -479,6 +486,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
         availabilityLabel={availability.label}
         foundingGuestSlotsLeft={foundingGuestSlotsLeft}
         offers={tourOffers}
+        initialPhone={savedPhone}
       />
     </div>
   </section>
