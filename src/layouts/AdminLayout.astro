@@ -6,7 +6,9 @@ const { title } = Astro.props;
 
 const path = Astro.url.pathname;
 const navLinkClass = (active: boolean) =>
-  active ? 'text-white font-semibold' : 'text-stone-300 hover:text-white transition';
+  active
+    ? 'rounded-full bg-white/20 px-3 py-1 font-semibold text-white'
+    : 'rounded-full px-3 py-1 text-violet-200 transition hover:bg-white/10 hover:text-white';
 const isBookings = path === '/admin' || path.startsWith('/admin/bookings/');
 const isTours = path.startsWith('/admin/tours');
 const isLeads = path.startsWith('/admin/leads');
@@ -26,6 +28,35 @@ const isOffers = path.startsWith('/admin/offers');
       @tailwind base;
       @tailwind components;
       @tailwind utilities;
+      /* Violet admin theme, applied here so every admin page picks it up
+         without editing each one. Colours are Tailwind's violet scale (the
+         site's "brand"). The pages' amber primary buttons and links become
+         violet; inputs and cards get violet borders. */
+      body { background: #f7f5ff; }
+      main h1 { color: #2e1065; }
+      main .rounded-xl { border-radius: 1rem; }
+      main .bg-white.border,
+      main .bg-white.border-stone-200 { border-color: #ede9fe; box-shadow: 0 1px 2px rgba(76, 29, 149, 0.06); }
+      main .border-stone-200 { border-color: #ede9fe; }
+      main .border-stone-300 { border-color: #ddd6fe; }
+      main .bg-stone-50 { background-color: #faf9ff; }
+      main input.border:not([type='checkbox']):not([type='radio']),
+      main select.border,
+      main textarea.border { border-color: #ddd6fe; border-radius: 0.5rem; }
+      main input.border:focus,
+      main select.border:focus,
+      main textarea.border:focus { outline: none; border-color: #8b5cf6; box-shadow: 0 0 0 2px #c4b5fd; }
+      main .bg-amber-800 {
+        background-image: linear-gradient(to right, #4c1d95, #6d28d9, #7c3aed);
+        background-color: #6d28d9;
+        border-radius: 9999px;
+        box-shadow: 0 4px 10px rgba(76, 29, 149, 0.2);
+        transition: filter 0.15s;
+      }
+      main .bg-amber-800:hover { filter: brightness(1.1); }
+      main .text-amber-800 { color: #6d28d9; }
+      main .bg-amber-100 { background-color: #ede9fe; }
+      main .hover\:underline:hover { text-decoration: underline; }
       /* Phones: 16px form text, or iOS zooms in on every field tap.
          !important so it also beats per-field size utilities (text-xs etc). */
       @media (max-width: 767px) {
@@ -37,10 +68,10 @@ const isOffers = path.startsWith('/admin/offers');
       }
     </style>
   </head>
-  <body class="bg-stone-100 text-stone-900 min-h-screen">
+  <body class="text-stone-900 min-h-screen">
     <!-- Wraps onto two lines on phones instead of widening every admin page. -->
-    <nav class="bg-stone-900 text-stone-100 px-6 py-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-      <a href="/admin" class="font-semibold text-white">IWIS Admin</a>
+    <nav class="bg-gradient-to-r from-brand-950 via-brand-900 to-brand-800 px-6 py-3 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-violet-100 shadow-md shadow-brand-950/20">
+      <a href="/admin" class="mr-2 rounded-full bg-white px-3 py-1 font-semibold text-brand-900">IWIS Admin</a>
       <a href="/admin" aria-current={isBookings ? 'page' : undefined} class={navLinkClass(isBookings)}>Bookings</a>
       <a href="/admin/tours" aria-current={isTours ? 'page' : undefined} class={navLinkClass(isTours)}>Tours</a>
       <a href="/admin/offers" aria-current={isOffers ? 'page' : undefined} class={navLinkClass(isOffers)}>Offers</a>
@@ -48,9 +79,9 @@ const isOffers = path.startsWith('/admin/offers');
       <a href="/admin/agra-highlights" aria-current={isAgraHighlights ? 'page' : undefined} class={navLinkClass(isAgraHighlights)}>Agra Highlights</a>
       <a href="/admin/blog" aria-current={isBlog ? 'page' : undefined} class={navLinkClass(isBlog)}>Blog</a>
       <a href="/admin/reviews" aria-current={isReviews ? 'page' : undefined} class={navLinkClass(isReviews)}>Reviews</a>
-      <a href="/admin/bookings/new" class="text-stone-300 hover:text-white transition">+ Manual Booking</a>
+      <a href="/admin/bookings/new" class="rounded-full border border-white/30 px-3 py-1 text-violet-100 transition hover:bg-white/10 hover:text-white">+ Manual Booking</a>
       <form method="POST" action="/admin/logout" class="ml-auto">
-        <button type="submit" class="text-stone-300 hover:text-white transition cursor-pointer">Log out</button>
+        <button type="submit" class="rounded-full px-3 py-1 text-violet-200 transition hover:bg-white/10 hover:text-white cursor-pointer">Log out</button>
       </form>
     </nav>
     <main class="max-w-6xl mx-auto px-6 py-8">
