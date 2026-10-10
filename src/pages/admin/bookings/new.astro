@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import PhoneInput from '../../../components/PhoneInput';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { insertManualBooking } from '../../../lib/crm';
@@ -98,8 +99,8 @@ if (Astro.request.method === 'POST' && db) {
       <input type="email" name="travelerEmail" class="w-full rounded border border-stone-300 px-3 py-2" />
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Phone</label>
-      <input type="tel" name="travelerPhone" placeholder="+44 7700 900000" class="w-full rounded border border-stone-300 px-3 py-2" />
+      <label for="travelerPhone" class="block text-stone-500 mb-1">Phone</label>
+      <PhoneInput client:load id="travelerPhone" name="travelerPhone" />
     </div>
     <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2">Create booking</button>
   </form>

@@ -16,8 +16,12 @@ import {
 
 interface Props {
   id: string;
-  value: string;
-  onChange: (value: string) => void;
+  // Controlled use (the booking form passes value + onChange), or standalone
+  // inside a plain HTML form: pass `name` and the combined number is posted
+  // through a hidden field.
+  value?: string;
+  onChange?: (value: string) => void;
+  name?: string;
   invalid?: boolean;
   describedBy?: string;
 }
@@ -41,7 +45,7 @@ function Flag({ iso }: { iso: string }) {
 
 type Row = { kind: 'country'; key: string; country: Country } | { kind: 'heading'; key: string; label: string };
 
-export default function PhoneInput({ id, value, onChange, invalid = false, describedBy }: Props) {
+export default function PhoneInput({ id, value, onChange, name, invalid = false, describedBy }: Props) {
   const listId = useId();
   const { all, popular } = useMemo(getCountries, []);
   const [country, setCountry] = useState<Country>(() => countryByIso('IN'));
@@ -114,7 +118,7 @@ export default function PhoneInput({ id, value, onChange, invalid = false, descr
     touched.current = true;
     setCountry(c);
     setOpen(false);
-    onChange(formatPhone(c, national));
+    onChange?.(formatPhone(c, national));
     numberRef.current?.focus();
   }
 
@@ -125,12 +129,12 @@ export default function PhoneInput({ id, value, onChange, invalid = false, descr
       const parsed = parseInternational(raw, country);
       setCountry(parsed.country);
       setNational(parsed.national);
-      onChange(formatPhone(parsed.country, parsed.national));
+      onChange?.(formatPhone(parsed.country, parsed.national));
       return;
     }
     const cleaned = raw.replace(/[^\d\s().-]/g, '');
     setNational(cleaned);
-    onChange(formatPhone(country, cleaned));
+    onChange?.(formatPhone(country, cleaned));
   }
 
   function onSearchKey(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -187,6 +191,8 @@ export default function PhoneInput({ id, value, onChange, invalid = false, descr
           className="min-w-0 flex-1 rounded-r bg-transparent px-3 py-2 text-base focus:outline-none"
         />
       </div>
+
+      {name && <input type="hidden" name={name} value={formatPhone(country, national)} />}
 
       {open && (
         <div className="absolute left-0 right-0 z-30 mt-1 overflow-hidden rounded-lg border border-stone-200 bg-white shadow-xl">
