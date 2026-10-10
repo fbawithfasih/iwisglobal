@@ -13,14 +13,18 @@ import MobileActionBar from '../components/MobileActionBar.astro';
   title="Our No-Commission Pledge — IWIS Global"
   description="IWIS Global takes no commission from any workshop or craft stop. Any such stop is optional, and we say so plainly — most operators in this category won't."
 >
-  <section class="max-w-3xl mx-auto px-6 py-16">
-    <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-4">Our no-commission pledge</h1>
+  <!-- Same [&_…] heading styling as the policy pages. -->
+  <section class="max-w-3xl mx-auto px-6 py-12 md:py-16 [&_h2]:border-l-4 [&_h2]:border-brand-500 [&_h2]:pl-3 [&_h2]:font-serif [&_h2]:text-brand-900 [&_p]:leading-relaxed">
+    <div class="mb-10 rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/20 sm:p-8">
+    <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-100">Our promise</span>
+    <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-4">Our no-commission pledge</h1>
 
-    <p class="text-lg text-stone-700 mb-8">
+    <p class="text-lg text-white/90">
       IWIS Global takes no commission from any craft workshop, marble-inlay gallery, or souvenir stop on any tour. If a
       tour's itinerary includes an optional stop like this, it's there because some travelers enjoy it, not because we
       earn from it. You can skip it and nothing changes about your tour or your guide.
     </p>
+    </div>
 
     <h2 class="text-xl font-semibold mt-10 mb-3">Why we're saying this plainly</h2>
     <p class="text-stone-700 mb-4">
@@ -38,14 +42,14 @@ import MobileActionBar from '../components/MobileActionBar.astro';
     </p>
 
     <h2 class="text-xl font-semibold mt-10 mb-3">What this means on your tour</h2>
-    <ul class="list-disc pl-5 text-stone-700 space-y-2 mb-4">
-      <li>Any craft or workshop stop on your itinerary is clearly marked optional</li>
-      <li>Skipping it doesn't shorten your tour or change your price</li>
-      <li>Your guide has no financial reason to steer you toward one shop over another</li>
-      <li>Tipping is always your choice, never expected on top of what you've already paid</li>
+    <ul class="mb-4 grid gap-3 sm:grid-cols-2">
+      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5"><span aria-hidden="true" class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-xs font-bold text-white">&#10003;</span><span>Any craft or workshop stop on your itinerary is clearly marked optional</span></li>
+      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5"><span aria-hidden="true" class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-xs font-bold text-white">&#10003;</span><span>Skipping it doesn't shorten your tour or change your price</span></li>
+      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5"><span aria-hidden="true" class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-xs font-bold text-white">&#10003;</span><span>Your guide has no financial reason to steer you toward one shop over another</span></li>
+      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5"><span aria-hidden="true" class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-xs font-bold text-white">&#10003;</span><span>Tipping is always your choice, never expected on top of what you've already paid</span></li>
     </ul>
 
-    <p class="text-stone-700 mt-10">
+    <p class="mt-10 rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-stone-700">
       Questions about this, or about a specific tour's itinerary? <a href="/help" class="text-brand-700 hover:underline">Check our FAQs</a>
       or <a href="https://wa.me/916399226633?text=Hi!%20I%20have%20a%20question%20about%20your%20no-commission%20pledge.%20(ref:%20PLEDGE)" target="_blank" rel="noopener noreferrer" data-wa-ref="PLEDGE" class="text-brand-700 hover:underline">message us on WhatsApp</a>.
     </p>
