@@ -76,7 +76,9 @@ interface BookingWidgetProps {
   // Automatic offers live for this tour today (src/lib/offers.ts). Display
   // only, like the rest of the estimate — create-order decides the charge.
   offers?: Offer[];
-  // Saved on the signed-in customer's account ("+<code> <number>").
+  // From the signed-in customer's account; phone is "+<code> <number>".
+  initialName?: string;
+  initialEmail?: string;
   initialPhone?: string;
 }
 
@@ -91,6 +93,8 @@ export default function BookingWidget({
   availabilityLabel,
   foundingGuestSlotsLeft = 0,
   offers = [],
+  initialName = '',
+  initialEmail = '',
   initialPhone = '',
 }: BookingWidgetProps) {
   const foundingGuestEligible = foundingGuestSlotsLeft > 0;
@@ -101,8 +105,8 @@ export default function BookingWidget({
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>(() =>
     addOns.filter((a) => a.includedByDefault).map((a) => a.id)
   );
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [name, setName] = useState(initialName);
+  const [email, setEmail] = useState(initialEmail);
   const [phone, setPhone] = useState(initialPhone);
   const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('full'); // backlog 0.4
   const [loading, setLoading] = useState(false);

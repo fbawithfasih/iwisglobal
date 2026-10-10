@@ -21,11 +21,11 @@ export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
 const { slug } = Astro.params;
-// A signed-in customer's saved phone number pre-fills the booking form. The
-// page then carries personal data, so it must never be cached for others.
+// A signed-in customer's details pre-fill the booking form. The page then
+// carries personal data, so it must never be cached for others.
 const customerId = await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET);
-const savedPhone = customerId && env.DB ? ((await getCustomerById(env.DB, customerId))?.phone ?? undefined) : undefined;
-if (savedPhone) Astro.response.headers.set('Cache-Control', 'private, no-store');
+const account = customerId && env.DB ? await getCustomerById(env.DB, customerId) : null;
+if (account) Astro.response.headers.set('Cache-Control', 'private, no-store');
 // Every lookup that doesn't need the tour starts alongside it (each is a
 // round trip to D1); reviews follow once the tour's id is known. The layout
 // reads the review flag from the same per-request result.
@@ -486,7 +486,9 @@ const BRAND_SUFFIX = ' — IWIS Global';
         availabilityLabel={availability.label}
         foundingGuestSlotsLeft={foundingGuestSlotsLeft}
         offers={tourOffers}
-        initialPhone={savedPhone}
+        initialName={account?.name}
+        initialEmail={account?.email}
+        initialPhone={account?.phone ?? undefined}
       />
     </div>
   </section>
