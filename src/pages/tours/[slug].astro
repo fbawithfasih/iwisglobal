@@ -214,8 +214,8 @@ const BRAND_SUFFIX = ' — IWIS Global';
 <BaseLayout title={tour.title.length + BRAND_SUFFIX.length > 60 ? tour.title : `${tour.title}${BRAND_SUFFIX}`} description={tour.summary} breadcrumbs={[{ name: 'Tours', path: '/tours' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(tripJsonLd)} />
 
-  <section class="max-w-5xl mx-auto px-6 pt-8 pb-16 md:pt-16 grid md:grid-cols-3 gap-10 items-start">
-    <div class="md:col-span-2">
+  <section class="max-w-5xl mx-auto px-6 pt-8 pb-16 md:pt-16 grid lg:grid-cols-3 gap-10 items-start">
+    <div class="lg:col-span-2">
       <!-- The photo is the page's largest element: sized up front (no jump
            when it loads), fetched first, and phones get a copy sized for the
            screen. -->
@@ -474,7 +474,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
       )}
     </div>
 
-    <div id="booking" class="md:sticky md:top-24 self-start scroll-mt-24">
+    <div id="booking" class="lg:sticky lg:top-24 self-start scroll-mt-24 md:mx-auto md:w-full md:max-w-xl lg:max-w-none">
       <BookingWidget
         client:load
         tourId={tour.id}
@@ -502,6 +502,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
     waRef={whatsappBarRef}
     waMessage={`Hi! I have a question about the ${tour.title}.`}
     hideWhenVisible="booking"
+    hideFrom="lg"
   >
     <Fragment slot="info">
       <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">

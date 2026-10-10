@@ -13,18 +13,22 @@ interface Props {
   // Optional element id: the bar slides away while that element is on
   // screen (tour pages: the booking form it points to).
   hideWhenVisible?: string;
+  // Width at which the bar gives way to the page's own layout: phones only
+  // (default), or phones and tablets for pages that stay one column to 1023px.
+  hideFrom?: 'md' | 'lg';
 }
 
-const { waRef, waMessage, hideWhenVisible } = Astro.props;
+const { waRef, waMessage, hideWhenVisible, hideFrom = 'md' } = Astro.props;
 const waHref = `https://wa.me/916399226633?text=${encodeURIComponent(`${waMessage} (ref: ${waRef})`)}`;
 ---
 <div
   id="mobile-action-bar"
   data-hide-when-visible={hideWhenVisible}
-  class="fixed inset-x-0 bottom-0 z-40 rounded-t-2xl border-t-4 border-brand-600 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(76,29,149,0.18)] backdrop-blur transition-transform duration-200 md:hidden"
+  data-hide-from={hideFrom}
+  class:list={["fixed inset-x-0 bottom-0 z-40 rounded-t-2xl border-t-4 border-brand-600 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(76,29,149,0.18)] backdrop-blur transition-transform duration-200", hideFrom === 'lg' ? 'lg:hidden' : 'md:hidden']}
   style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));"
 >
-  <div class="flex items-center justify-between gap-3">
+  <div class="mx-auto flex max-w-3xl items-center justify-between gap-3">
     <div class="min-w-0">
       <slot name="info" />
     </div>
@@ -52,6 +56,11 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent(`${waMessag
       display: none;
     }
   }
+  @media (max-width: 1023px) {
+    body.has-action-bar-lg a[data-wa-ref^='FLOATING'] {
+      display: none;
+    }
+  }
   #mobile-action-bar.is-hidden {
     transform: translateY(110%);
   }
@@ -70,7 +79,10 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent(`${waMessag
 <script>
   const bar = document.getElementById('mobile-action-bar');
   if (bar) {
-    document.body.classList.add('has-action-bar');
+    // The floating WhatsApp button hides while the bar shows: below 768px by
+    // default, below 1024px for the tablet-wide variant.
+    const barClass = bar.dataset.hideFrom === 'lg' ? 'has-action-bar-lg' : 'has-action-bar';
+    document.body.classList.add(barClass);
     const targetId = bar.dataset.hideWhenVisible;
     const target = targetId ? document.getElementById(targetId) : null;
     if (target && 'IntersectionObserver' in window) {
@@ -79,7 +91,7 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent(`${waMessag
         // inert (not just aria-hidden): the hidden bar's links must not be focusable.
         bar.inert = entry.isIntersecting;
         // The floating WhatsApp button comes back while the bar is away.
-        document.body.classList.toggle('has-action-bar', !entry.isIntersecting);
+        document.body.classList.toggle(barClass, !entry.isIntersecting);
       }).observe(target);
     }
   }
