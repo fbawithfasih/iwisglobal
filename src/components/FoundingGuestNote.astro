@@ -13,9 +13,46 @@ interface Props {
 const db = resolveEnv(Astro.locals).DB;
 const slotsLeft = db ? Math.max(0, FOUNDING_GUEST_SLOT_CAP - (await countBookingsForRequest(db, Astro.request))) : 0;
 const percent = Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100);
+const claimed = FOUNDING_GUEST_SLOT_CAP - slotsLeft;
+const claimedPercent = Math.round((claimed / FOUNDING_GUEST_SLOT_CAP) * 100);
 ---
 {slotsLeft > 0 && (
-  <p class:list={['max-w-2xl rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900', Astro.props.class]}>
-    <span class="font-semibold">Founding Guest offer:</span>{` ${percent}% off for our first ${FOUNDING_GUEST_SLOT_CAP} guests, ${slotsLeft} ${slotsLeft === 1 ? 'spot' : 'spots'} left. No code needed; it comes off at checkout.`}
-  </p>
+  <div
+    role="note"
+    class:list={['relative max-w-2xl overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-4 text-white shadow-lg shadow-brand-900/25 sm:p-5', Astro.props.class]}
+  >
+    <!-- Soft decorative circles; purely visual. -->
+    <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/10"></span>
+    <span aria-hidden="true" class="pointer-events-none absolute -bottom-14 right-16 h-28 w-28 rounded-full bg-amber-300/10"></span>
+
+    <div class="relative flex items-center gap-4">
+      <span class="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-full bg-amber-300 leading-none text-brand-950 shadow-md ring-4 ring-white/20">
+        <span class="text-xl font-extrabold">{percent}%</span>
+        <span class="mt-0.5 text-[10px] font-bold tracking-widest">OFF</span>
+      </span>
+      <div class="min-w-0">
+        <p class="font-serif text-xl font-semibold leading-tight sm:text-2xl">Founding Guest offer</p>
+        <p class="mt-1 text-sm leading-snug text-brand-50">
+          {percent}% off for our first {FOUNDING_GUEST_SLOT_CAP} guests. No code needed; it comes off at checkout.
+        </p>
+      </div>
+    </div>
+
+    <div class="relative mt-4">
+      <div class="flex items-center justify-between text-xs font-semibold">
+        <span class="text-amber-200">Only {slotsLeft} {slotsLeft === 1 ? 'spot' : 'spots'} left</span>
+        <span class="text-brand-100">{claimed} of {FOUNDING_GUEST_SLOT_CAP} claimed</span>
+      </div>
+      <div
+        role="progressbar"
+        aria-label="Founding Guest spots claimed"
+        aria-valuemin="0"
+        aria-valuemax={FOUNDING_GUEST_SLOT_CAP}
+        aria-valuenow={claimed}
+        class="mt-1.5 h-2 overflow-hidden rounded-full bg-white/20"
+      >
+        <div class="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-400" style={`width: ${Math.max(claimedPercent, 4)}%`}></div>
+      </div>
+    </div>
+  </div>
 )}
