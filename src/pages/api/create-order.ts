@@ -3,6 +3,7 @@ import { razorpayProvider } from '../../lib/payments/razorpay';
 import { travelersBookedOn, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
 import { isBookableDate, isFriday, FRIDAY_CLOSED_MESSAGE } from '../../lib/availability';
+import { isNightViewingTour, isNightViewingDate, NIGHT_VIEWING_DATE_MESSAGE } from '../../lib/nightViewing';
 
 export const prerender = false;
 
@@ -29,6 +30,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (typeof date !== 'string' || !isBookableDate(date)) {
       const error = typeof date === 'string' && isFriday(date) ? FRIDAY_CLOSED_MESSAGE : 'Please choose a valid, bookable travel date.';
       return new Response(JSON.stringify({ error }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Night-viewing tours run only on the ASI's night-viewing nights.
+    if (isNightViewingTour(tourId) && !isNightViewingDate(date)) {
+      return new Response(JSON.stringify({ error: NIGHT_VIEWING_DATE_MESSAGE }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });

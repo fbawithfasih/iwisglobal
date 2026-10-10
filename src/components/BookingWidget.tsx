@@ -2,6 +2,7 @@ import { useState, type FocusEvent } from 'react';
 import PhoneInput from './PhoneInput';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import { isFriday, FRIDAY_CLOSED_MESSAGE, todayIst } from '../lib/availability';
+import { NIGHT_VIEWING_DATE_MESSAGE } from '../lib/nightViewing';
 import { pickPricingTier, computeDepositAmount, FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE, type PricingTier } from '../lib/catalog';
 import { bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer, offerBadgeValue } from '../lib/offers';
 
@@ -68,6 +69,9 @@ interface BookingWidgetProps {
   currency: Currency;
   addOns: AddOnOption[];
   minDate: string;
+  // Night-viewing tours only: the nights that can be booked. Replaces the free
+  // date picker with this list (an empty list means none are open right now).
+  allowedDates?: string[];
   availabilityLabel?: string;
   // Backlog 1.1 — display only; the server independently decides real
   // eligibility at payment time from a fresh count. 0 or undefined hides
@@ -90,6 +94,7 @@ export default function BookingWidget({
   currency,
   addOns,
   minDate,
+  allowedDates,
   availabilityLabel,
   foundingGuestSlotsLeft = 0,
   offers = [],
@@ -98,7 +103,7 @@ export default function BookingWidget({
   initialPhone = '',
 }: BookingWidgetProps) {
   const foundingGuestEligible = foundingGuestSlotsLeft > 0;
-  const [date, setDate] = useState(minDate);
+  const [date, setDate] = useState(allowedDates ? (allowedDates[0] ?? '') : minDate);
   const [travelers, setTravelers] = useState(2);
   // Add-ons marked includedByDefault (backlog 0.3, e.g. monument entry)
   // start checked — the customer opts OUT by unchecking, not in by checking.
@@ -185,8 +190,9 @@ export default function BookingWidget({
   const handleBook = async () => {
     setError(null);
 
-    if (!date) return setError('Please choose a travel date.');
+    if (!date) return setError(allowedDates && allowedDates.length === 0 ? 'No night-viewing dates are open for booking right now.' : 'Please choose a travel date.');
     if (isFriday(date)) return setError(FRIDAY_CLOSED_MESSAGE);
+    if (allowedDates && !allowedDates.includes(date)) return setError(NIGHT_VIEWING_DATE_MESSAGE);
     const errors = contactErrors(name, email, phone);
     setFieldErrors(errors);
     const firstBad = (['name', 'email', 'phone'] as ContactField[]).find((f) => errors[f]);
@@ -382,26 +388,57 @@ export default function BookingWidget({
       })}
       <div>
         <label htmlFor="travel-date" className="block text-sm font-medium mb-1">Travel date</label>
-        <input
-          id="travel-date"
-          type="date"
-          value={date}
-          min={minDate}
-          onChange={(e) => {
-            setDate(e.target.value);
-            if (e.target.value) track('availability_checked', { tour_id: tourId, tour_name: tourTitle, date: e.target.value });
-          }}
-          className="w-full rounded border border-stone-300 px-3 py-2"
-        />
-        {/* A native date input can't grey out weekdays, so say it up front and
-            flag a Friday pick straight away (the server rejects it too). */}
-        {date && isFriday(date) ? (
-          <p className="text-xs text-red-600 mt-1" role="alert">{FRIDAY_CLOSED_MESSAGE}</p>
+        {allowedDates ? (
+          allowedDates.length > 0 ? (
+            <>
+              <select
+                id="travel-date"
+                value={date}
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  if (e.target.value) track('availability_checked', { tour_id: tourId, tour_name: tourTitle, date: e.target.value });
+                }}
+                className="w-full rounded border border-stone-300 bg-white px-3 py-2"
+              >
+                {allowedDates.map((d) => (
+                  <option key={d} value={d}>
+                    {new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-stone-500 mt-1">
+                Night viewing is only on the full-moon night and the two nights either side (never a Friday), as set by the Archaeological Survey of India.
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-stone-700 rounded border border-amber-200 bg-amber-50 px-3 py-2" role="status">
+              No night-viewing dates are open for booking right now. The ASI publishes the dates a year at a time, so message us on WhatsApp and we will tell you the next one.
+            </p>
+          )
         ) : (
-          <p className="text-xs text-stone-500 mt-1">
-            {availabilityLabel && <span className="text-accent-700">{availabilityLabel} · </span>}
-            No tours on Fridays (Taj Mahal closed)
-          </p>
+          <>
+          <input
+            id="travel-date"
+            type="date"
+            value={date}
+            min={minDate}
+            onChange={(e) => {
+              setDate(e.target.value);
+              if (e.target.value) track('availability_checked', { tour_id: tourId, tour_name: tourTitle, date: e.target.value });
+            }}
+            className="w-full rounded border border-stone-300 px-3 py-2"
+          />
+          {/* A native date input can't grey out weekdays, so say it up front and
+              flag a Friday pick straight away (the server rejects it too). */}
+          {date && isFriday(date) ? (
+            <p className="text-xs text-red-600 mt-1" role="alert">{FRIDAY_CLOSED_MESSAGE}</p>
+          ) : (
+            <p className="text-xs text-stone-500 mt-1">
+              {availabilityLabel && <span className="text-accent-700">{availabilityLabel} · </span>}
+              No tours on Fridays (Taj Mahal closed)
+            </p>
+          )}
+          </>
         )}
       </div>
 
