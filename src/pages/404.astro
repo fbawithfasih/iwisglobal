@@ -1,0 +1,45 @@
+---
+// Shown for any address the site doesn't have. Astro serves it with a 404
+// status. Dynamic like the other pages, because BaseLayout's header depends
+// on the visitor's session and language.
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const links = [
+  { href: '/tours', title: 'Taj Mahal tours', note: 'Private Delhi to Agra day trips by car or train' },
+  { href: '/agra', title: 'Things to do in Agra', note: 'Ticket prices, opening hours and how to plan a visit' },
+  { href: '/guides', title: 'Travel guides', note: 'Sourced answers about tickets, timing and scams' },
+  { href: '/blog', title: 'Blog', note: 'Travel tips and seasonal Agra updates' },
+];
+---
+
+<BaseLayout floatingWhatsApp={false} title="Page not found — IWIS Global" description="We couldn't find that page." noindex>
+  <section class="max-w-2xl mx-auto px-6 pt-8 pb-16 md:pt-16">
+    <div class="mb-8 rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-center text-white shadow-lg shadow-brand-900/20 sm:p-10">
+      <p class="font-serif text-6xl font-semibold leading-none text-amber-300 md:text-7xl">404</p>
+      <h1 class="mt-4 text-3xl md:text-4xl font-serif font-semibold">We couldn't find that page</h1>
+      <p class="mt-3 text-white/90">
+        The address may have changed, or have a typo in it. Here are some places to go instead.
+      </p>
+      <a href="/" class="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-white px-6 font-semibold text-brand-800 shadow-md shadow-brand-950/20 transition hover:bg-brand-50">
+        Back to the homepage
+      </a>
+    </div>
+
+    <ul class="grid gap-3 sm:grid-cols-2">
+      {links.map((l) => (
+        <li>
+          <a href={l.href} class="block h-full rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/60 to-white p-5 shadow-sm shadow-brand-900/5 transition hover:border-brand-300 hover:shadow-md">
+            <span class="block font-serif text-lg font-semibold text-brand-900">{l.title}</span>
+            <span class="mt-1 block text-sm text-stone-600">{l.note}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <p class="mt-8 text-center text-sm text-stone-600">
+      Looking for something specific? <a href="/contact" class="font-medium text-brand-800 underline">Contact us</a> and we'll point you the right way.
+    </p>
+  </section>
+</BaseLayout>
