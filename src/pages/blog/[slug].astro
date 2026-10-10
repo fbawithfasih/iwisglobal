@@ -86,7 +86,10 @@ const BRAND_SUFFIX = ' — IWIS Global';
     <!-- Google "Preferred Sources" button — see /blog/index.astro's comment
          for the source. Loaded per-page since it's blog-scoped, not site-wide. -->
     <script async src="https://news.google.com/swg/js/v1/publisher.js"></script>
-    <div google-add-preferred-source-btn data-theme="light" class="mb-8"></div>
+    <div class="mb-8 flex flex-wrap items-center gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white px-4 py-3 shadow-sm shadow-brand-900/5">
+      <span class="text-sm font-medium text-brand-900">Prefer IWIS Global in Google Search?</span>
+      <div google-add-preferred-source-btn data-theme="light"></div>
+    </div>
 
     {/* Phones get the 800px copy made for the /blog list (imageThumb). */}
     {post.image && (
