@@ -1,5 +1,5 @@
 ---
-import { getAvailability, todayIst } from '../lib/availability';
+import { todayIst } from '../lib/availability';
 import { resizedSrcset, uploadedImageSize } from '../lib/resizedImages';
 import { resolveEnv } from '../lib/env';
 import { liveAutomaticOffersForRequest, offerBadge } from '../lib/offers';
@@ -22,7 +22,6 @@ interface Props {
 
 const { tour, currency, loading = 'lazy', sharedFactsShown = false, headingLevel = 'h2' } = Astro.props;
 const Heading = headingLevel;
-const availability = getAvailability();
 // Cheapest available per-person rate (the largest-group tier when the tour
 // has pricing tiers) — see backlog 0.2. Kept in sync with tours/[slug].astro's
 // "From" price via the same resolveFromPrice helper.
@@ -33,7 +32,7 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
 ---
 <a
   href={`/tours/${tour.slug}`}
-  class="group block"
+  class="group flex h-full flex-col"
 >
   <div class="aspect-[4/3] bg-brand-50 rounded-xl overflow-hidden">
     {tour.image ? (
@@ -43,25 +42,11 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
     )}
   </div>
 
-  <div class="pt-3">
+  <div class="flex flex-1 flex-col pt-3">
     {badge && (
       <p class="mb-1.5 inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">{badge}</p>
     )}
-    <Heading class="text-lg font-semibold mb-1 group-hover:underline">{tour.title}</Heading>
-
-    <!-- Wraps to two lines on narrow cards (the homepage carousel) rather
-         than breaking the label or "/person" mid-phrase. -->
-    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-1.5">
-      <span class="whitespace-nowrap text-[11px] font-semibold uppercase tracking-wide text-brand-700 border-b-2 border-brand-600 pb-0.5">
-        {availability.label}
-      </span>
-      <p class="whitespace-nowrap text-lg font-semibold text-stone-900">
-        {/* The cheapest rate (largest-group tier), so it's a "From" price. */}
-        <span class="text-xs font-normal text-stone-500">From</span>
-        {CURRENCY_SYMBOLS[price.currency]}{price.amount.toLocaleString(price.currency === 'USD' ? 'en-US' : 'en-IN')}
-        <span class="text-xs font-normal text-stone-500">/person</span>
-      </p>
-    </div>
+    <Heading class="text-lg font-semibold mb-1.5 group-hover:underline">{tour.title}</Heading>
 
     <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500">
       <span>{tour.durationLabel}</span>
@@ -76,6 +61,21 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
         <span>· Entry tickets extra</span>
       )}
       {!sharedFactsShown && <span>· Free cancellation</span>}
+    </div>
+
+    <!-- Footer pinned to the bottom of every card so prices and buttons line
+         up across a row, whatever the title length. The whole card is the
+         link, so "Book now" is a styled label, not a nested link. -->
+    <div class="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-3">
+      <p class="whitespace-nowrap text-base font-semibold text-stone-900 sm:text-lg">
+        {/* The cheapest rate (largest-group tier), so it's a "From" price. */}
+        <span class="text-xs font-normal text-stone-500">From</span>
+        {CURRENCY_SYMBOLS[price.currency]}{price.amount.toLocaleString(price.currency === 'USD' ? 'en-US' : 'en-IN')}
+        <span class="text-xs font-normal text-stone-500">/person</span>
+      </p>
+      <span class="inline-flex shrink-0 items-center rounded-full bg-brand-700 px-3.5 py-1.5 text-xs font-semibold text-white transition group-hover:bg-brand-800">
+        Book now
+      </span>
     </div>
   </div>
 </a>
