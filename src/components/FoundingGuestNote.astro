@@ -40,8 +40,8 @@ const claimedPercent = Math.round((claimed / FOUNDING_GUEST_SLOT_CAP) * 100);
 
     <div class="relative mt-4">
       <div class="flex items-center justify-between text-xs font-semibold">
-        <span class="text-amber-200">Only {slotsLeft} {slotsLeft === 1 ? 'spot' : 'spots'} left</span>
-        <span class="text-brand-100">{claimed} of {FOUNDING_GUEST_SLOT_CAP} claimed</span>
+        <span class="text-amber-200">{`Only ${slotsLeft} ${slotsLeft === 1 ? 'spot' : 'spots'} left`}</span>
+        <span class="text-brand-100">{`${claimed} of ${FOUNDING_GUEST_SLOT_CAP} claimed`}</span>
       </div>
       <div
         role="progressbar"
