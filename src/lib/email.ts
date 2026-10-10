@@ -201,27 +201,22 @@ export async function sendEntryTicketEmail(env: Record<string, any>, details: En
   // "Taj Mahal entry ticket (foreign visitor) × 2"
   const ticketLines = (details.tickets ?? []).map((t) => `${t.name} × ${t.quantity}`);
   const waUrl = whatsappHref(`Hi! Question about my entry tickets, booking ${details.bookingId}. (ref: EMAIL-TICKETS)`);
-  const html = `
-    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
-      <h2 style="color:#5b21b6; margin-bottom: 4px;">Your monument entry tickets</h2>
-      <p>Hi ${name},</p>
-      <p>We've booked the monument entry tickets for your <strong>${escapeHtml(details.tourTitle)}</strong> on <strong>${escapeHtml(date)}</strong>. They're attached to this email.</p>
-      ${
-        ticketLines.length
-          ? `<p style="margin-bottom:4px;">Attached:</p><ul style="margin-top:0; padding-left:20px;">${ticketLines.map((l) => `<li>${escapeHtml(l)}</li>`).join('')}</ul>`
-          : ''
-      }
-      <p>Please keep this email handy on the day of your tour.</p>
-      <p style="color:#78716c; font-size:13px;">Booking ID: ${escapeHtml(details.bookingId)}</p>
-      <p style="margin-bottom:8px;">Questions? Just reply to this email, or:</p>
-      <p style="margin-top:0; line-height:2;">
-        <a href="${waUrl}" style="color:#15803d; font-weight:600;">WhatsApp us</a><br />
-        <a href="${PHONE_TEL}" style="color:#5b21b6;">Call ${PHONE_DISPLAY}</a><br />
-        <a href="mailto:${EMAIL}" style="color:#5b21b6;">${EMAIL}</a>
-      </p>
-      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; <a href="${SITE}" style="color:#a8a29e;">www.iwisglobal.com</a></p>
-    </div>
-  `;
+  const html = emailHtml('Your monument entry tickets', `
+        <p style="margin-top:0;">Hi ${name},</p>
+        <p>We've booked the monument entry tickets for your <strong>${escapeHtml(details.tourTitle)}</strong> on <strong>${escapeHtml(date)}</strong>. They're attached to this email.</p>
+        ${
+          ticketLines.length
+            ? `<div style="background:#faf9ff; border:1px solid #ede9fe; border-radius:12px; padding:12px 16px; margin:16px 0;"><p style="margin:0 0 4px; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:#7c3aed;">Attached</p><ul style="margin:0; padding-left:20px;">${ticketLines.map((l) => `<li>${escapeHtml(l)}</li>`).join('')}</ul></div>`
+            : ''
+        }
+        <p style="${EMAIL_NOTE}">Please keep this email handy on the day of your tour.</p>
+        <p style="color:#78716c; font-size:13px;">Booking ID: ${escapeHtml(details.bookingId)}</p>
+        <p style="margin-bottom:8px;">Questions? Just reply to this email, or:</p>
+        <p style="margin-top:0; line-height:2;">
+          <a href="${waUrl}" style="color:#15803d; font-weight:600;">WhatsApp us</a><br />
+          <a href="${PHONE_TEL}" style="color:#6d28d9;">Call ${PHONE_DISPLAY}</a><br />
+          <a href="mailto:${EMAIL}" style="color:#6d28d9;">${EMAIL}</a>
+        </p>`);
   const text = [
     `Your monument entry tickets`,
     ``,
@@ -284,7 +279,6 @@ export async function sendReviewRequestEmail(env: Record<string, any>, details: 
   const name = escapeHtml(firstName);
   const date = displayDate(details.travelDate);
   const starUrl = (n: number) => `${details.reviewUrl}&rating=${n}`;
-  const button = 'display:inline-block; padding:12px 20px; border-radius:999px; text-decoration:none; font-weight:600;';
   // Five big tappable stars; each opens the review page with that rating picked.
   const stars = [1, 2, 3, 4, 5]
     .map(
@@ -293,23 +287,20 @@ export async function sendReviewRequestEmail(env: Record<string, any>, details: 
     )
     .join('');
 
-  const html = `
-    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917;">
-      <h2 style="color:#5b21b6; margin-bottom: 4px;">How was your tour?</h2>
-      <p>Hi ${name},</p>
-      <p>Thank you for touring with IWIS Global. How was your <strong>${escapeHtml(details.tourTitle)}</strong> on <strong>${escapeHtml(date)}</strong>? Your rating helps other travelers, and helps us get better.</p>
-      <p style="margin:20px 0 4px; color:#78716c; font-size:14px;">Tap a star to rate your tour:</p>
-      <table role="presentation" style="border-collapse:collapse; margin:0 0 16px;"><tr>${stars}</tr></table>
-      <p style="margin:20px 0;"><a href="${details.reviewUrl}" style="${button} background:#5b21b6; color:#ffffff;">Rate your tour</a></p>
-      <p>You can also review us on Google: <a href="${details.googleReviewUrl}" style="color:#5b21b6;">leave a Google review</a>.</p>
-      <p style="margin-bottom:8px;">Something not right? Just reply to this email, or:</p>
-      <p style="margin-top:0; line-height:2;">
-        <a href="${whatsappHref('Hi! About my recent tour. (ref: EMAIL-REVIEW)')}" style="color:#15803d; font-weight:600;">WhatsApp us</a><br />
-        <a href="${PHONE_TEL}" style="color:#5b21b6;">Call ${PHONE_DISPLAY}</a>
-      </p>
-      <p style="color:#a8a29e; font-size:12px; margin-top:24px;">IWIS Global &middot; <a href="${SITE}" style="color:#a8a29e;">www.iwisglobal.com</a></p>
-    </div>
-  `;
+  const html = emailHtml('How was your tour?', `
+        <p style="margin-top:0;">Hi ${name},</p>
+        <p>Thank you for touring with IWIS Global. How was your <strong>${escapeHtml(details.tourTitle)}</strong> on <strong>${escapeHtml(date)}</strong>? Your rating helps other travelers, and helps us get better.</p>
+        <div style="background:#faf9ff; border:1px solid #ede9fe; border-radius:12px; padding:14px 8px 8px; margin:16px 0; text-align:center;">
+          <p style="margin:0 0 4px; color:#6d28d9; font-size:14px; font-weight:600;">Tap a star to rate your tour</p>
+          <table role="presentation" style="border-collapse:collapse; margin:0 auto;"><tr>${stars}</tr></table>
+        </div>
+        <p style="margin:24px 0; text-align:center;"><a href="${details.reviewUrl}" style="${EMAIL_BUTTON}">Rate your tour</a></p>
+        <p>You can also review us on Google: <a href="${details.googleReviewUrl}" style="color:#6d28d9;">leave a Google review</a>.</p>
+        <p style="margin-bottom:8px;">Something not right? Just reply to this email, or:</p>
+        <p style="margin-top:0; line-height:2;">
+          <a href="${whatsappHref('Hi! About my recent tour. (ref: EMAIL-REVIEW)')}" style="color:#15803d; font-weight:600;">WhatsApp us</a><br />
+          <a href="${PHONE_TEL}" style="color:#6d28d9;">Call ${PHONE_DISPLAY}</a>
+        </p>`);
   const text = [
     `How was your tour?`,
     ``,
