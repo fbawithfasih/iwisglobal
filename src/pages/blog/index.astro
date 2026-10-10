@@ -25,8 +25,11 @@ const formatDate = (iso: string) =>
 
 <BaseLayout title="Taj Mahal & Agra Travel Blog | Tips, News & Guides" description="Company news, travel stories and tips, and seasonal Agra updates from IWIS Global.">
   <section class="max-w-3xl mx-auto px-6 py-16">
-    <h1 class="text-3xl font-serif font-semibold mb-2">Blog</h1>
-    <p class="text-stone-600 mb-4">Company news, travel stories and tips, and seasonal Agra updates.</p>
+    <div class="mb-6 rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/20 sm:p-8">
+      <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-100">IWIS Global</span>
+      <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-2">Blog</h1>
+      <p class="text-white/90">Company news, travel stories and tips, and seasonal Agra updates.</p>
+    </div>
 
     <!-- Google "Preferred Sources" button — lets readers mark IWIS Global as
          a preferred source in Google Search. Official widget, per
@@ -36,15 +39,15 @@ const formatDate = (iso: string) =>
     <div google-add-preferred-source-btn data-theme="light" class="mb-6"></div>
 
     {posts.length === 0 ? (
-      <p class="text-stone-600 border border-stone-200 rounded-xl bg-white p-6">
+      <p class="rounded-2xl border border-brand-100 bg-brand-50/60 p-6 text-stone-600">
         We don't have any posts published yet — check back soon. In the meantime, see our
         <a href="/guides" class="text-brand-800 hover:underline">Guides</a> for practical, sourced answers about
         visiting the Taj Mahal.
       </p>
     ) : (
-      <div class="space-y-6">
+      <div class="space-y-5">
         {posts.map((post, i) => (
-          <a href={`/blog/${post.slug}`} class="group block overflow-hidden rounded-xl border border-stone-200 bg-white hover:shadow-md transition">
+          <a href={`/blog/${post.slug}`} class="group block overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm shadow-brand-900/5 hover:border-brand-300 hover:shadow-md transition">
             {post.image && (
               <div class="relative">
                 <img
@@ -66,7 +69,7 @@ const formatDate = (iso: string) =>
             )}
             <div class="p-6">
               <p class="text-xs mb-2">
-                <span class="font-semibold tracking-wide text-brand-700 uppercase">{CATEGORY_LABELS[post.category] ?? post.category}</span>
+                <span class="rounded-full bg-brand-100 px-2.5 py-0.5 font-semibold tracking-wide text-brand-800 uppercase">{CATEGORY_LABELS[post.category] ?? post.category}</span>
                 {post.datePublished && (
                   <>
                     <span class="text-stone-400" aria-hidden="true"> · </span>
@@ -74,7 +77,7 @@ const formatDate = (iso: string) =>
                   </>
                 )}
               </p>
-              <h2 class="text-lg font-semibold mb-1">{post.title}</h2>
+              <h2 class="mb-1 font-serif text-xl font-semibold text-brand-900 group-hover:underline">{post.title}</h2>
               <p class="text-sm text-stone-600">{post.description}</p>
             </div>
           </a>
@@ -82,12 +85,12 @@ const formatDate = (iso: string) =>
       </div>
     )}
 
-    <h2 class="text-2xl font-serif font-semibold mt-14 mb-3">What you will find here</h2>
+    <h2 class="mt-14 mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">What you will find here</h2>
     <p class="text-stone-700 mb-4">
       The blog is where we write about planning a Taj Mahal trip from Delhi in more detail than a tour page can.
       Posts fall into three groups:
     </p>
-    <ul class="list-disc pl-5 text-stone-700 space-y-2 mb-8">
+    <ul class="list-disc pl-5 text-stone-700 space-y-2 mb-8 marker:text-brand-500">
       <li><strong>Travel tips:</strong> how to get from Delhi to Agra, who to call if something goes wrong, and how to plan a same-day trip.</li>
       <li><strong>Seasonal:</strong> what the Taj Mahal is like in each season, including the months with fog or heat.</li>
       <li><strong>News:</strong> updates from IWIS Global, a registered tour operator based in Agra.</li>
@@ -98,15 +101,15 @@ const formatDate = (iso: string) =>
       from our experience of running these tours, and where we give a number, such as a drive time or a ticket price,
       we say where it comes from.
     </p>
-    <h2 class="text-2xl font-serif font-semibold mb-3">How we keep posts accurate</h2>
+    <h2 class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">How we keep posts accurate</h2>
     <p class="text-stone-700 mb-8">
       Visiting rules, ticket prices and train timings change, so we check them against official sources such as the
       Archaeological Survey of India, the official Taj Mahal website and Indian Railways timetables before we publish,
       and we say in the post where a detail could go out of date. The busiest season for visitors runs from October to
       February, when the weather is cooler, so many of our seasonal posts cover planning for those months.
     </p>
-    <h2 class="text-2xl font-serif font-semibold mb-3">Planning a trip?</h2>
-    <p class="text-stone-700">
+    <h2 class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Planning a trip?</h2>
+    <p class="rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-stone-700">
       Our <a href="/guides" class="text-brand-700 hover:underline">travel guides</a> give sourced answers on tickets,
       timing and what to bring. When you are ready to book, see our
       <a href="/tours" class="text-brand-700 hover:underline">private Delhi to Agra Taj Mahal tours</a>, or
