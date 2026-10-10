@@ -541,12 +541,29 @@ export default function BookingWidget({
 
       <div className="text-sm">
         {!couponOpen && !coupon ? (
-          <button type="button" onClick={() => setCouponOpen(true)} className="min-h-11 text-brand-800 underline">
-            Have a coupon code?
+          <button
+            type="button"
+            onClick={() => setCouponOpen(true)}
+            className="group flex min-h-12 w-full items-center gap-3 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50/60 px-3 py-2 text-left font-medium text-brand-800 transition hover:border-brand-500 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="h-5 w-5" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" />
+              </svg>
+            </span>
+            <span className="flex-1">Have a coupon code?</span>
+            <span aria-hidden="true" className="text-lg leading-none text-brand-500 transition group-hover:translate-x-0.5">+</span>
           </button>
         ) : (
-          <div>
-            <label htmlFor="coupon-code" className="block font-medium mb-1">Coupon code</label>
+          <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-4">
+            <label htmlFor="coupon-code" className="mb-2 flex items-center gap-2 font-serif text-base font-semibold text-brand-900">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-brand-700 to-brand-500 text-white">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="h-5 w-5" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" />
+              </svg>
+              </span>
+              Coupon code
+            </label>
             <div className="flex gap-2">
               <input
                 id="coupon-code"
@@ -566,7 +583,8 @@ export default function BookingWidget({
                     applyCoupon();
                   }
                 }}
-                className="min-w-0 flex-1 rounded border border-stone-300 px-3 py-2 text-base uppercase"
+                className="min-w-0 flex-1 rounded-xl border border-brand-200 bg-white px-3 py-2 text-base uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-300"
+                placeholder="Enter code"
               />
               {coupon ? (
                 <button
@@ -575,7 +593,7 @@ export default function BookingWidget({
                     setCoupon(null);
                     setCouponInput('');
                   }}
-                  className="min-h-11 rounded border border-stone-300 px-4"
+                  className="min-h-11 rounded-xl border border-brand-300 bg-white px-4 font-medium text-brand-800 transition hover:bg-brand-50"
                 >
                   Remove
                 </button>
@@ -584,20 +602,20 @@ export default function BookingWidget({
                   type="button"
                   onClick={applyCoupon}
                   disabled={couponChecking || !couponInput.trim()}
-                  className="min-h-11 rounded bg-stone-900 px-4 text-white disabled:opacity-50"
+                  className="min-h-11 rounded-xl bg-gradient-to-r from-brand-700 to-brand-600 px-5 font-semibold text-white shadow-sm transition hover:from-brand-800 hover:to-brand-700 disabled:opacity-50"
                 >
                   {couponChecking ? 'Checking…' : 'Apply'}
                 </button>
               )}
             </div>
-            <p role="status" aria-live="polite" className="mt-1 text-xs">
-              {couponError && <span className="text-red-600">{couponError}</span>}
-              {coupon && couponProblem && <span className="text-red-600">{couponProblem}</span>}
+            <p role="status" aria-live="polite" className="empty:hidden mt-2 text-xs font-medium">
+              {couponError && <span className="block rounded-lg bg-red-50 px-3 py-1.5 text-red-700">{couponError}</span>}
+              {coupon && couponProblem && <span className="block rounded-lg bg-red-50 px-3 py-1.5 text-red-700">{couponProblem}</span>}
               {coupon && !couponProblem && discount?.offerId === coupon.id && (
-                <span className="text-emerald-700">✓ {coupon.name} applied: −{money(discount.amount)}</span>
+                <span className="block rounded-lg bg-emerald-50 px-3 py-1.5 text-emerald-800">✓ {coupon.name} applied: −{money(discount.amount)}</span>
               )}
               {coupon && !couponProblem && discount && discount.offerId !== coupon.id && (
-                <span className="text-stone-600">Your {discount.label} already gives a bigger discount, so this code isn't needed.</span>
+                <span className="block rounded-lg bg-stone-100 px-3 py-1.5 text-stone-700">Your {discount.label} already gives a bigger discount, so this code isn't needed.</span>
               )}
             </p>
           </div>
