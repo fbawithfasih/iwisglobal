@@ -4,7 +4,8 @@ export const prerender = false;
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { resolveEnv } from '../../lib/env';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
-import { getCustomerById, listCustomerBookings, type CustomerBookingRow } from '../../lib/customers';
+import PhoneInput from '../../components/PhoneInput';
+import { getCustomerById, listCustomerBookings, normalizeAccountPhone, updateCustomerPhone, type CustomerBookingRow } from '../../lib/customers';
 import { getTourById, type ParsedTour } from '../../lib/tours';
 import { chosenAddOnNames } from '../../lib/entryTickets';
 import { canBeReviewed, ensureReviewToken, reviewedBookingIds, reviewUrl, SITE_URL } from '../../lib/reviews';
@@ -28,7 +29,19 @@ if (!customer) {
 
 // "Email me a confirmation link" for an unconfirmed email/password account.
 let resent: 'sent' | 'limit' | null = null;
-if (Astro.request.method === 'POST' && db && !customer.email_verified_at) {
+// Saving the phone number is a separate POST on the same page.
+let phoneStatus: 'saved' | 'cleared' | 'invalid' | null = null;
+const postForm = Astro.request.method === 'POST' && db ? await Astro.request.formData() : null;
+if (postForm && postForm.get('_action') === 'phone') {
+  const phone = normalizeAccountPhone(String(postForm.get('phone') ?? ''));
+  if (phone === undefined) {
+    phoneStatus = 'invalid';
+  } else {
+    await updateCustomerPhone(db!, customer.id, phone);
+    customer.phone = phone;
+    phoneStatus = phone ? 'saved' : 'cleared';
+  }
+} else if (postForm && !customer.email_verified_at) {
   const link = await createEmailVerificationLink(db, customer.id, Astro.url.origin);
   if (link) await sendEmailVerificationEmail(env, { to: customer.email, name: customer.name, link });
   resent = link ? 'sent' : 'limit';
@@ -164,7 +177,20 @@ const sections = [
         Your password has been changed.
       </p>
     )}
-    <p class="text-stone-600 mb-8 break-words">Signed in as {customer.name} ({customer.email})</p>
+    <p class="text-stone-600 mb-6 break-words">Signed in as {customer.name} ({customer.email})</p>
+
+    <form method="POST" class="mb-8 rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+      <input type="hidden" name="_action" value="phone" />
+      <label for="accountPhone" class="block text-sm font-semibold text-stone-900 mb-1">Phone number</label>
+      <p class="text-xs text-stone-500 mb-2">Optional. Handy for your guide to reach you on the day of your tour.</p>
+      <PhoneInput client:load id="accountPhone" name="phone" defaultValue={customer.phone ?? undefined} invalid={phoneStatus === 'invalid'} />
+      <div class="mt-3 flex flex-wrap items-center gap-3">
+        <button type="submit" class="inline-flex min-h-11 items-center rounded-full bg-brand-700 px-5 text-sm font-semibold text-white hover:bg-brand-800 transition cursor-pointer">Save phone number</button>
+        {phoneStatus === 'saved' && <p role="status" class="text-sm font-medium text-green-800">Saved.</p>}
+        {phoneStatus === 'cleared' && <p role="status" class="text-sm font-medium text-green-800">Phone number removed.</p>}
+        {phoneStatus === 'invalid' && <p role="alert" class="text-sm text-red-700">Please enter a valid phone number and check the country code.</p>}
+      </div>
+    </form>
 
     {bookings.length === 0 && (
       <div class="rounded-xl border border-stone-200 bg-white p-8 text-center">

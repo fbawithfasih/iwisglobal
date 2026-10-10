@@ -15,6 +15,7 @@ export interface CustomerRow {
   password_salt: string | null;
   created_at: string;
   email_verified_at: string | null;
+  phone: string | null;
 }
 
 export interface CustomerProfile {
@@ -64,6 +65,7 @@ export async function upsertCustomer(db: D1Like, profile: CustomerProfile): Prom
     password_salt: null,
     created_at: now,
     email_verified_at: verifiedAt,
+    phone: null,
   };
 }
 
@@ -75,6 +77,18 @@ export async function getCustomerById(db: D1Like, id: string): Promise<CustomerR
 // storing/querying) so "User@x.com" and "user@x.com" resolve to one account.
 export async function getCustomerByEmail(db: D1Like, email: string): Promise<CustomerRow | null> {
   return db.prepare(`SELECT * FROM customers WHERE email = ?`).bind(normalizeEmail(email)).first<CustomerRow>();
+}
+
+// Same rule as the booking form: "+<code> <digits>", 8-15 digits once spaces
+// and punctuation are stripped. Empty clears the saved number.
+export function normalizeAccountPhone(raw: string): string | null | undefined {
+  const text = raw.trim();
+  if (!text) return null;
+  return /^\+\d{8,15}$/.test(text.replace(/[\s().-]/g, '')) ? text.slice(0, 40) : undefined;
+}
+
+export async function updateCustomerPhone(db: D1Like, id: string, phone: string | null): Promise<void> {
+  await db.prepare(`UPDATE customers SET phone = ? WHERE id = ?`).bind(phone, id).run();
 }
 
 export function normalizeEmail(email: string): string {
@@ -114,6 +128,7 @@ export async function createCustomerWithPassword(db: D1Like, input: EmailSignupI
     password_salt: input.passwordSalt,
     created_at: now,
     email_verified_at: null,
+    phone: null,
   };
 }
 

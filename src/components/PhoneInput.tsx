@@ -20,6 +20,8 @@ interface Props {
   // inside a plain HTML form: pass `name` and the combined number is posted
   // through a hidden field.
   value?: string;
+  // Standalone only: a saved "+<code> <number>" to start from.
+  defaultValue?: string;
   onChange?: (value: string) => void;
   name?: string;
   invalid?: boolean;
@@ -45,11 +47,16 @@ function Flag({ iso }: { iso: string }) {
 
 type Row = { kind: 'country'; key: string; country: Country } | { kind: 'heading'; key: string; label: string };
 
-export default function PhoneInput({ id, value, onChange, name, invalid = false, describedBy }: Props) {
+export default function PhoneInput({ id, value, defaultValue, onChange, name, invalid = false, describedBy }: Props) {
   const listId = useId();
   const { all, popular } = useMemo(getCountries, []);
-  const [country, setCountry] = useState<Country>(() => countryByIso('IN'));
-  const [national, setNational] = useState('');
+  const initial = useMemo(
+    () => (defaultValue ? parseInternational(defaultValue, countryByIso('IN')) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  const [country, setCountry] = useState<Country>(() => initial?.country ?? countryByIso('IN'));
+  const [national, setNational] = useState(() => initial?.national ?? '');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -62,7 +69,7 @@ export default function PhoneInput({ id, value, onChange, name, invalid = false,
   // Start from the visitor's own country when we can tell (en-GB -> United
   // Kingdom), unless they have already picked or typed something.
   useEffect(() => {
-    if (touched.current || value) return;
+    if (touched.current || value || initial) return;
     const guess = guessCountry();
     if (guess) setCountry(guess);
     // eslint-disable-next-line react-hooks/exhaustive-deps
