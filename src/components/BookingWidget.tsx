@@ -318,13 +318,13 @@ export default function BookingWidget({
         >
           <span aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10"></span>
           <div className="relative flex items-center gap-2.5">
-            <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-full bg-amber-300 leading-none text-brand-950 shadow-md ring-4 ring-white/20">
-              <span className="text-base font-extrabold">{Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100)}%</span>
+            <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-full bg-amber-300 leading-none text-brand-950 shadow-md ring-4 ring-white/20">
+              <span className="text-sm font-extrabold">{Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100)}%</span>
               <span className="mt-0.5 text-[8px] font-bold tracking-widest">OFF</span>
             </span>
             <div className="min-w-0">
-              <p className="font-serif text-base font-semibold leading-tight">Founding Guest offer</p>
-              <p className="mt-0.5 text-xs leading-snug text-brand-50">No code needed; it comes off at checkout.</p>
+              <p className="whitespace-nowrap font-serif text-[15px] font-semibold leading-tight">Founding Guest offer</p>
+              <p className="mt-0.5 text-[11px] leading-snug text-brand-50">No code needed; it comes off at checkout.</p>
             </div>
           </div>
           <div className="relative mt-3">
