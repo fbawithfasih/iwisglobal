@@ -230,7 +230,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
           {...uploadedImageSize(tour.image)}
           alt={tour.title}
           fetchpriority="high"
-          class="w-full h-auto rounded-2xl mb-6 object-cover max-h-96 2xl:max-h-[30rem] shadow-lg shadow-brand-900/15"
+          class="w-full h-auto rounded-2xl mb-6 object-cover max-h-96 [@media(max-height:500px)]:max-h-[45vh] 2xl:max-h-[30rem] shadow-lg shadow-brand-900/15"
         />
       ) : (
         <div class="w-full aspect-[16/7] rounded-2xl mb-6 bg-gradient-to-br from-brand-100 via-brand-50 to-accent-50 flex items-center justify-center text-brand-300 text-sm">

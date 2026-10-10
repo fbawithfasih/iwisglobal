@@ -434,6 +434,13 @@ const websiteJsonLd = Astro.url.pathname === '/'
   html {
     scroll-behavior: smooth;
   }
+  /* Landscape phones and other very short screens: a sticky header would take
+     a sixth of the height, so let it scroll away. */
+  @media (max-height: 500px) and (max-width: 1023px) {
+    #site-header {
+      position: static;
+    }
+  }
   #site-header.is-scrolled {
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
   }
