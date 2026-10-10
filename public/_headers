@@ -9,3 +9,7 @@
 
 /tour-images/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Country flag images for the phone field: they never change.
+/flags/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -1,4 +1,5 @@
 import { useState, type FocusEvent } from 'react';
+import PhoneInput from './PhoneInput';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import { isFriday, FRIDAY_CLOSED_MESSAGE, todayIst } from '../lib/availability';
 import { pickPricingTier, computeDepositAmount, type PricingTier } from '../lib/catalog';
@@ -17,7 +18,7 @@ function contactErrors(name: string, email: string, phone: string): Partial<Reco
   if (name.trim().length < 2) errors.name = 'Please enter your full name.';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) errors.email = 'Please check your email address — we send your confirmation there.';
   const digits = phone.replace(/[\s().-]/g, '');
-  if (!/^\+\d{8,15}$/.test(digits)) errors.phone = 'Include your country code, e.g. +44 7700 900123 or +91 98765 43210.';
+  if (!/^\+\d{8,15}$/.test(digits)) errors.phone = 'Please enter your phone number and check the country code.';
   return errors;
 }
 
@@ -473,20 +474,16 @@ export default function BookingWidget({
           {fieldErrors.email && <p id="traveler-email-error" className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>}
         </div>
         <div>
-          <label htmlFor="traveler-phone" className="block text-sm font-medium mb-1">Phone (with country code)</label>
-          <input
+          <label htmlFor="traveler-phone" className="block text-sm font-medium mb-1">Phone number</label>
+          <PhoneInput
             id="traveler-phone"
-            type="tel"
-            autoComplete="tel"
-            placeholder="+44 7700 900123"
             value={phone}
-            onChange={(e) => {
-              setPhone(e.target.value);
+            onChange={(next) => {
+              setPhone(next);
               if (fieldErrors.phone) setFieldErrors((f) => ({ ...f, phone: undefined }));
             }}
-            aria-invalid={!!fieldErrors.phone}
-            aria-describedby={fieldErrors.phone ? 'traveler-phone-error' : undefined}
-            className={`w-full rounded border px-3 py-2 ${fieldErrors.phone ? 'border-red-500' : 'border-stone-300'}`}
+            invalid={!!fieldErrors.phone}
+            describedBy={fieldErrors.phone ? 'traveler-phone-error' : undefined}
           />
           {fieldErrors.phone && <p id="traveler-phone-error" className="text-xs text-red-600 mt-1">{fieldErrors.phone}</p>}
         </div>
