@@ -27,12 +27,12 @@ const links = [
       </a>
     </div>
 
-    <ul class="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-4">
+    <ul class="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
       {links.map((l) => (
         <li>
-          <a href={l.href} class="block h-full rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/60 to-white p-5 shadow-sm shadow-brand-900/5 transition hover:border-brand-300 hover:shadow-md">
-            <span class="block font-serif text-lg font-semibold text-brand-900">{l.title}</span>
-            <span class="mt-1 block text-sm text-stone-600">{l.note}</span>
+          <a href={l.href} class="block h-full rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/60 to-white p-4 sm:p-5 shadow-sm shadow-brand-900/5 transition hover:border-brand-300 hover:shadow-md">
+            <span class="block font-serif text-base font-semibold leading-snug text-brand-900 sm:text-lg">{l.title}</span>
+            <span class="mt-1 block text-xs leading-snug text-stone-600 sm:text-sm">{l.note}</span>
           </a>
         </li>
       ))}
