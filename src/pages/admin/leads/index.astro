@@ -7,6 +7,7 @@ import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { listLeads, insertLead, updateLeadStatus } from '../../../lib/crm';
 import { formatDateTimeIst } from '../../../lib/format';
 import { telHref, waHref } from '../../../lib/contact';
+import PhoneInput from '../../../components/PhoneInput';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -62,7 +63,7 @@ const contactBtn = 'inline-flex min-h-11 items-center rounded border border-ston
       <input type="hidden" name="_action" value="add" />
       <input name="name" placeholder="Name" required class="rounded border border-stone-300 px-3 py-2" />
       <input name="email" type="email" placeholder="Email" class="rounded border border-stone-300 px-3 py-2" />
-      <input name="phone" placeholder="Phone" class="rounded border border-stone-300 px-3 py-2" />
+      <PhoneInput client:load id="leadPhone" name="phone" />
       <input name="tourInterest" placeholder="Tour interest" class="rounded border border-stone-300 px-3 py-2" />
       <textarea name="message" placeholder="Message / notes" class="rounded border border-stone-300 px-3 py-2 md:col-span-2"></textarea>
       <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2 md:col-span-2">Add lead</button>
