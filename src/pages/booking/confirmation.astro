@@ -107,14 +107,14 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
     {booking ? (
       <>
         <div class="text-center mb-8">
-          <div class:list={['mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full', status === 'cancelled' ? 'bg-stone-200 text-stone-600' : 'bg-green-100 text-green-700']} aria-hidden="true">
+          <div class:list={['mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', status === 'cancelled' ? 'bg-stone-200 text-stone-600' : 'bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-lg shadow-brand-900/25 ring-8 ring-brand-100']} aria-hidden="true">
             {status === 'cancelled' ? (
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7"><path d="M18 6 6 18M6 6l12 12" /></svg>
             ) : (
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7"><path d="M20 6 9 17l-5-5" /></svg>
             )}
           </div>
-          <h1 class="text-3xl font-serif font-semibold mb-3">{heading}</h1>
+          <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-3">{heading}</h1>
           {status === 'cancelled' && (
             <p class="text-stone-600">
               Any refund goes back to your original payment method — see our
@@ -123,22 +123,24 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
           )}
           {status === 'confirmed' && booking.traveler_email && (
             <p class="text-stone-600">
-              We've emailed your confirmation to <span class="font-medium text-stone-800">{maskEmail(booking.traveler_email)}</span>.
+              We've emailed your confirmation to <span class="font-medium text-brand-900">{maskEmail(booking.traveler_email)}</span>.
               If it isn't there in a few minutes, check your spam folder.
             </p>
           )}
         </div>
 
-        <div class="rounded-xl border border-stone-200 bg-white p-5 mb-6">
+        <div class="mb-6 overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm shadow-brand-900/5">
+          <div class="bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-5 py-4 text-white">
           {tour?.slug ? (
             <a href={`/tours/${tour.slug}`} class="group block py-1">
-              <span class="block font-semibold text-stone-900 group-hover:text-brand-800">{tourTitle}</span>
-              <span class="mt-1 inline-flex min-h-6 items-center text-sm font-medium text-brand-800 group-hover:underline">View tour &rarr;</span>
+              <span class="block font-semibold">{tourTitle}</span>
+              <span class="mt-1 inline-flex min-h-6 items-center text-sm font-medium text-brand-100 group-hover:underline">View tour &rarr;</span>
             </a>
           ) : (
             <p class="font-semibold">{tourTitle}</p>
           )}
-          <dl class="mt-3 space-y-2 text-sm">
+          </div>
+          <dl class="space-y-2 p-5 text-sm">
             <div class="flex justify-between gap-4"><dt class="text-stone-500">Date</dt><dd class="text-right">{formatDate(booking.travel_date)}</dd></div>
             {booking.pickup_time && status === 'confirmed' && (
               <div class="flex justify-between gap-4"><dt class="text-stone-500">Pickup</dt><dd class="text-right font-semibold">{booking.pickup_time}</dd></div>
@@ -158,13 +160,13 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
                 <div class="flex justify-between gap-4"><dt class="text-stone-500">Tour total</dt><dd>{money(booking.total_amount, booking.currency)}</dd></div>
                 <div class="flex justify-between gap-4"><dt class="text-stone-500">Deposit paid</dt><dd class="font-semibold">{money(booking.amount_paid, booking.currency)}</dd></div>
                 {balance > 0 && status !== 'cancelled' && (
-                  <div class="flex justify-between gap-4"><dt class="text-stone-500">Due on pickup</dt><dd class="font-semibold text-amber-700">{money(balance, booking.currency)}</dd></div>
+                  <div class="flex justify-between gap-4"><dt class="text-stone-500">Due on pickup</dt><dd class="rounded-full bg-amber-300 px-2.5 py-0.5 font-semibold text-brand-950">{money(balance, booking.currency)}</dd></div>
                 )}
               </>
             ) : (
               <div class="flex justify-between gap-4"><dt class="text-stone-500">Amount paid</dt><dd class="font-semibold">{money(booking.amount_paid, booking.currency)}</dd></div>
             )}
-            <div class="flex justify-between gap-4 border-t border-stone-100 pt-2">
+            <div class="flex justify-between gap-4 border-t border-brand-100 pt-2">
               <dt class="text-stone-500">Booking ID</dt>
               <dd class="font-mono text-xs text-stone-700 break-all text-right">{booking.id}</dd>
             </div>
@@ -172,12 +174,13 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
         </div>
 
         {depositNote && status === 'confirmed' && (
-          <p class="-mt-2 mb-6 text-sm text-stone-600">{depositNote}</p>
+          <p class="mb-6 rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-stone-700">{depositNote}</p>
         )}
 
         {status === 'confirmed' && (
-          <div class="mb-6 rounded-xl border border-brand-100 bg-brand-50/60 p-5">
-            <h2 class="font-semibold text-stone-900 mb-2">What happens next</h2>
+          <div class="mb-6 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-5 shadow-sm shadow-brand-900/5">
+            <span class="mb-2 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Next step</span>
+            <h2 class="font-serif text-xl font-semibold text-stone-900 mb-2">What happens next</h2>
             <p class="text-sm text-stone-700 mb-4">
               Send us your hotel or pickup address on WhatsApp{needsTicketDetails && <>, and each traveler's full name and nationality (the Archaeological Survey of India needs them for your entry tickets)</>}.
             </p>
@@ -189,10 +192,10 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
 
         {status === 'confirmed' && (
           <div class="mb-6">
-            <p class="text-sm font-medium text-stone-700 mb-2">Add to your calendar</p>
+            <p class="text-sm font-semibold text-brand-900 mb-2">Add to your calendar</p>
             <div class="grid grid-cols-2 gap-3">
-              <a href={googleCalendarHref} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-full border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:border-brand-300 transition">Google Calendar</a>
-              <a href={icsHref} class="inline-flex min-h-11 items-center justify-center rounded-full border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:border-brand-300 transition">Apple / Outlook</a>
+              <a href={googleCalendarHref} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-200 bg-white px-4 text-sm font-semibold text-brand-900 hover:bg-brand-50 transition">Google Calendar</a>
+              <a href={icsHref} class="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-200 bg-white px-4 text-sm font-semibold text-brand-900 hover:bg-brand-50 transition">Apple / Outlook</a>
             </div>
           </div>
         )}
@@ -203,7 +206,7 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
           </a>
           {status === 'confirmed' && (
             <>
-              <a href={changeHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONFIRMATION-CHANGE" class="inline-flex min-h-12 items-center justify-center rounded-full border border-stone-300 bg-white px-6 font-semibold text-stone-800 hover:border-brand-300 transition">
+              <a href={changeHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONFIRMATION-CHANGE" class="inline-flex min-h-12 items-center justify-center rounded-full border border-brand-200 bg-white px-6 font-semibold text-brand-900 hover:bg-brand-50 transition">
                 Change or cancel
               </a>
               <p class="text-center text-xs text-stone-500">
@@ -213,7 +216,7 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
             </>
           )}
           {signedIn && (
-            <a href="/account/bookings" class="inline-flex min-h-12 items-center justify-center rounded-full bg-brand-800 px-6 font-semibold text-white hover:bg-brand-900 transition">
+            <a href="/account/bookings" class="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-6 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:brightness-110">
               View my bookings
             </a>
           )}
