@@ -2,7 +2,7 @@ import { useState, type FocusEvent } from 'react';
 import PhoneInput from './PhoneInput';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import { isFriday, FRIDAY_CLOSED_MESSAGE, todayIst } from '../lib/availability';
-import { pickPricingTier, computeDepositAmount, type PricingTier } from '../lib/catalog';
+import { pickPricingTier, computeDepositAmount, FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE, type PricingTier } from '../lib/catalog';
 import { bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer } from '../lib/offers';
 
 // Same as MAX_TRAVELERS_PER_DATE in src/lib/db.ts (one vehicle per date);
@@ -312,9 +312,40 @@ export default function BookingWidget({
   return (
     <div onFocus={onFormFocus} onBlur={onFormBlur} className="rounded-xl border border-brand-100 bg-white p-6 shadow-sm space-y-4">
       {foundingGuestEligible && (
-        <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
-          <span className="font-semibold">Founding Guest Offer:</span> 15% off — {foundingGuestSlotsLeft}{' '}
-          {foundingGuestSlotsLeft === 1 ? 'spot' : 'spots'} left, no code needed.
+        <div
+          role="note"
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-4 text-white shadow-lg shadow-brand-900/25"
+        >
+          <span aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10"></span>
+          <div className="relative flex items-center gap-3">
+            <span className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-full bg-amber-300 leading-none text-brand-950 shadow-md ring-4 ring-white/20">
+              <span className="text-lg font-extrabold">{Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100)}%</span>
+              <span className="mt-0.5 text-[9px] font-bold tracking-widest">OFF</span>
+            </span>
+            <div className="min-w-0">
+              <p className="font-serif text-lg font-semibold leading-tight">Founding Guest offer</p>
+              <p className="mt-0.5 text-xs leading-snug text-brand-50">No code needed; it comes off at checkout.</p>
+            </div>
+          </div>
+          <div className="relative mt-3">
+            <div className="flex items-center justify-between text-[11px] font-semibold">
+              <span className="text-amber-200">{`Only ${foundingGuestSlotsLeft} ${foundingGuestSlotsLeft === 1 ? 'spot' : 'spots'} left`}</span>
+              <span className="text-brand-100">{`${FOUNDING_GUEST_SLOT_CAP - foundingGuestSlotsLeft} of ${FOUNDING_GUEST_SLOT_CAP} claimed`}</span>
+            </div>
+            <div
+              role="progressbar"
+              aria-label="Founding Guest spots claimed"
+              aria-valuemin={0}
+              aria-valuemax={FOUNDING_GUEST_SLOT_CAP}
+              aria-valuenow={FOUNDING_GUEST_SLOT_CAP - foundingGuestSlotsLeft}
+              className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/20"
+            >
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-400"
+                style={{ width: `${Math.max(Math.round(((FOUNDING_GUEST_SLOT_CAP - foundingGuestSlotsLeft) / FOUNDING_GUEST_SLOT_CAP) * 100), 4)}%` }}
+              ></div>
+            </div>
+          </div>
         </div>
       )}
       {offers.map((offer) => (

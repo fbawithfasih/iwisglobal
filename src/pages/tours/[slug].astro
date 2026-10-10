@@ -286,10 +286,16 @@ const BRAND_SUFFIX = ' — IWIS Global';
           </a>
         </div>
         {foundingGuestSlotsLeft > 0 && (
-          <p class="mt-4 flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm">
-            <Icon name="gift" class="h-5 w-5 shrink-0" />
-            <span><strong>Founding Guest Offer:</strong> {foundingGuestPercent}% off automatically, {foundingGuestSlotsLeft} of {FOUNDING_GUEST_SLOT_CAP} spots left. No code needed.</span>
-          </p>
+          <div class="mt-4 flex items-center gap-3 rounded-xl bg-white/10 px-3 py-2.5 ring-1 ring-white/15">
+            <span class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-full bg-amber-300 leading-none text-brand-950 shadow-md">
+              <span class="text-sm font-extrabold">{foundingGuestPercent}%</span>
+              <span class="mt-0.5 text-[8px] font-bold tracking-widest">OFF</span>
+            </span>
+            <p class="text-sm leading-snug text-brand-50">
+              <strong class="font-serif text-base font-semibold text-white">Founding Guest offer</strong><br />
+              Applied automatically, no code needed. <span class="font-semibold text-amber-200">Only {foundingGuestSlotsLeft} of {FOUNDING_GUEST_SLOT_CAP} spots left.</span>
+            </p>
+          </div>
         )}
         {tourOffers.map((offer) => (
           <p class="mt-4 flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm">
