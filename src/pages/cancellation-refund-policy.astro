@@ -13,36 +13,38 @@ const lastUpdated = '27 September 2026';
   title="Cancellation & Refund Policy — IWIS Global"
   description="How cancellations, refunds, and date changes work for IWIS Global tours: full refund up to 24 hours before, refund timelines, and what happens if we cancel."
 >
-  <section class="max-w-2xl mx-auto px-6 py-16">
-    <h1 class="text-3xl font-serif font-semibold mb-1">Cancellation &amp; Refund Policy</h1>
-    <p class="text-sm text-stone-500 mb-6">Last updated: {lastUpdated}</p>
+  <!-- Same [&_…] heading and list styling as /terms. -->
+  <section class="max-w-2xl mx-auto px-6 py-12 md:py-16 [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:border-l-4 [&_h2]:border-brand-500 [&_h2]:pl-3 [&_h2]:font-serif [&_h2]:text-xl [&_h2]:text-brand-900 [&_li]:marker:text-brand-500 [&_p]:leading-relaxed">
+    <span class="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Policy</span>
+    <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-2">Cancellation &amp; Refund Policy</h1>
+    <p class="mb-6 inline-block rounded-full border border-brand-100 bg-white px-3 py-1 text-sm text-stone-500">Last updated: {lastUpdated}</p>
 
-    <p class="text-stone-700 mb-6">
+    <p class="mb-2 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-5 text-stone-700 shadow-sm shadow-brand-900/5">
       This policy applies to every tour booked on this website with IWIS Global ("we", "us"). All times
       are India Standard Time (IST), measured from your tour's scheduled start time.
     </p>
 
     <h2 class="text-lg font-semibold mb-2">If you cancel</h2>
-    <div class="overflow-x-auto mb-3">
+    <div class="mb-3 overflow-x-auto rounded-2xl border border-brand-100 bg-white shadow-sm shadow-brand-900/5">
       <table class="w-full text-sm border-collapse">
         <thead>
-          <tr class="border-b border-stone-300 text-left">
-            <th class="py-2 pr-4 font-semibold">When you cancel</th>
-            <th class="py-2 font-semibold">Refund</th>
+          <tr class="bg-brand-50 text-left text-brand-900">
+            <th class="px-4 py-3 font-semibold">When you cancel</th>
+            <th class="px-4 py-3 font-semibold">Refund</th>
           </tr>
         </thead>
         <tbody class="text-stone-700">
-          <tr class="border-b border-stone-200">
-            <td class="py-2 pr-4">24 hours or more before the tour starts</td>
-            <td class="py-2"><strong>100%</strong> of the amount you've paid</td>
+          <tr class="border-t border-brand-100">
+            <td class="px-4 py-3">24 hours or more before the tour starts</td>
+            <td class="px-4 py-3"><strong class="rounded-full bg-green-100 px-2 py-0.5 text-green-800">100%</strong> of the amount you've paid</td>
           </tr>
-          <tr class="border-b border-stone-200">
-            <td class="py-2 pr-4">Less than 24 hours before the tour starts</td>
-            <td class="py-2"><strong>50%</strong> of the amount you've paid</td>
+          <tr class="border-t border-brand-100">
+            <td class="px-4 py-3">Less than 24 hours before the tour starts</td>
+            <td class="px-4 py-3"><strong class="rounded-full bg-amber-300 px-2 py-0.5 text-brand-950">50%</strong> of the amount you've paid</td>
           </tr>
-          <tr class="border-b border-stone-200">
-            <td class="py-2 pr-4">No-show (you don't arrive for pickup and haven't cancelled)</td>
-            <td class="py-2">No refund</td>
+          <tr class="border-t border-brand-100">
+            <td class="px-4 py-3">No-show (you don't arrive for pickup and haven't cancelled)</td>
+            <td class="px-4 py-3">No refund</td>
           </tr>
         </tbody>
       </table>
@@ -84,7 +86,7 @@ const lastUpdated = '27 September 2026';
     </ul>
 
     <h2 class="text-lg font-semibold mb-2">Questions</h2>
-    <p class="text-stone-700">
+    <p class="rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-stone-700">
       See also our <a href="/terms" class="text-brand-800 hover:underline">Terms of Service</a>, or
       <a href="/contact" class="text-brand-800 hover:underline">contact us</a> about a specific booking.
     </p>

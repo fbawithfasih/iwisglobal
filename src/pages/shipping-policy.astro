@@ -13,11 +13,13 @@ const lastUpdated = '27 September 2026';
   title="Shipping, Delivery & Exchange Policy — IWIS Global"
   description="IWIS Global sells tour services, not physical goods: how your booking confirmation and tour are delivered, and how date changes work."
 >
-  <section class="max-w-2xl mx-auto px-6 py-16">
-    <h1 class="text-3xl font-serif font-semibold mb-1">Shipping, Delivery &amp; Exchange Policy</h1>
-    <p class="text-sm text-stone-500 mb-6">Last updated: {lastUpdated}</p>
+  <!-- Same [&_…] heading and list styling as /terms. -->
+  <section class="max-w-2xl mx-auto px-6 py-12 md:py-16 [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:border-l-4 [&_h2]:border-brand-500 [&_h2]:pl-3 [&_h2]:font-serif [&_h2]:text-xl [&_h2]:text-brand-900 [&_li]:marker:text-brand-500 [&_p]:leading-relaxed">
+    <span class="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Policy</span>
+    <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-2">Shipping, Delivery &amp; Exchange Policy</h1>
+    <p class="mb-6 inline-block rounded-full border border-brand-100 bg-white px-3 py-1 text-sm text-stone-500">Last updated: {lastUpdated}</p>
 
-    <h2 class="text-lg font-semibold mb-2">No physical shipping</h2>
+    <h2 class="text-lg font-semibold mb-2 !mt-6">No physical shipping</h2>
     <p class="text-stone-700 mb-6">
       IWIS Global ("we", "us") sells private guided tour services in Agra and from Delhi. We don't sell or ship
       physical products, so no shipping charges apply and nothing is sent to you by post or courier.
@@ -48,7 +50,7 @@ const lastUpdated = '27 September 2026';
     </p>
 
     <h2 class="text-lg font-semibold mb-2">Questions</h2>
-    <p class="text-stone-700">
+    <p class="rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-stone-700">
       <a href="/contact" class="text-brand-800 hover:underline">Contact us</a> by email or WhatsApp with your
       name and the booking ID from your confirmation email (or the payment reference in
       <a href="/account/bookings" class="text-brand-800 hover:underline">My Bookings</a>).
