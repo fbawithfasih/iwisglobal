@@ -226,14 +226,14 @@ const BRAND_SUFFIX = ' — IWIS Global';
           {...uploadedImageSize(tour.image)}
           alt={tour.title}
           fetchpriority="high"
-          class="w-full h-auto rounded-2xl mb-6 object-cover max-h-96 shadow-lg shadow-stone-200/60"
+          class="w-full h-auto rounded-2xl mb-6 object-cover max-h-96 shadow-lg shadow-brand-900/15"
         />
       ) : (
         <div class="w-full aspect-[16/7] rounded-2xl mb-6 bg-gradient-to-br from-brand-100 via-brand-50 to-accent-50 flex items-center justify-center text-brand-300 text-sm">
           No image yet
         </div>
       )}
-      <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-2">{tour.title}</h1>
+      <h1 class="text-3xl md:text-4xl font-serif font-semibold text-brand-950 mb-2">{tour.title}</h1>
       <div class="h-1 w-16 rounded-full bg-gradient-to-r from-brand-600 to-accent-500 mb-4"></div>
       <!-- Location and live weather on a line of their own: the weather text
            loads (or fails) after the page, and must not reflow the badges. -->
@@ -325,7 +325,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
       {tour.highlights.length > 0 && (
         <div class="mb-8 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-6">
           <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-4">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white"><Icon name="sparkles" class="h-[18px] w-[18px]" /></span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-sm"><Icon name="sparkles" class="h-[18px] w-[18px]" /></span>
             Highlights
           </h2>
           <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-3">
@@ -340,9 +340,9 @@ const BRAND_SUFFIX = ' — IWIS Global';
       )}
 
       {tour.itinerary.length > 0 && (
-        <div class="mb-8 rounded-2xl border border-stone-200 bg-white p-6">
+        <div class="mb-8 rounded-2xl border border-brand-100 bg-white p-6 shadow-sm shadow-brand-900/5">
           <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-1">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white"><Icon name="route" class="h-[18px] w-[18px]" /></span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-sm"><Icon name="route" class="h-[18px] w-[18px]" /></span>
             Itinerary
           </h2>
           {tour.itinerary.some((s) => s.details) && (
@@ -381,9 +381,9 @@ const BRAND_SUFFIX = ' — IWIS Global';
       )}
 
       {(descriptionIntro || descriptionSections.length > 0) && (
-        <div class="mb-8 rounded-2xl border border-stone-200 bg-white p-6">
+        <div class="mb-8 rounded-2xl border border-brand-100 bg-white p-6 shadow-sm shadow-brand-900/5">
           <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-4">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white"><Icon name="book-open" class="h-[18px] w-[18px]" /></span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-sm"><Icon name="book-open" class="h-[18px] w-[18px]" /></span>
             About this tour
           </h2>
           {descriptionIntro && (
@@ -405,7 +405,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
       {infoBlocks.length > 0 && (
         <div class="mb-8 rounded-2xl border border-brand-100 bg-brand-50/50 p-6">
           <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-4">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white"><Icon name="info" class="h-[18px] w-[18px]" /></span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-sm"><Icon name="info" class="h-[18px] w-[18px]" /></span>
             Good to know
           </h2>
           <ul class="space-y-4">
@@ -429,7 +429,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
           {tour.includes.length > 0 && (
             <div class="rounded-2xl border border-brand-200 bg-white p-6 shadow-sm shadow-brand-100">
               <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-4 text-brand-800">
-                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white"><Icon name="check" class="h-[18px] w-[18px]" strokeWidth={2.25} /></span>
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-sm"><Icon name="check" class="h-[18px] w-[18px]" strokeWidth={2.25} /></span>
                 Included
               </h2>
               <ul class="space-y-2.5">
@@ -444,7 +444,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
           )}
 
           {tour.excludes.length > 0 && (
-            <div class="rounded-2xl border border-stone-200 bg-white p-6">
+            <div class="rounded-2xl border border-stone-200 bg-stone-50/60 p-6">
               <h2 class="flex items-center gap-2.5 text-xl font-serif font-semibold mb-4 text-stone-500">
                 <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-200 text-stone-500"><Icon name="x" class="h-[18px] w-[18px]" strokeWidth={2.25} /></span>
                 Not included
@@ -464,7 +464,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
 
       {reviews.length > 0 && (
         <div id="reviews" class="mt-10 scroll-mt-24">
-          <h2 class="text-xl font-serif font-semibold mb-1">Guest reviews</h2>
+          <h2 class="mb-1 border-l-4 border-brand-500 pl-3 text-xl font-serif font-semibold text-brand-900">Guest reviews</h2>
           <p class="text-sm text-stone-600 mb-4">
             <span class="text-amber-500" aria-hidden="true">★</span> {avgRating!.toFixed(1)} out of 5 from {reviews.length} review{reviews.length > 1 ? 's' : ''} by guests who booked this tour with us
           </p>
