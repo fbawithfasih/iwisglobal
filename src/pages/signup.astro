@@ -5,9 +5,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import ShowPasswordButton from '../components/ShowPasswordButton.astro';
 import { resolveEnv } from '../lib/env';
 import OAuthButtons from '../components/OAuthButtons.astro';
+import PhoneInput from '../components/PhoneInput';
 import { getSessionCustomerId, CUSTOMER_COOKIE, safeRedirectPath } from '../lib/requireCustomer';
 import { startOAuthSignIn } from '../lib/oauth/start';
-import { getCustomerByEmail, createCustomerWithPassword } from '../lib/customers';
+import { getCustomerByEmail, createCustomerWithPassword, normalizeAccountPhone, updateCustomerPhone } from '../lib/customers';
 import { hashPassword, generateSaltHex } from '../lib/passwordHash';
 import { createCustomerSessionToken } from '../lib/customerAuth';
 import { checkSignupLimit, recordSignup } from '../lib/customerLoginAttempts';
@@ -28,12 +29,15 @@ let error: string | null = null;
 let accountExists = false; // shows a Sign in link with the error
 let name = '';
 let email = '';
+let phoneInput = ''; // kept so a failed attempt doesn't clear the box
 
 if (Astro.request.method === 'POST') {
   const db = env.DB;
   const form = await Astro.request.formData();
   name = String(form.get('name') ?? '').trim();
   email = String(form.get('email') ?? '').trim();
+  phoneInput = String(form.get('phone') ?? '').trim();
+  const phone = normalizeAccountPhone(phoneInput);
   const password = String(form.get('password') ?? '');
 
   const ip = Astro.request.headers.get('cf-connecting-ip') ?? 'unknown';
@@ -46,6 +50,8 @@ if (Astro.request.method === 'POST') {
     error = 'Please enter your name.';
   } else if (!EMAIL_RE.test(email)) {
     error = 'Please enter a valid email address.';
+  } else if (phone === undefined) {
+    error = 'Please enter a valid phone number and check the country code, or leave it empty.';
   } else if (password.length < 8) {
     error = 'Password must be at least 8 characters.';
   } else {
@@ -59,6 +65,7 @@ if (Astro.request.method === 'POST') {
       const passwordSalt = generateSaltHex();
       const passwordHash = await hashPassword(password, passwordSalt);
       const customer = await createCustomerWithPassword(db, { email, name, passwordHash, passwordSalt });
+      if (phone) await updateCustomerPhone(db, customer.id, phone);
       await recordSignup(db, ip);
       // "Confirm your email": once confirmed, bookings made with this email
       // (before or after signing up) show in My Bookings. Sent in the
@@ -136,6 +143,10 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
           value={email}
           class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
         />
+      </div>
+      <div>
+        <label for="phone" class="block text-xs font-medium text-stone-500 mb-1">Phone number <span class="font-normal">(optional)</span></label>
+        <PhoneInput client:load id="phone" name="phone" defaultValue={phoneInput || undefined} />
       </div>
       <div>
         <label for="password" class="block text-xs font-medium text-stone-500 mb-1">Password</label>
