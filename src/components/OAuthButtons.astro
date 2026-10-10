@@ -15,7 +15,7 @@ const { googleUrl, appleUrl } = Astro.props;
   {googleUrl && (
     <a
       href={googleUrl}
-      class="flex items-center justify-center gap-3 w-full rounded-lg border border-stone-300 px-4 py-3 font-medium hover:bg-stone-50 transition"
+      class="flex items-center justify-center gap-3 w-full min-h-12 rounded-full border border-stone-300 bg-white px-4 py-3 font-medium hover:border-brand-300 hover:bg-brand-50/40 transition"
     >
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true">
         <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z" />
@@ -30,7 +30,7 @@ const { googleUrl, appleUrl } = Astro.props;
   {appleUrl && (
     <a
       href={appleUrl}
-      class="flex items-center justify-center gap-3 w-full rounded-lg bg-black text-white px-4 py-3 font-medium hover:bg-stone-800 transition"
+      class="flex items-center justify-center gap-3 w-full min-h-12 rounded-full bg-black text-white px-4 py-3 font-medium hover:bg-stone-800 transition"
     >
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5" aria-hidden="true">
         <path d="M16.365 1.43c0 1.14-.43 2.207-1.16 3.002-.831.905-2.195 1.606-3.34 1.51-.15-1.09.42-2.26 1.16-3.02.84-.87 2.29-1.51 3.34-1.49zM20.94 17.1c-.52 1.2-.77 1.74-1.44 2.79-.94 1.47-2.27 3.31-3.91 3.32-1.46.02-1.84-.95-3.83-.94-1.99.01-2.4.96-3.86.94-1.64-.02-2.9-1.67-3.84-3.14C1.9 16.1.9 12.47 2.4 9.99c1.05-1.75 2.86-2.85 4.61-2.87 1.5-.02 2.9.99 3.83.99.92 0 2.63-1.23 4.44-1.05.76.03 2.9.31 4.27 2.32-.11.07-2.55 1.49-2.52 4.44.03 3.54 3.1 4.71 3.13 4.72-.03.08-.5 1.7-1.66 3.38z" />

@@ -74,22 +74,24 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
 ---
 
 <BaseLayout floatingWhatsApp={false} title="Sign in — IWIS Global" description="Sign in to your IWIS Global account to view and manage your Taj Mahal and Agra tour bookings." noindex>
-  <section class="max-w-sm mx-auto px-6 pt-10 pb-20 md:pt-20 text-center">
+  <section class="max-w-md mx-auto px-6 pt-8 pb-20 md:pt-16 text-center">
+    <span class="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800 mb-3">Your account</span>
     <h1 class="text-3xl font-serif font-semibold mb-2">Sign in</h1>
-    <p class="text-stone-600 mb-3">Sign in to view your booking history. You don't need an account to book a tour.</p>
-    <p class="text-sm text-stone-600 mb-8 rounded-lg bg-brand-50 border border-brand-100 px-3 py-2">
-      Booked without an account? Use the <strong>View your booking</strong> link in your confirmation email — bookings made
+    <p class="text-stone-600 mb-5">Sign in to view your booking history. You don't need an account to book a tour.</p>
+    <p class="text-sm text-brand-900 mb-6 rounded-xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 px-4 py-3 text-left">
+      Booked without an account? Use the <strong class="font-semibold text-brand-800">View your booking</strong> link in your confirmation email — bookings made
       without signing in don't appear in an account.
     </p>
 
     {errorParam && <p class="text-red-600 text-sm mb-4" role="alert">{errorParam}</p>}
 
+    <div class="rounded-2xl border border-brand-100 bg-white p-5 text-left shadow-sm shadow-brand-900/5 sm:p-7">
     <OAuthButtons googleUrl={googleUrl} appleUrl={appleUrl} />
 
     <form method="POST" class="space-y-3 text-left">
       {emailLoginError && <p class="text-red-600 text-sm" role="alert">{emailLoginError}</p>}
       <div>
-        <label for="email" class="block text-xs font-medium text-stone-500 mb-1">Email</label>
+        <label for="email" class="block text-sm font-medium text-stone-700 mb-1">Email</label>
         <input
           id="email"
           name="email"
@@ -97,7 +99,7 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
           required
           autocomplete="email"
           value={emailValue}
-          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
+          class="w-full rounded-lg border border-stone-300 bg-white px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-400"
         />
       </div>
       <div>
@@ -111,17 +113,18 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
           type="password"
           required
           autocomplete="current-password"
-          class="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-brand-500"
+          class="w-full rounded-lg border border-stone-300 bg-white px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-400"
         />
         <div class="flex justify-end"><ShowPasswordButton for="password" /></div>
       </div>
       <button
         type="submit"
-        class="w-full rounded-lg bg-brand-800 text-white px-4 py-3 font-medium hover:bg-brand-900 transition"
+        class="w-full min-h-12 rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-4 py-3 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300 cursor-pointer"
       >
         Sign in with email
       </button>
     </form>
+    </div>
 
     <p class="text-sm text-stone-500 mt-4">
       New here? <a href={`/signup?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center text-brand-700 font-medium hover:underline">Create an account</a>

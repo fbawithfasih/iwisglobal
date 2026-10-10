@@ -26,6 +26,8 @@ interface Props {
   name?: string;
   invalid?: boolean;
   describedBy?: string;
+  // Taller, rounder box for the sign-in and sign-up pages.
+  roomy?: boolean;
 }
 
 function Flag({ iso }: { iso: string }) {
@@ -47,7 +49,7 @@ function Flag({ iso }: { iso: string }) {
 
 type Row = { kind: 'country'; key: string; country: Country } | { kind: 'heading'; key: string; label: string };
 
-export default function PhoneInput({ id, value, defaultValue, onChange, name, invalid = false, describedBy }: Props) {
+export default function PhoneInput({ id, value, defaultValue, onChange, name, invalid = false, describedBy, roomy = false }: Props) {
   const listId = useId();
   const { all, popular } = useMemo(getCountries, []);
   const initial = useMemo(
@@ -167,7 +169,7 @@ export default function PhoneInput({ id, value, defaultValue, onChange, name, in
 
   return (
     <div ref={rootRef} className="relative">
-      <div className={`flex rounded border bg-white focus-within:ring-2 focus-within:ring-brand-400 ${border}`}>
+      <div className={`flex border bg-white focus-within:ring-2 focus-within:ring-brand-400 ${roomy ? 'rounded-lg' : 'rounded'} ${border}`}>
         <button
           ref={buttonRef}
           type="button"
@@ -176,7 +178,7 @@ export default function PhoneInput({ id, value, defaultValue, onChange, name, in
           aria-expanded={open}
           aria-controls={open ? listId : undefined}
           aria-label={`Country code: ${country.name}, plus ${country.dial}. Change country`}
-          className="flex shrink-0 items-center gap-1.5 rounded-l border-r border-stone-300 px-2.5 py-2 text-base hover:bg-stone-50 focus:outline-none"
+          className={`flex shrink-0 items-center gap-1.5 border-r border-stone-300 px-2.5 text-base hover:bg-stone-50 focus:outline-none ${roomy ? 'rounded-l-lg py-3' : 'rounded-l py-2'}`}
         >
           <Flag iso={country.iso} />
           <span className="tabular-nums text-stone-800">+{country.dial}</span>
@@ -195,7 +197,7 @@ export default function PhoneInput({ id, value, defaultValue, onChange, name, in
           onChange={(e) => typeNumber(e.target.value)}
           aria-invalid={invalid}
           aria-describedby={describedBy}
-          className="min-w-0 flex-1 rounded-r bg-transparent px-3 py-2 text-base focus:outline-none"
+          className={`min-w-0 flex-1 bg-transparent px-3 text-base focus:outline-none ${roomy ? 'rounded-r-lg py-3' : 'rounded-r py-2'}`}
         />
       </div>
 
