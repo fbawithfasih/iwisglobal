@@ -382,6 +382,13 @@ function highlightHref(id: string): string {
     pointer-events: none;
     filter: drop-shadow(0 3px 3px rgba(30, 10, 60, 0.4));
   }
+  /* Phones show every other traveller, a little larger. */
+  @media (max-width: 767px) {
+    .hero-mini {
+      height: calc(var(--h) * 0.0038em);
+      bottom: calc(100% - var(--top) - var(--sink) * var(--h) * 0.0038em);
+    }
+  }
   @media (prefers-reduced-motion: no-preference) {
     .hero-mini {
       animation: hero-mini-bob 3.2s ease-in-out var(--d) infinite;
