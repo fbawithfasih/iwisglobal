@@ -13,6 +13,9 @@ import FoundingGuestNote from '../../components/FoundingGuestNote.astro';
 import { resolveEnv } from '../../lib/env';
 import { listTours, sharedTourFacts } from '../../lib/tours';
 import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
+import { pageI18n } from '../../i18n/dictionaries';
+import { fmt } from '../../i18n/fmt';
+import { intlLocale } from '../../lib/i18n';
 
 const { slug } = Astro.params;
 const entry: CollectionEntry<'attractions'> | undefined = (await getCollection('attractions')).find((e) => e.slug === slug);
@@ -50,14 +53,16 @@ const attractionJsonLd = {
   ...(image && { image: `https://www.iwisglobal.com${image.src}` }),
   address: { '@type': 'PostalAddress', addressLocality: 'Agra', addressRegion: 'Uttar Pradesh', addressCountry: 'IN' },
 };
+const { locale, t } = pageI18n(Astro);
 ---
 
-<BaseLayout title={`${name} — Agra Visitor Guide | IWIS Global`} description={description} breadcrumbs={[{ name: 'Agra Attractions', path: '/agra' }]}>
+
+<BaseLayout title={fmt(t.attractionExtra.title, { name })} description={description} breadcrumbs={[{ name: t.attractionExtra.breadcrumb, path: '/agra' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(attractionJsonLd)} />
 
   <article class="max-w-3xl mx-auto px-6 py-16">
-    <a href="/agra" class="inline-flex min-h-11 items-center text-sm font-medium text-brand-800 hover:underline">&larr; All Agra attractions</a>
-    <span class="mt-3 block w-fit rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Agra attraction</span>
+    <a href="/agra" class="inline-flex min-h-11 items-center text-sm font-medium text-brand-800 hover:underline" set:html={t.attractionPage.k8} />
+    <span class="mt-3 block w-fit rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800" set:html={t.attractionPage.k9} />
     <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-3 mb-6">{name}</h1>
 
     {image && (
@@ -76,25 +81,25 @@ const attractionJsonLd = {
 
     <div class="grid sm:grid-cols-2 gap-3 mb-8 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-sm shadow-sm shadow-brand-900/5">
       <div class="rounded-xl border border-brand-100 bg-white p-3">
-        <p class="text-brand-600 uppercase text-xs font-semibold tracking-wide mb-1">Ticket (foreign tourist)</p>
+        <p class="text-brand-600 uppercase text-xs font-semibold tracking-wide mb-1" set:html={t.attractionPage.k1} />
         <p class="font-semibold">{ticketPriceForeign}</p>
       </div>
       <div class="rounded-xl border border-brand-100 bg-white p-3">
-        <p class="text-brand-600 uppercase text-xs font-semibold tracking-wide mb-1">Ticket (Indian national)</p>
+        <p class="text-brand-600 uppercase text-xs font-semibold tracking-wide mb-1" set:html={t.attractionPage.k2} />
         <p class="font-semibold">{ticketPriceIndian}</p>
       </div>
       {ticketPriceSaarc && (
         <div class="rounded-xl border border-brand-100 bg-white p-3">
-          <p class="text-brand-600 uppercase text-xs font-semibold tracking-wide mb-1">Ticket (SAARC / BIMSTEC national)</p>
+          <p class="text-brand-600 uppercase text-xs font-semibold tracking-wide mb-1" set:html={t.attractionPage.k3} />
           <p class="font-semibold">{ticketPriceSaarc}</p>
         </div>
       )}
       <div class="rounded-xl border border-brand-100 bg-white p-3">
-        <p class="text-brand-600 uppercase text-xs font-semibold tracking-wide mb-1">Hours</p>
+        <p class="text-brand-600 uppercase text-xs font-semibold tracking-wide mb-1" set:html={t.attractionPage.k4} />
         <p class="font-semibold">{hours}</p>
       </div>
       <div class="rounded-xl border border-brand-100 bg-white p-3">
-        <p class="text-brand-600 uppercase text-xs font-semibold tracking-wide mb-1">Friday</p>
+        <p class="text-brand-600 uppercase text-xs font-semibold tracking-wide mb-1" set:html={t.attractionPage.k5} />
         <p class="font-semibold"><span class={closedFriday ? 'rounded-full bg-red-100 px-2.5 py-0.5 text-red-800' : 'rounded-full bg-green-100 px-2.5 py-0.5 text-green-800'}>{closedFriday ? 'Closed' : 'Open'}</span></p>
       </div>
     </div>
@@ -105,7 +110,7 @@ const attractionJsonLd = {
 
     {tours.length > 0 && (
       <section class="mt-12">
-        <h2 class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Tours that visit {name === 'Taj Mahal' ? 'the Taj Mahal' : name}</h2>
+        <h2 class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">{fmt(t.attractionExtra.toursThatVisit, { name })}</h2>
         <SharedTourFacts facts={sharedFacts} class="mb-4" />
         <FoundingGuestNote class="mb-4" />
         <!-- Phones: a swipeable row (like the homepage and /agra) instead of stacked cards. -->
@@ -115,18 +120,16 @@ const attractionJsonLd = {
       </section>
     )}
 
-    <p class="text-xs text-stone-400 mt-10">Last updated {dateModified.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    <p class="text-xs text-stone-400 mt-10">{fmt(t.attractionExtra.lastUpdated, { date: dateModified.toLocaleDateString(intlLocale(locale), { day: 'numeric', month: 'long', year: 'numeric' }) })}</p>
   </article>
 
   <!-- Phones: WhatsApp moves into this bar so the floating button doesn't
        sit on top of the article text; plus a way on to the tours. -->
   <MobileActionBar waRef={`ATTRBAR-AGRA-${entry.slug.toUpperCase()}`} waMessage={`Hi! I have a question about visiting ${name === 'Taj Mahal' ? 'the Taj Mahal' : name}.`}>
     <Fragment slot="info">
-      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Visiting Agra?</p>
-      <p class="text-sm font-semibold leading-tight text-stone-900">Private Taj Mahal tours</p>
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500" set:html={t.attractionPage.k6} />
+      <p class="text-sm font-semibold leading-tight text-stone-900" set:html={t.attractionPage.k7} />
     </Fragment>
-    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
-      View tours
-    </a>
+    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300" set:html={t.attractionPage.k10} />
   </MobileActionBar>
 </BaseLayout>

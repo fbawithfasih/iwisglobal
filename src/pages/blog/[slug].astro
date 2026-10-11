@@ -13,6 +13,8 @@ import { resolveEnv } from '../../lib/env';
 import { getBlogPostBySlug, listBlogPosts, renderBlogBody } from '../../lib/blog';
 import { getCollection } from 'astro:content';
 import { sortGuides } from '../../lib/guides';
+import { pageI18n } from '../../i18n/dictionaries';
+import { intlLocale } from '../../lib/i18n';
 
 const { slug } = Astro.params;
 const env = resolveEnv(Astro.locals);
@@ -38,15 +40,17 @@ const keepReading = sortGuides(await getCollection('guides'))
   .filter((g) => !bodyHtml.includes(`/guides/${g.slug}`))
   .slice(0, 3);
 
+
+const { locale, t } = pageI18n(Astro);
 const CATEGORY_LABELS: Record<string, string> = {
-  news: 'News',
-  'travel-tips': 'Travel Tips',
-  seasonal: 'Seasonal',
+  news: t.blogCats.news,
+  'travel-tips': t.blogCats.travelTips,
+  seasonal: t.blogCats.seasonal,
 };
 
 // India time, like the /blog list (a late-evening IST post is still that day).
 const dateFmt = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+  new Date(iso).toLocaleDateString(intlLocale(locale), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
 // "Updated" only when it's a different day: updatedAt is always a little
 // later than datePublished, even for a post never edited after publishing.
 const updatedLabel =
@@ -68,6 +72,7 @@ const articleJsonLd = {
 const BRAND_SUFFIX = ' — IWIS Global';
 ---
 
+
 <BaseLayout title={post.title.length + BRAND_SUFFIX.length > 60 ? post.title : `${post.title}${BRAND_SUFFIX}`} description={post.description} image={post.image ?? undefined} breadcrumbs={[{ name: 'Blog', path: '/blog' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
 
@@ -87,7 +92,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
          for the source. Loaded per-page since it's blog-scoped, not site-wide. -->
     <script async src="https://news.google.com/swg/js/v1/publisher.js"></script>
     <div class="mb-8 flex flex-wrap items-center gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white px-4 py-3 shadow-sm shadow-brand-900/5">
-      <span class="text-sm font-medium text-brand-900">Prefer IWIS Global in Google Search?</span>
+      <span class="text-sm font-medium text-brand-900" set:html={t.blogPost.k6} />
       <div google-add-preferred-source-btn data-theme="light"></div>
     </div>
 
@@ -106,7 +111,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
           class="w-full aspect-video object-cover rounded-2xl shadow-lg shadow-brand-900/15"
         />
         {post.imageIsIllustration && (
-          <figcaption class="mt-2 text-xs text-stone-500">Illustration — not a photograph.</figcaption>
+          <figcaption class="mt-2 text-xs text-stone-500" set:html={t.blogPost.k1} />
         )}
       </figure>
     )}
@@ -114,7 +119,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
 
     {morePosts.length > 0 && (
       <section class="mt-12 border-t border-stone-200 pt-8" aria-labelledby="more-posts">
-        <h2 id="more-posts" class="mb-4 border-l-4 border-brand-500 pl-3 text-xl font-serif font-semibold text-brand-900">More from the blog</h2>
+        <h2 id="more-posts" class="mb-4 border-l-4 border-brand-500 pl-3 text-xl font-serif font-semibold text-brand-900" set:html={t.blogPost.k2} />
         <ul class="space-y-3">
           {morePosts.map((p) => (
             <li>
@@ -130,7 +135,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
 
     {keepReading.length > 0 && (
       <section class="mt-12 border-t border-stone-200 pt-8" aria-labelledby="keep-reading">
-        <h2 id="keep-reading" class="mb-4 border-l-4 border-brand-500 pl-3 text-xl font-serif font-semibold text-brand-900">Keep reading</h2>
+        <h2 id="keep-reading" class="mb-4 border-l-4 border-brand-500 pl-3 text-xl font-serif font-semibold text-brand-900" set:html={t.blogPost.k3} />
         <ul class="space-y-3">
           {keepReading.map((g) => (
             <li>
@@ -149,12 +154,10 @@ const BRAND_SUFFIX = ' — IWIS Global';
        sit on top of the article text; plus a way on to the tours. -->
   <MobileActionBar waRef={`BLOGBAR-BLOG-${post.slug.toUpperCase()}`} waMessage="Hi! I read your blog and have a question.">
     <Fragment slot="info">
-      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Visiting Agra?</p>
-      <p class="text-sm font-semibold leading-tight text-stone-900">Private Taj Mahal tours</p>
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500" set:html={t.blogPost.k4} />
+      <p class="text-sm font-semibold leading-tight text-stone-900" set:html={t.blogPost.k5} />
     </Fragment>
-    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
-      View tours
-    </a>
+    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300" set:html={t.blogPost.k7} />
   </MobileActionBar>
 </BaseLayout>
 

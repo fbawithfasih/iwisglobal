@@ -4,6 +4,9 @@ import { resolveEnv } from '../lib/env';
 import { getTourById } from '../lib/tours';
 import { todayIst } from '../lib/availability';
 import { formatTravelDate } from '../lib/format';
+import { pageI18n } from '../i18n/dictionaries';
+import { fmt } from '../i18n/fmt';
+import { intlLocale } from '../lib/i18n';
 import {
   getBookingByReviewToken,
   getReviewForBooking,
@@ -21,6 +24,9 @@ export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
 const db = env.DB;
+const { locale, t } = pageI18n(Astro);
+const tag = intlLocale(locale);
+const x = t.reviewExtra;
 
 // The link's private token moves straight into a cookie and the address
 // loses it, so it never reaches analytics or the Meta Pixel (both record page
@@ -44,7 +50,7 @@ if (Astro.request.method === 'POST' && db && booking && open) {
   const form = await Astro.request.formData();
   const parsed = parseReviewForm(form);
   if ('error' in parsed) {
-    error = parsed.error;
+    error = parsed.error.startsWith('Please choose') ? x.errRating : fmt(x.errLength, { n: MAX_COMMENT_LENGTH });
     draft = { rating: Number(form.get('rating')) || 0, comment: String(form.get('comment') ?? '') };
   } else {
     await saveReview(db, booking, parsed);
@@ -60,25 +66,27 @@ const rating = draft?.rating ?? (Number.isInteger(requested) && requested >= 1 &
 const comment = draft?.comment ?? existing?.comment ?? '';
 const tourTitle = tour?.title ?? booking?.tour_id ?? '';
 const shownAs = booking ? reviewDisplayName(booking.traveler_name) : '';
-const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
+const starWords = x.words;
+const travelDate = booking ? formatTravelDate(booking.travel_date, tag) : '';
 ---
-<BaseLayout floatingWhatsApp={false} title="Rate your tour — IWIS Global" description="Rate your IWIS Global tour." noindex>
+
+<BaseLayout floatingWhatsApp={false} title={t.reviewPage.k15} description={t.reviewPage.k16} noindex>
   <section class="max-w-xl mx-auto px-6 pt-8 pb-16 md:pt-16">
     {!booking ? (
       <div class="text-center rounded-2xl border border-brand-100 bg-white p-6 shadow-sm shadow-brand-900/5 sm:p-8">
-        <span class="mb-3 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Your review</span>
-        <h1 class="text-3xl font-serif font-semibold mb-4">This review link isn't valid</h1>
-        <p class="text-stone-600 mb-8">Please use the link from your "How was your tour?" email, or contact us and we'll send a new one.</p>
-        <a href="/contact" class="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 px-6 font-semibold">Contact us</a>
+        <span class="mb-3 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800" set:html={t.reviewPage.k7} />
+        <h1 class="text-3xl font-serif font-semibold mb-4" set:html={t.reviewPage.k1} />
+        <p class="text-stone-600 mb-8" set:html={t.reviewPage.k2} />
+        <a href="/contact" class="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 px-6 font-semibold" set:html={t.reviewPage.k8} />
       </div>
     ) : !open ? (
       <div class="text-center rounded-2xl border border-brand-100 bg-white p-6 shadow-sm shadow-brand-900/5 sm:p-8">
-        <span class="mb-3 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Your review</span>
-        <h1 class="text-3xl font-serif font-semibold mb-4">{booking.status === 'cancelled' ? 'This booking was cancelled' : 'You can rate your tour after it'}</h1>
+        <span class="mb-3 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800" set:html={t.reviewPage.k9} />
+        <h1 class="text-3xl font-serif font-semibold mb-4">{booking.status === 'cancelled' ? x.cancelledTitle : x.rateAfter}</h1>
         <p class="text-stone-600">
           {booking.status === 'cancelled'
-            ? "Reviews are for tours that took place, so there's nothing to rate here."
-            : `Your ${tourTitle} is on ${formatTravelDate(booking.travel_date)}. Come back to this link after your tour.`}
+            ? x.cancelledBody
+            : fmt(x.futureBody, { tour: tourTitle, date: travelDate })}
         </p>
       </div>
     ) : saved ? (
@@ -86,53 +94,51 @@ const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-lg shadow-brand-900/25 ring-8 ring-brand-100" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7"><path d="M20 6 9 17l-5-5" /></svg>
         </div>
-        <h1 class="text-3xl font-serif font-semibold mb-4">Thank you for your review</h1>
-        <p class="text-stone-600 mb-2">
-          You gave your {tourTitle} <strong>{existing!.rating} out of 5</strong>. It will appear on our website, as {shownAs}, after a quick check.
-        </p>
+        <h1 class="text-3xl font-serif font-semibold mb-4" set:html={t.reviewPage.k3} />
+        <p class="text-stone-600 mb-2" set:html={fmt(x.gave, { tour: tourTitle, rating: existing!.rating, name: shownAs })} />
         {existing!.rating <= 3 && (
           <p class="text-stone-600 mb-4">
-            Sorry it wasn't better. Want to tell us what went wrong?
-            <a href={`https://wa.me/916399226633?text=${encodeURIComponent(`Hi! About my ${tourTitle} on ${formatTravelDate(booking.travel_date)} (booking ID ${booking.id}). (ref: REVIEW-FOLLOWUP)`)}`} target="_blank" rel="noopener noreferrer" data-wa-ref="REVIEW-FOLLOWUP" class="font-semibold text-green-800 underline">WhatsApp us</a>.
+            {x.sorry}{' '}
+            <a href={`https://wa.me/916399226633?text=${encodeURIComponent(`Hi! About my ${tourTitle} on ${formatTravelDate(booking.travel_date)} (booking ID ${booking.id}). (ref: REVIEW-FOLLOWUP)`)}`} target="_blank" rel="noopener noreferrer" data-wa-ref="REVIEW-FOLLOWUP" class="font-semibold text-green-800 underline" set:html={t.reviewPage.k10} />.
           </p>
         )}
-        <p class="text-stone-600 mb-8">Would you also share it on Google? It's one of the main ways travelers find a small operator like us.</p>
+        <p class="text-stone-600 mb-8" set:html={t.reviewPage.k4} />
         <div class="flex flex-col items-center gap-3">
-          <a href={GOOGLE_REVIEW_URL} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 px-6 font-semibold">Review us on Google</a>
-          <a href="/review" class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Edit your review</a>
+          <a href={GOOGLE_REVIEW_URL} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 px-6 font-semibold" set:html={t.reviewPage.k11} />
+          <a href="/review" class="inline-flex min-h-11 items-center text-brand-800 hover:underline" set:html={t.reviewPage.k12} />
         </div>
       </div>
     ) : (
       <>
-        <span class="mb-3 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Your review</span>
-        <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-2">How was your tour?</h1>
-        <p class="mb-6 inline-block rounded-full border border-brand-100 bg-white px-3 py-1 text-sm text-stone-600">{tourTitle}, {formatTravelDate(booking.travel_date)}</p>
+        <span class="mb-3 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800" set:html={t.reviewPage.k13} />
+        <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-2" set:html={t.reviewPage.k5} />
+        <p class="mb-6 inline-block rounded-full border border-brand-100 bg-white px-3 py-1 text-sm text-stone-600">{tourTitle}, {travelDate}</p>
 
         <form method="POST" class="space-y-6 rounded-2xl border border-brand-100 bg-white p-6 shadow-sm shadow-brand-900/5 sm:p-8">
           <fieldset>
-            <legend class="font-serif text-lg font-semibold text-brand-900 mb-2">Your rating</legend>
+            <legend class="font-serif text-lg font-semibold text-brand-900 mb-2">{x.yourRating}</legend>
             <div class="stars">
               {[1, 2, 3, 4, 5].map((n) => (
                 <>
                   <input type="radio" name="rating" id={`star-${n}`} value={n} checked={rating === n} required class="sr-only" />
                   <label for={`star-${n}`} title={starWords[n]}>
                     <span aria-hidden="true">★</span>
-                    <span class="sr-only">{n} star{n > 1 ? 's' : ''}, {starWords[n]}</span>
+                    <span class="sr-only">{fmt(n > 1 ? x.starMany : x.starOne, { n })}, {starWords[n]}</span>
                   </label>
                 </>
               ))}
             </div>
-            <p class="text-sm text-stone-500 mt-1" id="star-word" aria-live="polite">{rating ? starWords[rating] : 'Tap a star'}</p>
+            <p class="text-sm text-stone-500 mt-1" id="star-word" aria-live="polite" data-words={JSON.stringify(starWords)}>{rating ? starWords[rating] : x.tapStar}</p>
           </fieldset>
 
           <div>
-            <label for="comment" class="block font-serif text-lg font-semibold text-brand-900 mb-1">Tell other travelers about it <span class="font-normal text-stone-500">(optional)</span></label>
+            <label for="comment" class="block font-serif text-lg font-semibold text-brand-900 mb-1" set:html={t.reviewPage.k6} />
             <textarea
               id="comment"
               name="comment"
               rows="6"
               maxlength={MAX_COMMENT_LENGTH}
-              placeholder="What did you enjoy? How was your guide, the driver, the timing?"
+              placeholder={t.reviewPage.k17}
               class="w-full rounded-lg border border-brand-200 bg-white px-3 py-3 text-base focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-300"
             >{comment}</textarea>
           </div>
@@ -140,12 +146,11 @@ const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
           {error && <p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" role="alert">{error}</p>}
 
           <p class="text-sm text-stone-500">
-            Your review will be shown on our website as <strong>{shownAs}</strong>, with your tour and travel month.
-            See our <a href="/privacy" class="-my-3 inline-block py-3 text-brand-800 underline">Privacy Policy</a>.
+            <Fragment set:html={fmt(x.shownAs, { name: `<strong>${shownAs.replaceAll('&', '&amp;').replaceAll('<', '&lt;')}</strong>`, privacy: `<a href="/privacy" class="-my-3 inline-block py-3 text-brand-800 underline">${t.reviewPage.k14}</a>` })} />
           </p>
 
           <button type="submit" class="w-full min-h-12 rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 px-6 font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300 cursor-pointer">
-            {existing ? 'Update your review' : 'Submit your review'}
+            {existing ? x.update : x.submit}
           </button>
         </form>
       </>
@@ -196,8 +201,8 @@ const starWords = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
 </style>
 
 <script>
-  const words = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
   const out = document.getElementById('star-word');
+  const words: string[] = JSON.parse(out?.dataset.words ?? '[]');
   document.querySelectorAll<HTMLInputElement>('.stars input').forEach((input) =>
     input.addEventListener('change', () => {
       if (out) out.textContent = words[Number(input.value)];

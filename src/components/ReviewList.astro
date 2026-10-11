@@ -1,6 +1,7 @@
 ---
 // Approved guest reviews (src/lib/reviews.ts), on tour pages and /reviews.
 import { displayComment, type Review } from '../lib/reviews';
+import { pageI18n } from '../i18n/dictionaries';
 
 interface Props {
   reviews: Review[];
@@ -11,7 +12,9 @@ interface Props {
 const { reviews, tourNames } = Astro.props;
 const month = (ymd: string) =>
   new Date(`${ymd}T00:00:00Z`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const { t } = pageI18n(Astro);
 ---
+
 <ul class="space-y-4">
   {reviews.map((r) => (
     <li class="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/60 to-white p-5 shadow-sm shadow-brand-900/5">
