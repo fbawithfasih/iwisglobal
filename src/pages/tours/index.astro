@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import TourCard from '../../components/TourCard.astro';
+import TourFinder from '../../components/TourFinder';
+import { toFinderTours } from '../../lib/tourFinderData';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 import { listTours, sharedTourFacts } from '../../lib/tours';
 import FoundingGuestNote from '../../components/FoundingGuestNote.astro';
@@ -42,6 +44,7 @@ const sharedFactsShown = sharedFacts.length > 0;
     </div>
     <SharedTourFacts facts={sharedFacts} class="mb-6" />
     <FoundingGuestNote class="mb-8" />
+    <div class="mb-8 max-w-3xl"><TourFinder client:visible tours={toFinderTours(tours, currency)} /></div>
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       {tours.map((tour, i) => <TourCard tour={tour} currency={currency} loading={i === 0 ? "eager" : "lazy"} sharedFactsShown={sharedFactsShown} />)}
     </div>
