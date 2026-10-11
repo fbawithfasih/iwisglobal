@@ -9,6 +9,7 @@ import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
 import { sortGuides } from '../../lib/guides';
 import TourCard from '../../components/TourCard.astro';
 import SharedTourFacts from '../../components/SharedTourFacts.astro';
+import TajToday from '../../components/TajToday';
 import FoundingGuestNote from '../../components/FoundingGuestNote.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 
@@ -109,6 +110,8 @@ const faqJsonLd = {
         <a href={href} class="inline-flex min-h-11 items-center rounded-full border border-brand-200 bg-white px-4 font-semibold text-brand-800 shadow-sm shadow-brand-900/5 transition hover:border-brand-400 hover:bg-brand-50">{label}</a>
       ))}
     </nav>
+
+    <div class="mb-8 max-w-md"><TajToday client:visible /></div>
 
     <h2 id="at-a-glance" class="mb-4 scroll-mt-20 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Agra's main sites at a glance</h2>
     <!-- Phones: one card per site. The 4-column table is wider than a phone

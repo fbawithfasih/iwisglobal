@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TourCard from '../components/TourCard.astro';
+import TajToday from '../components/TajToday';
 import WeatherCard from '../components/WeatherCard';
 import AiGuideBox from '../components/AiGuideBox';
 import { listTours, sharedTourFacts } from '../lib/tours';
@@ -175,7 +176,8 @@ function highlightHref(id: string): string {
 
   <section class="bg-gradient-to-b from-brand-50 via-brand-50 to-white py-14">
     <div class="max-w-5xl mx-auto px-6 grid gap-8 md:grid-cols-2">
-      <div class="max-w-md">
+      <div class="max-w-md space-y-5">
+        <TajToday client:visible />
         <WeatherCard client:visible />
       </div>
       <ul class="grid gap-4 sm:grid-cols-2 content-center">
