@@ -37,17 +37,17 @@ export default function AgraMap({ details = [], compact = false, inTour }: Props
 
   return (
     <div>
-      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white">
+      <div className="relative aspect-[4/3] w-full sm:aspect-[3/2] overflow-hidden rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white">
         <svg viewBox="0 0 600 400" className="absolute inset-0 h-full w-full" preserveAspectRatio="none" aria-hidden="true">
           {/* The Yamuna, between the Fort and Taj (south bank) and Itimad-ud-Daulah and Mehtab Bagh (north bank). */}
           <path d="M-10 190 C130 215 230 140 330 160 S520 215 610 170 L610 215 C520 262 430 205 330 205 S130 270 -10 238 Z" fill="#c4b5fd" opacity="0.55" />
-          <text x="300" y="196" textAnchor="middle" fontSize="13" fill="#5b21b6" opacity="0.8" fontStyle="italic">Yamuna river</text>
         </svg>
+        <span className="pointer-events-none absolute left-1/2 top-[47%] -translate-x-1/2 text-[11px] italic text-brand-800/80">Yamuna river</span>
 
         {AGRA_SITES.map((site) => {
           const dimmed = compact && inTour && !inTour.includes(site.slug);
           const active = selected === site.slug || lit.includes(site.slug);
-          const cls = `absolute z-10 flex min-h-11 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 min-[400px]:text-sm ${active ? 'border-brand-700 bg-brand-700 text-white motion-safe:scale-110' : dimmed ? 'border-stone-200 bg-white/70 text-stone-400' : 'border-brand-200 bg-white text-brand-900 hover:bg-brand-50'}`;
+          const cls = `absolute z-10 flex min-h-11 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border px-2 text-[11px] font-semibold shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 min-[400px]:px-2.5 min-[400px]:text-sm ${active ? 'border-brand-700 bg-brand-700 text-white motion-safe:scale-110' : dimmed ? 'border-stone-200 bg-white/70 text-stone-400' : 'border-brand-200 bg-white text-brand-900 hover:bg-brand-50'}`;
           const style = { left: `${site.x}%`, top: `${site.y}%` };
           const dot = <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${active ? 'bg-white' : 'bg-brand-600'}`} aria-hidden="true" />;
           return compact ? (

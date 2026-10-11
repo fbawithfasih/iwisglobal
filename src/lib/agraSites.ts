@@ -13,11 +13,11 @@ export interface AgraSite {
 }
 
 export const AGRA_SITES: AgraSite[] = [
-  { slug: 'fatehpur-sikri', name: 'Fatehpur Sikri', x: 9, y: 70, match: /fatehpur/i },
-  { slug: 'agra-fort', name: 'Agra Fort', x: 36, y: 66, match: /agra fort|red fort/i },
-  { slug: 'itimad-ud-daulah', name: 'Itimad-ud-Daulah', x: 44, y: 22, match: /itimad|baby taj/i },
-  { slug: 'taj-mahal', name: 'Taj Mahal', x: 71, y: 68, match: /taj mahal|\btaj\b/i },
-  { slug: 'mehtab-bagh', name: 'Mehtab Bagh', x: 80, y: 24, match: /mehtab/i },
+  { slug: 'fatehpur-sikri', name: 'Fatehpur Sikri', x: 25, y: 88, match: /fatehpur/i },
+  { slug: 'agra-fort', name: 'Agra Fort', x: 42, y: 62, match: /agra fort|red fort/i },
+  { slug: 'itimad-ud-daulah', name: 'Itimad-ud-Daulah', x: 32, y: 18, match: /itimad|baby taj/i },
+  { slug: 'taj-mahal', name: 'Taj Mahal', x: 80, y: 74, match: /taj mahal|\btaj\b/i },
+  { slug: 'mehtab-bagh', name: 'Mehtab Bagh', x: 74, y: 32, match: /mehtab/i },
 ];
 
 // Which sites a piece of itinerary text mentions. "Taj" alone also matches,
