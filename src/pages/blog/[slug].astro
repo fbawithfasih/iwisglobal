@@ -15,33 +15,43 @@ import { getCollection } from 'astro:content';
 import { sortGuides } from '../../lib/guides';
 import { pageI18n } from '../../i18n/dictionaries';
 import { intlLocale } from '../../lib/i18n';
+import { fmt } from '../../i18n/fmt';
+import { localizedEntry, overlayFields } from '../../lib/localizedContent';
 
 const { slug } = Astro.params;
 const env = resolveEnv(Astro.locals);
-const post = env.DB && slug ? await getBlogPostBySlug(env.DB, slug) : null;
+const { locale, t } = pageI18n(Astro);
+const englishPost = env.DB && slug ? await getBlogPostBySlug(env.DB, slug) : null;
+const loc = englishPost ? await localizedEntry('blog_post', locale, englishPost.slug) : null;
+const post = englishPost && overlayFields(englishPost, loc);
 
-if (!post || post.status !== 'published') {
+if (!post || !englishPost || post.status !== 'published') {
   return Astro.redirect('/blog');
 }
 
-const bodyHtml = renderBlogBody(post.body);
+const bodyHtml = loc ? loc.html : renderBlogBody(post.body);
 
 // "More from the blog": the newest other posts this one doesn't already link
 // to, so every post gets links from (and to) its neighbours.
 const morePosts = env.DB
-  ? (await listBlogPosts(env.DB, { status: 'published' }))
-      .filter((p) => p.slug !== post.slug && !bodyHtml.includes(`/blog/${p.slug}`))
-      .slice(0, 3)
+  ? await Promise.all(
+      (await listBlogPosts(env.DB, { status: 'published' }))
+        .filter((p) => p.slug !== post.slug && !bodyHtml.includes(`/blog/${p.slug}`))
+        .slice(0, 3)
+        .map(async (p) => overlayFields(p, await localizedEntry('blog_post', locale, p.slug)))
+    )
   : [];
 
 // "Keep reading": the first guides in the site's reading order that this
 // post doesn't already link to.
-const keepReading = sortGuides(await getCollection('guides'))
-  .filter((g) => !bodyHtml.includes(`/guides/${g.slug}`))
-  .slice(0, 3);
+const keepReading = await Promise.all(
+  sortGuides(await getCollection('guides'))
+    .filter((g) => !bodyHtml.includes(`/guides/${g.slug}`))
+    .slice(0, 3)
+    .map(async (g) => ({ slug: g.slug, data: overlayFields(g.data, await localizedEntry('guide', locale, g.slug)) }))
+);
 
 
-const { locale, t } = pageI18n(Astro);
 const CATEGORY_LABELS: Record<string, string> = {
   news: t.blogCats.news,
   'travel-tips': t.blogCats.travelTips,
@@ -73,19 +83,19 @@ const BRAND_SUFFIX = ' — IWIS Global';
 ---
 
 
-<BaseLayout title={post.title.length + BRAND_SUFFIX.length > 60 ? post.title : `${post.title}${BRAND_SUFFIX}`} description={post.description} image={post.image ?? undefined} breadcrumbs={[{ name: 'Blog', path: '/blog' }]}>
+<BaseLayout title={post.title.length + BRAND_SUFFIX.length > 60 ? post.title : `${post.title}${BRAND_SUFFIX}`} description={post.description} image={post.image ?? undefined} breadcrumbs={[{ name: t.nav.blog, path: '/blog' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
 
   <article class="max-w-3xl mx-auto px-6 py-16">
-    <a href="/blog" class="inline-flex min-h-11 items-center text-sm font-medium text-brand-800 hover:underline">&larr; All posts</a>
+    <a href="/blog" class="inline-flex min-h-11 items-center text-sm font-medium text-brand-800 hover:underline">{t.blogExtra.allPosts}</a>
     <span class="mt-3 block w-fit rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold tracking-wide text-brand-800 uppercase">
       {CATEGORY_LABELS[post.category] ?? post.category}
     </span>
     <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-2 mb-3">{post.title}</h1>
     <p class="mb-4 inline-block rounded-full border border-brand-100 bg-white px-3 py-1 text-sm text-stone-500">
-      By {post.authorName}
-      {post.datePublished && <> · Published {dateFmt(post.datePublished)}</>}
-      {updatedLabel && <> · Updated {updatedLabel}</>}
+      {fmt(t.blogExtra.by, { author: post.authorName })}
+      {post.datePublished && <> · {fmt(t.blogExtra.published, { date: dateFmt(post.datePublished) })}</>}
+      {updatedLabel && <> · {fmt(t.blogExtra.updated, { date: updatedLabel })}</>}
     </p>
 
     <!-- Google "Preferred Sources" button — see /blog/index.astro's comment
@@ -105,7 +115,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
           sizes="(min-width: 768px) 672px, calc(100vw - 48px)"
           width="1200"
           height="675"
-          alt={post.imageIsIllustration ? `Illustration for: ${post.title}` : post.title}
+          alt={post.imageIsIllustration ? fmt(t.blogExtra.illustrationAlt, { title: post.title }) : post.title}
           fetchpriority="high"
           decoding="async"
           class="w-full aspect-video object-cover rounded-2xl shadow-lg shadow-brand-900/15"

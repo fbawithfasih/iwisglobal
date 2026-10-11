@@ -11,9 +11,9 @@
 import { marked } from 'marked';
 import type { Locale } from './i18n';
 
-export type LocalizedKind = 'guide' | 'attraction';
+export type LocalizedKind = 'guide' | 'attraction' | 'blog_post';
 
-const files = import.meta.glob('../content-i18n/{guide,attraction}/*/*.md', { query: '?raw', import: 'default' }) as Record<
+const files = import.meta.glob('../content-i18n/{guide,attraction,blog_post}/*/*.md', { query: '?raw', import: 'default' }) as Record<
   string,
   () => Promise<string>
 >;
@@ -73,9 +73,9 @@ export async function localizedEntry(kind: LocalizedKind, locale: Locale, slug: 
 }
 
 // Copies the translated string fields over the English frontmatter.
-export function overlayFields<T extends Record<string, unknown>>(data: T, entry: LocalizedEntry | null): T {
+export function overlayFields<T extends object>(data: T, entry: LocalizedEntry | null): T {
   if (!entry) return data;
-  const out: Record<string, unknown> = { ...data };
+  const out: Record<string, unknown> = { ...(data as Record<string, unknown>) };
   for (const [k, v] of Object.entries(entry.fields)) if (typeof out[k] === 'string' && v) out[k] = v;
   return out as T;
 }

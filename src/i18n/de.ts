@@ -1283,4 +1283,11 @@ export const de: Dictionary = {
       byline: "Von {author} · Veröffentlicht am {published}",
       bylineUpdated: "Von {author} · Veröffentlicht am {published} · Aktualisiert am {updated}",
     },
+  blogExtra: {
+      allPosts: "← Alle Beiträge",
+      by: "Von {author}",
+      published: "Veröffentlicht am {date}",
+      updated: "Aktualisiert am {date}",
+      illustrationAlt: "Illustration zu: {title}",
+    },
 };

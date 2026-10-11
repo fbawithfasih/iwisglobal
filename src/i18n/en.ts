@@ -1284,6 +1284,13 @@ export const en = {
       byline: "By {author} · Published {published}",
       bylineUpdated: "By {author} · Published {published} · Updated {updated}",
     },
+  blogExtra: {
+      allPosts: "← All posts",
+      by: "By {author}",
+      published: "Published {date}",
+      updated: "Updated {date}",
+      illustrationAlt: "Illustration for: {title}",
+    },
 };
 
 // Every other language must provide every key en has, as a string.

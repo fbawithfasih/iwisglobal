@@ -11,12 +11,17 @@ import { listBlogPosts } from '../../lib/blog';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 import { pageI18n } from '../../i18n/dictionaries';
 import { intlLocale } from '../../lib/i18n';
+import { localizedEntry, overlayFields } from '../../lib/localizedContent';
 
 const env = resolveEnv(Astro.locals);
-const posts = env.DB ? await listBlogPosts(env.DB, { status: 'published' }) : [];
 
 
 const { locale, t } = pageI18n(Astro);
+const posts = env.DB
+  ? await Promise.all(
+      (await listBlogPosts(env.DB, { status: 'published' })).map(async (p) => overlayFields(p, await localizedEntry('blog_post', locale, p.slug)))
+    )
+  : [];
 const CATEGORY_LABELS: Record<string, string> = {
   news: t.blogCats.news,
   'travel-tips': t.blogCats.travelTips,
