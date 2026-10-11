@@ -8,6 +8,9 @@ import { resolveCurrency, type Currency } from '../lib/currency';
 import { getDictionary } from '../i18n/dictionaries';
 import { isLocalizedPath, localizedPath } from '../lib/localizedPaths.mjs';
 
+// The header renders this twice (desktop nav and the phone menu), so ids and
+// the script are per instance: `uid` keeps the ids unique.
+const { uid = 'd' } = Astro.props;
 const locale = Astro.locals.locale ?? resolveLocale(Astro.url.searchParams, Astro.cookies.get('lang')?.value);
 const basePath = Astro.locals.canonicalPath ?? Astro.url.pathname;
 const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
@@ -36,14 +39,14 @@ function hrefFor(param: string, value: string): string {
 }
 ---
 
-<div class="relative" id="locale-switcher">
+<div class="relative" data-locale-switcher>
   <button
     type="button"
-    id="locale-switcher-trigger"
+    data-ls-trigger
     class="flex items-center gap-1.5 text-sm font-medium text-stone-600 hover:text-brand-800 transition"
     aria-haspopup="true"
     aria-expanded="false"
-    aria-controls="locale-switcher-panel"
+    aria-controls={`locale-switcher-panel-${uid}`}
   >
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-4 w-4" aria-hidden="true">
       <circle cx="12" cy="12" r="9"></circle>
@@ -55,9 +58,10 @@ function hrefFor(param: string, value: string): string {
   </button>
 
   <div
-    id="locale-switcher-panel"
+    id={`locale-switcher-panel-${uid}`}
+    data-ls-panel
     role="dialog"
-    class="hidden absolute right-0 mt-2 w-[320px] sm:w-[400px] rounded-xl border border-stone-200 bg-white shadow-xl z-50 p-5"
+    class="hidden absolute right-0 mt-2 w-[320px] sm:w-[400px] max-md:static max-md:mt-3 max-md:w-full max-md:shadow-none rounded-xl border border-stone-200 bg-white shadow-xl z-50 p-5"
   >
     <div class="flex items-center gap-6 border-b border-stone-200 mb-4 text-sm font-medium">
       <button type="button" data-tab="language" class="locale-tab pb-3 -mb-px border-b-2 border-brand-800 text-brand-800" aria-selected="true">
@@ -115,10 +119,10 @@ function hrefFor(param: string, value: string): string {
 </div>
 
 <script>
-  const root = document.getElementById('locale-switcher');
-  const trigger = document.getElementById('locale-switcher-trigger');
-  const panel = document.getElementById('locale-switcher-panel');
-  if (root && trigger && panel) {
+  document.querySelectorAll<HTMLElement>('[data-locale-switcher]').forEach((root) => {
+    const trigger = root.querySelector<HTMLButtonElement>('[data-ls-trigger]');
+    const panel = root.querySelector<HTMLElement>('[data-ls-panel]');
+    if (!trigger || !panel) return;
     const closePanel = () => {
       panel.classList.add('hidden');
       trigger.setAttribute('aria-expanded', 'false');
@@ -156,5 +160,5 @@ function hrefFor(param: string, value: string): string {
         });
       });
     });
-  }
+  });
 </script>
