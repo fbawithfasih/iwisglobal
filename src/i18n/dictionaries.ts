@@ -24,8 +24,8 @@ export { fmt } from './fmt';
 // What a page needs from the request: its locale and that locale's strings.
 // Pages call this in their frontmatter; BaseLayout resolves the same locale
 // for the shared header and footer.
-export function pageI18n(Astro: { url: URL; cookies: { get(name: string): { value: string } | undefined } }) {
-  const locale = resolveLocale(Astro.url.searchParams, Astro.cookies.get('lang')?.value);
+export function pageI18n(Astro: { url: URL; cookies: { get(name: string): { value: string } | undefined }; locals: { locale?: Locale } }) {
+  const locale = Astro.locals.locale ?? resolveLocale(Astro.url.searchParams, Astro.cookies.get('lang')?.value);
   return { locale, t: getDictionary(locale) };
 }
 

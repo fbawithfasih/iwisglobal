@@ -6,3 +6,11 @@
 interface Window {
   gtag?: (...args: unknown[]) => void;
 }
+
+// Set by src/middleware.ts for the pages that have per-language URLs.
+declare namespace App {
+  interface Locals {
+    locale?: 'en' | 'es' | 'fr' | 'de';
+    canonicalPath?: string;
+  }
+}

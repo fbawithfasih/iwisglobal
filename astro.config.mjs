@@ -4,6 +4,7 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import cloudflare from '@astrojs/cloudflare';
 import { readdirSync, readFileSync } from 'node:fs';
+import { LOCALIZED_STATIC, LOCALE_PREFIXES, localizedPath } from './src/lib/localizedPaths.mjs';
 
 // @astrojs/sitemap only lists routes it can enumerate without running the
 // app — a dynamic route like /guides/[slug] never appears automatically.
@@ -112,15 +113,22 @@ export default defineConfig({
       // once it has an approved review (see hasApprovedReviews).
       filter: (page) =>
         !/^https:\/\/www\.iwisglobal\.com\/(admin|account|auth|login|signup|forgot-password|reset-password|booking|review)(\/|$)/.test(page) &&
-        (hasApprovedReviews || !/^https:\/\/www\.iwisglobal\.com\/reviews(\/|$)/.test(page)),
+        (hasApprovedReviews || !/^https:\/\/www\.iwisglobal\.com\/((es|fr|de)\/)?reviews(\/|$)/.test(page)),
       // Match src/middleware.ts, which 301s trailing-slash paths to bare ones.
       serialize: (item) => ({ ...item, url: item.url.replace(/(?<=\.com\/.+)\/$/, '') }),
+      // Every language version of every page: the English URL plus /es, /fr, /de.
+      i18n: { defaultLocale: 'en', locales: { en: 'en', es: 'es', fr: 'fr', de: 'de' } },
       customPages: [
-        ...guideSlugs.map((slug) => `https://www.iwisglobal.com/guides/${slug}`),
-        ...attractionSlugs.map((slug) => `https://www.iwisglobal.com/agra/${slug}`),
-        ...tourSlugs.map((slug) => `https://www.iwisglobal.com/tours/${slug}`),
-        ...blogSlugs.map((slug) => `https://www.iwisglobal.com/blog/${slug}`),
-      ],
+        ...guideSlugs.map((slug) => `/guides/${slug}`),
+        ...attractionSlugs.map((slug) => `/agra/${slug}`),
+        ...tourSlugs.map((slug) => `/tours/${slug}`),
+        ...blogSlugs.map((slug) => `/blog/${slug}`),
+        ...LOCALIZED_STATIC.filter((p) => hasApprovedReviews || p !== '/reviews'),
+      ].flatMap((path) => {
+        const out = LOCALE_PREFIXES.map((l) => `https://www.iwisglobal.com${localizedPath(path, l)}`);
+        // Static pages are already listed in English by the integration.
+        return LOCALIZED_STATIC.includes(path) ? out : [`https://www.iwisglobal.com${path}`, ...out];
+      }),
     }),
   ],
   site: 'https://www.iwisglobal.com',

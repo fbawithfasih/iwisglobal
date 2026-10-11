@@ -1,4 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
+import { isLocalizedPath, splitLocale, localizedPath } from './lib/localizedPaths.mjs';
+import type { Locale } from './lib/i18n';
 
 // D1 read replication (turned on 30 Sep 2026): replicas only serve reads
 // made through a session. Public pages may read from the nearest replica;
@@ -21,11 +23,61 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return context.redirect(pathname.replace(/\/+$/, '') + search, 301);
   }
 
+  // Language URLs: /es/…, /fr/…, /de/… serve the normal page in that language.
+  // English has no prefix. See src/lib/localizedPaths.mjs for which pages.
+  const isRead = context.request.method === 'GET' || context.request.method === 'HEAD';
+  const split = splitLocale(pathname);
+  const langParam = context.url.searchParams.get('lang');
+  const cookieLang = context.cookies.get('lang')?.value;
+  const LANG_COOKIE = { path: '/', maxAge: 60 * 60 * 24 * 365 } as const;
+  const isLang = (v: string | null | undefined): v is Locale => v === 'en' || v === 'es' || v === 'fr' || v === 'de';
+  let rewriteTo: string | undefined;
+  let prefixLinksWith: string | null = null;
+
+  if (isRead && isLocalizedPath(split.path)) {
+    if (isLang(langParam)) {
+      // Old ?lang= links and the English switcher link: go to the clean URL.
+      const rest = new URLSearchParams(context.url.searchParams);
+      rest.delete('lang');
+      const qs = rest.toString();
+      const res = context.redirect(localizedPath(split.path, langParam) + (qs ? '?' + qs : ''), 302);
+      res.headers.append('Set-Cookie', `lang=${langParam}; Path=/; Max-Age=${LANG_COOKIE.maxAge}; SameSite=Lax`);
+      return res;
+    }
+    if (split.locale) {
+      context.locals.locale = split.locale;
+      context.locals.canonicalPath = split.path;
+      if (cookieLang !== split.locale) context.cookies.set('lang', split.locale, LANG_COOKIE);
+      rewriteTo = split.path + search;
+      prefixLinksWith = split.locale;
+    } else if (isLang(cookieLang) && cookieLang !== 'en') {
+      // A visitor who chose a language earlier lands on that language's URL.
+      return context.redirect(localizedPath(split.path, cookieLang) + search, 302);
+    } else {
+      context.locals.locale = 'en';
+      context.locals.canonicalPath = split.path;
+    }
+  } else if (split.locale) {
+    // /es/login and the like: those pages have one URL.
+    return context.redirect(split.path + search, 302);
+  }
+  const proceed = async () => {
+    const response = rewriteTo ? await next(rewriteTo) : await next();
+    if (!prefixLinksWith || !(response.headers.get('content-type') ?? '').includes('text/html')) return response;
+    // Keep visitors in their language: point internal links at the prefixed URLs.
+    const html = (await response.text()).replace(/href="(\/[^"?#]*)([?#][^"]*)?"/g, (m, path: string, rest = '') =>
+      !path.startsWith('//') && isLocalizedPath(path) ? `href="${localizedPath(path, prefixLinksWith)}${rest}"` : m
+    );
+    const headers = new Headers(response.headers);
+    headers.delete('content-length');
+    return new Response(html, { status: response.status, statusText: response.statusText, headers });
+  };
+
   // locals.runtime is built fresh per request by the Cloudflare adapter; its
   // env is shared, so swap in a copy rather than mutating it.
   const runtime = (context.locals as { runtime?: { env?: Record<string, unknown> } }).runtime;
   const db = runtime?.env?.DB as Partial<ReplicatedDb> | undefined;
-  if (!runtime?.env || typeof db?.withSession !== 'function') return next();
+  if (!runtime?.env || typeof db?.withSession !== 'function') return proceed();
 
   const start = PRIMARY_PATHS.test(pathname)
     ? 'first-primary'
@@ -33,7 +85,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const session = db.withSession(start);
   runtime.env = { ...runtime.env, DB: session };
 
-  const response = await next();
+  const response = await proceed();
 
   const method = context.request.method;
   const bookmark = session.getBookmark();
