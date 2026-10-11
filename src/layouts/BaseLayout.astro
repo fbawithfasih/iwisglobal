@@ -247,7 +247,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
     <link rel="preload" href={serifLatinUrl} as="font" type="font/woff2" crossorigin />
   </head>
   <body class="bg-stone-50 text-stone-900 antialiased">
-    <header id="site-header" class="sticky top-0 z-40 border-b border-brand-100 bg-white/90 backdrop-blur-sm transition-[box-shadow,height] duration-200">
+    <header id="site-header" class="tv-scale sticky top-0 z-40 border-b border-brand-100 bg-white/90 backdrop-blur-sm transition-[box-shadow,height] duration-200">
       <div class="site-header-inner max-w-5xl 2xl:max-w-6xl min-[2200px]:max-w-7xl mx-auto px-6 h-16 2xl:h-20 min-[2200px]:h-24 flex items-center justify-between transition-[height] duration-200">
         <a href="/" class="flex items-center gap-2 md:gap-2.5 min-w-0">
           <GlobeLogo class="site-logo h-11 w-11 md:h-[3.25rem] md:w-[3.25rem] 2xl:h-16 2xl:w-16 min-[2200px]:h-[4.5rem] min-[2200px]:w-[4.5rem] transition-[width,height] duration-200" />
@@ -304,7 +304,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
     </header>
     <slot />
 
-    <footer class="bg-gradient-to-b from-brand-900 to-brand-950 text-violet-100">
+    <footer class="tv-scale bg-gradient-to-b from-brand-900 to-brand-950 text-violet-100">
       <div class="max-w-5xl 2xl:max-w-6xl min-[2200px]:max-w-7xl mx-auto px-6 py-12 2xl:py-16 min-[2200px]:py-24 grid gap-10 sm:grid-cols-2 md:grid-cols-3">
         <div>
           <a href="/" class="flex items-center gap-2.5 mb-4">
@@ -439,6 +439,24 @@ const websiteJsonLd = Astro.url.pathname === '/'
   @media (max-height: 500px) and (max-width: 1023px) {
     #site-header {
       position: static;
+    }
+  }
+  /* Smart TVs and other big screens with no mouse (a remote or touch only),
+     read from across a room: scale the header, footer and tour pages up. A
+     desktop has a fine pointer, so it is not affected. Above 2200px (a 4K TV
+     that reports its full pixel width) the ultrawide sizes already apply.
+     Browsers without CSS zoom just keep the normal size. */
+  @media (min-width: 1700px) and (max-width: 2199px) and (not (any-pointer: fine)) {
+    .tv-scale {
+      zoom: 1.3;
+    }
+  }
+  /* Keyboard and remote-control (d-pad) navigation: show clearly which link or
+     button has focus on devices without a mouse. */
+  @media (not (any-pointer: fine)) {
+    :focus-visible {
+      outline: 4px solid #7c3aed;
+      outline-offset: 3px;
     }
   }
   #site-header.is-scrolled {
