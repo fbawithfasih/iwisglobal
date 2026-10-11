@@ -361,13 +361,13 @@ const BRAND_SUFFIX = ' — IWIS Global';
           {tour.itinerary.some((s) => s.details) && (
             <p class="text-xs text-stone-500 mb-4 ml-[42px]">Tap a stop for details</p>
           )}
-          <ol class="relative mt-4">
+          <ol class="itin-story relative mt-4">
             {tour.itinerary.map((step, index) => (
               <li class="relative flex gap-4 pb-5 last:pb-0">
                 {index < tour.itinerary.length - 1 && (
-                  <span class="absolute left-[17px] top-9 bottom-0 w-0.5 bg-brand-100" aria-hidden="true"></span>
+                  <span class="absolute left-[17px] top-9 bottom-0 w-0.5 bg-brand-100" aria-hidden="true"><span class="story-fill block h-full w-full origin-top bg-brand-500"></span></span>
                 )}
-                <span class="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white ring-4 ring-brand-50">
+                <span class="story-dot relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white ring-4 ring-brand-50">
                   <Icon name={stepIcon(step)} class="h-[18px] w-[18px]" />
                 </span>
                 {step.details ? (
@@ -539,4 +539,45 @@ const BRAND_SUFFIX = ' — IWIS Global';
     'ViewContent',
     { content_ids: [tourId], content_name: tourName, content_type: 'product', currency, value },
   ]);
+</script>
+
+<!-- Day story: as each stop scrolls into view its dot lights up and the line
+     to the next stop fills. Only switched on when JavaScript runs and the
+     visitor has not asked for reduced motion; otherwise every stop simply
+     shows in its finished state. -->
+<style is:global>
+  .itin-story.story-js .story-fill {
+    transform: scaleY(0);
+    transition: transform 0.7s ease;
+  }
+  .itin-story.story-js li.story-reached .story-fill {
+    transform: scaleY(1);
+  }
+  .itin-story.story-js .story-dot {
+    opacity: 0.45;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .itin-story.story-js li.story-reached .story-dot {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+</style>
+<script>
+  const story = document.querySelector('.itin-story');
+  if (story && 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    story.classList.add('story-js');
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          // A stop already scrolled past (page opened part-way down) counts as reached.
+          if (entry.isIntersecting || entry.boundingClientRect.top < 0) {
+            entry.target.classList.add('story-reached');
+            io.unobserve(entry.target);
+          }
+        }
+      },
+      { rootMargin: '0px 0px -30% 0px' },
+    );
+    story.querySelectorAll('li').forEach((li) => io.observe(li));
+  }
 </script>
