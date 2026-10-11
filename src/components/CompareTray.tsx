@@ -5,6 +5,8 @@ import { useShortlist } from './useShortlist';
 // them side by side, send the list to someone on WhatsApp, or clear it. It
 // stays clear of the floating WhatsApp button (bottom-right) and is hidden
 // while a page's own sticky booking bar is showing (see BaseLayout styles).
+// On ultrawide screens it zooms with the page and lines up with the content
+// column (max-w-7xl = 1280px) instead of sitting at the far screen edge.
 
 export default function CompareTray() {
   const { items, ready, toggle, clear } = useShortlist();
@@ -15,7 +17,7 @@ export default function CompareTray() {
     `Tours I am looking at from IWIS Global:\n${items.map((i) => `- ${i.title}: ${window.location.origin}/tours/${i.slug}`).join('\n')}`;
 
   return (
-    <div className="iwis-tray fixed bottom-3 left-3 right-[5.25rem] z-40 rounded-2xl border border-brand-200 bg-white/95 p-1.5 shadow-xl shadow-brand-900/15 backdrop-blur sm:right-auto sm:bottom-4 sm:left-4 sm:max-w-sm sm:p-2 2xl:bottom-8 2xl:left-8 2xl:max-w-md 2xl:rounded-3xl 2xl:p-3 [@media(max-height:500px)]:hidden">
+    <div className="iwis-tray fixed bottom-3 left-3 right-[5.25rem] z-40 rounded-2xl border border-brand-200 bg-white/95 p-1.5 shadow-xl shadow-brand-900/15 backdrop-blur sm:right-auto sm:bottom-4 sm:left-4 sm:max-w-sm sm:p-2 2xl:bottom-8 2xl:left-8 2xl:max-w-md 2xl:rounded-3xl 2xl:p-3 min-[2200px]:[--z:1.25] min-[3000px]:[--z:1.5] min-[2200px]:[zoom:var(--z)] min-[2200px]:left-[calc((100vw/var(--z)-1280px)/2+1.5rem)] [@media(max-height:500px)]:hidden">
       <p className="hidden px-2 pb-1 text-xs font-semibold text-brand-900 sm:block 2xl:pb-2 2xl:text-sm">
         {items.length} {items.length === 1 ? 'tour' : 'tours'} saved
       </p>
