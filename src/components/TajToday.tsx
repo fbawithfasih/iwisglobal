@@ -94,7 +94,8 @@ export default function TajToday() {
         </div>
       )}
 
-      <p className="mt-3 text-[11px] leading-snug text-stone-500">
+      <p className="mt-3 text-[11px] leading-snug text-stone-500 sm:hidden">Sunrise and sunset are approximate. Closed Fridays.</p>
+      <p className="mt-3 hidden text-[11px] leading-snug text-stone-500 sm:block">
         Sunrise and sunset are approximate (within a couple of minutes). Hours follow the official rule: 30 minutes before sunrise to 30 minutes before sunset, closed Fridays.
       </p>
     </section>

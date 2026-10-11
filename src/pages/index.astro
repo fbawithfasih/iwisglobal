@@ -181,15 +181,16 @@ function highlightHref(id: string): string {
     </div>
   </section>
 
-  <section class="bg-gradient-to-b from-brand-50 via-brand-50 to-white py-14">
-    <div class="max-w-5xl mx-auto px-6 grid gap-8">
+  <section class="bg-gradient-to-b from-brand-50 via-brand-50 to-white py-10 md:py-14">
+    <div class="max-w-5xl mx-auto px-6 grid gap-5 md:gap-8">
       <!-- The two live cards side by side, the four promises in a row below. -->
-      <div class="grid items-stretch gap-6 md:grid-cols-2">
+      <div class="grid items-stretch gap-4 md:grid-cols-2 md:gap-6">
         <TajToday client:visible />
         <WeatherCard client:visible />
       </div>
-      <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <li class="flex gap-3.5 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <!-- Phones: swipe through the promises instead of four tall stacked cards. -->
+      <ul class="-mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <li class="flex w-[78%] shrink-0 snap-start gap-3.5 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-auto sm:shrink">
           <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-md shadow-brand-900/20">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v3m0 12v3m9-9h-3M6 12H3m14.4-6.4-2.1 2.1M8.7 15.3l-2.1 2.1m0-10.8 2.1 2.1m8.7 8.7 2.1 2.1" />
@@ -200,7 +201,7 @@ function highlightHref(id: string): string {
             <p class="mt-1 text-sm leading-relaxed text-stone-600">{t.trust.curatedDesc}</p>
           </div>
         </li>
-        <li class="flex gap-3.5 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+        <li class="flex w-[78%] shrink-0 snap-start gap-3.5 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-auto sm:shrink">
           <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-md shadow-brand-900/20">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <circle cx="12" cy="12" r="9" stroke-linecap="round" stroke-linejoin="round" />
@@ -212,7 +213,7 @@ function highlightHref(id: string): string {
             <p class="mt-1 text-sm leading-relaxed text-stone-600">{t.trust.bookDesc}</p>
           </div>
         </li>
-        <li class="flex gap-3.5 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+        <li class="flex w-[78%] shrink-0 snap-start gap-3.5 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-auto sm:shrink">
           <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-md shadow-brand-900/20">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M20.6 12.6 12.9 20.3a1.5 1.5 0 0 1-2.1 0l-7.1-7.1a1.5 1.5 0 0 1 0-2.1L11.4 3.4a1.5 1.5 0 0 1 1.05-.44H19a1.5 1.5 0 0 1 1.5 1.5v6.55a1.5 1.5 0 0 1-.44 1.05Z" />
@@ -224,7 +225,7 @@ function highlightHref(id: string): string {
             <p class="mt-1 text-sm leading-relaxed text-stone-600">{t.trust.pricingDesc}</p>
           </div>
         </li>
-        <li class="flex gap-3.5 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+        <li class="flex w-[78%] shrink-0 snap-start gap-3.5 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-auto sm:shrink">
           <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-md shadow-brand-900/20">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3.5 5 6v6c0 4.2 2.9 7.3 7 8.5 4.1-1.2 7-4.3 7-8.5V6l-7-2.5Z" />
