@@ -27,7 +27,7 @@ Zur Orientierung nennt die offizielle Taj-Mahal-Website folgende Eintrittspreise
 | Kosten | Ein Tourpreis, kein Hotel | Tour oder Guide plus Hotel |
 | Haken | Ein langer Tag | Das Hotel organisieren Sie selbst |
 
-Unsere Touren sind Tagesausflüge ab Delhi. Wenn Sie übernachten, buchen Sie das Hotel selbst, und Sie können uns per WhatsApp schreiben, um zu fragen, was wir rund um Ihre Daten organisieren können.
+Die meisten unserer Touren sind Tagesausflüge ab Delhi. Wir bieten außerdem eine [Übernachtungstour in Agra](/tours/agra-overnight-tour-from-delhi) und [Goldenes-Dreieck-Touren](/tours/3-days-golden-triangle-tour-from-delhi) mit 3, 4 und 5 Tagen inklusive Hotels an. Wenn Sie Ihr Hotel lieber selbst buchen, schreiben Sie uns per WhatsApp, was wir rund um Ihre Daten organisieren können.
 
 ## Auto oder Gatimaan Express?
 

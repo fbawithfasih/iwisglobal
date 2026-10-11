@@ -27,7 +27,7 @@ A modo de referencia, la web oficial del Taj Mahal indica estos precios de entra
 | Coste | Un precio de tour, sin hotel | Tour o guía, más un hotel |
 | Pega | Un día largo | Organizas tú el hotel |
 
-Nuestros tours son excursiones de un día desde Delhi. Si te quedas a dormir, reservas tú el hotel, y puedes escribirnos por WhatsApp para preguntar qué podemos organizar según tus fechas.
+La mayoría de nuestros tours son excursiones de un día desde Delhi. También ofrecemos un [tour de una noche a Agra](/tours/agra-overnight-tour-from-delhi) y [tours del Triángulo Dorado](/tours/3-days-golden-triangle-tour-from-delhi) de 3, 4 y 5 días con hoteles incluidos. Si prefieres reservar tú el hotel, escríbenos por WhatsApp para preguntar qué podemos organizar según tus fechas.
 
 ## ¿Coche o Gatimaan Express?
 

@@ -27,7 +27,7 @@ Quoi que vous réserviez, vérifiez cinq points avant de payer :
 | Coût | Un prix de circuit, pas d'hôtel | Circuit ou guide, plus un hôtel |
 | Inconvénient | Une longue journée | Vous organisez l'hôtel vous-même |
 
-Nos circuits sont des excursions d'une journée depuis Delhi. Si vous restez une nuit, vous réservez l'hôtel vous-même, et vous pouvez nous écrire sur WhatsApp pour savoir ce que nous pouvons organiser selon vos dates.
+La plupart de nos circuits sont des excursions d'une journée depuis Delhi. Nous proposons aussi un [circuit avec nuitée à Agra](/tours/agra-overnight-tour-from-delhi) et des [circuits du Triangle d'or](/tours/3-days-golden-triangle-tour-from-delhi) de 3, 4 et 5 jours, hôtels inclus. Si vous préférez réserver votre hôtel vous-même, écrivez-nous sur WhatsApp pour savoir ce que nous pouvons organiser selon vos dates.
 
 ## Voiture ou Gatimaan Express ?
 
