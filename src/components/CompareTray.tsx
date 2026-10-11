@@ -21,7 +21,7 @@ export default function CompareTray() {
     `Tours I am looking at from IWIS Global:\n${items.map((i) => `- ${i.title}: ${window.location.origin}/tours/${i.slug}`).join('\n')}`;
 
   return (
-    <div className="iwis-tray tv-scale fixed bottom-3 left-3 right-[5.25rem] z-40 rounded-2xl border border-brand-200 bg-white/95 p-1.5 shadow-xl shadow-brand-900/15 backdrop-blur sm:right-auto sm:bottom-4 sm:left-4 sm:max-w-sm sm:p-2 2xl:bottom-8 2xl:left-8 2xl:max-w-md 2xl:rounded-3xl 2xl:p-3 min-[2200px]:[--z:1.25] min-[3000px]:[--z:1.5] min-[2200px]:[zoom:var(--z)] min-[2200px]:left-[calc((100vw/var(--z)-1280px)/2+1.5rem)]  [@media(max-height:500px)]:bottom-2 [@media(max-height:500px)]:left-3 [@media(max-height:500px)]:p-1 max-[259px]:!bottom-[4.5rem] max-[259px]:!left-2 max-[259px]:!right-2">
+    <div className="iwis-tray tv-scale fixed bottom-3 left-3 right-[5.25rem] z-40 rounded-2xl border border-brand-200 bg-white/95 p-1.5 shadow-xl shadow-brand-900/15 backdrop-blur sm:right-auto sm:bottom-4 sm:left-4 sm:max-w-sm sm:p-2 2xl:bottom-8 2xl:left-8 2xl:max-w-md 2xl:rounded-3xl 2xl:p-3 min-[2200px]:[--z:1.25] min-[3000px]:[--z:1.5] min-[2200px]:[zoom:var(--z)] min-[2200px]:left-[calc((100vw/var(--z)-1280px)/2+1.5rem)]  [@media(max-height:500px)]:bottom-2 [@media(max-height:500px)]:left-3 [@media(max-height:500px)]:p-1 max-[259px]:!bottom-[5rem] max-[259px]:!left-2 max-[259px]:!right-2">
       <p className="hidden px-2 pb-1 text-xs font-semibold text-brand-900 sm:block [@media(max-height:500px)]:!hidden 2xl:pb-2 2xl:text-sm">
         {items.length} {items.length === 1 ? 'tour' : 'tours'} saved
       </p>
@@ -36,7 +36,7 @@ export default function CompareTray() {
         ))}
       </ul>
       <div className="flex items-center gap-1.5 max-[299px]:gap-1">
-        <span className="shrink-0 pl-2 pr-0.5 text-sm font-bold text-brand-800 max-[299px]:hidden sm:hidden [@media(max-height:500px)]:!inline max-[259px]:!hidden" aria-label={`${items.length} tours saved`}>
+        <span className="shrink-0 pl-2 pr-0.5 text-sm font-bold text-brand-800 max-[299px]:hidden sm:hidden [@media(max-height:500px)_and_(min-width:260px)]:!inline" aria-label={`${items.length} tours saved`}>
           <svg viewBox="0 0 24 24" className="mr-1 inline h-4 w-4 align-[-2px]" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.2-9.3C1.7 8.2 3.4 5 6.6 5c2 0 3.5 1.1 5.4 3.2C13.9 6.1 15.4 5 17.4 5c3.2 0 4.9 3.2 3.8 6.2-1.7 4.7-9.2 9.3-9.2 9.3Z" /></svg>
           {items.length}
         </span>
