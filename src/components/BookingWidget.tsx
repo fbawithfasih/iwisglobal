@@ -130,6 +130,15 @@ export default function BookingWidget({
     if (!addOn) return sum;
     return sum + (addOn.perTraveler ? addOn.amount * travelers : addOn.amount);
   }, 0);
+  // One row per distinct tier, labelled by the group sizes it covers.
+  const sortedTiers = [...pricingTiers].sort((a, b) => a.travelers - b.travelers);
+  const activeTier = pickPricingTier(pricingTiers, travelers);
+  const tierLadder = sortedTiers.map((tier, i) => {
+    const next = sortedTiers[i + 1];
+    const label = tier.travelers === 1 && !next ? 'Any group size' : !next ? `${tier.travelers}+ travelers` : next.travelers - 1 === tier.travelers ? `${tier.travelers} ${tier.travelers === 1 ? 'traveler' : 'travelers'}` : `${tier.travelers}-${next.travelers - 1} travelers`;
+    const base = sortedTiers[0].amount;
+    return { travelers: tier.travelers, amount: tier.amount, label, active: activeTier?.travelers === tier.travelers, savePct: base > 0 ? Math.round(((base - tier.amount) / base) * 100) : 0 };
+  });
   const rawTotal = currentRate * travelers + addOnsTotal;
   // Same choice razorpay.ts's createOrder makes: one discount, the biggest
   // of the Founding Guest Offer, automatic offers and the entered coupon,
@@ -463,6 +472,38 @@ export default function BookingWidget({
           <p className="text-xs text-stone-500 mt-1">
             {CURRENCY_SYMBOLS[currency]}{currentRate.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}/person for {travelers} {travelers === 1 ? 'traveler' : 'travelers'}
           </p>
+        )}
+        {/* Group-size slider and price ladder: only when the rate really changes
+            with group size. Same pickPricingTier the total uses, so the numbers
+            shown here are the numbers charged; the server re-prices anyway. */}
+        {tierLadder.length > 1 && (
+          <div className="mt-3 rounded-xl border border-brand-100 bg-brand-50/60 p-3">
+            <input
+              type="range"
+              min={1}
+              max={MAX_TRAVELERS}
+              step={1}
+              value={travelers}
+              onChange={(e) => setTravelers(Number(e.target.value))}
+              onPointerUp={() => track('group_slider_used', { tour_id: tourId, travelers })}
+              aria-label={`Group size: ${travelers} ${travelers === 1 ? 'traveler' : 'travelers'}`}
+              className="h-11 w-full cursor-pointer accent-brand-700"
+            />
+            <ul className="mt-1 grid gap-1.5 text-xs">
+              {tierLadder.map((row) => (
+                <li
+                  key={row.travelers}
+                  className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 ${row.active ? 'bg-brand-700 font-semibold text-white' : 'bg-white text-stone-700'}`}
+                >
+                  <span>{row.label}</span>
+                  <span className="whitespace-nowrap">
+                    {CURRENCY_SYMBOLS[currency]}{row.amount.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}/person
+                    {row.savePct > 0 && <span className={row.active ? 'ml-1.5 text-brand-100' : 'ml-1.5 text-green-700'}>save {row.savePct}%</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 
