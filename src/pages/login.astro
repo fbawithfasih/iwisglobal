@@ -4,6 +4,7 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ShowPasswordButton from '../components/ShowPasswordButton.astro';
 import { resolveEnv } from '../lib/env';
+import { pageI18n, fmt } from '../i18n/dictionaries';
 import OAuthButtons from '../components/OAuthButtons.astro';
 import { getSessionCustomerId, CUSTOMER_COOKIE, safeRedirectPath, signInErrorMessage } from '../lib/requireCustomer';
 import { startOAuthSignIn } from '../lib/oauth/start';
@@ -13,6 +14,8 @@ import { createCustomerSessionToken } from '../lib/customerAuth';
 import { checkCustomerLoginLock, recordFailedCustomerLogin, clearCustomerLoginAttempts } from '../lib/customerLoginAttempts';
 
 const env = resolveEnv(Astro.locals);
+const { t } = pageI18n(Astro);
+const signInErrorText = (code: string | null) => (!code ? null : ({ expired: t.auth.errExpired, cancelled: t.auth.errCancelled, unavailable: t.auth.unavailable, failed: t.auth.errFailed } as Record<string, string>)[code] ?? t.auth.errFailed);
 
 const existingCustomerId = await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET);
 if (existingCustomerId) {
@@ -20,7 +23,7 @@ if (existingCustomerId) {
 }
 
 // Google/Apple failures arrive as a code (see SIGN_IN_ERRORS), never as text.
-const errorParam = signInErrorMessage(Astro.url.searchParams.get('error'));
+const errorParam = signInErrorText(Astro.url.searchParams.get('error'));
 const redirectTarget = safeRedirectPath(Astro.url.searchParams.get('redirect'));
 
 // Email/password sign-in. Google/Apple use their own callback routes
@@ -34,9 +37,9 @@ if (Astro.request.method === 'POST') {
   const lockedForMs = db ? await checkCustomerLoginLock(db, ip) : null;
 
   if (lockedForMs) {
-    emailLoginError = `Too many failed attempts. Try again in ${Math.ceil(lockedForMs / 60000)} minute(s).`;
+    emailLoginError = fmt(t.auth.tooMany, { n: Math.ceil(lockedForMs / 60000) });
   } else if (!db || !env.CUSTOMER_SESSION_SECRET) {
-    emailLoginError = 'Accounts are not available right now.';
+    emailLoginError = t.auth.unavailable;
   } else {
     const form = await Astro.request.formData();
     const email = String(form.get('email') ?? '').trim();
@@ -65,23 +68,20 @@ if (Astro.request.method === 'POST') {
     await recordFailedCustomerLogin(db, ip);
     emailLoginError =
       customer && customer.provider !== 'email'
-        ? `This email is linked to ${customer.provider === 'google' ? 'Google' : 'Apple'} sign-in — use "Continue with ${customer.provider === 'google' ? 'Google' : 'Apple'}" above instead.`
-        : 'Incorrect email or password.';
+        ? fmt(t.auth.linkedProvider, { provider: customer.provider === 'google' ? 'Google' : 'Apple' })
+        : t.auth.wrongCreds;
   }
 }
 
 const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.origin, redirectTarget);
 ---
 
-<BaseLayout floatingWhatsApp={false} title="Sign in — IWIS Global" description="Sign in to your IWIS Global account to view and manage your Taj Mahal and Agra tour bookings." noindex>
+<BaseLayout floatingWhatsApp={false} title={t.auth.loginTitle} description={t.auth.loginDesc} noindex>
   <section class="max-w-md mx-auto px-6 pt-8 pb-20 md:pt-16 text-center">
-    <span class="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800 mb-3">Your account</span>
-    <h1 class="text-3xl font-serif font-semibold mb-2">Sign in</h1>
-    <p class="text-stone-600 mb-5">Sign in to view your booking history. You don't need an account to book a tour.</p>
-    <p class="text-sm text-brand-900 mb-6 rounded-xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 px-4 py-3 text-left">
-      Booked without an account? Use the <strong class="font-semibold text-brand-800">View your booking</strong> link in your confirmation email — bookings made
-      without signing in don't appear in an account.
-    </p>
+    <span class="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800 mb-3">{t.auth.yourAccount}</span>
+    <h1 class="text-3xl font-serif font-semibold mb-2">{t.auth.loginH1}</h1>
+    <p class="text-stone-600 mb-5">{t.auth.loginIntro}</p>
+    <p class="text-sm text-brand-900 mb-6 rounded-xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 px-4 py-3 text-left" set:html={t.auth.noAccountHtml} />
 
     {errorParam && <p class="text-red-600 text-sm mb-4" role="alert">{errorParam}</p>}
 
@@ -91,7 +91,7 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
     <form method="POST" class="space-y-3 text-left">
       {emailLoginError && <p class="text-red-600 text-sm" role="alert">{emailLoginError}</p>}
       <div>
-        <label for="email" class="block text-sm font-medium text-stone-700 mb-1">Email</label>
+        <label for="email" class="block text-sm font-medium text-stone-700 mb-1">{t.auth.email}</label>
         <input
           id="email"
           name="email"
@@ -104,8 +104,8 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
       </div>
       <div>
         <div class="flex items-baseline justify-between mb-1">
-          <label for="password" class="block text-xs font-medium text-stone-500">Password</label>
-          <a href="/forgot-password" class="-my-2 py-2 pl-3 text-xs font-medium text-brand-800 hover:underline">Forgot password?</a>
+          <label for="password" class="block text-xs font-medium text-stone-500">{t.auth.password}</label>
+          <a href="/forgot-password" class="-my-2 py-2 pl-3 text-xs font-medium text-brand-800 hover:underline">{t.auth.forgot}</a>
         </div>
         <input
           id="password"
@@ -121,13 +121,13 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
         type="submit"
         class="w-full min-h-12 rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-4 py-3 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300 cursor-pointer"
       >
-        Sign in with email
+        {t.auth.signInEmail}
       </button>
     </form>
     </div>
 
     <p class="text-sm text-stone-500 mt-4">
-      New here? <a href={`/signup?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center text-brand-700 font-medium hover:underline">Create an account</a>
+      {t.auth.newHere} <a href={`/signup?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center text-brand-700 font-medium hover:underline">{t.auth.createAccount}</a>
     </p>
   </section>
 </BaseLayout>

@@ -2,11 +2,12 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { resolveEnv } from '../../lib/env';
 import { getBookingByPaymentId } from '../../lib/crm';
-import { getTourById } from '../../lib/tours';
+import { getTourById, localizeTours } from '../../lib/tours';
+import { pageI18n, fmt } from '../../i18n/dictionaries';
+import { intlLocale } from '../../lib/i18n';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
 import { CURRENCY_SYMBOLS, type Currency } from '../../lib/currency';
 import { chosenAddOnNames, computeTicketsToBuy } from '../../lib/entryTickets';
-import { depositTermsNote } from '../../lib/email';
 
 export const prerender = false;
 
@@ -14,6 +15,8 @@ export const prerender = false;
 // (?payment_id=pay_…, kept in a cookie — see below). Shows the trip and amounts only — no name, phone or
 // full email — since anyone holding the link can open it.
 const env = resolveEnv(Astro.locals);
+const { locale, t } = pageI18n(Astro);
+const c = t.confirmation;
 
 // Every way in (the booking form after paying, the email, My Bookings, the
 // calendar file) links here with ?payment_id=. It moves straight into a
@@ -28,11 +31,13 @@ if (fromLink) {
 const paymentId = Astro.cookies.get(BOOKING_COOKIE)?.value ?? null;
 const db = env.DB;
 const booking = paymentId && db ? await getBookingByPaymentId(db, paymentId) : null;
+// English copy for logic and the messages we send to the team; localized copy for display.
 const tour = booking && db ? await getTourById(db, booking.tour_id) : null;
+const tourLoc = tour && db ? (await localizeTours(db, [tour], locale))[0] : tour;
 const signedIn = !!(await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET));
 
-const formatDate = (ymd: string) =>
-  new Date(`${ymd}T00:00:00Z`).toLocaleDateString('en-GB', {
+const formatDate = (ymd: string, tag = 'en-GB') =>
+  new Date(`${ymd}T00:00:00Z`).toLocaleDateString(tag, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -49,9 +54,13 @@ const maskEmail = (email: string) => {
 };
 
 const tourTitle = tour?.title ?? booking?.tour_id ?? '';
+const tourTitleShown = tourLoc?.title ?? tourTitle;
+const showDate = (ymd: string) => formatDate(ymd, intlLocale(locale));
 const balance = booking ? booking.total_amount - booking.amount_paid : 0;
 const isDeposit = booking?.payment_type === 'deposit';
 const discount = booking?.discount_label && booking.discount_amount ? { label: booking.discount_label, amount: booking.discount_amount } : null;
+// The stored label is English ("Founding Guest Offer (15% off)"); show the founding offer in the visitor's language.
+const discountText = discount && /^Founding Guest/i.test(discount.label) ? fmt(t.offers.founding, { percent: discount.label.match(/(\d+)%/)?.[1] ?? '' }) : discount?.label;
 // Reached right after paying and, later, from the email's "View your
 // booking" button — so say what the booking's status is now.
 // Meta Pixel Purchase: only on the visit right after paying (the booking is
@@ -67,7 +76,7 @@ const waHref = booking
   ? waLink(`Hi! I have a question about my booking: ${bookingSummary}. (ref: CONFIRMATION)`)
   : waLink(`Hi! I just paid for a tour but can't see my booking. Payment reference: ${paymentId ?? 'unknown'} (ref: CONFIRMATION)`);
 const changeHref = booking ? waLink(`Hi! I'd like to change or cancel my booking: ${bookingSummary}. (ref: CONFIRMATION-CHANGE)`) : '';
-const addOnNames = booking && tour ? chosenAddOnNames(tour, booking.add_on_ids) : [];
+const addOnNames = booking && tourLoc ? chosenAddOnNames(tourLoc, booking.add_on_ids) : [];
 // Entry tickets are bought on ASI's site, which needs each traveler's name and
 // nationality (see /privacy), so ask for them when the booking includes any.
 const needsTicketDetails = !!(booking && tour && computeTicketsToBuy(tour, booking).length > 0);
@@ -81,7 +90,7 @@ const nextStepsHref = booking
       ].join('\n')
     )
   : '';
-const depositNote = booking && isDeposit && balance > 0 ? depositTermsNote(money(balance, booking.currency)) : '';
+const depositNote = booking && isDeposit && balance > 0 ? fmt(c.depositNote, { balance: money(balance, booking.currency) }) : '';
 // Add to calendar: an all-day event on the travel date. The Google link
 // carries only the tour and date (the booking id opens this page, so it
 // stays out of URLs sent elsewhere); the .ics file downloads to the device.
@@ -93,16 +102,16 @@ const googleCalendarHref = booking
   ? 'https://calendar.google.com/calendar/render?' +
     new URLSearchParams({
       action: 'TEMPLATE',
-      text: `${tourTitle} (IWIS Global)`,
+      text: `${tourTitleShown} (IWIS Global)`,
       dates: `${ymd}/${nextDay}`,
-      details: 'Private tour with IWIS Global. Questions: WhatsApp +91 6399226633',
+      details: c.calDetails,
       location: 'Agra, India',
     }).toString()
   : '';
 const icsHref = booking ? `/booking/calendar.ics?payment_id=${encodeURIComponent(booking.payment_id)}` : '';
-const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for touring with us', cancelled: 'This booking was cancelled' }[status];
+const heading = { confirmed: c.headConfirmed, completed: c.headCompleted, cancelled: c.headCancelled }[status];
 ---
-<BaseLayout floatingWhatsApp={false} title={booking ? `${heading} — IWIS Global` : "Booking not found — IWIS Global"} noindex>
+<BaseLayout floatingWhatsApp={false} title={booking ? `${heading}${c.titleSuffix}` : c.notFoundTitle} noindex>
   <section class="max-w-xl mx-auto px-6 pt-8 pb-16 md:pt-16">
     {booking ? (
       <>
@@ -116,15 +125,11 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
           </div>
           <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-3">{heading}</h1>
           {status === 'cancelled' && (
-            <p class="text-stone-600">
-              Any refund goes back to your original payment method — see our
-              <a href="/cancellation-refund-policy" class="text-brand-800 underline">Cancellation &amp; Refund Policy</a>. Questions? WhatsApp us below.
-            </p>
+            <p class="text-stone-600" set:html={c.cancelledHtml} />
           )}
           {status === 'confirmed' && booking.traveler_email && (
             <p class="text-stone-600">
-              We've emailed your confirmation to <span class="font-medium text-brand-900">{maskEmail(booking.traveler_email)}</span>.
-              If it isn't there in a few minutes, check your spam folder.
+              {c.emailed.split('{email}')[0]}<span class="font-medium text-brand-900">{maskEmail(booking.traveler_email)}</span>{c.emailed.split('{email}')[1]}
             </p>
           )}
         </div>
@@ -133,41 +138,41 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
           <div class="bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-5 py-4 text-white">
           {tour?.slug ? (
             <a href={`/tours/${tour.slug}`} class="group block py-1">
-              <span class="block font-semibold">{tourTitle}</span>
-              <span class="mt-1 inline-flex min-h-6 items-center text-sm font-medium text-brand-100 group-hover:underline">View tour &rarr;</span>
+              <span class="block font-semibold">{tourTitleShown}</span>
+              <span class="mt-1 inline-flex min-h-6 items-center text-sm font-medium text-brand-100 group-hover:underline">{c.viewTour}</span>
             </a>
           ) : (
-            <p class="font-semibold">{tourTitle}</p>
+            <p class="font-semibold">{tourTitleShown}</p>
           )}
           </div>
           <dl class="space-y-2 p-5 text-sm">
-            <div class="flex justify-between gap-4"><dt class="text-stone-500">Date</dt><dd class="text-right">{formatDate(booking.travel_date)}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.date}</dt><dd class="text-right">{showDate(booking.travel_date)}</dd></div>
             {booking.pickup_time && status === 'confirmed' && (
-              <div class="flex justify-between gap-4"><dt class="text-stone-500">Pickup</dt><dd class="text-right font-semibold">{booking.pickup_time}</dd></div>
+              <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.pickup}</dt><dd class="text-right font-semibold">{booking.pickup_time}</dd></div>
             )}
-            <div class="flex justify-between gap-4"><dt class="text-stone-500">Travelers</dt><dd>{booking.travelers}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.travelers}</dt><dd>{booking.travelers}</dd></div>
             {addOnNames.length > 0 && (
-              <div class="flex justify-between gap-4"><dt class="shrink-0 whitespace-nowrap text-stone-500">Add-ons</dt><dd class="text-right">{addOnNames.join(', ')}</dd></div>
+              <div class="flex justify-between gap-4"><dt class="shrink-0 whitespace-nowrap text-stone-500">{c.addOns}</dt><dd class="text-right">{addOnNames.join(', ')}</dd></div>
             )}
             {discount && (
               <>
-                <div class="flex justify-between gap-4"><dt class="text-stone-500">Tour price</dt><dd>{money(booking.total_amount + discount.amount, booking.currency)}</dd></div>
-                <div class="flex justify-between gap-4"><dt class="text-stone-500">{discount.label}</dt><dd class="text-green-700 whitespace-nowrap">−{money(discount.amount, booking.currency)}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.tourPrice}</dt><dd>{money(booking.total_amount + discount.amount, booking.currency)}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-stone-500">{discountText}</dt><dd class="text-green-700 whitespace-nowrap">−{money(discount.amount, booking.currency)}</dd></div>
               </>
             )}
             {isDeposit ? (
               <>
-                <div class="flex justify-between gap-4"><dt class="text-stone-500">Tour total</dt><dd>{money(booking.total_amount, booking.currency)}</dd></div>
-                <div class="flex justify-between gap-4"><dt class="text-stone-500">Deposit paid</dt><dd class="font-semibold">{money(booking.amount_paid, booking.currency)}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.tourTotal}</dt><dd>{money(booking.total_amount, booking.currency)}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.depositPaid}</dt><dd class="font-semibold">{money(booking.amount_paid, booking.currency)}</dd></div>
                 {balance > 0 && status !== 'cancelled' && (
-                  <div class="flex justify-between gap-4"><dt class="text-stone-500">Due on pickup</dt><dd class="rounded-full bg-amber-300 px-2.5 py-0.5 font-semibold text-brand-950">{money(balance, booking.currency)}</dd></div>
+                  <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.dueOnPickup}</dt><dd class="rounded-full bg-amber-300 px-2.5 py-0.5 font-semibold text-brand-950">{money(balance, booking.currency)}</dd></div>
                 )}
               </>
             ) : (
-              <div class="flex justify-between gap-4"><dt class="text-stone-500">Amount paid</dt><dd class="font-semibold">{money(booking.amount_paid, booking.currency)}</dd></div>
+              <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.amountPaid}</dt><dd class="font-semibold">{money(booking.amount_paid, booking.currency)}</dd></div>
             )}
             <div class="flex justify-between gap-4 border-t border-brand-100 pt-2">
-              <dt class="text-stone-500">Booking ID</dt>
+              <dt class="text-stone-500">{c.bookingId}</dt>
               <dd class="font-mono text-xs text-stone-700 break-all text-right">{booking.id}</dd>
             </div>
           </dl>
@@ -179,59 +184,55 @@ const heading = { confirmed: 'Your booking is confirmed', completed: 'Thanks for
 
         {status === 'confirmed' && (
           <div class="mb-6 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-5 shadow-sm shadow-brand-900/5">
-            <span class="mb-2 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Next step</span>
-            <h2 class="font-serif text-xl font-semibold text-stone-900 mb-2">What happens next</h2>
+            <span class="mb-2 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">{c.nextStep}</span>
+            <h2 class="font-serif text-xl font-semibold text-stone-900 mb-2">{c.whatNext}</h2>
             <p class="text-sm text-stone-700 mb-4">
-              Send us your hotel or pickup address on WhatsApp{needsTicketDetails && <>, and each traveler's full name and nationality (the Archaeological Survey of India needs them for your entry tickets)</>}.
+              {needsTicketDetails ? c.nextBodyTickets : c.nextBody}
             </p>
             <a href={nextStepsHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONFIRMATION-PICKUP" class="inline-flex min-h-11 items-center justify-center rounded-full bg-green-700 px-5 font-semibold text-white hover:bg-green-800 transition">
-              {needsTicketDetails ? 'Send pickup and traveler details' : 'Send pickup address'}
+              {needsTicketDetails ? c.sendBoth : c.sendPickup}
             </a>
           </div>
         )}
 
         {status === 'confirmed' && (
           <div class="mb-6">
-            <p class="text-sm font-semibold text-brand-900 mb-2">Add to your calendar</p>
+            <p class="text-sm font-semibold text-brand-900 mb-2">{c.calendar}</p>
             <div class="grid grid-cols-2 gap-3">
-              <a href={googleCalendarHref} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-200 bg-white px-4 text-sm font-semibold text-brand-900 hover:bg-brand-50 transition">Google Calendar</a>
-              <a href={icsHref} class="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-200 bg-white px-4 text-sm font-semibold text-brand-900 hover:bg-brand-50 transition">Apple / Outlook</a>
+              <a href={googleCalendarHref} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-200 bg-white px-4 text-sm font-semibold text-brand-900 hover:bg-brand-50 transition">{c.googleCal}</a>
+              <a href={icsHref} class="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-200 bg-white px-4 text-sm font-semibold text-brand-900 hover:bg-brand-50 transition">{c.appleCal}</a>
             </div>
           </div>
         )}
 
         <div class="flex flex-col gap-3">
           <a href={waHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONFIRMATION" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-green-700 px-6 font-semibold text-white hover:bg-green-800 transition">
-            WhatsApp us about this booking
+            {c.waAbout}
           </a>
           {status === 'confirmed' && (
             <>
               <a href={changeHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONFIRMATION-CHANGE" class="inline-flex min-h-12 items-center justify-center rounded-full border border-brand-200 bg-white px-6 font-semibold text-brand-900 hover:bg-brand-50 transition">
-                Change or cancel
+                {c.change}
               </a>
-              <p class="text-center text-xs text-stone-500">
-                Free cancellation up to 24 hours before your tour —
-                <a href="/cancellation-refund-policy" class="text-brand-800 underline">Cancellation &amp; Refund Policy</a>
-              </p>
+              <p class="text-center text-xs text-stone-500" set:html={c.freeCancelHtml} />
             </>
           )}
           {signedIn && (
             <a href="/account/bookings" class="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-6 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:brightness-110">
-              View my bookings
+              {c.viewBookings}
             </a>
           )}
-          <a href="/tours" class="inline-flex min-h-11 items-center justify-center text-sm text-stone-500 hover:text-brand-800 hover:underline">Browse more tours</a>
+          <a href="/tours" class="inline-flex min-h-11 items-center justify-center text-sm text-stone-500 hover:text-brand-800 hover:underline">{c.browse}</a>
         </div>
       </>
     ) : (
       <div class="text-center">
-        <h1 class="text-3xl font-serif font-semibold mb-3">We couldn't find this booking</h1>
+        <h1 class="text-3xl font-serif font-semibold mb-3">{c.notFoundH}</h1>
         <p class="text-stone-600 mb-6">
-          If you've just paid, check your email for the confirmation, or message us on WhatsApp with your payment
-          reference{paymentId ? <> (<span class="font-mono break-all">{paymentId}</span>)</> : null} and we'll look it up.
+          {c.notFoundBody.split('{ref}')[0]}{paymentId ? <> (<span class="font-mono break-all">{paymentId}</span>)</> : null}{c.notFoundBody.split('{ref}')[1]}
         </p>
         <a href={waHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONFIRMATION" class="inline-flex min-h-12 items-center justify-center rounded-full bg-green-700 px-6 font-semibold text-white hover:bg-green-800 transition">
-          WhatsApp us
+          {c.waUs}
         </a>
       </div>
     )}

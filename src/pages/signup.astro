@@ -4,6 +4,7 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ShowPasswordButton from '../components/ShowPasswordButton.astro';
 import { resolveEnv } from '../lib/env';
+import { pageI18n, fmt } from '../i18n/dictionaries';
 import OAuthButtons from '../components/OAuthButtons.astro';
 import PhoneInput from '../components/PhoneInput';
 import { getSessionCustomerId, CUSTOMER_COOKIE, safeRedirectPath } from '../lib/requireCustomer';
@@ -16,6 +17,7 @@ import { createEmailVerificationLink } from '../lib/emailVerification';
 import { sendEmailVerificationEmail } from '../lib/email';
 
 const env = resolveEnv(Astro.locals);
+const { t } = pageI18n(Astro);
 
 const existingCustomerId = await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET);
 if (existingCustomerId) {
@@ -43,23 +45,23 @@ if (Astro.request.method === 'POST') {
   const ip = Astro.request.headers.get('cf-connecting-ip') ?? 'unknown';
   const waitMs = db ? await checkSignupLimit(db, ip) : null;
   if (!db || !env.CUSTOMER_SESSION_SECRET) {
-    error = 'Accounts are not available right now.';
+    error = t.auth.unavailable;
   } else if (waitMs) {
-    error = `Too many new accounts from this connection. Try again in ${Math.ceil(waitMs / 60000)} minute(s).`;
+    error = fmt(t.auth.tooManyNew, { n: Math.ceil(waitMs / 60000) });
   } else if (!name) {
-    error = 'Please enter your name.';
+    error = t.auth.errName;
   } else if (!EMAIL_RE.test(email)) {
-    error = 'Please enter a valid email address.';
+    error = t.auth.errEmail;
   } else if (phone === undefined) {
-    error = 'Please enter a valid phone number and check the country code, or leave it empty.';
+    error = t.auth.errPhone;
   } else if (password.length < 8) {
-    error = 'Password must be at least 8 characters.';
+    error = t.auth.errPassword;
   } else {
     const existing = await getCustomerByEmail(db, email);
     if (existing && existing.provider !== 'email') {
-      error = `This email is already linked to ${existing.provider === 'google' ? 'Google' : 'Apple'} sign-in — use "Continue with ${existing.provider === 'google' ? 'Google' : 'Apple'}" on the sign-in page instead.`;
+      error = fmt(t.auth.existsProvider, { provider: existing.provider === 'google' ? 'Google' : 'Apple' });
     } else if (existing) {
-      error = 'An account with this email already exists.';
+      error = t.auth.exists;
       accountExists = true;
     } else {
       const passwordSalt = generateSaltHex();
@@ -95,11 +97,11 @@ if (Astro.request.method === 'POST') {
 const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.origin, redirectTarget);
 ---
 
-<BaseLayout floatingWhatsApp={false} title="Create an account — IWIS Global" description="Create an IWIS Global account to view your booking history." noindex>
+<BaseLayout floatingWhatsApp={false} title={t.auth.signupTitle} description={t.auth.signupDesc} noindex>
   <section class="max-w-md mx-auto px-6 pt-8 pb-20 md:pt-16 text-center">
-    <span class="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800 mb-3">Your account</span>
-    <h1 class="text-3xl font-serif font-semibold mb-2">Create an account</h1>
-    <p class="text-stone-600 mb-5">You don't need an account to book a tour — this is just to see your booking history for tours you book while signed in.</p>
+    <span class="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800 mb-3">{t.auth.yourAccount}</span>
+    <h1 class="text-3xl font-serif font-semibold mb-2">{t.auth.createAccount}</h1>
+    <p class="text-stone-600 mb-5">{t.auth.signupIntro}</p>
     <p class="text-sm text-brand-900 mb-6 rounded-xl bg-gradient-to-br from-brand-50 to-white border border-brand-100 px-4 py-3 text-left">
       Booked without an account? Use the <strong class="font-semibold text-brand-800">View your booking</strong> link in your confirmation email — bookings made
       without signing in don't appear in an account.
@@ -114,16 +116,16 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
           <p>{error}</p>
           {accountExists && (
             <p class="flex flex-wrap gap-x-4">
-              <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center font-medium text-brand-800 underline">Sign in instead</a>
+              <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center font-medium text-brand-800 underline">{t.auth.signInInstead}</a>
               <!-- Sends the reset email straight away. The email travels in the
                    form, not the link, so it never appears in a page address. -->
-              <button type="submit" form="reset-from-signup" class="inline-flex min-h-11 items-center font-medium text-brand-800 underline cursor-pointer">Email me a reset link</button>
+              <button type="submit" form="reset-from-signup" class="inline-flex min-h-11 items-center font-medium text-brand-800 underline cursor-pointer">{t.auth.emailReset}</button>
             </p>
           )}
         </div>
       )}
       <div>
-        <label for="name" class="block text-sm font-medium text-stone-700 mb-1">Name</label>
+        <label for="name" class="block text-sm font-medium text-stone-700 mb-1">{t.auth.name}</label>
         <input
           id="name"
           name="name"
@@ -135,7 +137,7 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
         />
       </div>
       <div>
-        <label for="email" class="block text-sm font-medium text-stone-700 mb-1">Email</label>
+        <label for="email" class="block text-sm font-medium text-stone-700 mb-1">{t.auth.email}</label>
         <input
           id="email"
           name="email"
@@ -147,11 +149,11 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
         />
       </div>
       <div>
-        <label for="phone" class="block text-sm font-medium text-stone-700 mb-1">Phone number <span class="font-normal">(optional)</span></label>
+        <label for="phone" class="block text-sm font-medium text-stone-700 mb-1">{t.auth.phone} <span class="font-normal">{t.auth.optional}</span></label>
         <PhoneInput client:load roomy id="phone" name="phone" defaultValue={phoneInput || undefined} />
       </div>
       <div>
-        <label for="password" class="block text-sm font-medium text-stone-700 mb-1">Password</label>
+        <label for="password" class="block text-sm font-medium text-stone-700 mb-1">{t.auth.password}</label>
         <input
           id="password"
           name="password"
@@ -163,19 +165,16 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
           class="w-full rounded-lg border border-stone-300 bg-white px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-400"
         />
         <div class="flex items-center justify-between gap-3">
-          <p id="password-hint" class="text-xs text-stone-500">At least 8 characters.</p>
+          <p id="password-hint" class="text-xs text-stone-500">{t.auth.pwHint}</p>
           <ShowPasswordButton for="password" />
         </div>
       </div>
-      <p class="text-xs text-stone-500">
-        By creating an account you agree to our <a href="/terms" class="-my-3 inline-block py-3 text-brand-800 underline">Terms</a> and
-        <a href="/privacy" class="-my-3 inline-block py-3 text-brand-800 underline">Privacy Policy</a>.
-      </p>
+      <p class="text-xs text-stone-500" set:html={t.auth.agreeHtml} />
       <button
         type="submit"
         class="w-full min-h-12 rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-4 py-3 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300 cursor-pointer"
       >
-        Create account
+        {t.auth.createBtn}
       </button>
     </form>
     </div>
@@ -187,7 +186,7 @@ const { googleUrl, appleUrl } = startOAuthSignIn(env, Astro.cookies, Astro.url.o
     )}
 
     <p class="text-sm text-stone-500 mt-4">
-      Already have an account? <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center text-brand-700 font-medium hover:underline">Sign in</a>
+      {t.auth.haveAccount} <a href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} class="inline-flex min-h-11 items-center text-brand-700 font-medium hover:underline">{t.auth.signIn}</a>
     </p>
   </section>
 </BaseLayout>
