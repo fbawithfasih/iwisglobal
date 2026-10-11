@@ -43,7 +43,7 @@ export default function CompareTray() {
         <a
           href={compareHref}
           onClick={() => track('compare_open', { count: items.length })}
-          className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-2.5 text-sm font-semibold min-[300px]:px-3 sm:flex-none sm:px-3.5 2xl:px-5 2xl:text-base ${items.length >= 2 ? 'bg-brand-700 text-white hover:bg-brand-800' : 'pointer-events-none bg-stone-100 text-stone-400'}`}
+          className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-2.5 text-sm font-semibold max-[199px]:px-2 max-[199px]:text-xs min-[300px]:px-3 sm:flex-none sm:px-3.5 2xl:px-5 2xl:text-base ${items.length >= 2 ? 'bg-brand-700 text-white hover:bg-brand-800' : 'pointer-events-none bg-stone-100 text-stone-400'}`}
           aria-disabled={items.length < 2}
         >
           {items.length >= 2 ? 'Compare' : 'Save one more'}
@@ -55,12 +55,12 @@ export default function CompareTray() {
           rel="noopener"
           aria-label="Share saved tours on WhatsApp"
           onClick={() => track('shortlist_share', { count: items.length })}
-          className="inline-flex min-h-11 items-center rounded-full border border-brand-200 px-3 text-sm font-semibold text-brand-800 hover:bg-brand-50 max-[299px]:px-2.5 sm:px-3.5 2xl:px-5 2xl:text-base"
+          className="inline-flex min-h-11 items-center rounded-full border border-brand-200 px-3 text-sm font-semibold text-brand-800 hover:bg-brand-50 max-[299px]:px-2.5 max-[199px]:px-2 sm:px-3.5 2xl:px-5 2xl:text-base"
         >
           <span className="max-[299px]:hidden">Share</span>
           <svg viewBox="0 0 24 24" className="h-5 w-5 min-[300px]:hidden" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0 4 4m-4-4L8 8M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" /></svg>
         </a>
-        <button type="button" onClick={clear} aria-label="Clear saved tours" className="min-h-11 min-w-9 px-1.5 max-[299px]:min-w-8 max-[299px]:px-1 text-xs font-semibold text-stone-500 sm:underline sm:underline-offset-2 2xl:text-sm">
+        <button type="button" onClick={clear} aria-label="Clear saved tours" className="min-h-11 min-w-9 px-1.5 max-[299px]:min-w-8 max-[299px]:px-1 max-[199px]:min-w-6 max-[199px]:px-0 text-xs font-semibold text-stone-500 sm:underline sm:underline-offset-2 2xl:text-sm">
           <span className="sm:hidden [@media(max-height:500px)]:!inline" aria-hidden="true">✕</span><span className="hidden sm:inline [@media(max-height:500px)]:!hidden">Clear</span>
         </button>
       </div>
