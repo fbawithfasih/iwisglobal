@@ -10,6 +10,7 @@ import { intlLocale } from '../../lib/i18n';
 import { listTours, sharedTourFacts } from '../../lib/tours';
 import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
 import { sortGuides } from '../../lib/guides';
+import { localizedEntry, overlayFields } from '../../lib/localizedContent';
 import TourCard from '../../components/TourCard.astro';
 import SharedTourFacts from '../../components/SharedTourFacts.astro';
 import TajToday from '../../components/TajToday';
@@ -28,8 +29,10 @@ import MobileActionBar from '../../components/MobileActionBar.astro';
 // two left-bank sites (sunset view, "Baby Taj"), then the out-of-town day trip.
 const ORDER = ['taj-mahal', 'agra-fort', 'mehtab-bagh', 'itimad-ud-daulah', 'fatehpur-sikri'];
 const { locale, t } = pageI18n(Astro);
-const attractions = (await getCollection('attractions')).sort(
-  (a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug)
+const attractions = await Promise.all(
+  (await getCollection('attractions'))
+    .sort((a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug))
+    .map(async (a) => ({ slug: a.slug, data: overlayFields(a.data, await localizedEntry('attraction', locale, a.slug)) }))
 );
 const openOnFriday = attractions.filter((a) => !a.data.closedFriday);
 // "A, B, and C" — reads correctly however many sites there are.
@@ -37,7 +40,9 @@ const openOnFridayNames = new Intl.ListFormat(intlLocale(locale), { style: 'long
   openOnFriday.map((a) => a.data.name)
 );
 
-const guides = sortGuides(await getCollection('guides'));
+const guides = await Promise.all(
+  sortGuides(await getCollection('guides')).map(async (g) => ({ slug: g.slug, data: overlayFields(g.data, await localizedEntry('guide', locale, g.slug)) }))
+);
 
 const env = resolveEnv(Astro.locals);
 const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);

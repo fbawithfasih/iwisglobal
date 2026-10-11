@@ -16,6 +16,7 @@ import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
 import { pageI18n } from '../../i18n/dictionaries';
 import { fmt } from '../../i18n/fmt';
 import { intlLocale } from '../../lib/i18n';
+import { localizedEntry, overlayFields } from '../../lib/localizedContent';
 
 const { slug } = Astro.params;
 const entry: CollectionEntry<'attractions'> | undefined = (await getCollection('attractions')).find((e) => e.slug === slug);
@@ -24,8 +25,11 @@ if (!entry) {
   return Astro.redirect('/tours');
 }
 
-const { Content } = await entry.render();
-const { name, description, ticketPriceForeign, ticketPriceIndian, ticketPriceSaarc, hours, closedFriday, dateModified, image } = entry.data;
+const { locale, t } = pageI18n(Astro);
+const loc = await localizedEntry('attraction', locale, entry.slug);
+const Content = loc ? null : (await entry.render()).Content;
+const { name, description, ticketPriceForeign, ticketPriceIndian, ticketPriceSaarc, hours, closedFriday, dateModified, image: englishImage } = overlayFields(entry.data, loc);
+const image = englishImage && { ...englishImage, alt: loc?.fields.imageAlt || englishImage.alt };
 
 const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
 if (Astro.url.searchParams.get('currency')) {
@@ -34,7 +38,7 @@ if (Astro.url.searchParams.get('currency')) {
 // Tours with this site as an actual itinerary stop (not just a mention in
 // the description, and not an optional add-on stop), cheapest first like /tours.
 const env = resolveEnv(Astro.locals);
-const siteName = name.toLowerCase();
+const siteName = entry.data.name.toLowerCase(); // matched against the English itinerary
 const tours = sortByFromPrice(
   (env.DB ? await listTours(env.DB, { status: 'published' }) : []).filter((t) =>
     t.itinerary.some((step) => step.activity.toLowerCase().includes(siteName) && !/optional|add-on/i.test(step.time))
@@ -53,7 +57,6 @@ const attractionJsonLd = {
   ...(image && { image: `https://www.iwisglobal.com${image.src}` }),
   address: { '@type': 'PostalAddress', addressLocality: 'Agra', addressRegion: 'Uttar Pradesh', addressCountry: 'IN' },
 };
-const { locale, t } = pageI18n(Astro);
 ---
 
 
@@ -105,7 +108,7 @@ const { locale, t } = pageI18n(Astro);
     </div>
 
     <div class="prose prose-stone max-w-none prose-headings:font-serif prose-headings:text-brand-900 prose-h2:border-l-4 prose-h2:border-brand-500 prose-h2:pl-3 prose-a:text-brand-700 prose-li:marker:text-brand-500">
-      <Content />
+      {Content ? <Content /> : <Fragment set:html={loc!.html} />}
     </div>
 
     {tours.length > 0 && (

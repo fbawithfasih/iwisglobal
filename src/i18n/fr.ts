@@ -1277,4 +1277,10 @@ export const fr: Dictionary = {
       how: "Voici comment nous travaillons :",
       howNone: "En attendant, voici comment nous travaillons :",
     },
+  guideExtra: {
+      breadcrumb: "Guides",
+      updated: "Mis à jour le {date}",
+      byline: "Par {author} · Publié le {published}",
+      bylineUpdated: "Par {author} · Publié le {published} · Mis à jour le {updated}",
+    },
 };

@@ -1278,6 +1278,12 @@ export const en = {
       how: "Here's how we work:",
       howNone: "In the meantime, here's how we work:",
     },
+  guideExtra: {
+      breadcrumb: "Guides",
+      updated: "Updated {date}",
+      byline: "By {author} · Published {published}",
+      bylineUpdated: "By {author} · Published {published} · Updated {updated}",
+    },
 };
 
 // Every other language must provide every key en has, as a string.

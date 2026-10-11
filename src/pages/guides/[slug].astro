@@ -9,6 +9,9 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 import { pageI18n } from '../../i18n/dictionaries';
+import { fmt } from '../../i18n/fmt';
+import { intlLocale } from '../../lib/i18n';
+import { localizedEntry, overlayFields } from '../../lib/localizedContent';
 
 const { slug } = Astro.params;
 const entry: CollectionEntry<'guides'> | undefined = (await getCollection('guides')).find((e) => e.slug === slug);
@@ -17,10 +20,12 @@ if (!entry) {
   return Astro.redirect('/guides');
 }
 
-const { Content } = await entry.render();
-const { title, description, authorName, datePublished, dateModified } = entry.data;
+const { locale, t } = pageI18n(Astro);
+const loc = await localizedEntry('guide', locale, entry.slug);
+const Content = loc ? null : (await entry.render()).Content;
+const { title, description, authorName, datePublished, dateModified } = overlayFields(entry.data, loc);
 
-const dateFmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+const dateFmt = (d: Date) => d.toLocaleDateString(intlLocale(locale), { day: 'numeric', month: 'long', year: 'numeric' });
 
 // Backlog 2.1's Article schema — the one item that was N/A when 2.1 shipped
 // because no guide content existed yet.
@@ -85,7 +90,7 @@ function extractFaqFromMarkdown(body: string): { question: string; answer: strin
   return faqs;
 }
 
-const faqs = extractFaqFromMarkdown(entry.body);
+const faqs = extractFaqFromMarkdown(loc?.body ?? entry.body);
 const faqJsonLd = faqs.length > 0
   ? {
       '@context': 'https://schema.org',
@@ -97,11 +102,10 @@ const faqJsonLd = faqs.length > 0
       })),
     }
   : null;
-const { t } = pageI18n(Astro);
 ---
 
 
-<BaseLayout title={`${title} — IWIS Global`} description={description} breadcrumbs={[{ name: 'Guides', path: '/guides' }]}>
+<BaseLayout title={`${title} — IWIS Global`} description={description} breadcrumbs={[{ name: t.guideExtra.breadcrumb, path: '/guides' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
   {faqJsonLd && <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />}
 
@@ -110,11 +114,12 @@ const { t } = pageI18n(Astro);
     <span class="mt-3 block w-fit rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800" set:html={t.guidePage.k5} />
     <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-3 mb-3">{title}</h1>
     <p class="mb-10 inline-block rounded-full border border-brand-100 bg-white px-3 py-1 text-sm text-stone-500">
-      By {authorName} · Published {dateFmt(datePublished)}
-      {dateModified.getTime() !== datePublished.getTime() && <> · Updated {dateFmt(dateModified)}</>}
+      {dateModified.getTime() !== datePublished.getTime()
+        ? fmt(t.guideExtra.bylineUpdated, { author: authorName, published: dateFmt(datePublished), updated: dateFmt(dateModified) })
+        : fmt(t.guideExtra.byline, { author: authorName, published: dateFmt(datePublished) })}
     </p>
     <div class="prose prose-stone max-w-none prose-headings:font-serif prose-headings:text-brand-900 prose-h2:border-l-4 prose-h2:border-brand-500 prose-h2:pl-3 prose-a:text-brand-700 prose-li:marker:text-brand-500">
-      <Content />
+      {Content ? <Content /> : <Fragment set:html={loc!.html} />}
     </div>
 
     <div class="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/20">
