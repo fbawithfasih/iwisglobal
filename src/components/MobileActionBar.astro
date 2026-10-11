@@ -28,11 +28,11 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent(`${waMessag
   class:list={["fixed inset-x-0 bottom-0 z-40 rounded-t-2xl border-t-4 border-brand-600 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(76,29,149,0.18)] backdrop-blur transition-transform duration-200", hideFrom === 'lg' ? 'lg:hidden' : 'md:hidden']}
   style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));"
 >
-  <div class="mx-auto flex max-w-3xl items-center justify-between gap-3">
+  <div class="mx-auto flex max-w-3xl items-center justify-between gap-3 max-[259px]:flex-col max-[259px]:items-stretch max-[259px]:gap-1.5">
     <div class="min-w-0">
       <slot name="info" />
     </div>
-    <div class="flex shrink-0 items-center gap-2">
+    <div class="flex shrink-0 items-center gap-2 max-[259px]:shrink max-[259px]:justify-between">
       <a
         href={waHref}
         target="_blank"
