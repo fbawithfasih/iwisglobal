@@ -15,6 +15,8 @@ import { countBookingsForRequest } from '../../lib/db';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
 import { getCustomerById } from '../../lib/customers';
 import ShortlistButton from '../../components/ShortlistButton';
+import AgraMap from '../../components/AgraMap';
+import { sitesInText } from '../../lib/agraSites';
 import { isNightViewingTour, nightViewingDatesFrom } from '../../lib/nightViewing';
 import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../../lib/catalog';
 import { resolveCurrency, resolvePrice, resolveAddOns, resolvePricingTiers, resolveFromPrice, CURRENCY_SYMBOLS } from '../../lib/currency';
@@ -211,6 +213,8 @@ const tripJsonLd = {
 // Google shows about 60 characters of a title: drop the brand suffix when it
 // would push a long tour name past that, so the tour name is never cut off.
 const BRAND_SUFFIX = ' — IWIS Global';
+// Which Agra sites the itinerary visits, for the little map under it.
+const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(' '));
 ---
 <BaseLayout title={tour.title.length + BRAND_SUFFIX.length > 60 ? tour.title : `${tour.title}${BRAND_SUFFIX}`} description={tour.summary} breadcrumbs={[{ name: 'Tours', path: '/tours' }]}>
   <script type="application/ld+json" set:html={JSON.stringify(tripJsonLd)} />
@@ -363,7 +367,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
           )}
           <ol class="itin-story relative mt-4">
             {tour.itinerary.map((step, index) => (
-              <li class="relative flex gap-4 pb-5 last:pb-0">
+              <li class="relative flex gap-4 pb-5 last:pb-0" data-sites={sitesInText(step.activity).join(",")}>
                 {index < tour.itinerary.length - 1 && (
                   <span class="absolute left-[17px] top-9 bottom-0 w-0.5 bg-brand-100" aria-hidden="true"><span class="story-fill block h-full w-full origin-top bg-brand-500"></span></span>
                 )}
@@ -390,6 +394,12 @@ const BRAND_SUFFIX = ' — IWIS Global';
               </li>
             ))}
           </ol>
+          {itinerarySites.length >= 2 && (
+            <div class="mt-6 border-t border-brand-100 pt-4">
+              <p class="mb-2 text-sm font-semibold text-brand-900">Where these stops are</p>
+              <AgraMap client:visible compact inTour={itinerarySites} />
+            </div>
+          )}
         </div>
       )}
 
@@ -579,5 +589,20 @@ const BRAND_SUFFIX = ' — IWIS Global';
       { rootMargin: '0px 0px -30% 0px' },
     );
     story.querySelectorAll('li').forEach((li) => io.observe(li));
+  }
+
+  // Itinerary stop <-> map: hovering, focusing or opening a stop lights the
+  // matching pin(s) on the map under the list (AgraMap listens for this).
+  if (story) {
+    const light = (sites: string[]) => window.dispatchEvent(new CustomEvent('iwis:site', { detail: sites }));
+    story.querySelectorAll('li').forEach((li) => {
+      const sites = (li.getAttribute('data-sites') ?? '').split(',').filter(Boolean);
+      if (sites.length === 0) return;
+      li.addEventListener('mouseenter', () => light(sites));
+      li.addEventListener('mouseleave', () => light([]));
+      li.addEventListener('focusin', () => light(sites));
+      li.addEventListener('focusout', () => light([]));
+      li.querySelector('details')?.addEventListener('toggle', (e) => light((e.target as HTMLDetailsElement).open ? sites : []));
+    });
   }
 </script>

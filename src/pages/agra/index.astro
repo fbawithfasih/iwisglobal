@@ -10,6 +10,7 @@ import { sortGuides } from '../../lib/guides';
 import TourCard from '../../components/TourCard.astro';
 import SharedTourFacts from '../../components/SharedTourFacts.astro';
 import TajToday from '../../components/TajToday';
+import AgraMap from '../../components/AgraMap';
 import FoundingGuestNote from '../../components/FoundingGuestNote.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 
@@ -111,7 +112,16 @@ const faqJsonLd = {
       ))}
     </nav>
 
-    <div class="mb-8 max-w-md"><TajToday client:visible /></div>
+    <div class="mb-8 grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
+      <TajToday client:visible />
+      <div>
+        <h2 class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Where everything is</h2>
+        <AgraMap
+          client:visible
+          details={attractions.map((a) => ({ slug: a.slug, name: a.data.name, hours: a.data.hours, ticketForeign: a.data.ticketPriceForeign, closedFriday: a.data.closedFriday }))}
+        />
+      </div>
+    </div>
 
     <h2 id="at-a-glance" class="mb-4 scroll-mt-20 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Agra's main sites at a glance</h2>
     <!-- Phones: one card per site. The 4-column table is wider than a phone
