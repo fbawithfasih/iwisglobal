@@ -150,7 +150,7 @@ async function parseTour(db: D1Like, row: TourRow): Promise<ParsedTour> {
 // Shows tours in another language: title, texts, itinerary and add-on names
 // come from content_translations where a translation exists, English otherwise.
 // Prices, slugs, ids and flags are never touched.
-const TOUR_FIELDS = ['title', 'summary', 'description', 'durationLabel', 'startPoint', 'highlights', 'itinerary', 'includes', 'excludes'] as const;
+const TOUR_FIELDS = ['title', 'summary', 'description', 'durationLabel', 'startPoint', 'highlights', 'itinerary', 'includes', 'excludes', 'entryTicketsInPrice'] as const;
 
 export async function localizeTours(db: D1Like, tours: ParsedTour[], locale: Locale): Promise<ParsedTour[]> {
   if (locale === 'en' || tours.length === 0) return tours;
