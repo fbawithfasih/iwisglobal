@@ -18,7 +18,9 @@ interface Props {
   hideFrom?: 'md' | 'lg';
 }
 
+import { pageI18n } from '../i18n/dictionaries';
 const { waRef, waMessage, hideWhenVisible, hideFrom = 'md' } = Astro.props;
+const { t } = pageI18n(Astro);
 const waHref = `https://wa.me/916399226633?text=${encodeURIComponent(`${waMessage} (ref: ${waRef})`)}`;
 ---
 <div
@@ -37,7 +39,7 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent(`${waMessag
         href={waHref}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Chat with us on WhatsApp"
+        aria-label={t.chat.aria}
         data-wa-ref={waRef}
         class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#2ee06f] to-[#128c7e] text-white shadow-md shadow-emerald-900/25 ring-2 ring-white transition hover:brightness-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-green-200"
       >

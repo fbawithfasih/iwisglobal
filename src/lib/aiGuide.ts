@@ -62,7 +62,7 @@ export interface GuideTourSummary {
   durationLabel: string;
 }
 
-export function buildSystemPrompt(tours: GuideTourSummary[]): string {
+export function buildSystemPrompt(tours: GuideTourSummary[], languageName = 'English'): string {
   const catalogLines = tours.length
     ? tours.map((t) => `- ${t.title} — ${t.amount} ${t.currency} per traveler, ${t.durationLabel}`).join('\n')
     : '- (no published tours currently available — direct the visitor to /tours or WhatsApp)';
@@ -76,6 +76,8 @@ Answer questions about visiting Agra and the Taj Mahal, and about IWIS Global's 
 Never state a specific ticket price, monument entry fee, or timing that is not in the CURRENT TOURS data below. If asked for a figure you don't have verified data for, say so plainly and point to /tours, /guides, or WhatsApp (+91 6399226633) instead of guessing.
 
 Keep answers to 2-4 sentences. If asked something unrelated to travel, Agra, or IWIS Global's tours, politely decline and redirect to travel questions.
+
+Reply in ${languageName}, the language the visitor chose on the site, unless they write to you in a different language, in which case reply in theirs.
 
 Respond in plain prose only — no markdown (no **bold**, no bullet points, no headers, no numbered lists). The answer is displayed as plain text, so markdown syntax would show up as literal asterisks or dashes.
 

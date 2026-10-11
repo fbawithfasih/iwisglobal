@@ -11,6 +11,7 @@ import { resizedSrcset, uploadedImageSize } from '../../lib/resizedImages';
 import { getAvailability, todayIst } from '../../lib/availability';
 import { listLiveAutomaticOffers, offerLiveFor, offerValueLabel, offerConditions, offerBadgeValue } from '../../lib/offers';
 import { resolveEnv } from '../../lib/env';
+import { pageI18n } from '../../i18n/dictionaries';
 import { countBookingsForRequest } from '../../lib/db';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
 import { getCustomerById } from '../../lib/customers';
@@ -24,6 +25,7 @@ import { resolveCurrency, resolvePrice, resolveAddOns, resolvePricingTiers, reso
 export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
+const { locale, t } = pageI18n(Astro);
 const { slug } = Astro.params;
 // A signed-in customer's details pre-fill the booking form. The page then
 // carries personal data, so it must never be cached for others.
@@ -244,13 +246,13 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
       )}
       <h1 class="text-3xl md:text-4xl 2xl:text-5xl font-serif font-semibold text-brand-950 mb-2">{tour.title}</h1>
       <div class="h-1 w-16 rounded-full bg-gradient-to-r from-brand-600 to-accent-500 mb-4"></div>
-      <div class="mb-3"><ShortlistButton client:visible slug={tour.slug} title={tour.title} label /></div>
+      <div class="mb-3"><ShortlistButton client:visible slug={tour.slug} title={tour.title} t={t.shortlist} label /></div>
       <!-- Location and live weather on a line of their own: the weather text
            loads (or fails) after the page, and must not reflow the badges. -->
       <div class="flex items-center gap-2 text-sm text-stone-600 mb-2 min-h-6">
         <span class="inline-flex items-center gap-1"><Icon name="map-pin" class="h-4 w-4 text-brand-600" /> Agra, India</span>
         <span aria-hidden="true">·</span>
-        <WeatherCard client:load variant="inline" />
+        <WeatherCard client:load t={t.weather} locale={locale} variant="inline" />
       </div>
       <div class="flex flex-wrap items-center gap-2 text-sm text-stone-600 mb-4">
         <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-accent-50 text-accent-700">
@@ -396,8 +398,8 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
           </ol>
           {itinerarySites.length >= 2 && (
             <div class="mt-6 border-t border-brand-100 pt-4">
-              <p class="mb-2 text-sm font-semibold text-brand-900">Where these stops are</p>
-              <AgraMap client:visible compact inTour={itinerarySites} />
+              <p class="mb-2 text-sm font-semibold text-brand-900">{t.agraMap.stopsTitle}</p>
+              <AgraMap client:visible t={t.agraMap} compact inTour={itinerarySites} />
             </div>
           )}
         </div>

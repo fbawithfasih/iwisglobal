@@ -19,25 +19,17 @@ export interface MatchTour {
   fromAmount: number;
 }
 
+// Why a tour was picked; the guide shows the matching sentence in the
+// visitor's language (dictionary finder.reasons).
+export type ReasonKey = 'sunrise' | 'day' | 'night' | 'train' | 'luxury' | 'overnight' | 'value' | 'group';
+
 export interface Match {
   slug: string;
   score: number;
-  reasons: string[];
+  reasons: ReasonKey[];
 }
 
 const WHEN_TAG: Partial<Record<When, TourTag>> = { sunrise: 'sunrise', day: 'day', night: 'night' };
-const WHEN_REASON: Record<string, string> = {
-  sunrise: 'Built around the Taj at sunrise',
-  day: 'A full daytime tour',
-  night: 'Seen by moonlight, on the official night-viewing nights',
-};
-const STYLE_REASON: Record<string, string> = {
-  train: 'Travels by Gatimaan Express, the fast train',
-  luxury: 'A premium private car',
-  overnight: 'Stays overnight, so you are not rushing',
-  value: 'The best price per person for a day tour',
-};
-
 // nightAvailable: false when no night-viewing night is left in the published
 // calendar; the moonlight tour is then left out rather than recommended.
 export function recommendTours(tours: MatchTour[], answers: Answers, nightAvailable: boolean): Match[] {
@@ -52,19 +44,19 @@ export function recommendTours(tours: MatchTour[], answers: Answers, nightAvaila
 
     // Small head start for the flagship day tour, so "not sure" answers land somewhere sensible.
     let score = tags.includes('value') ? 0.5 : 0;
-    const reasons: string[] = [];
+    const reasons: ReasonKey[] = [];
     const wantTag = WHEN_TAG[answers.when];
     if (wantTag && tags.includes(wantTag)) {
       score += 3;
-      reasons.push(WHEN_REASON[answers.when]);
+      reasons.push(answers.when as ReasonKey);
     }
     if (answers.style !== 'any' && tags.includes(answers.style)) {
       score += 3;
-      reasons.push(STYLE_REASON[answers.style]);
+      reasons.push(answers.style as ReasonKey);
     }
     if (answers.who === 'group' && tags.includes('group-price')) {
       score += 1;
-      reasons.push('The price per person drops as your group grows');
+      reasons.push('group');
     }
     ranked.push({ slug: tour.slug, score, reasons, price: tour.fromAmount });
   }

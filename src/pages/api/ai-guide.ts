@@ -3,6 +3,7 @@ import type { APIRoute } from 'astro';
 import { resolveEnv } from '../../lib/env';
 import { listTours } from '../../lib/tours';
 import { resolveCurrency, resolvePrice } from '../../lib/currency';
+import { resolveLocale, LOCALES } from '../../lib/i18n';
 import {
   hashIp,
   checkRateLimit,
@@ -82,11 +83,14 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     // visitor's own page, a real point of confusion for a paying customer.
     const currency = resolveCurrency(new URL(request.url).searchParams, cookies.get('currency')?.value);
     const tours = await listTours(db, { status: 'published' });
+    const locale = resolveLocale(new URL(request.url).searchParams, cookies.get('lang')?.value);
+    const languageName = LOCALES.find((l) => l.code === locale)?.label ?? 'English';
     const systemPrompt = buildSystemPrompt(
       tours.map((t) => {
         const resolved = resolvePrice({ amount: t.amount, usdAmount: t.usdAmount }, currency);
         return { title: t.title, amount: resolved.amount, currency: resolved.currency, durationLabel: t.durationLabel };
-      })
+      }),
+      languageName
     );
 
     const answer = await askYourGuide(message, history, systemPrompt, apiKey);

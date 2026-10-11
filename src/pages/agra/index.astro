@@ -4,6 +4,7 @@ export const prerender = false;
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { resolveEnv } from '../../lib/env';
+import { pageI18n } from '../../i18n/dictionaries';
 import { listTours, sharedTourFacts } from '../../lib/tours';
 import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
 import { sortGuides } from '../../lib/guides';
@@ -36,6 +37,7 @@ const openOnFridayNames = new Intl.ListFormat('en', { style: 'long', type: 'conj
 const guides = sortGuides(await getCollection('guides'));
 
 const env = resolveEnv(Astro.locals);
+const { locale, t } = pageI18n(Astro);
 const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
 if (Astro.url.searchParams.get('currency')) {
   Astro.cookies.set('currency', currency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
@@ -114,19 +116,20 @@ const faqJsonLd = {
     </nav>
 
     <div class="mb-8 grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
-      <TajToday client:visible />
+      <TajToday client:visible t={t.tajToday} locale={locale} moonHref="/tours/taj-mahal-moonlight-night-viewing-tour" />
       <div>
-        <h2 class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Where everything is</h2>
+        <h2 class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">{t.agraMap.whereTitle}</h2>
         <AgraMap
           client:visible
+          t={t.agraMap}
           details={attractions.map((a) => ({ slug: a.slug, name: a.data.name, hours: a.data.hours, ticketForeign: a.data.ticketPriceForeign, closedFriday: a.data.closedFriday }))}
         />
       </div>
     </div>
 
     <section class="mb-10" aria-labelledby="light-title">
-      <h2 id="light-title" class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">The Taj through the day</h2>
-      <div class="max-w-2xl"><LightSlider client:visible sunriseHref="/tours/taj-mahal-sunrise-tour" moonlightHref="/tours/taj-mahal-moonlight-night-viewing-tour" /></div>
+      <h2 id="light-title" class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">{t.light.title}</h2>
+      <div class="max-w-2xl"><LightSlider client:visible t={t.light} sunriseHref="/tours/taj-mahal-sunrise-tour" moonlightHref="/tours/taj-mahal-moonlight-night-viewing-tour" /></div>
     </section>
 
     <h2 id="at-a-glance" class="mb-4 scroll-mt-20 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Agra's main sites at a glance</h2>

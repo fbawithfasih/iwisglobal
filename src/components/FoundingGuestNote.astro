@@ -5,11 +5,14 @@
 import { resolveEnv } from '../lib/env';
 import { countBookingsForRequest } from '../lib/db';
 import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../lib/catalog';
+import { pageI18n, fmt } from '../i18n/dictionaries';
 
 interface Props {
   class?: string;
 }
 
+const { t } = pageI18n(Astro);
+const tf = t.founding;
 const db = resolveEnv(Astro.locals).DB;
 const slotsLeft = db ? Math.max(0, FOUNDING_GUEST_SLOT_CAP - (await countBookingsForRequest(db, Astro.request))) : 0;
 const percent = Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100);
@@ -28,24 +31,24 @@ const claimedPercent = Math.round((claimed / FOUNDING_GUEST_SLOT_CAP) * 100);
     <div class="relative flex items-center gap-4">
       <span class="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-full bg-amber-300 leading-none text-brand-950 shadow-md ring-4 ring-white/20">
         <span class="text-xl font-extrabold">{percent}%</span>
-        <span class="mt-0.5 text-[10px] font-bold tracking-widest">OFF</span>
+        <span class="mt-0.5 text-[10px] font-bold tracking-widest">{tf.off}</span>
       </span>
       <div class="min-w-0">
-        <p class="font-serif text-xl font-semibold leading-tight sm:text-2xl">Founding Guest offer</p>
+        <p class="font-serif text-xl font-semibold leading-tight sm:text-2xl">{tf.title}</p>
         <p class="mt-1 text-sm leading-snug text-brand-50">
-          {percent}% off for our first {FOUNDING_GUEST_SLOT_CAP} guests. No code needed; it comes off at checkout.
+          {fmt(tf.body, { percent, cap: FOUNDING_GUEST_SLOT_CAP })}
         </p>
       </div>
     </div>
 
     <div class="relative mt-4">
       <div class="flex items-center justify-between text-xs font-semibold">
-        <span class="text-amber-200">{`Only ${slotsLeft} ${slotsLeft === 1 ? 'spot' : 'spots'} left`}</span>
-        <span class="text-brand-100">{`${claimed} of ${FOUNDING_GUEST_SLOT_CAP} claimed`}</span>
+        <span class="text-amber-200">{slotsLeft === 1 ? tf.oneSpot : fmt(tf.spotsLeft, { n: slotsLeft })}</span>
+        <span class="text-brand-100">{fmt(tf.claimed, { n: claimed, cap: FOUNDING_GUEST_SLOT_CAP })}</span>
       </div>
       <div
         role="progressbar"
-        aria-label="Founding Guest spots claimed"
+        aria-label={tf.progressAria}
         aria-valuemin="0"
         aria-valuemax={FOUNDING_GUEST_SLOT_CAP}
         aria-valuenow={claimed}

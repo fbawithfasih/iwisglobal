@@ -8,25 +8,27 @@
 // Pages queue pixel events before (or without) consent:
 //   (window.iwisPixelQueue = window.iwisPixelQueue || []).push(['ViewContent', {...}, { eventID }])
 // They're sent only if the visitor accepts, and dropped otherwise.
+import { pageI18n } from '../i18n/dictionaries';
+const { t } = pageI18n(Astro);
 ---
 <div
   id="cookie-consent"
   role="region"
-  aria-label="Cookie choice"
+  aria-label={t.cookie.region}
   hidden
   class="fixed inset-x-0 bottom-0 z-[60] rounded-t-2xl border-t-4 border-brand-600 bg-white px-4 pt-3 shadow-[0_-8px_24px_rgba(76,29,149,0.18)] sm:inset-x-auto sm:bottom-5 sm:left-5 sm:max-w-md lg:[&:not([hidden])]:flex lg:max-w-3xl lg:items-center lg:gap-6 lg:px-6 lg:pt-4 2xl:bottom-8 2xl:left-8 2xl:max-w-4xl 2xl:gap-8 2xl:px-8 2xl:pt-5 min-[2200px]:left-1/2 min-[2200px]:max-w-5xl min-[2200px]:-translate-x-1/2 min-[2200px]:px-10 min-[2200px]:pt-6 sm:rounded-2xl sm:border sm:border-t-4 sm:border-brand-100 sm:border-t-brand-600 sm:shadow-[0_12px_32px_rgba(76,29,149,0.25)]"
   style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));"
 >
   <p class="text-[13px] leading-snug text-stone-700 sm:text-sm sm:leading-normal lg:flex-1 2xl:text-base min-[2200px]:text-lg">
-    Can we use cookies from Google, Meta and Metricool for analytics and ads? The site works the same either way.
-    <a href="/privacy#cookies" class="font-medium text-brand-800 underline">Details</a>
+    {t.cookie.message}
+    <a href="/privacy#cookies" class="font-medium text-brand-800 underline">{t.cookie.details}</a>
   </p>
   <div class="mt-2.5 flex gap-2 sm:mt-3 lg:mt-0 lg:shrink-0">
     <button type="button" data-consent="denied" class="flex-1 lg:flex-none lg:px-6 2xl:px-8 min-h-11 2xl:min-h-12 2xl:text-base min-[2200px]:min-h-14 min-[2200px]:text-lg rounded-full border border-brand-200 bg-white px-4 text-sm font-semibold text-brand-900 hover:bg-brand-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200">
-      Reject
+      {t.cookie.reject}
     </button>
     <button type="button" data-consent="granted" class="flex-1 lg:flex-none lg:px-8 2xl:px-10 min-h-11 2xl:min-h-12 2xl:text-base min-[2200px]:min-h-14 min-[2200px]:text-lg rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-4 text-sm font-semibold text-white shadow-md shadow-brand-900/20 hover:brightness-110 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
-      Accept
+      {t.cookie.accept}
     </button>
   </div>
 </div>

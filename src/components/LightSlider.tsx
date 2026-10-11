@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { track } from '../lib/analytics';
+import type { Dictionary } from '../i18n/dictionaries';
 
 // Drag from sunrise to moonlight and watch the light change on the Taj.
 // This is a simulation: CSS filters and a colour wash over one real daytime
@@ -8,7 +9,7 @@ import { track } from '../lib/analytics';
 
 interface Stop {
   at: number;
-  label: string;
+  id: 'sunrise' | 'day' | 'sunset' | 'moon';
   brightness: number;
   saturate: number;
   sepia: number;
@@ -16,10 +17,10 @@ interface Stop {
 }
 
 const STOPS: Stop[] = [
-  { at: 0, label: 'Sunrise', brightness: 0.95, saturate: 1.1, sepia: 0.25, wash: [255, 150, 120, 0.3] },
-  { at: 33, label: 'Daytime', brightness: 1.05, saturate: 1.05, sepia: 0, wash: [255, 255, 255, 0] },
-  { at: 66, label: 'Sunset', brightness: 0.95, saturate: 1.2, sepia: 0.3, wash: [255, 140, 40, 0.28] },
-  { at: 100, label: 'Moonlight', brightness: 0.45, saturate: 0.7, sepia: 0, wash: [20, 20, 90, 0.55] },
+  { at: 0, id: 'sunrise', brightness: 0.95, saturate: 1.1, sepia: 0.25, wash: [255, 150, 120, 0.3] },
+  { at: 33, id: 'day', brightness: 1.05, saturate: 1.05, sepia: 0, wash: [255, 255, 255, 0] },
+  { at: 66, id: 'sunset', brightness: 0.95, saturate: 1.2, sepia: 0.3, wash: [255, 140, 40, 0.28] },
+  { at: 100, id: 'moon', brightness: 0.45, saturate: 0.7, sepia: 0, wash: [20, 20, 90, 0.55] },
 ];
 
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -38,14 +39,7 @@ function lightAt(v: number) {
   };
 }
 
-const CAPTION: Record<string, string> = {
-  Sunrise: 'Soft pink light and the fewest people. The Taj opens 30 minutes before sunrise.',
-  Daytime: 'Bright white marble, long shadows gone. The classic photo light.',
-  Sunset: 'Warm gold on the marble. Gates close 30 minutes before sunset.',
-  Moonlight: 'Only on the official full-moon nights, in small timed batches.',
-};
-
-export default function LightSlider({ sunriseHref, moonlightHref }: { sunriseHref: string; moonlightHref: string }) {
+export default function LightSlider({ t, sunriseHref, moonlightHref }: { t: Dictionary['light']; sunriseHref: string; moonlightHref: string }) {
   const [v, setV] = useState(33);
   const light = lightAt(v);
   const near = STOPS.reduce((best, s) => (Math.abs(s.at - v) < Math.abs(best.at - v) ? s : best));
@@ -61,7 +55,7 @@ export default function LightSlider({ sunriseHref, moonlightHref }: { sunriseHre
           sizes="(min-width: 1024px) 60vw, 100vw"
           width={1200}
           height={800}
-          alt="The Taj Mahal's white marble mausoleum and minarets reflected in the long garden pool"
+          alt={t.alt}
           loading="lazy"
           decoding="async"
           className="h-full w-full object-cover"
@@ -77,8 +71,8 @@ export default function LightSlider({ sunriseHref, moonlightHref }: { sunriseHre
           }}
           aria-hidden="true"
         />
-        <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white">Illustration</span>
-        <span className="absolute bottom-2 left-2 rounded-full bg-white/90 px-3 py-1 text-sm font-semibold text-brand-900">{near.label}</span>
+        <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white">{t.illustration}</span>
+        <span className="absolute bottom-2 left-2 rounded-full bg-white/90 px-3 py-1 text-sm font-semibold text-brand-900">{t[near.id]}</span>
       </div>
 
       <div className="mt-3 rounded-xl border border-brand-100 bg-brand-50/60 p-3">
@@ -89,36 +83,36 @@ export default function LightSlider({ sunriseHref, moonlightHref }: { sunriseHre
           step={1}
           value={v}
           onChange={(e) => setV(Number(e.target.value))}
-          onPointerUp={() => track('light_slider_used', { stop: near.label })}
-          aria-label="Time of day at the Taj Mahal"
-          aria-valuetext={near.label}
+          onPointerUp={() => track('light_slider_used', { stop: near.id })}
+          aria-label={t.aria}
+          aria-valuetext={t[near.id]}
           className="h-11 w-full cursor-pointer accent-brand-700"
         />
         <div className="mt-1 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
           {STOPS.map((s) => (
             <button
-              key={s.label}
+              key={s.id}
               type="button"
               onClick={() => setV(s.at)}
-              aria-pressed={near.label === s.label}
-              className={`min-h-11 rounded-lg px-2 text-sm font-semibold transition ${near.label === s.label ? 'bg-brand-700 text-white' : 'bg-white text-brand-800 hover:bg-brand-50'}`}
+              aria-pressed={near.id === s.id}
+              className={`min-h-11 rounded-lg px-2 text-sm font-semibold transition ${near.id === s.id ? 'bg-brand-700 text-white' : 'bg-white text-brand-800 hover:bg-brand-50'}`}
             >
-              {s.label}
+              {t[s.id]}
             </button>
           ))}
         </div>
       </div>
 
-      <p className="mt-3 text-sm text-stone-700" aria-live="polite">{CAPTION[near.label]}</p>
-      <p className="mt-1 text-xs text-stone-500">Illustration: a simulation of the light on a daytime photo, not a photograph of those moments.</p>
+      <p className="mt-3 text-sm text-stone-700" aria-live="polite">{near.id === 'sunrise' ? t.capSunrise : near.id === 'day' ? t.capDay : near.id === 'sunset' ? t.capSunset : t.capMoon}</p>
+      <p className="mt-1 text-xs text-stone-500">{t.note}</p>
 
-      {(near.label === 'Sunrise' || near.label === 'Moonlight') && (
+      {(near.id === 'sunrise' || near.id === 'moon') && (
         <a
-          href={near.label === 'Sunrise' ? sunriseHref : moonlightHref}
-          onClick={() => track('light_slider_cta', { stop: near.label })}
+          href={near.id === 'sunrise' ? sunriseHref : moonlightHref}
+          onClick={() => track('light_slider_cta', { stop: near.id })}
           className="mt-3 inline-flex min-h-11 items-center rounded-full bg-brand-700 px-5 text-sm font-semibold text-white hover:bg-brand-800"
         >
-          {near.label === 'Sunrise' ? 'See the sunrise tour' : 'See the moonlight tour'}
+          {near.id === 'sunrise' ? t.ctaSunrise : t.ctaMoon}
         </a>
       )}
     </div>

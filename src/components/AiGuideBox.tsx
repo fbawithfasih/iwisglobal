@@ -5,14 +5,21 @@
 import { useState, type FormEvent } from 'react';
 
 const MAX_LENGTH = 300;
-const CLIENT_FALLBACK = "I couldn't get you an answer just now — please browse our tours or WhatsApp us.";
 
 interface Exchange {
   q: string;
   a: string;
 }
 
-export default function AiGuideBox() {
+interface Labels {
+  placeholder: string;
+  inputAria: string;
+  submitAria: string;
+  browse: string;
+  fallback: string;
+}
+
+export default function AiGuideBox({ t }: { t: Labels }) {
   const [message, setMessage] = useState('');
   const [history, setHistory] = useState<Exchange[]>([]);
   const [answer, setAnswer] = useState<string | null>(null);
@@ -35,12 +42,12 @@ export default function AiGuideBox() {
         body: JSON.stringify({ message: trimmed, history }),
       });
       const json = await res.json();
-      const text = typeof json?.answer === 'string' ? json.answer : CLIENT_FALLBACK;
+      const text = typeof json?.answer === 'string' ? json.answer : t.fallback;
       setAnswer(text);
       setHistory([{ q: trimmed, a: text }]);
       setMessage('');
     } catch {
-      setAnswer(CLIENT_FALLBACK);
+      setAnswer(t.fallback);
     } finally {
       setLoading(false);
     }
@@ -57,14 +64,14 @@ export default function AiGuideBox() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           maxLength={MAX_LENGTH}
-          placeholder="Ask YourGuide about Agra"
-          aria-label="Ask YourGuide a travel question"
+          placeholder={t.placeholder}
+          aria-label={t.inputAria}
           className="flex-1 min-w-0 h-10 bg-transparent text-stone-700 text-sm placeholder:text-stone-500 outline-none md:h-11"
         />
         <button
           type="submit"
           disabled={loading}
-          aria-label="Ask YourGuide"
+          aria-label={t.submitAria}
           className="flex items-center justify-center h-10 w-10 rounded-full bg-brand-800 text-white shrink-0 disabled:opacity-60 transition md:h-11 md:w-11"
         >
           {loading ? (
@@ -80,7 +87,7 @@ export default function AiGuideBox() {
       </form>
 
       <a href="/tours" className="mx-auto mt-3 flex w-fit min-h-11 items-center rounded-full bg-amber-300 px-6 text-sm font-semibold text-brand-950 shadow-md transition hover:bg-amber-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60 md:mt-4 md:text-base">
-        Browse tours →
+        {t.browse}
       </a>
 
       {answer && (

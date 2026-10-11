@@ -27,3 +27,10 @@ export function resolveLocale(searchParams: URLSearchParams, cookieValue?: strin
   if (isLocale(cookieValue)) return cookieValue;
   return 'en';
 }
+
+// The BCP 47 tag Intl and toLocale*String want for each site language.
+const INTL: Record<Locale, string> = { en: 'en-GB', es: 'es-ES', fr: 'fr-FR', de: 'de-DE' };
+
+export function intlLocale(locale: Locale): string {
+  return INTL[locale];
+}

@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { listTours } from '../lib/tours';
 import { resolveEnv } from '../lib/env';
+import { pageI18n, fmt, languageName } from '../i18n/dictionaries';
 import { resolveCurrency, resolveFromPrice, CURRENCY_SYMBOLS } from '../lib/currency';
 
 // Side-by-side comparison of up to three tours, driven by ?t=slug,slug. The
@@ -11,6 +12,8 @@ import { resolveCurrency, resolveFromPrice, CURRENCY_SYMBOLS } from '../lib/curr
 export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
+const { t: dict } = pageI18n(Astro);
+const c = dict.compare;
 const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
 const wanted = (Astro.url.searchParams.get('t') ?? '')
   .split(',')
@@ -22,38 +25,38 @@ const tours = wanted.map((slug) => published.find((t) => t.slug === slug)).filte
 
 const money = (tour: (typeof tours)[number]) => {
   const p = resolveFromPrice(tour, currency);
-  return `${CURRENCY_SYMBOLS[p.currency]}${p.amount.toLocaleString(p.currency === 'USD' ? 'en-US' : 'en-IN')}/person`;
+  return `${CURRENCY_SYMBOLS[p.currency]}${p.amount.toLocaleString(p.currency === 'USD' ? 'en-US' : 'en-IN')}${c.perPerson}`;
 };
 const cheapest = Math.min(...tours.map((t) => resolveFromPrice(t, currency).amount));
 const isCheapest = (t: (typeof tours)[number]) => tours.length > 1 && resolveFromPrice(t, currency).amount === cheapest;
-const yes = (v: boolean) => (v ? 'Yes' : 'No');
+const yes = (v: boolean) => (v ? c.yes : c.no);
 
-const rows: { label: string; value: (t: (typeof tours)[number]) => string }[] = [
-  { label: 'From', value: money },
-  { label: 'Duration', value: (t) => t.durationLabel },
-  { label: 'Starts from', value: (t) => t.startPoint || '—' },
-  { label: 'Hotel pickup', value: (t) => yes(t.pickupIncluded) },
-  { label: 'Private tour', value: (t) => yes(t.privateTour) },
-  { label: 'Guide', value: (t) => t.guideLanguage || '—' },
-  { label: 'Entry tickets in the price', value: (t) => (t.entryTicketsInPrice.length > 0 ? t.entryTicketsInPrice.join(', ') : 'Extra') },
+const rows: { key: string; label: string; value: (t: (typeof tours)[number]) => string }[] = [
+  { key: 'from', label: c.from, value: money },
+  { key: 'duration', label: c.duration, value: (t) => t.durationLabel },
+  { key: 'start', label: c.startsFrom, value: (t) => t.startPoint || '—' },
+  { key: 'pickup', label: c.pickup, value: (t) => yes(t.pickupIncluded) },
+  { key: 'private', label: c.private, value: (t) => yes(t.privateTour) },
+  { key: 'guide', label: c.guide, value: (t) => (t.guideLanguage ? languageName(dict, t.guideLanguage) : '—') },
+  { key: 'tickets', label: c.tickets, value: (t) => (t.entryTicketsInPrice.length > 0 ? t.entryTicketsInPrice.join(', ') : c.extra) },
 ];
 ---
-<BaseLayout title="Compare Taj Mahal tours | IWIS Global" description="Compare IWIS Global Taj Mahal and Agra tours side by side: price, duration, pickup, guide and tickets." noindex>
+<BaseLayout title={c.metaTitle} description={c.metaDesc} noindex>
   <section class="tv-scale mx-auto max-w-6xl px-3 pb-28 2xl:max-w-7xl min-[2200px]:[zoom:1.25] min-[3000px]:[zoom:1.5] pt-10 [@media(max-height:500px)]:pt-4 min-[300px]:px-6 md:px-8 md:pt-16 [@media(max-height:500px)]:md:pt-4 lg:px-6">
-    <h1 class="mb-2 font-serif text-3xl font-semibold text-brand-900 md:text-4xl 2xl:text-5xl [@media(max-height:500px)]:text-2xl max-[259px]:!text-xl">Compare tours</h1>
-    <p class="mb-8 max-w-2xl text-stone-600 [@media(max-height:500px)]:mb-3 [@media(max-height:500px)]:text-sm [@media(max-height:260px)]:hidden 2xl:mb-10 2xl:text-lg">Save up to three tours with the heart on any tour, then compare them here.</p>
+    <h1 class="mb-2 font-serif text-3xl font-semibold text-brand-900 md:text-4xl 2xl:text-5xl [@media(max-height:500px)]:text-2xl max-[259px]:!text-xl">{c.title}</h1>
+    <p class="mb-8 max-w-2xl text-stone-600 [@media(max-height:500px)]:mb-3 [@media(max-height:500px)]:text-sm [@media(max-height:260px)]:hidden 2xl:mb-10 2xl:text-lg">{c.intro}</p>
 
     {tours.length < 2 ? (
       <div class="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm shadow-brand-900/5">
-        <p class="text-stone-700">Pick at least two tours to compare. Tap the heart on a tour card to save it.</p>
-        <a href="/tours" class="mt-4 inline-flex min-h-11 items-center rounded-full bg-brand-700 px-5 font-semibold text-white hover:bg-brand-800">Browse tours</a>
+        <p class="text-stone-700">{c.needTwo}</p>
+        <a href="/tours" class="mt-4 inline-flex min-h-11 items-center rounded-full bg-brand-700 px-5 font-semibold text-white hover:bg-brand-800">{c.browse}</a>
       </div>
     ) : (
       <>
         <!-- Wide screens: a real table, one column per tour. -->
         <div class="hidden md:block">
           <table class="w-full table-fixed border-separate border-spacing-0 text-left text-sm 2xl:text-base">
-            <caption class="sr-only">Comparison of {tours.length} tours</caption>
+            <caption class="sr-only">{fmt(c.caption, { n: tours.length })}</caption>
             <thead>
               <tr>
                 <td class="w-28 lg:w-44 2xl:w-56"></td>
@@ -61,7 +64,7 @@ const rows: { label: string; value: (t: (typeof tours)[number]) => string }[] = 
                   <th scope="col" class="border-b border-brand-100 p-2 align-bottom font-serif text-sm font-semibold text-brand-900 lg:p-3 lg:text-base 2xl:p-4 2xl:text-lg">
                     <div class="relative mb-2 overflow-hidden rounded-xl">
                       {t.image && <img src={t.image} alt="" loading="lazy" class="aspect-[4/3] w-full object-cover [@media(max-height:500px)]:aspect-[16/6]" />}
-                      {isCheapest(t) && <span class="absolute left-2 top-2 rounded-full bg-amber-300 px-2.5 py-0.5 font-sans text-xs font-semibold text-brand-950 shadow-sm">Lowest price</span>}
+                      {isCheapest(t) && <span class="absolute left-2 top-2 rounded-full bg-amber-300 px-2.5 py-0.5 font-sans text-xs font-semibold text-brand-950 shadow-sm">{c.lowest}</span>}
                     </div>
                     <span class="[overflow-wrap:anywhere]">{t.title}</span>
                   </th>
@@ -72,11 +75,11 @@ const rows: { label: string; value: (t: (typeof tours)[number]) => string }[] = 
               {rows.map((r) => (
                 <tr>
                   <th scope="row" class="border-b border-brand-100 bg-brand-50/60 p-2 pr-3 text-xs font-medium text-brand-800 lg:p-3 lg:pr-6 lg:text-sm 2xl:p-4 2xl:text-base">{r.label}</th>
-                  {tours.map((t) => <td class={`border-b border-brand-100 p-2 text-stone-800 [overflow-wrap:anywhere] lg:p-3 2xl:p-4 ${r.label === "From" ? "text-base font-semibold text-brand-800" : ""}`}>{r.value(t)}</td>)}
+                  {tours.map((t) => <td class={`border-b border-brand-100 p-2 text-stone-800 [overflow-wrap:anywhere] lg:p-3 2xl:p-4 ${r.key === "from" ? "text-base font-semibold text-brand-800" : ""}`}>{r.value(t)}</td>)}
                 </tr>
               ))}
               <tr>
-                <th scope="row" class="bg-brand-50/60 p-2 text-xs font-medium text-brand-800 lg:p-3 lg:text-sm 2xl:p-4 2xl:text-base">Highlights</th>
+                <th scope="row" class="bg-brand-50/60 p-2 text-xs font-medium text-brand-800 lg:p-3 lg:text-sm 2xl:p-4 2xl:text-base">{c.highlights}</th>
                 {tours.map((t) => (
                   <td class="p-2 align-top text-stone-800 lg:p-3 2xl:p-4"><ul class="list-disc space-y-1 pl-4 [overflow-wrap:anywhere]">{t.highlights.slice(0, 4).map((h) => <li>{h}</li>)}</ul></td>
                 ))}
@@ -84,7 +87,7 @@ const rows: { label: string; value: (t: (typeof tours)[number]) => string }[] = 
               <tr>
                 <td></td>
                 {tours.map((t) => (
-                  <td class="p-2 lg:p-3 2xl:p-4"><a href={`/tours/${t.slug}`} class="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white hover:bg-brand-800">View and book</a></td>
+                  <td class="p-2 lg:p-3 2xl:p-4"><a href={`/tours/${t.slug}`} class="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white hover:bg-brand-800">{c.view}</a></td>
                 ))}
               </tr>
             </tbody>
@@ -92,20 +95,20 @@ const rows: { label: string; value: (t: (typeof tours)[number]) => string }[] = 
         </div>
 
         <!-- Phones: swipe through one card per tour, same rows, cheapest flagged. -->
-        <p class="mb-2 text-xs font-medium text-brand-700 md:hidden">Swipe to compare {tours.length} tours</p>
+        <p class="mb-2 text-xs font-medium text-brand-700 md:hidden">{fmt(c.swipe, { n: tours.length })}</p>
         <div class="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-3 min-[300px]:-mx-6 min-[300px]:px-6 md:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tours.map((t) => (
             <article class="w-[88%] max-w-sm shrink-0 snap-center min-[300px]:w-[84%] sm:w-[46%] overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm shadow-brand-900/5">
               <div class="relative">
                 {t.image ? <img src={t.image} alt="" loading="lazy" class="aspect-[16/9] w-full object-cover" /> : <div class="aspect-[16/9] w-full bg-brand-50"></div>}
-                {isCheapest(t) && <span class="absolute left-2 top-2 rounded-full bg-amber-300 px-2.5 py-0.5 text-xs font-semibold text-brand-950 shadow-sm">Lowest price</span>}
+                {isCheapest(t) && <span class="absolute left-2 top-2 rounded-full bg-amber-300 px-2.5 py-0.5 text-xs font-semibold text-brand-950 shadow-sm">{c.lowest}</span>}
               </div>
               <div class="bg-gradient-to-br from-brand-900 to-brand-700 px-4 py-3 text-white">
                 <h2 class="font-serif text-base font-semibold leading-snug [overflow-wrap:anywhere]">{t.title}</h2>
-                <p class="mt-1 text-sm text-brand-100">from <span class="text-lg font-semibold text-white">{money(t).replace('/person', '')}</span> /person</p>
+                <p class="mt-1 text-sm text-brand-100">from <span class="text-lg font-semibold text-white">{money(t).replace(c.perPerson, '')}</span> {c.perPerson}</p>
               </div>
               <dl class="divide-y divide-brand-100 px-4 text-sm">
-                {rows.filter((r) => r.label !== 'From').map((r) => (
+                {rows.filter((r) => r.key !== 'from').map((r) => (
                   <div class="flex flex-col gap-0.5 py-2 min-[300px]:flex-row min-[300px]:justify-between min-[300px]:gap-3">
                     <dt class="text-stone-500">{r.label}</dt>
                     <dd class="font-medium min-[300px]:text-right text-stone-800 [overflow-wrap:anywhere]">{r.value(t)}</dd>
@@ -114,7 +117,7 @@ const rows: { label: string; value: (t: (typeof tours)[number]) => string }[] = 
               </dl>
               <ul class="mx-4 mt-2 list-disc space-y-1 pl-4 text-sm text-stone-700">{t.highlights.slice(0, 3).map((h) => <li>{h}</li>)}</ul>
               <div class="p-4">
-                <a href={`/tours/${t.slug}`} class="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white hover:bg-brand-800">View and book</a>
+                <a href={`/tours/${t.slug}`} class="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white hover:bg-brand-800">{c.view}</a>
               </div>
             </article>
           ))}

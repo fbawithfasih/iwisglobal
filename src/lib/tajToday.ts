@@ -10,6 +10,7 @@
 
 import { todayIst, isFriday } from './availability';
 import { NIGHT_VIEWING_DATES } from './nightViewing';
+import { intlLocale, type Locale } from './i18n';
 
 const AGRA_LAT = 27.1751;
 const AGRA_LON = 78.0421;
@@ -37,8 +38,9 @@ export function sunTimes(ymd: string): { sunrise: Date; sunset: Date } {
   return { sunrise: toDate(transit - H / 360), sunset: toDate(transit + H / 360) };
 }
 
-export function formatTime(date: Date): string {
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: IST });
+export function formatTime(date: Date, locale: Locale = 'en'): string {
+  // English keeps "5:24 PM"; the other languages use their own clock style.
+  return date.toLocaleTimeString(locale === 'en' ? 'en-US' : intlLocale(locale), { hour: 'numeric', minute: '2-digit', timeZone: IST });
 }
 
 function shiftDay(ymd: string, days: number): string {
@@ -115,6 +117,6 @@ export function nextNightViewing(now: Date = new Date()): NextNightViewing | nul
 }
 
 // "Sat 24 Oct" for a YYYY-MM-DD date.
-export function formatDay(ymd: string): string {
-  return new Date(`${ymd}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+export function formatDay(ymd: string, locale: Locale = 'en'): string {
+  return new Date(`${ymd}T00:00:00Z`).toLocaleDateString(intlLocale(locale), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 }

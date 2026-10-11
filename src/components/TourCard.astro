@@ -6,6 +6,7 @@ import { liveAutomaticOffersForRequest, offerBadge } from '../lib/offers';
 import { resolveFromPrice, CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import type { ParsedTour } from '../lib/tours';
 import ShortlistButton from './ShortlistButton';
+import { pageI18n, languageName, fmt } from '../i18n/dictionaries';
 
 interface Props {
   tour: ParsedTour;
@@ -23,6 +24,8 @@ interface Props {
 
 const { tour, currency, loading = 'lazy', sharedFactsShown = false, headingLevel = 'h2' } = Astro.props;
 const Heading = headingLevel;
+const { t } = pageI18n(Astro);
+const tc = t.tourCard;
 // Cheapest available per-person rate (the largest-group tier when the tour
 // has pricing tiers) — see backlog 0.2. Kept in sync with tours/[slug].astro's
 // "From" price via the same resolveFromPrice helper.
@@ -42,7 +45,7 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
     {tour.image ? (
       <img src={tour.image} srcset={resizedSrcset(tour.image)} sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" {...uploadedImageSize(tour.image)} alt={tour.title} loading={loading} decoding="async" class="w-full h-full object-cover transition group-hover:opacity-90" />
     ) : (
-      <div class="w-full h-full flex items-center justify-center text-brand-300 text-sm">No image yet</div>
+      <div class="w-full h-full flex items-center justify-center text-brand-300 text-sm">{tc.noImage}</div>
     )}
   </div>
 
@@ -54,17 +57,17 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
 
     <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500">
       <span>{tour.durationLabel}</span>
-      {!sharedFactsShown && tour.pickupIncluded && <span>· Hotel pickup</span>}
-      {!sharedFactsShown && tour.privateTour && <span>· Private tour</span>}
-      {!sharedFactsShown && tour.guideLanguage && <span>· {tour.guideLanguage} guide</span>}
+      {!sharedFactsShown && tour.pickupIncluded && <span>· {tc.hotelPickup}</span>}
+      {!sharedFactsShown && tour.privateTour && <span>· {tc.privateTour}</span>}
+      {!sharedFactsShown && tour.guideLanguage && <span>· {fmt(tc.guide, { lang: languageName(t, tour.guideLanguage) })}</span>}
       {/* Only when tickets are built into the price (not a pre-ticked add-on),
           so the "From" price really covers them. */}
       {tour.entryTicketsInPrice.length > 0 ? (
-        <span class="font-medium text-brand-700">· Entry tickets included</span>
+        <span class="font-medium text-brand-700">· {tc.ticketsIncluded}</span>
       ) : (
-        <span>· Entry tickets extra</span>
+        <span>· {tc.ticketsExtra}</span>
       )}
-      {!sharedFactsShown && <span>· Free cancellation</span>}
+      {!sharedFactsShown && <span>· {tc.freeCancel}</span>}
     </div>
 
     <!-- Footer pinned to the bottom of every card so prices and buttons line
@@ -73,15 +76,15 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
     <div class="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-3">
       <p class="whitespace-nowrap text-base font-semibold text-stone-900 sm:text-lg">
         {/* The cheapest rate (largest-group tier), so it's a "From" price. */}
-        <span class="text-xs font-normal text-stone-500">From</span>
+        <span class="text-xs font-normal text-stone-500">{tc.from}</span>
         {CURRENCY_SYMBOLS[price.currency]}{price.amount.toLocaleString(price.currency === 'USD' ? 'en-US' : 'en-IN')}
-        <span class="text-xs font-normal text-stone-500">/person</span>
+        <span class="text-xs font-normal text-stone-500">{tc.perPerson}</span>
       </p>
       <span class="inline-flex shrink-0 items-center rounded-full bg-brand-700 px-3.5 py-1.5 text-xs font-semibold text-white transition group-hover:bg-brand-800">
-        Book now
+        {tc.bookNow}
       </span>
     </div>
   </div>
 </a>
-<div class="absolute right-2 top-2"><ShortlistButton client:visible slug={tour.slug} title={tour.title} /></div>
+<div class="absolute right-2 top-2"><ShortlistButton client:visible slug={tour.slug} title={tour.title} t={t.shortlist} /></div>
 </div>
