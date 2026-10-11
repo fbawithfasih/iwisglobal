@@ -47,16 +47,16 @@ export default function TajToday() {
   const next = status.nextOpen;
 
   return (
-    <section aria-labelledby="taj-today-title" className="flex flex-col rounded-2xl border border-brand-100 bg-white p-4 shadow-sm shadow-brand-900/5 min-[300px]:p-5">
+    <section aria-labelledby="taj-today-title" className="flex flex-col rounded-2xl border border-brand-100 bg-white p-4 shadow-sm shadow-brand-900/5 min-[300px]:p-5 2xl:p-7">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 id="taj-today-title" className="font-serif text-lg font-semibold text-brand-900">Taj Mahal today</h3>
+        <h3 id="taj-today-title" className="font-serif text-lg font-semibold text-brand-900 2xl:text-2xl">Taj Mahal today</h3>
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${head.pill}`}>
           <span className={`h-2 w-2 rounded-full ${head.dot} ${status.state === 'open' ? 'motion-safe:animate-pulse' : ''}`} aria-hidden="true" />
           {head.text}
         </span>
       </div>
 
-      <p className="mt-2 text-sm text-stone-700" aria-live="polite">
+      <p className="mt-2 text-sm text-stone-700 2xl:mt-3 2xl:text-base" aria-live="polite">
         {status.state === 'open' && <>Visiting hours end around <strong>{formatTime(status.closes)}</strong> today.</>}
         {status.state === 'before-opening' && <>Gates open around <strong>{formatTime(status.opens)}</strong>, half an hour before sunrise.</>}
         {(status.state === 'after-closing' || status.state === 'closed-friday') && next && (
@@ -64,7 +64,7 @@ export default function TajToday() {
         )}
       </p>
 
-      <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+      <dl className="mt-3 grid grid-cols-2 gap-2 text-sm 2xl:mt-4 2xl:gap-3 2xl:text-base">
         <div className="rounded-xl bg-brand-50 p-3">
           <dt className="text-xs font-medium text-brand-700">Sunrise</dt>
           <dd className="font-semibold text-brand-900">{formatTime(status.sunrise)}</dd>
@@ -76,9 +76,9 @@ export default function TajToday() {
       </dl>
 
       {night && (
-        <div className="mt-3 rounded-xl border border-brand-100 bg-gradient-to-br from-brand-950 to-brand-800 p-3 text-white">
+        <div className="mt-3 rounded-xl border border-brand-100 bg-gradient-to-br from-brand-950 to-brand-800 p-3 text-white 2xl:mt-4 2xl:p-5">
           <p className="text-xs font-medium text-brand-200">Next full-moon night viewing</p>
-          <p className="mt-0.5 font-semibold">
+          <p className="mt-0.5 font-semibold 2xl:text-lg">
             {nightLine(night)} · {formatDay(night.date)}
           </p>
           <p className="mt-0.5 text-xs text-brand-200">
@@ -87,7 +87,7 @@ export default function TajToday() {
           <a
             href="/tours/taj-mahal-moonlight-night-viewing-tour"
             onClick={() => track('taj_today_moonlight_click', { daysAway: night.daysAway })}
-            className="mt-2 inline-flex min-h-11 items-center rounded-full bg-white px-4 text-sm font-semibold text-brand-900 transition hover:bg-brand-50"
+            className="mt-2 inline-flex min-h-11 items-center rounded-full bg-white px-4 text-sm font-semibold text-brand-900 transition hover:bg-brand-50 2xl:min-h-12 2xl:px-6 2xl:text-base"
           >
             See the moonlight tour
           </a>
@@ -95,7 +95,7 @@ export default function TajToday() {
       )}
 
       <p className="mt-3 text-[11px] leading-snug text-stone-500 sm:hidden">Sunrise and sunset are approximate. Closed Fridays.</p>
-      <p className="mt-auto hidden pt-3 text-[11px] leading-snug text-stone-500 sm:block">
+      <p className="mt-auto hidden pt-3 text-[11px] 2xl:text-xs leading-snug text-stone-500 sm:block">
         Sunrise and sunset are approximate (within a couple of minutes). Hours follow the official rule: 30 minutes before sunrise to 30 minutes before sunset, closed Fridays.
       </p>
     </section>

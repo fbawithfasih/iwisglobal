@@ -181,10 +181,10 @@ function highlightHref(id: string): string {
     </div>
   </section>
 
-  <section class="bg-gradient-to-b from-brand-50 via-brand-50 to-white py-10 md:py-14">
-    <div class="max-w-5xl mx-auto px-6 grid gap-5 md:gap-8">
+  <section class="bg-gradient-to-b from-brand-50 via-brand-50 to-white py-10 md:py-14 2xl:py-20">
+    <div class="tv-scale max-w-5xl 2xl:max-w-6xl mx-auto px-6 grid gap-5 md:gap-8 2xl:gap-10 min-[2200px]:[zoom:1.25] min-[3000px]:[zoom:1.5]">
       <!-- The two live cards side by side, the four promises in a row below. -->
-      <div class="grid items-stretch gap-4 md:grid-cols-2 md:gap-6">
+      <div class="grid items-stretch gap-4 md:grid-cols-2 md:gap-6 2xl:gap-8">
         <TajToday client:visible />
         <WeatherCard client:visible />
       </div>
