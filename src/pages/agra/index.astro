@@ -11,6 +11,7 @@ import TourCard from '../../components/TourCard.astro';
 import SharedTourFacts from '../../components/SharedTourFacts.astro';
 import TajToday from '../../components/TajToday';
 import AgraMap from '../../components/AgraMap';
+import LightSlider from '../../components/LightSlider';
 import FoundingGuestNote from '../../components/FoundingGuestNote.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
 
@@ -122,6 +123,11 @@ const faqJsonLd = {
         />
       </div>
     </div>
+
+    <section class="mb-10" aria-labelledby="light-title">
+      <h2 id="light-title" class="mb-3 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">The Taj through the day</h2>
+      <div class="max-w-2xl"><LightSlider client:visible sunriseHref="/tours/taj-mahal-sunrise-tour" moonlightHref="/tours/taj-mahal-moonlight-night-viewing-tour" /></div>
+    </section>
 
     <h2 id="at-a-glance" class="mb-4 scroll-mt-20 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Agra's main sites at a glance</h2>
     <!-- Phones: one card per site. The 4-column table is wider than a phone
