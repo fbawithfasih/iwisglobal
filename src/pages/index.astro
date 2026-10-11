@@ -137,6 +137,10 @@ function highlightHref(id: string): string {
     </div>
   </section>
 
+  <!-- Everything below the hero scales together on ultrawide screens (the
+       hero is full-bleed and sized to the viewport, so it stays out of it), and
+       on smart TVs via the shared tv-scale rule. -->
+  <div class="tv-scale min-[2200px]:[zoom:1.25] min-[3000px]:[zoom:1.5]">
   <section class="max-w-3xl mx-auto px-6 pt-12 md:pt-16">
     <TourFinder client:visible tours={finderTours} />
   </section>
@@ -182,7 +186,7 @@ function highlightHref(id: string): string {
   </section>
 
   <section class="bg-gradient-to-b from-brand-50 via-brand-50 to-white py-10 md:py-14 2xl:py-20">
-    <div class="tv-scale max-w-5xl 2xl:max-w-6xl mx-auto px-6 grid gap-5 md:gap-8 2xl:gap-10 min-[2200px]:[zoom:1.25] min-[3000px]:[zoom:1.5]">
+    <div class="max-w-5xl 2xl:max-w-6xl mx-auto px-6 grid gap-5 md:gap-8 2xl:gap-10">
       <!-- The two live cards side by side, the four promises in a row below. -->
       <div class="grid items-stretch gap-4 md:grid-cols-2 md:gap-6 2xl:gap-8">
         <TajToday client:visible />
@@ -322,6 +326,7 @@ function highlightHref(id: string): string {
       </p>
     </section>
   )}
+  </div>
 </BaseLayout>
 
 <style>
