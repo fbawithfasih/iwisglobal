@@ -4,6 +4,8 @@
 // informational cards rather than bookable products.
 
 import type { D1Like } from './db';
+import type { Locale } from './i18n';
+import { loadTranslations, overlay } from './translations';
 
 export interface AgraHighlightRow {
   id: string;
@@ -37,12 +39,15 @@ function parseRow(row: AgraHighlightRow): AgraHighlight {
   };
 }
 
-export async function listAgraHighlights(db: D1Like): Promise<AgraHighlight[]> {
+export async function listAgraHighlights(db: D1Like, locale: Locale = 'en'): Promise<AgraHighlight[]> {
   const { results } = await db
     .prepare(`SELECT * FROM agra_highlights ORDER BY sort_order ASC, created_at ASC`)
     .bind()
     .all<AgraHighlightRow>();
-  return results.map(parseRow);
+  const items = results.map(parseRow);
+  if (locale === 'en') return items;
+  const tr = await loadTranslations(db, 'agra_highlight', locale, items.map((i) => i.id));
+  return items.map((i) => overlay(i, tr.get(i.id), ['name', 'description']));
 }
 
 export async function getAgraHighlightById(db: D1Like, id: string): Promise<AgraHighlight | null> {

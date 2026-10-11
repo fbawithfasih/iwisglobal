@@ -29,7 +29,7 @@ const { locale, t } = pageI18n(Astro);
 const [allTours, highlights] = env.DB
   ? await Promise.all([
       listTours(env.DB, { status: 'published' }, locale),
-      listAgraHighlights(env.DB),
+      listAgraHighlights(env.DB, locale),
       liveAutomaticOffersForRequest(env.DB, Astro.request, todayIst()),
       hasApprovedReviewsForRequest(env.DB, Astro.request),
       countBookingsForRequest(env.DB, Astro.request).catch(() => 0),

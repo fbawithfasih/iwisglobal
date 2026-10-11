@@ -1,0 +1,26 @@
+{
+ "TAJ_MAHAL": {
+  "name": "Taj Mahal",
+  "description": "Das weiße Marmormausoleum, das Kaiser Shah Jahan errichten ließ – UNESCO-Welterbe und Mittelpunkt jedes Agra-Besuchs."
+ },
+ "AGRA_FORT": {
+  "name": "Fort Agra",
+  "description": "Eine UNESCO-Welterbe-Festung aus rotem Sandstein am Ufer des Yamuna, einst Sitz der Mogulkaiser."
+ },
+ "FATEHPUR_SIKRI": {
+  "name": "Fatehpur Sikri",
+  "description": "Eine UNESCO-Welterbe-Geisterstadt, die Kaiser Akbar als seine kurzlebige Hauptstadt erbaute, etwa 40 km von Agra entfernt."
+ },
+ "MEHTAB_BAGH": {
+  "name": "Mehtab Bagh",
+  "description": "Ein Mogulgarten direkt gegenüber dem Taj Mahal am anderen Flussufer, bekannt für Sonnenuntergangsblicke auf das Monument."
+ },
+ "ITMAD_UD_DAULAH": {
+  "name": "Grabmal des Itimad-ud-Daulah",
+  "description": "Als „Baby Taj“ bekannt, gilt dieses Marmorgrabmal als gestalterischer Vorläufer des Taj Mahal."
+ },
+ "MARBLE_WORKSHOPS": {
+  "name": "Marmor-Einlegewerkstätten in Agra",
+  "description": "Lokale Ateliers, die Pietra dura pflegen – die Marmor-Einlegekunst, mit der das Taj Mahal selbst geschmückt wurde."
+ }
+}

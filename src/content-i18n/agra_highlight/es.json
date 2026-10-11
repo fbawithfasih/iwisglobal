@@ -1,0 +1,26 @@
+{
+ "TAJ_MAHAL": {
+  "name": "Taj Mahal",
+  "description": "El mausoleo de mármol blanco que mandó construir el emperador Shah Jahan: Patrimonio de la Humanidad de la UNESCO y el centro de toda visita a Agra."
+ },
+ "AGRA_FORT": {
+  "name": "Fuerte de Agra",
+  "description": "Una fortaleza mogola de arenisca roja, Patrimonio de la Humanidad de la UNESCO, a orillas del Yamuna, que fue sede de los emperadores mogoles."
+ },
+ "FATEHPUR_SIKRI": {
+  "name": "Fatehpur Sikri",
+  "description": "Una ciudad fantasma Patrimonio de la Humanidad de la UNESCO que el emperador Akbar construyó como su efímera capital, a unos 40 km de Agra."
+ },
+ "MEHTAB_BAGH": {
+  "name": "Mehtab Bagh",
+  "description": "Un jardín mogol justo al otro lado del río desde el Taj Mahal, conocido por sus vistas del monumento al atardecer."
+ },
+ "ITMAD_UD_DAULAH": {
+  "name": "Tumba de Itimad-ud-Daulah",
+  "description": "Conocida como el «Baby Taj», esta tumba de mármol se considera un precursor del diseño del Taj Mahal."
+ },
+ "MARBLE_WORKSHOPS": {
+  "name": "Talleres de incrustación de mármol de Agra",
+  "description": "Talleres locales que practican la pietra dura, el arte de la incrustación de mármol con el que se decoró el propio Taj Mahal."
+ }
+}

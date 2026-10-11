@@ -1,0 +1,26 @@
+{
+ "TAJ_MAHAL": {
+  "name": "Taj Mahal",
+  "description": "Le mausolée de marbre blanc édifié par l'empereur Shah Jahan : site du patrimoine mondial de l'UNESCO et cœur de toute visite d'Agra."
+ },
+ "AGRA_FORT": {
+  "name": "Fort d'Agra",
+  "description": "Une forteresse moghole de grès rouge classée au patrimoine mondial de l'UNESCO, au bord de la Yamuna, ancien siège des empereurs moghols."
+ },
+ "FATEHPUR_SIKRI": {
+  "name": "Fatehpur Sikri",
+  "description": "Une cité fantôme classée au patrimoine mondial de l'UNESCO, bâtie par l'empereur Akbar comme capitale éphémère, à environ 40 km d'Agra."
+ },
+ "MEHTAB_BAGH": {
+  "name": "Mehtab Bagh",
+  "description": "Un jardin moghol juste en face du Taj Mahal, de l'autre côté du fleuve, réputé pour ses vues du monument au coucher du soleil."
+ },
+ "ITMAD_UD_DAULAH": {
+  "name": "Tombeau d'Itimad-ud-Daulah",
+  "description": "Connu sous le nom de « Baby Taj », ce tombeau de marbre est considéré comme un précurseur du Taj Mahal par son architecture."
+ },
+ "MARBLE_WORKSHOPS": {
+  "name": "Ateliers de marqueterie de marbre d'Agra",
+  "description": "Des ateliers locaux qui pratiquent la pietra dura, l'art de la marqueterie de marbre qui orne le Taj Mahal lui-même."
+ }
+}
