@@ -39,7 +39,7 @@ const rows: { label: string; value: (t: (typeof tours)[number]) => string }[] = 
 ];
 ---
 <BaseLayout title="Compare Taj Mahal tours | IWIS Global" description="Compare IWIS Global Taj Mahal and Agra tours side by side: price, duration, pickup, guide and tickets." noindex>
-  <section class="mx-auto max-w-6xl px-3 pb-32 2xl:max-w-7xl min-[2200px]:[zoom:1.25] min-[3000px]:[zoom:1.5] pt-10 min-[300px]:px-6 md:px-8 md:pt-16 lg:px-6">
+  <section class="mx-auto max-w-6xl px-3 pb-28 2xl:max-w-7xl min-[2200px]:[zoom:1.25] min-[3000px]:[zoom:1.5] pt-10 [@media(max-height:500px)]:pt-4 min-[300px]:px-6 md:px-8 md:pt-16 [@media(max-height:500px)]:md:pt-4 lg:px-6">
     <h1 class="mb-2 font-serif text-3xl font-semibold text-brand-900 md:text-4xl 2xl:text-5xl [@media(max-height:500px)]:text-2xl">Compare tours</h1>
     <p class="mb-8 max-w-2xl text-stone-600 [@media(max-height:500px)]:mb-3 [@media(max-height:500px)]:text-sm 2xl:mb-10 2xl:text-lg">Save up to three tours with the heart on any tour, then compare them here.</p>
 
@@ -60,7 +60,7 @@ const rows: { label: string; value: (t: (typeof tours)[number]) => string }[] = 
                 {tours.map((t) => (
                   <th scope="col" class="border-b border-brand-100 p-2 align-bottom font-serif text-sm font-semibold text-brand-900 lg:p-3 lg:text-base 2xl:p-4 2xl:text-lg">
                     <div class="relative mb-2 overflow-hidden rounded-xl">
-                      {t.image && <img src={t.image} alt="" loading="lazy" class="aspect-[4/3] w-full object-cover" />}
+                      {t.image && <img src={t.image} alt="" loading="lazy" class="aspect-[4/3] w-full object-cover [@media(max-height:500px)]:aspect-[16/6]" />}
                       {isCheapest(t) && <span class="absolute left-2 top-2 rounded-full bg-amber-300 px-2.5 py-0.5 font-sans text-xs font-semibold text-brand-950 shadow-sm">Lowest price</span>}
                     </div>
                     <span class="[overflow-wrap:anywhere]">{t.title}</span>
