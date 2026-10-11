@@ -77,7 +77,7 @@ function highlightHref(id: string): string {
 }
 ---
 <BaseLayout title="Private Delhi to Agra Taj Mahal Tour | IWIS Global">
-  <section class="relative isolate flex min-h-[82svh] flex-col justify-end md:block md:min-h-0">
+  <section class="relative isolate flex min-h-[82svh] flex-col justify-end md:min-h-[min(88svh,820px)]">
     <div class="absolute inset-0 -z-10 overflow-hidden" id="hero-frame">
       <!-- The still behind the video (instead of a poster="" attribute, which
            can't be responsive): phones load a 79 KB 720×720 copy rather than
@@ -112,23 +112,22 @@ function highlightHref(id: string): string {
         <source data-src="/hero-mobile.mp4" type="video/mp4" media="(max-width: 767px)" />
         <source data-src="https://d2ol7oe51mr4n9.cloudfront.net/user_3DcNrqF8RYl6IEcXyvyHIz0mgUZ/77342590-7bb6-4f5c-a0dc-8c192a2db2bd.mp4" type="video/mp4" />
       </video>
-      <!-- Phones: the text sits in the lower part of the frame, so only that part
-           is darkened and the monument above it stays bright. Desktop keeps the
-           gentle bottom-up fade. -->
-      <div class="absolute inset-0 bg-[linear-gradient(to_top,rgba(46,16,101,0.94)_0%,rgba(46,16,101,0.82)_30%,rgba(46,16,101,0.35)_50%,rgba(46,16,101,0)_66%)] md:bg-gradient-to-t md:from-brand-950/70 md:via-brand-900/25 md:to-transparent"></div>
+      <!-- The text sits in the lower part of the frame on every screen size, so
+           only that part is darkened and the monument above it stays bright. -->
+      <div class="absolute inset-0 bg-[linear-gradient(to_top,rgba(46,16,101,0.94)_0%,rgba(46,16,101,0.82)_30%,rgba(46,16,101,0.35)_50%,rgba(46,16,101,0)_66%)]"></div>
     </div>
-    <div class="mx-auto w-full max-w-3xl px-5 pb-8 pt-56 text-center md:px-6 md:py-52">
+    <div class="mx-auto w-full max-w-3xl px-5 pb-8 pt-56 text-center md:px-6 md:pb-14 md:pt-80">
       <h1 class="mb-3 font-serif font-semibold text-white [text-shadow:0_2px_14px_rgba(30,10,60,0.45)] md:mb-4">
         {heroLead ? (
           <>
-            <span class="mb-2 block font-sans text-xs font-semibold uppercase tracking-[0.24em] text-amber-200 md:mb-0 md:inline md:font-serif md:text-5xl md:normal-case md:tracking-normal md:text-white">{heroLead}<span class="hidden md:inline">,</span></span>{' '}
-            <span class="block text-[2rem] leading-[1.1] md:inline md:text-5xl">{heroRest}</span>
+            <span class="mb-2 block font-sans text-xs font-semibold uppercase tracking-[0.24em] text-amber-200 md:text-sm">{heroLead}</span>
+            <span class="block text-[2rem] leading-[1.1] md:text-6xl">{heroRest}</span>
           </>
         ) : (
-          <span class="block text-[2rem] leading-[1.1] md:text-5xl">{t.hero.title}</span>
+          <span class="block text-[2rem] leading-[1.1] md:text-6xl">{t.hero.title}</span>
         )}
       </h1>
-      <p class="mx-auto mb-5 max-w-sm text-[15px] leading-6 text-white/85 [text-shadow:0_1px_10px_rgba(30,10,60,0.45)] md:mb-8 md:max-w-none md:text-lg md:leading-normal md:text-white/90">
+      <p class="mx-auto mb-5 max-w-sm text-[15px] leading-6 text-white/85 [text-shadow:0_1px_10px_rgba(30,10,60,0.45)] md:mb-8 md:max-w-xl md:text-lg md:leading-7 md:text-white/90">
         {t.hero.subtitle}
       </p>
       <AiGuideBox client:load t={t.aiGuide} />
