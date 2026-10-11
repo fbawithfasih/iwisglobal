@@ -12,10 +12,41 @@ const CUTOFF_HOUR_IST = 21; // 9 PM
 // are never bookable. Also used by the booking widget (browser), so keep
 // this free of server-only code.
 export const FRIDAY_CLOSED_MESSAGE = 'The Taj Mahal is closed on Fridays — please pick another day.';
+export const TAJ_DAY_CLOSED_MESSAGE = 'This tour visits the Taj Mahal on day {n}, and the Taj Mahal is closed on Fridays — please start on another day.';
 
 // value is a YYYY-MM-DD calendar date (no time zone involved).
 export function isFriday(value: string): boolean {
   return new Date(`${value}T00:00:00Z`).getUTCDay() === 5;
+}
+
+// Multi-day tours visit the Taj Mahal on a later day ("Day 2 · Taj Mahal"), and
+// it is the Taj's day that must not be a Friday, not the start date. Days into
+// the trip (0 = the first day) of the first itinerary stop named for the Taj
+// Mahal; single-day tours have no "Day N" labels and so give 0. Free of
+// server-only code: the booking widget calls it too.
+export function tajDayOffset(itinerary: { time: string; activity: string }[]): number {
+  // "Day 2 · …" in any language ("Día 2", "Jour 2", "Tag 2"): a word then a number.
+  const dayLabel = /^\s*[A-Za-z\u00C0-\u00FF]+\.?\s*(\d+)\b/;
+  for (const step of itinerary) {
+    const m = step.time.match(dayLabel);
+    if (m && /taj mahal/i.test(step.activity)) return Math.max(Number(m[1]) - 1, 0);
+  }
+  return 0;
+}
+
+// True when the tour would reach the Taj Mahal on a Friday if it started on
+// `start` (a YYYY-MM-DD date). With offset 0 this is isFriday(start).
+export function isTajClosedStart(start: string, offset = 0): boolean {
+  const d = new Date(`${start}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + offset);
+  return d.getUTCDay() === 5;
+}
+
+// The first date on or after `from` that a tour with this Taj-day offset can start.
+export function firstOpenStart(from: string, offset = 0): string {
+  const d = new Date(`${from}T00:00:00Z`);
+  while (isTajClosedStart(d.toISOString().slice(0, 10), offset)) d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
 }
 
 export interface AvailabilityInfo {
@@ -85,7 +116,7 @@ export function isValidDateString(value: string): boolean {
 // Server-side re-check of the same rule the date picker's `min` attribute
 // expresses client-side: a caller can't book a past date, today, or
 // tomorrow after the 9 PM IST cutoff by posting directly to the booking API.
-export function isBookableDate(value: string, now: Date = new Date()): boolean {
-  if (!isValidDateString(value) || isFriday(value)) return false;
+export function isBookableDate(value: string, now: Date = new Date(), tajOffset = 0): boolean {
+  if (!isValidDateString(value) || isTajClosedStart(value, tajOffset)) return false;
   return value >= getAvailability(now).minBookableDate;
 }

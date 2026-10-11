@@ -445,6 +445,7 @@ export const en = {
       wentWrong: "Something went wrong",
       free: "(free)",
       fridayClosed: "The Taj Mahal is closed on Fridays — please pick another day.",
+      tajDayClosed: "This tour visits the Taj Mahal on day {n}, and the Taj Mahal is closed on Fridays — please start on another day.",
       couponApplied: "✓ {name} applied: −{amount}",
       couponBigger: "Your {label} already gives a bigger discount, so this code isn't needed.",
       tourTotal: "{amount} tour total",

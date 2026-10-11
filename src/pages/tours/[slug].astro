@@ -8,7 +8,7 @@ import ReviewList from '../../components/ReviewList.astro';
 import { listApprovedReviews, averageRating, hasApprovedReviewsForRequest } from '../../lib/reviews';
 import { getTourBySlug } from '../../lib/tours';
 import { resizedSrcset, uploadedImageSize } from '../../lib/resizedImages';
-import { getAvailability, todayIst } from '../../lib/availability';
+import { getAvailability, todayIst, tajDayOffset, firstOpenStart } from '../../lib/availability';
 import { listLiveAutomaticOffers, offerLiveFor, offerValueLabel, offerConditions, offerBadgeValue } from '../../lib/offers';
 import { resolveEnv } from '../../lib/env';
 import { pageI18n, fmt, languageName } from '../../i18n/dictionaries';
@@ -50,6 +50,9 @@ if (!tour || tour.status !== 'published') {
 }
 
 const availability = getAvailability();
+// Multi-day tours reach the Taj Mahal on a later day, which must not be a Friday.
+const tajOffset = tajDayOffset(tour.itinerary);
+const minStart = firstOpenStart(availability.minBookableDate, tajOffset);
 const tp = t.tourPage;
 // Offer wording and date style in the visitor's language.
 const offerText = { ...t.offers, dateTag: intlLocale(locale) };
@@ -529,9 +532,10 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
         pricingTiers={resolvedTiers}
         currency={price.currency}
         addOns={resolvedAddOns}
-        minDate={availability.minBookableDate}
+        minDate={minStart}
         allowedDates={isNightViewingTour(tour.id) ? nightViewingDatesFrom(availability.minBookableDate) : undefined}
-        availabilityLabel={availabilityLabel}
+        tajDayOffset={tajOffset}
+        availabilityLabel={minStart === availability.minBookableDate ? availabilityLabel : undefined}
         foundingGuestSlotsLeft={foundingGuestSlotsLeft}
         offers={tourOffers}
         initialName={account?.name}

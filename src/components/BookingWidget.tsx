@@ -6,7 +6,7 @@ import { fmtNode } from '../i18n/format';
 import { intlLocale, type Locale } from '../lib/i18n';
 import type { Dictionary } from '../i18n/dictionaries';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
-import { isFriday, todayIst } from '../lib/availability';
+import { isTajClosedStart, todayIst } from '../lib/availability';
 import { NIGHT_VIEWING_DATE_MESSAGE } from '../lib/nightViewing';
 import { pickPricingTier, computeDepositAmount, FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE, type PricingTier } from '../lib/catalog';
 import { FOUNDING_GUEST_OFFER_ID, bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer, type OfferText, offerBadgeValue } from '../lib/offers';
@@ -67,6 +67,9 @@ interface BookingWidgetProps {
   // Night-viewing tours only: the nights that can be booked. Replaces the free
   // date picker with this list (an empty list means none are open right now).
   allowedDates?: string[];
+  // Days into the trip (0 = first day) when the tour visits the Taj Mahal, which
+  // is closed on Fridays; see tajDayOffset in lib/availability.ts.
+  tajDayOffset?: number;
   availabilityLabel?: string;
   // Backlog 1.1 — display only; the server independently decides real
   // eligibility at payment time from a fresh count. 0 or undefined hides
@@ -94,6 +97,7 @@ export default function BookingWidget({
   addOns,
   minDate,
   allowedDates,
+  tajDayOffset = 0,
   availabilityLabel,
   foundingGuestSlotsLeft = 0,
   offers = [],
@@ -203,7 +207,7 @@ export default function BookingWidget({
     setError(null);
 
     if (!date) return setError(allowedDates && allowedDates.length === 0 ? tr.noNightDates : tr.chooseDate);
-    if (isFriday(date)) return setError(tr.fridayClosed);
+    if (isTajClosedStart(date, tajDayOffset)) return setError(tajDayOffset > 0 ? fmt(tr.tajDayClosed, { n: tajDayOffset + 1 }) : tr.fridayClosed);
     if (allowedDates && !allowedDates.includes(date)) return setError(NIGHT_VIEWING_DATE_MESSAGE);
     const errors = contactErrors(name, email, phone, tr);
     setFieldErrors(errors);
@@ -448,8 +452,8 @@ export default function BookingWidget({
           />
           {/* A native date input can't grey out weekdays, so say it up front and
               flag a Friday pick straight away (the server rejects it too). */}
-          {date && isFriday(date) ? (
-            <p className="text-xs text-red-600 mt-1" role="alert">{tr.fridayClosed}</p>
+          {date && isTajClosedStart(date, tajDayOffset) ? (
+            <p className="text-xs text-red-600 mt-1" role="alert">{tajDayOffset > 0 ? fmt(tr.tajDayClosed, { n: tajDayOffset + 1 }) : tr.fridayClosed}</p>
           ) : (
             <p className="text-xs text-stone-500 mt-1">
               {availabilityLabel && <span className="text-accent-700">{availabilityLabel} · </span>}

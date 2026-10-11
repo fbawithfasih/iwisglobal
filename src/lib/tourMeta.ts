@@ -15,6 +15,9 @@ export const TOUR_TAGS: Record<string, TourTag[]> = {
   'agra-overnight-tour-from-delhi': ['overnight'],
   'agra-mathura-vrindavan-overnight-tour': ['overnight'],
   'taj-mahal-luxury-car-tour-from-delhi': ['day', 'luxury'],
+  '3-days-golden-triangle-tour-from-delhi': ['overnight', 'sunrise'],
+  '4-days-golden-triangle-tour-from-delhi': ['overnight', 'sunrise'],
+  '5-days-golden-triangle-tour-from-delhi': ['overnight', 'sunrise'],
 };
 
 export function tagsFor(slug: string): TourTag[] {

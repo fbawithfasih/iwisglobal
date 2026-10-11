@@ -2,7 +2,9 @@ import type { APIRoute } from 'astro';
 import { razorpayProvider } from '../../lib/payments/razorpay';
 import { travelersBookedOn, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
-import { isBookableDate, isFriday, FRIDAY_CLOSED_MESSAGE } from '../../lib/availability';
+import { isBookableDate, isValidDateString, isTajClosedStart, tajDayOffset, FRIDAY_CLOSED_MESSAGE, TAJ_DAY_CLOSED_MESSAGE } from '../../lib/availability';
+import { getTourById } from '../../lib/tours';
+import { fmt } from '../../i18n/fmt';
 import { isNightViewingTour, isNightViewingDate, NIGHT_VIEWING_DATE_MESSAGE } from '../../lib/nightViewing';
 
 export const prerender = false;
@@ -24,11 +26,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
+    const env = resolveEnv(locals);
+    const db = env.DB;
+
     // Re-checks the same rule the date picker's `min` attribute expresses
     // client-side — a raw API call can't book a past date or a same-day
-    // slot after the 9 PM IST cutoff, or a Friday (Taj Mahal closed).
-    if (typeof date !== 'string' || !isBookableDate(date)) {
-      const error = typeof date === 'string' && isFriday(date) ? FRIDAY_CLOSED_MESSAGE : 'Please choose a valid, bookable travel date.';
+    // slot after the 9 PM IST cutoff, or a trip that reaches the Taj Mahal
+    // (closed Fridays) on a Friday.
+    const tour = db ? await getTourById(db, String(tourId)) : null;
+    const tajOffset = tour ? tajDayOffset(tour.itinerary) : 0;
+    if (typeof date !== 'string' || !isBookableDate(date, new Date(), tajOffset)) {
+      const closed = typeof date === 'string' && isValidDateString(date) && isTajClosedStart(date, tajOffset);
+      const error = closed ? (tajOffset > 0 ? fmt(TAJ_DAY_CLOSED_MESSAGE, { n: tajOffset + 1 }) : FRIDAY_CLOSED_MESSAGE) : 'Please choose a valid, bookable travel date.';
       return new Response(JSON.stringify({ error }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -42,9 +51,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-
-    const env = resolveEnv(locals);
-    const db = env.DB;
 
     if (db) {
       const alreadyBooked = await travelersBookedOn(db, tourId, date);

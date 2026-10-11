@@ -444,6 +444,7 @@ export const fr: Dictionary = {
       wentWrong: "Une erreur s'est produite",
       free: "(gratuit)",
       fridayClosed: "Le Taj Mahal est fermé le vendredi — merci de choisir un autre jour.",
+      tajDayClosed: "Ce circuit visite le Taj Mahal le jour {n}, et le Taj Mahal est fermé le vendredi — merci de choisir un autre jour de départ.",
       couponApplied: "✓ {name} appliqué : −{amount}",
       couponBigger: "Votre {label} offre déjà une réduction plus importante, ce code n'est donc pas nécessaire.",
       tourTotal: "{amount} pour le circuit",

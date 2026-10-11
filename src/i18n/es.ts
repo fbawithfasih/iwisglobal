@@ -444,6 +444,7 @@ export const es: Dictionary = {
       wentWrong: "Algo ha salido mal",
       free: "(gratis)",
       fridayClosed: "El Taj Mahal cierra los viernes: elige otro día.",
+      tajDayClosed: "Este tour visita el Taj Mahal el día {n}, y el Taj Mahal cierra los viernes: elige otro día de inicio.",
       couponApplied: "✓ {name} aplicado: −{amount}",
       couponBigger: "Tu {label} ya te da un descuento mayor, así que no hace falta este código.",
       tourTotal: "{amount} total del tour",
