@@ -323,7 +323,7 @@ export default function BookingWidget({
   };
 
   return (
-    <div onFocus={onFormFocus} onBlur={onFormBlur} className="rounded-xl border border-brand-100 bg-white p-6 shadow-sm space-y-4">
+    <div onFocus={onFormFocus} onBlur={onFormBlur} className="rounded-xl border border-brand-100 bg-white p-3 min-[300px]:p-6 shadow-sm space-y-4">
       {foundingGuestEligible && (
         <div
           role="note"
