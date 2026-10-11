@@ -65,6 +65,8 @@ export interface BookingRecord {
   offerId?: string | null;
   discountLabel?: string | null;
   discountAmount?: number | null;
+  // The language the guest was using (es, fr, de; en or null = English).
+  locale?: string | null;
 }
 
 export type InsertBookingOutcome = 'inserted' | 'duplicate' | 'capacity_exceeded';
@@ -93,8 +95,8 @@ export async function insertVerifiedBooking(
         `INSERT INTO bookings
           (id, payment_id, order_id, tour_id, travel_date, travelers, add_on_ids,
            traveler_name, traveler_email, traveler_phone, amount_paid, currency, created_at, customer_id,
-           total_amount, payment_type, offer_id, discount_label, discount_amount)
-         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+           total_amount, payment_type, offer_id, discount_label, discount_amount, locale)
+         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
          WHERE (SELECT COALESCE(SUM(travelers), 0) FROM bookings WHERE tour_id = ? AND travel_date = ?) + ? <= ?`
       )
       .bind(
@@ -117,6 +119,7 @@ export async function insertVerifiedBooking(
         booking.offerId ?? null,
         booking.discountLabel ?? null,
         booking.discountAmount ?? null,
+        booking.locale ?? null,
         booking.tourId,
         booking.travelDate,
         booking.travelers,

@@ -6,7 +6,8 @@ import { FOUNDING_GUEST_OFFER_ID } from '../../lib/offers';
 import { insertVerifiedBooking, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
-import { getTourById } from '../../lib/tours';
+import { getTourById, localizeTour } from '../../lib/tours';
+import { resolveLocale } from '../../lib/i18n';
 import { sendBookingConfirmationEmail, sendAdminBookingNotificationEmail } from '../../lib/email';
 import { chosenAddOnNames } from '../../lib/entryTickets';
 
@@ -66,6 +67,8 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     const chargeMajorUnits = verified.paymentType === 'deposit' ? computeDepositAmount(totalMajorUnits) : totalMajorUnits;
     const amountPaid = Math.round(chargeMajorUnits * 100);
 
+    // The guest's language: the lang cookie is set by the /es /fr /de pages.
+    const locale = resolveLocale(new URL(request.url).searchParams, cookies.get('lang')?.value);
     const db = env.DB;
     if (db) {
       const customerId = await getSessionCustomerId(cookies, env.CUSTOMER_SESSION_SECRET);
@@ -90,6 +93,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           offerId: discountMajorUnits > 0 ? verified.offerId ?? FOUNDING_GUEST_OFFER_ID : null,
           discountLabel: discountMajorUnits > 0 ? discountLabel : null,
           discountAmount: discountMajorUnits > 0 ? Math.round(discountMajorUnits * 100) : null,
+          locale,
         },
         MAX_TRAVELERS_PER_DATE
       );
@@ -116,10 +120,12 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       // request, and never allowed to affect the response (see email.ts).
       if (outcome === 'inserted') {
         const tour = await getTourById(db, verified.tourId);
+        const shownTour = tour ? await localizeTour(db, tour, locale) : null;
         await sendBookingConfirmationEmail(env, {
           to: travelerEmail || '',
           travelerName: travelerName || '',
-          tourTitle: tour?.title || 'your tour',
+          tourTitle: shownTour?.title || 'your tour',
+          locale,
           travelDate: verified.date,
           travelers: verified.travelers,
           amountPaid,
@@ -130,7 +136,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           paymentType: verified.paymentType,
           discountLabel: discountMajorUnits > 0 ? discountLabel : null,
           discountAmount: discountMajorUnits > 0 ? Math.round(discountMajorUnits * 100) : null,
-          addOnNames: tour ? chosenAddOnNames(tour, verified.addOnIds) : [],
+          addOnNames: shownTour ? chosenAddOnNames(shownTour, verified.addOnIds) : [],
         });
         await sendAdminBookingNotificationEmail(env, {
           travelerName: travelerName || '',

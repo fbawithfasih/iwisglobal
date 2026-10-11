@@ -36,6 +36,8 @@ const REVIEW_COOKIE = 'review_token';
 const fromLink = Astro.url.searchParams.get('t');
 if (fromLink) {
   Astro.cookies.set(REVIEW_COOKIE, fromLink, { httpOnly: true, secure: true, sameSite: 'lax', path: '/review', maxAge: 60 * 60 * 24 * 30 });
+  const lang = Astro.url.searchParams.get('lang');
+  if (lang === 'es' || lang === 'fr' || lang === 'de' || lang === 'en') Astro.cookies.set('lang', lang, { path: '/', maxAge: 60 * 60 * 24 * 365 });
   const star = Astro.url.searchParams.get('rating');
   return Astro.redirect(star && /^[1-5]$/.test(star) ? `/review?rating=${star}` : '/review', 303);
 }

@@ -5,6 +5,7 @@
 import type { D1Like } from './db';
 
 export interface BookingRow {
+  locale?: string | null; // language used when booking; see schema_booking_locale.sql
   id: string;
   payment_id: string;
   order_id: string;

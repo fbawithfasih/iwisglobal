@@ -47,7 +47,7 @@ if (postForm && postForm.get('_action') === 'phone') {
   }
 } else if (postForm && !customer.email_verified_at) {
   const link = await createEmailVerificationLink(db, customer.id, Astro.url.origin);
-  if (link) await sendEmailVerificationEmail(env, { to: customer.email, name: customer.name, link });
+  if (link) await sendEmailVerificationEmail(env, { to: customer.email, name: customer.name, link, locale });
   resent = link ? 'sent' : 'limit';
 }
 

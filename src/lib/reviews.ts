@@ -8,7 +8,8 @@ import type { D1Like } from './db';
 import { forRequest } from './requestCache';
 import { markReviewRequested, type BookingRow } from './crm';
 import { sendReviewRequestEmail } from './email';
-import { getTourById } from './tours';
+import { getTourById, localizeTour } from './tours';
+import { emailLocale } from './i18n';
 import { todayIst } from './availability';
 
 export type ReviewStatus = 'pending' | 'approved' | 'hidden';
@@ -210,7 +211,9 @@ export async function requestReview(env: Record<string, any>, db: D1Like, bookin
   if (!canBeReviewed(booking, todayIst())) return 'too_early';
   if (!booking.traveler_email) return 'no_email';
   const token = await ensureReviewToken(db, booking);
-  const tour = await getTourById(db, booking.tour_id);
+  const locale = emailLocale(booking.locale);
+  const found = await getTourById(db, booking.tour_id);
+  const tour = found ? await localizeTour(db, found, locale) : null;
   const sent = await sendReviewRequestEmail(env, {
     to: booking.traveler_email,
     travelerName: booking.traveler_name,
@@ -218,6 +221,7 @@ export async function requestReview(env: Record<string, any>, db: D1Like, bookin
     travelDate: booking.travel_date,
     reviewUrl: reviewUrl(SITE_URL, token),
     googleReviewUrl: GOOGLE_REVIEW_URL,
+    locale,
   });
   if (!sent) return 'email_failed';
   await markReviewRequested(db, booking.id);

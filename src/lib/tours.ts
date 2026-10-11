@@ -152,6 +152,12 @@ async function parseTour(db: D1Like, row: TourRow): Promise<ParsedTour> {
 // Prices, slugs, ids and flags are never touched.
 const TOUR_FIELDS = ['title', 'summary', 'description', 'durationLabel', 'startPoint', 'highlights', 'itinerary', 'includes', 'excludes', 'entryTicketsInPrice'] as const;
 
+// One tour in the guest's language, for emails (falls back to the original).
+export async function localizeTour(db: D1Like, tour: ParsedTour, locale: Locale): Promise<ParsedTour> {
+  if (locale === 'en') return tour;
+  return (await localizeTours(db, [tour], locale))[0] ?? tour;
+}
+
 export async function localizeTours(db: D1Like, tours: ParsedTour[], locale: Locale): Promise<ParsedTour[]> {
   if (locale === 'en' || tours.length === 0) return tours;
   const addOnIds = tours.flatMap((t) => t.addOns.map((a) => a.id));

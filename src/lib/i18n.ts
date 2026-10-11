@@ -34,3 +34,8 @@ const INTL: Record<Locale, string> = { en: 'en-GB', es: 'es-ES', fr: 'fr-FR', de
 export function intlLocale(locale: Locale): string {
   return INTL[locale];
 }
+
+// The language to write a stored booking's emails in (bookings.locale).
+export function emailLocale(stored: string | null | undefined): Locale {
+  return isLocale(stored) ? stored : 'en';
+}

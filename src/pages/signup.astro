@@ -17,7 +17,7 @@ import { createEmailVerificationLink } from '../lib/emailVerification';
 import { sendEmailVerificationEmail } from '../lib/email';
 
 const env = resolveEnv(Astro.locals);
-const { t } = pageI18n(Astro);
+const { locale, t } = pageI18n(Astro);
 
 const existingCustomerId = await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET);
 if (existingCustomerId) {
@@ -74,7 +74,7 @@ if (Astro.request.method === 'POST') {
       // background so it doesn't hold up the redirect.
       const link = await createEmailVerificationLink(db, customer.id, Astro.url.origin);
       if (link) {
-        const sending = sendEmailVerificationEmail(env, { to: customer.email, name: customer.name, link });
+        const sending = sendEmailVerificationEmail(env, { to: customer.email, name: customer.name, link, locale });
         const ctx = (Astro.locals as { runtime?: { ctx?: { waitUntil(p: Promise<unknown>): void } } }).runtime?.ctx;
         if (ctx) ctx.waitUntil(sending);
         else await sending;

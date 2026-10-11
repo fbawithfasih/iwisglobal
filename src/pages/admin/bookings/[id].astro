@@ -15,7 +15,8 @@ import {
   markTicketEmailed,
   markReviewRequested,
 } from '../../../lib/crm';
-import { getTourById } from '../../../lib/tours';
+import { getTourById, localizeTour } from '../../../lib/tours';
+import { emailLocale } from '../../../lib/i18n';
 import { formatTravelDate, formatMoneyMinor, formatDateTimeIst } from '../../../lib/format';
 import { telHref, waHref } from '../../../lib/contact';
 import { computeTicketsToBuy, ASI_BOOKING_URL } from '../../../lib/entryTickets';
@@ -78,7 +79,9 @@ if (Astro.request.method === 'POST') {
       if (!key) throw new Error('No e-ticket uploaded yet.');
       const object = await env.IMAGES.get(key);
       if (!object) throw new Error('Stored e-ticket not found.');
-      const tour = await getTourById(db, current.tour_id);
+      const found = await getTourById(db, current.tour_id);
+      const locale = emailLocale(current.locale);
+      const tour = found ? await localizeTour(db, found, locale) : null;
       const sent = await sendEntryTicketEmail(env, {
         to: current.traveler_email,
         travelerName: current.traveler_name,
@@ -87,7 +90,8 @@ if (Astro.request.method === 'POST') {
         bookingId: current.id,
         fileName: `entry-tickets-${current.travel_date}.${key.split('.').pop()}`,
         fileBytes: await new Response(object.body).arrayBuffer(),
-        tickets: tour ? computeTicketsToBuy(tour, current) : [],
+        tickets: found ? computeTicketsToBuy(found, current) : [],
+        locale,
       });
       if (sent) {
         await markTicketEmailed(db, id);
