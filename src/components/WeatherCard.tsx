@@ -175,13 +175,13 @@ export default function WeatherCard({ variant = 'full' }: { variant?: 'full' | '
         : null;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/25">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/25 [@media(max-height:500px)]:p-3">
       {/* Soft decorative circles; purely visual. */}
       <span aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10"></span>
       <span aria-hidden="true" className="pointer-events-none absolute -bottom-16 left-10 h-32 w-32 rounded-full bg-amber-300/10"></span>
 
       <div className="relative">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-4 [@media(max-height:500px)]:mb-2">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span>
@@ -189,22 +189,22 @@ export default function WeatherCard({ variant = 'full' }: { variant?: 'full' | '
           <h3 className="text-xs font-semibold tracking-widest text-amber-200 uppercase">Agra right now</h3>
         </div>
 
-        <div className="flex items-center gap-4 mb-5">
-          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/15 text-4xl leading-none ring-2 ring-white/20" aria-hidden="true">{icon}</span>
+        <div className="flex items-center gap-4 mb-5 [@media(max-height:500px)]:mb-2 [@media(max-height:500px)]:gap-3">
+          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/15 text-4xl [@media(max-height:500px)]:h-11 [@media(max-height:500px)]:w-11 [@media(max-height:500px)]:text-2xl leading-none ring-2 ring-white/20" aria-hidden="true">{icon}</span>
           <div>
-            <p className="text-4xl font-serif font-semibold leading-none">{Math.round(data.temperatureC)}°C</p>
+            <p className="text-4xl font-serif font-semibold leading-none [@media(max-height:500px)]:text-3xl">{Math.round(data.temperatureC)}°C</p>
             <p className="text-sm text-brand-100 mt-1.5">{label}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-xs text-brand-50 mb-4">
+        <div className="grid grid-cols-2 gap-2 text-xs text-brand-50 mb-4 [@media(max-height:500px)]:mb-2 [@media(max-height:500px)]:gap-1.5 [@media(max-height:500px)]:[&_p]:py-1">
           <p className="rounded-lg bg-white/10 px-3 py-2">Humidity: {Math.round(data.humidityPct)}%</p>
           <p className="rounded-lg bg-white/10 px-3 py-2">Wind: {Math.round(data.windSpeedKmh)} km/h</p>
           {rainNote && <p className="col-span-2 rounded-lg bg-white/10 px-3 py-2">{rainNote}</p>}
         </div>
 
         {aqiInfo && (
-          <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-4 [@media(max-height:500px)]:mb-2">
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${aqiInfo.className}`}>
               AQI {data.aqi} · {aqiInfo.label}
             </span>
@@ -213,11 +213,11 @@ export default function WeatherCard({ variant = 'full' }: { variant?: 'full' | '
         )}
 
         {data.forecast.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/15">
+          <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/15 [@media(max-height:500px)]:gap-1.5 [@media(max-height:500px)]:pt-2">
             {data.forecast.map((day) => {
               const dayInfo = describeWeatherCode(day.weatherCode);
               return (
-                <div key={day.date} className="text-center rounded-lg bg-white/10 py-2">
+                <div key={day.date} className="text-center rounded-lg bg-white/10 py-2 [@media(max-height:500px)]:py-1">
                   <p className="text-xs font-medium text-brand-100">
                     {new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' })}
                   </p>
@@ -231,7 +231,7 @@ export default function WeatherCard({ variant = 'full' }: { variant?: 'full' | '
           </div>
         )}
 
-        <p className="text-xs text-brand-200 mt-4">
+        <p className="text-xs text-brand-200 mt-4 [@media(max-height:500px)]:mt-2">
           Updated {new Date(data.fetchedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} ·
           Source: Open-Meteo
         </p>
