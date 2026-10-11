@@ -6,6 +6,7 @@ import { getDictionary } from '../i18n/dictionaries';
 import LocaleSwitcher from '../components/LocaleSwitcher.astro';
 import GlobeLogo from '../components/GlobeLogo.astro';
 import CookieConsent from '../components/CookieConsent.astro';
+import CompareTray from '../components/CompareTray';
 import SocialLinks from '../components/SocialLinks.astro';
 import { SOCIAL_PROFILES } from '../lib/social';
 import { hasApprovedReviewsForRequest } from '../lib/reviews';
@@ -412,6 +413,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
       </a>
     )}
 
+    <CompareTray client:idle />
     <CookieConsent />
   </body>
 </html>
@@ -426,6 +428,12 @@ const websiteJsonLd = Astro.url.pathname === '/'
     body.booking-typing a[data-wa-ref^='FLOATING'] {
       display: none;
     }
+  }
+  /* The saved-tours tray steps aside while a page's own sticky booking bar is
+     showing (MobileActionBar toggles these body classes). */
+  body.has-action-bar .iwis-tray,
+  body.has-action-bar-lg .iwis-tray {
+    display: none;
   }
   body {
     margin: 0;

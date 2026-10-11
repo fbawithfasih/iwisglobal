@@ -14,6 +14,7 @@ import { resolveEnv } from '../../lib/env';
 import { countBookingsForRequest } from '../../lib/db';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
 import { getCustomerById } from '../../lib/customers';
+import ShortlistButton from '../../components/ShortlistButton';
 import { isNightViewingTour, nightViewingDatesFrom } from '../../lib/nightViewing';
 import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../../lib/catalog';
 import { resolveCurrency, resolvePrice, resolveAddOns, resolvePricingTiers, resolveFromPrice, CURRENCY_SYMBOLS } from '../../lib/currency';
@@ -239,6 +240,7 @@ const BRAND_SUFFIX = ' — IWIS Global';
       )}
       <h1 class="text-3xl md:text-4xl 2xl:text-5xl font-serif font-semibold text-brand-950 mb-2">{tour.title}</h1>
       <div class="h-1 w-16 rounded-full bg-gradient-to-r from-brand-600 to-accent-500 mb-4"></div>
+      <div class="mb-3"><ShortlistButton client:visible slug={tour.slug} title={tour.title} label /></div>
       <!-- Location and live weather on a line of their own: the weather text
            loads (or fails) after the page, and must not reflow the badges. -->
       <div class="flex items-center gap-2 text-sm text-stone-600 mb-2 min-h-6">

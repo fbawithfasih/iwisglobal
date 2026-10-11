@@ -5,6 +5,7 @@ import { resolveEnv } from '../lib/env';
 import { liveAutomaticOffersForRequest, offerBadge } from '../lib/offers';
 import { resolveFromPrice, CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import type { ParsedTour } from '../lib/tours';
+import ShortlistButton from './ShortlistButton';
 
 interface Props {
   tour: ParsedTour;
@@ -30,6 +31,9 @@ const price = resolveFromPrice(tour, currency);
 const db = resolveEnv(Astro.locals).DB;
 const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.request, todayIst()), tour.id, currency) : null;
 ---
+<!-- The heart is a sibling of the link, not inside it: a button inside an
+     anchor is invalid and would be activated by the card click. -->
+<div class="relative h-full">
 <a
   href={`/tours/${tour.slug}`}
   class="group flex h-full flex-col"
@@ -79,3 +83,5 @@ const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.requ
     </div>
   </div>
 </a>
+<div class="absolute right-2 top-2"><ShortlistButton client:visible slug={tour.slug} title={tour.title} /></div>
+</div>
