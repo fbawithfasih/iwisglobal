@@ -11,9 +11,9 @@ import TourCard from '../../components/TourCard.astro';
 import SharedTourFacts from '../../components/SharedTourFacts.astro';
 import FoundingGuestNote from '../../components/FoundingGuestNote.astro';
 import { resolveEnv } from '../../lib/env';
-import { listTours, sharedTourFacts } from '../../lib/tours';
+import { listTours, localizeTours, sharedTourFacts } from '../../lib/tours';
 import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
-import { pageI18n } from '../../i18n/dictionaries';
+import { pageI18n, languageName } from '../../i18n/dictionaries';
 import { fmt } from '../../i18n/fmt';
 import { intlLocale } from '../../lib/i18n';
 import { localizedEntry, overlayFields } from '../../lib/localizedContent';
@@ -39,14 +39,12 @@ if (Astro.url.searchParams.get('currency')) {
 // the description, and not an optional add-on stop), cheapest first like /tours.
 const env = resolveEnv(Astro.locals);
 const siteName = entry.data.name.toLowerCase(); // matched against the English itinerary
-const tours = sortByFromPrice(
-  (env.DB ? await listTours(env.DB, { status: 'published' }) : []).filter((t) =>
-    t.itinerary.some((step) => step.activity.toLowerCase().includes(siteName) && !/optional|add-on/i.test(step.time))
-  ),
-  currency
+const englishTours = (env.DB ? await listTours(env.DB, { status: 'published' }) : []).filter((t) =>
+  t.itinerary.some((step) => step.activity.toLowerCase().includes(siteName) && !/optional|add-on/i.test(step.time))
 );
+const tours = sortByFromPrice(env.DB ? await localizeTours(env.DB, englishTours, locale) : englishTours, currency);
 // Listed once above the tours; the cards then show only what differs.
-const sharedFacts = sharedTourFacts(tours);
+const sharedFacts = sharedTourFacts(tours, t.shared, (l) => languageName(t, l));
 
 const attractionJsonLd = {
   '@context': 'https://schema.org',

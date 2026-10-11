@@ -4,7 +4,7 @@ export const prerender = false;
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { resolveEnv } from '../../lib/env';
-import { pageI18n } from '../../i18n/dictionaries';
+import { pageI18n, languageName } from '../../i18n/dictionaries';
 import { fmt } from '../../i18n/fmt';
 import { intlLocale } from '../../lib/i18n';
 import { listTours, sharedTourFacts } from '../../lib/tours';
@@ -52,7 +52,7 @@ if (Astro.url.searchParams.get('currency')) {
 // Same cards and cheapest-first order as /tours and the homepage.
 const tours = sortByFromPrice(env.DB ? await listTours(env.DB, { status: 'published' }, locale) : [], currency);
 // Listed once above the tour row; the cards then show only what differs.
-const sharedFacts = sharedTourFacts(tours);
+const sharedFacts = sharedTourFacts(tours, t.shared, (l) => languageName(t, l));
 
 const faqs = t.agraExtra.faq.map((f) => ({ q: f.q, a: fmt(f.a, { names: openOnFridayNames }) }));
 
