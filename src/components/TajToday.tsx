@@ -47,7 +47,7 @@ export default function TajToday() {
   const next = status.nextOpen;
 
   return (
-    <section aria-labelledby="taj-today-title" className="rounded-2xl border border-brand-100 bg-white p-4 shadow-sm shadow-brand-900/5 min-[300px]:p-5">
+    <section aria-labelledby="taj-today-title" className="flex flex-col rounded-2xl border border-brand-100 bg-white p-4 shadow-sm shadow-brand-900/5 min-[300px]:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id="taj-today-title" className="font-serif text-lg font-semibold text-brand-900">Taj Mahal today</h3>
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${head.pill}`}>
@@ -95,7 +95,7 @@ export default function TajToday() {
       )}
 
       <p className="mt-3 text-[11px] leading-snug text-stone-500 sm:hidden">Sunrise and sunset are approximate. Closed Fridays.</p>
-      <p className="mt-3 hidden text-[11px] leading-snug text-stone-500 sm:block">
+      <p className="mt-auto hidden pt-3 text-[11px] leading-snug text-stone-500 sm:block">
         Sunrise and sunset are approximate (within a couple of minutes). Hours follow the official rule: 30 minutes before sunrise to 30 minutes before sunset, closed Fridays.
       </p>
     </section>
