@@ -47,7 +47,7 @@ export default function TajToday() {
   const next = status.nextOpen;
 
   return (
-    <section aria-labelledby="taj-today-title" className="flex flex-col rounded-2xl border border-brand-100 bg-white p-4 shadow-sm shadow-brand-900/5 min-[300px]:p-5 2xl:p-7">
+    <section aria-labelledby="taj-today-title" className="flex flex-col rounded-2xl border border-brand-100 bg-white p-4 shadow-sm shadow-brand-900/5 min-[300px]:p-5 2xl:p-7 [@media(max-height:500px)]:p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id="taj-today-title" className="font-serif text-lg font-semibold text-brand-900 2xl:text-2xl">Taj Mahal today</h3>
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${head.pill}`}>
@@ -64,19 +64,19 @@ export default function TajToday() {
         )}
       </p>
 
-      <dl className="mt-3 grid grid-cols-2 gap-2 text-sm 2xl:mt-4 2xl:gap-3 2xl:text-base">
+      <dl className="mt-3 grid grid-cols-2 gap-2 text-sm [@media(max-height:500px)]:mt-2 [@media(max-height:500px)]:gap-1.5 2xl:mt-4 2xl:gap-3 2xl:text-base">
         <div className="rounded-xl bg-brand-50 p-3">
-          <dt className="text-xs font-medium text-brand-700">Sunrise</dt>
+          <dt className="text-xs font-medium text-brand-700">Sunrise<span className="hidden [@media(max-height:500px)]:inline"> (approx.)</span></dt>
           <dd className="font-semibold text-brand-900">{formatTime(status.sunrise)}</dd>
         </div>
         <div className="rounded-xl bg-brand-50 p-3">
-          <dt className="text-xs font-medium text-brand-700">Sunset</dt>
+          <dt className="text-xs font-medium text-brand-700">Sunset<span className="hidden [@media(max-height:500px)]:inline"> (approx.)</span></dt>
           <dd className="font-semibold text-brand-900">{formatTime(status.sunset)}</dd>
         </div>
       </dl>
 
       {night && (
-        <div className="mt-3 rounded-xl border border-brand-100 bg-gradient-to-br from-brand-950 to-brand-800 p-3 text-white 2xl:mt-4 2xl:p-5">
+        <div className="mt-3 rounded-xl border border-brand-100 bg-gradient-to-br from-brand-950 to-brand-800 p-3 text-white 2xl:mt-4 2xl:p-5 [@media(max-height:500px)]:mt-2 [@media(max-height:500px)]:p-2.5">
           <p className="text-xs font-medium text-brand-200">Next full-moon night viewing</p>
           <p className="mt-0.5 font-semibold 2xl:text-lg">
             {nightLine(night)} · {formatDay(night.date)}
@@ -94,8 +94,8 @@ export default function TajToday() {
         </div>
       )}
 
-      <p className="mt-3 text-[11px] leading-snug text-stone-500 sm:hidden">Sunrise and sunset are approximate. Closed Fridays.</p>
-      <p className="mt-auto hidden pt-3 text-[11px] 2xl:text-xs leading-snug text-stone-500 sm:block">
+      <p className="mt-3 text-[11px] leading-snug text-stone-500 sm:hidden [@media(max-height:500px)]:!hidden">Sunrise and sunset are approximate. Closed Fridays.</p>
+      <p className="mt-auto hidden pt-3 [@media(max-height:500px)]:!hidden text-[11px] 2xl:text-xs leading-snug text-stone-500 sm:block">
         Sunrise and sunset are approximate (within a couple of minutes). Hours follow the official rule: 30 minutes before sunrise to 30 minutes before sunset, closed Fridays.
       </p>
     </section>
