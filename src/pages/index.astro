@@ -58,7 +58,7 @@ const heroRest = heroParts.length > 1 ? heroParts.slice(1).join(', ') : t.hero.t
 
 // A tiny traveller sits on (or stands on, or sleeps on) the letters of the main
 // headline line (public/hero-minis, cut from one Higgsfield sheet; all share one
-// scale, so `h` is the sprite's pixel height). The 14 letters carrying one are
+// scale, so `h` is the sprite's pixel height). The letters carrying one are
 // spread evenly over the line, in any language. `sink` lowers a sprite that
 // dangles its legs, so its seat, not its feet, rests on the letter.
 const MINI_SPRITES: Record<number, { w: number; h: number; sink?: number }> = {
@@ -68,7 +68,7 @@ const MINI_SPRITES: Record<number, { w: number; h: number; sink?: number }> = {
 };
 // Sitting, standing and sleeping ones alternate so wide sprites sit between narrow ones.
 const MINI_ORDER = [1, 6, 3, 7, 2, 12, 4, 8, 11, 9, 5, 10];
-const MAX_MINIS = 14;
+const MAX_MINIS = 10;
 // Where a letter's top sits below its line box, in em: lower-case letters, then
 // "t", then tall letters (ascenders, capitals, i and j dots).
 const letterTop = (ch: string) => (/[bdfhklij]|\p{Lu}|\d/u.test(ch) ? 0.17 : ch === 't' ? 0.28 : 0.4);
@@ -152,7 +152,7 @@ function highlightHref(id: string): string {
     <div class="mx-auto w-full max-w-3xl px-5 pb-8 pt-56 text-center md:px-6 md:pb-14 md:pt-80">
       <h1 class="mb-3 font-serif font-semibold text-white [text-shadow:0_2px_14px_rgba(30,10,60,0.45)] md:mb-4">
         {heroLead && (
-          <span class="mb-12 block font-sans text-xs font-semibold uppercase tracking-[0.24em] text-amber-200 md:mb-20 md:text-sm">{heroLead}</span>
+          <span class="mb-20 block font-sans text-xs font-semibold uppercase tracking-[0.24em] text-amber-200 md:mb-32 md:text-sm">{heroLead}</span>
         )}
         <span class="block text-[2rem] leading-[1.1] md:text-6xl" aria-label={heroRest}>
           <span aria-hidden="true">
@@ -373,11 +373,11 @@ function highlightHref(id: string): string {
   .hero-mini {
     position: absolute;
     left: 50%;
-    height: calc(var(--h) * 0.0031em);
+    height: calc(var(--h) * 0.0048em);
     width: auto;
     max-width: none;
     /* Feet (or seat) on the letter's top edge; --sink lowers dangling legs. */
-    bottom: calc(100% - var(--top) - var(--sink) * var(--h) * 0.0031em);
+    bottom: calc(100% - var(--top) - var(--sink) * var(--h) * 0.0048em);
     transform: translateX(-50%);
     pointer-events: none;
     filter: drop-shadow(0 3px 3px rgba(30, 10, 60, 0.4));
@@ -385,8 +385,8 @@ function highlightHref(id: string): string {
   /* Phones show every other traveller, a little larger. */
   @media (max-width: 767px) {
     .hero-mini {
-      height: calc(var(--h) * 0.0038em);
-      bottom: calc(100% - var(--top) - var(--sink) * var(--h) * 0.0038em);
+      height: calc(var(--h) * 0.0056em);
+      bottom: calc(100% - var(--top) - var(--sink) * var(--h) * 0.0056em);
     }
   }
   @media (prefers-reduced-motion: no-preference) {
