@@ -5,7 +5,6 @@
 export const en = {
   nav: { tours: 'Tours', blog: 'Blog', help: 'Help', signIn: 'Sign in', myBookings: 'My Bookings', signOut: 'Sign out' },
   hero: {
-    imageAlt: "Illustration of happy travellers in white tops and blue jeans sitting, standing, taking photos and relaxing in front of the Taj Mahal at sunrise",
     title: 'The Taj Mahal, curated just for you.',
     subtitle:
       'Private Taj Mahal & Agra tours from Delhi — your own English-speaking guide and private car, hotel pickup included, and free cancellation up to 24 hours before.',

@@ -4,7 +4,6 @@ import type { Dictionary } from './en';
 export const es: Dictionary = {
   nav: { tours: 'Tours', blog: 'Blog', help: 'Ayuda', signIn: 'Iniciar sesión', myBookings: 'Mis reservas', signOut: 'Cerrar sesión' },
   hero: {
-    imageAlt: "Ilustración de viajeros felices con camisetas blancas y vaqueros sentados, de pie, haciendo fotos y descansando frente al Taj Mahal al amanecer",
     title: 'El Taj Mahal, diseñado para ti.',
     subtitle:
       'Tours privados al Taj Mahal y Agra desde Delhi: tu propio guía de habla inglesa y coche privado, recogida en el hotel incluida y cancelación gratuita hasta 24 horas antes.',

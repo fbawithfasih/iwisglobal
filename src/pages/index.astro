@@ -80,21 +80,39 @@ function highlightHref(id: string): string {
 <BaseLayout title="Private Delhi to Agra Taj Mahal Tour | IWIS Global">
   <section class="relative isolate flex min-h-[82svh] flex-col justify-end md:min-h-[min(88svh,820px)]">
     <div class="absolute inset-0 -z-10 overflow-hidden" id="hero-frame">
-      <!-- Illustration of happy travellers at the Taj Mahal (Higgsfield), one
-           crop per screen: a tall one for phones, 1280 and 1920 wide for the rest. -->
+      <!-- The still behind the video (instead of a poster="" attribute, which
+           can't be responsive): phones load a 79 KB 720×720 copy rather than
+           the 577 KB 1920×1920 one. The video covers it once it plays; with
+           reduced motion or Save-Data it stays as the hero image. -->
       <picture>
-        <source srcset="/hero-travelers-mobile.jpg" media="(max-width: 767px)" />
-        <source srcset="/hero-travelers-1280.jpg" media="(max-width: 1279px)" />
+        <source srcset="/hero-taj-mahal-720.jpg" media="(max-width: 767px)" />
         <img
-          src="/hero-travelers.jpg"
+          src="/hero-taj-mahal.jpg"
           width="1920"
-          height="1085"
-          alt={t.hero.imageAlt}
+          height="1920"
+          alt=""
           fetchpriority="high"
           decoding="async"
-          class="absolute inset-0 w-full h-full object-cover object-[center_40%]"
+          class="absolute inset-0 w-full h-full object-cover object-[center_28%]"
         />
       </picture>
+      <video
+        id="hero-video"
+        class="relative w-full h-full object-cover object-[center_28%]"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="none"
+      >
+        <!-- Phones get a 720×720 centre crop (1.2 MB, what a portrait hero
+             actually shows) instead of the 19.3 MB 1080p original. Sources use
+             data-src: the script below only attaches them (and plays) when
+             neither reduced motion nor Data Saver is on, so those visitors
+             never download the video at all. -->
+        <source data-src="/hero-mobile.mp4" type="video/mp4" media="(max-width: 767px)" />
+        <source data-src="https://d2ol7oe51mr4n9.cloudfront.net/user_3DcNrqF8RYl6IEcXyvyHIz0mgUZ/77342590-7bb6-4f5c-a0dc-8c192a2db2bd.mp4" type="video/mp4" />
+      </video>
       <!-- The text sits in the lower part of the frame on every screen size, so
            only that part is darkened and the monument above it stays bright. -->
       <div class="absolute inset-0 bg-[linear-gradient(to_top,rgba(46,16,101,0.94)_0%,rgba(46,16,101,0.82)_30%,rgba(46,16,101,0.35)_50%,rgba(46,16,101,0)_66%)]"></div>
@@ -339,4 +357,42 @@ function highlightHref(id: string): string {
 </script>
 
 <script>
+  // The video itself provides motion now, so no CSS zoom/parallax/fake-cloud
+  // effects are needed (those existed specifically to animate a static
+  // image). Respect prefers-reduced-motion the same way the old effects
+  // did: don't autoplay (the still photo behind the video shows instead).
+  const heroVideo = document.getElementById('hero-video') as HTMLVideoElement | null;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Data-saver mode (Chrome/Android "Lite"/Save-Data): stop the download and
+  // keep the still photo, same as reduced motion but also dropping sources.
+  const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
+  // Wait for the page to finish loading first: the video (1.2 MB on phones)
+  // otherwise competes for bandwidth with the stylesheet, font and hero
+  // still, delaying the first paint. The still shows until the video plays.
+  const attachVideo = () => {
+    if (!heroVideo) return;
+    heroVideo.querySelectorAll<HTMLSourceElement>('source[data-src]').forEach((s) => {
+      s.src = s.dataset.src!;
+    });
+    heroVideo.preload = 'auto';
+    heroVideo.load();
+    // Start once it can play, and again whenever the page comes back into
+    // view (a background tab doesn't start media). If autoplay is blocked
+    // (e.g. Low Power Mode) the still photo simply stays.
+    const start = () => {
+      if (heroVideo.paused) heroVideo.play().catch(() => {});
+    };
+    heroVideo.addEventListener('canplay', start);
+    document.addEventListener('visibilitychange', start);
+    start();
+  };
+  if (heroVideo && !reduceMotion && !saveData) {
+    // The still (already loading, responsive) doubles as the video's poster,
+    // so the hero counts as painted when the photo shows, not seconds later
+    // when the video's first frame does.
+    const still = document.querySelector<HTMLImageElement>('#hero-frame picture img');
+    if (still?.currentSrc) heroVideo.poster = still.currentSrc;
+    if (document.readyState === 'complete') attachVideo();
+    else window.addEventListener('load', attachVideo, { once: true });
+  }
 </script>
