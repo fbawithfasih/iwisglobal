@@ -1364,6 +1364,26 @@ export const en = {
         note: "The link works within the next 24 hours. If you didn't create an account, you can ignore this email.",
       },
     },
+  hotels: {
+      "title": "Top hotels to stay in Agra",
+      "note": "Ratings and average nightly rates from TripAdvisor, checked on {date}. Rates are a planning guide, not a quote.",
+      "seeAll": "See the full ranking",
+      "rank": "#{n} in Agra on TripAdvisor",
+      "avg": "About {price} a night",
+      "reviews": "{n} reviews",
+      "desc": [
+          "Guest rooms with direct views of the Taj Mahal, a pool and landscaped gardens. The splurge pick.",
+          "A very large palace-style hotel with gardens, a buffet and a convention centre, suited to groups.",
+          "The Hilton option, with a pool facing the Taj Mahal, a spa and sauna and a children's play area.",
+          "A 135-room hotel that guests single out for good value.",
+          "A smaller 92-room IHCL SeleQtions hotel, formerly the Gateway Hotel.",
+          "The Marriott option, with a pool, gym, children's room and an evening puppet show.",
+          "168 rooms, formerly the Crystal Sarovar Premiere, rated 4.8 by guests.",
+          "A resort-style hotel in about 9 hectares of Mughal-style gardens, with a full spa.",
+          "The most reviewed hotel in our ranking, with 239 rooms.",
+          "A rooftop pool and an on-site spa, at one of the lower average rates in the ranking."
+      ]
+  }
 };
 
 // Every other language must provide every key en has, as a string.

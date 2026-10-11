@@ -9,6 +9,7 @@ import AiGuideBox from '../components/AiGuideBox';
 import { listTours, sharedTourFacts } from '../lib/tours';
 import FoundingGuestNote from '../components/FoundingGuestNote.astro';
 import { listAgraHighlights } from '../lib/agraHighlights';
+import HotelsCarousel from '../components/HotelsCarousel.astro';
 import { resizedSrcset, uploadedImageSize } from '../lib/resizedImages';
 import { liveAutomaticOffersForRequest } from '../lib/offers';
 import { hasApprovedReviewsForRequest } from '../lib/reviews';
@@ -290,6 +291,8 @@ function highlightHref(id: string): string {
       </div>
     </div>
   </section>
+
+  <HotelsCarousel currency={currency} />
 
   <section class="max-w-3xl mx-auto px-6 pb-16 [&_p]:leading-relaxed">
     <h2 class="mb-4 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">{t.home.howTitle}</h2>

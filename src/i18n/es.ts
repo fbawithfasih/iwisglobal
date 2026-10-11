@@ -1363,4 +1363,24 @@ export const es: Dictionary = {
         note: "El enlace funciona durante las próximas 24 horas. Si no has creado una cuenta, puedes ignorar este correo.",
       },
     },
+  hotels: {
+      "title": "Los mejores hoteles donde alojarse en Agra",
+      "note": "Valoraciones y tarifas medias por noche de TripAdvisor, consultadas el {date}. Las tarifas son una guía para planificar, no un presupuesto.",
+      "seeAll": "Ver la clasificación completa",
+      "rank": "N.º {n} en Agra en TripAdvisor",
+      "avg": "Unos {price} por noche",
+      "reviews": "{n} opiniones",
+      "desc": [
+          "Habitaciones con vistas directas al Taj Mahal, piscina y jardines paisajísticos. El capricho por excelencia.",
+          "Un hotel enorme de estilo palaciego con jardines, bufé y centro de convenciones, ideal para grupos.",
+          "La opción Hilton, con piscina frente al Taj Mahal, spa y sauna y una zona de juegos infantil.",
+          "Un hotel de 135 habitaciones que los huéspedes destacan por su buena relación calidad-precio.",
+          "Un hotel más pequeño, de 92 habitaciones, de IHCL SeleQtions, antes llamado Gateway Hotel.",
+          "La opción Marriott, con piscina, gimnasio, sala infantil y un espectáculo de marionetas por la tarde.",
+          "168 habitaciones, antes Crystal Sarovar Premiere, valorado con 4,8 por los huéspedes.",
+          "Un hotel de estilo resort en unas 9 hectáreas de jardines de estilo mogol, con spa completo.",
+          "El hotel con más opiniones de nuestra clasificación, con 239 habitaciones.",
+          "Piscina en la azotea y spa en el propio hotel, con una de las tarifas medias más bajas de la clasificación."
+      ]
+  }
 };
