@@ -82,8 +82,8 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     // base-currency (INR) figure that doesn't match a USD-viewing
     // visitor's own page, a real point of confusion for a paying customer.
     const currency = resolveCurrency(new URL(request.url).searchParams, cookies.get('currency')?.value);
-    const tours = await listTours(db, { status: 'published' });
     const locale = resolveLocale(new URL(request.url).searchParams, cookies.get('lang')?.value);
+    const tours = await listTours(db, { status: 'published' }, locale);
     const languageName = LOCALES.find((l) => l.code === locale)?.label ?? 'English';
     const systemPrompt = buildSystemPrompt(
       tours.map((t) => {

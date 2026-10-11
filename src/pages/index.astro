@@ -21,13 +21,14 @@ import { pageI18n } from '../i18n/dictionaries';
 export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
+const { locale, t } = pageI18n(Astro);
 // Every D1 query this page needs, started together: one after another they
 // cost ~2 s before the first byte (each is a round trip to the database in
 // North America). The layout, tour cards and Founding Guest note read the
 // per-request results of the last three instead of querying again.
 const [allTours, highlights] = env.DB
   ? await Promise.all([
-      listTours(env.DB, { status: 'published' }),
+      listTours(env.DB, { status: 'published' }, locale),
       listAgraHighlights(env.DB),
       liveAutomaticOffersForRequest(env.DB, Astro.request, todayIst()),
       hasApprovedReviewsForRequest(env.DB, Astro.request),
@@ -48,7 +49,6 @@ const finderTours = toFinderTours(allTours, currency);
 // car, pickup, free cancellation), so the cards show only what differs.
 const sharedFactsShown = sharedTourFacts(tours).length > 0;
 
-const { locale, t } = pageI18n(Astro);
 // "The Taj Mahal, curated just for you." -> a small lead-in and the main line
 // (every language writes it as "<lead>, <rest>"). Desktop reads it as one line.
 const heroParts = t.hero.title.split(/,\s+/);

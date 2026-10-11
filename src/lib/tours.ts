@@ -4,6 +4,8 @@
 import type { D1Like } from './db';
 import type { CatalogItem, AddOn, PricingTier } from './catalog';
 import { resolvePrice, type Currency } from './currency';
+import { loadTranslations, overlay } from './translations';
+import type { Locale } from './i18n';
 
 export interface TourRow {
   id: string;
@@ -145,27 +147,45 @@ async function parseTour(db: D1Like, row: TourRow): Promise<ParsedTour> {
   };
 }
 
+// Shows tours in another language: title, texts, itinerary and add-on names
+// come from content_translations where a translation exists, English otherwise.
+// Prices, slugs, ids and flags are never touched.
+const TOUR_FIELDS = ['title', 'summary', 'description', 'durationLabel', 'startPoint', 'highlights', 'itinerary', 'includes', 'excludes'] as const;
+
+export async function localizeTours(db: D1Like, tours: ParsedTour[], locale: Locale): Promise<ParsedTour[]> {
+  if (locale === 'en' || tours.length === 0) return tours;
+  const addOnIds = tours.flatMap((t) => t.addOns.map((a) => a.id));
+  const [byTour, byAddOn] = await Promise.all([
+    loadTranslations(db, 'tour', locale, tours.map((t) => t.id)),
+    loadTranslations(db, 'tour_addon', locale, addOnIds),
+  ]);
+  return tours.map((tour) => {
+    const localized = overlay(tour, byTour.get(tour.id), [...TOUR_FIELDS]);
+    return { ...localized, addOns: localized.addOns.map((a) => overlay(a, byAddOn.get(a.id), ['name'])) };
+  });
+}
+
 export interface TourFilters {
   status?: string;
 }
 
-export async function listTours(db: D1Like, filters: TourFilters = {}): Promise<ParsedTour[]> {
+export async function listTours(db: D1Like, filters: TourFilters = {}, locale: Locale = 'en'): Promise<ParsedTour[]> {
   const where = filters.status ? 'WHERE status = ?' : '';
   const { results } = await db
     .prepare(`SELECT * FROM tours ${where} ORDER BY featured DESC, created_at DESC`)
     .bind(...(filters.status ? [filters.status] : []))
     .all<TourRow>();
-  return Promise.all(results.map((row) => parseTour(db, row)));
+  return localizeTours(db, await Promise.all(results.map((row) => parseTour(db, row))), locale);
 }
 
-export async function getTourById(db: D1Like, id: string): Promise<ParsedTour | null> {
+export async function getTourById(db: D1Like, id: string, locale: Locale = 'en'): Promise<ParsedTour | null> {
   const row = await db.prepare(`SELECT * FROM tours WHERE id = ?`).bind(id).first<TourRow>();
-  return row ? parseTour(db, row) : null;
+  return row ? (await localizeTours(db, [await parseTour(db, row)], locale))[0] : null;
 }
 
-export async function getTourBySlug(db: D1Like, slug: string): Promise<ParsedTour | null> {
+export async function getTourBySlug(db: D1Like, slug: string, locale: Locale = 'en'): Promise<ParsedTour | null> {
   const row = await db.prepare(`SELECT * FROM tours WHERE slug = ?`).bind(slug).first<TourRow>();
-  return row ? parseTour(db, row) : null;
+  return row ? (await localizeTours(db, [await parseTour(db, row)], locale))[0] : null;
 }
 
 // The server-side price lookup payment routes rely on — never trust a price
@@ -391,9 +411,29 @@ export async function replacePricingTiers(db: D1Like, tourId: string, tiers: Pri
 // Facts every listed tour shares (private, pickup, guide language, free
 // cancellation), so a listing can state them once and let each card show
 // only what differs. Empty when any tour lacks one: cards then list all.
-export function sharedTourFacts(tours: Pick<ParsedTour, 'pickupIncluded' | 'privateTour' | 'guideLanguage'>[]): string[] {
+// Sentence templates for the shared facts; pages pass the visitor's language
+// (dictionary `shared`), English is the default. `languageName` turns the
+// stored guide language ("English") into the visitor's language.
+export interface SharedFactText {
+  private: string;
+  pickup: string;
+  guide: string; // "{lang}-speaking guide"
+  cancel: string;
+}
+const EN_SHARED_FACTS: SharedFactText = {
+  private: 'Private, just your group',
+  pickup: 'Hotel pickup',
+  guide: '{lang}-speaking guide',
+  cancel: 'Free cancellation up to 24 hours before',
+};
+
+export function sharedTourFacts(
+  tours: Pick<ParsedTour, 'pickupIncluded' | 'privateTour' | 'guideLanguage'>[],
+  text: SharedFactText = EN_SHARED_FACTS,
+  languageName: (stored: string) => string = (s) => s
+): string[] {
   const language = tours[0]?.guideLanguage;
   const shared =
     tours.length > 1 && tours.every((t) => t.pickupIncluded && t.privateTour && t.guideLanguage && t.guideLanguage === language);
-  return shared ? ['Private, just your group', 'Hotel pickup', `${language}-speaking guide`, 'Free cancellation up to 24 hours before'] : [];
+  return shared ? [text.private, text.pickup, text.guide.replace('{lang}', languageName(language)), text.cancel] : [];
 }

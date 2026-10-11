@@ -4,8 +4,8 @@ import { CURRENCY_SYMBOLS, type Currency } from './currency';
 
 // "Sat, 10 Oct 2026" from a YYYY-MM-DD travel date (a calendar date, so UTC
 // avoids any time-zone shift).
-export function formatTravelDate(ymd: string): string {
-  return new Date(`${ymd}T00:00:00Z`).toLocaleDateString('en-GB', {
+export function formatTravelDate(ymd: string, tag = 'en-GB'): string {
+  return new Date(`${ymd}T00:00:00Z`).toLocaleDateString(tag, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',

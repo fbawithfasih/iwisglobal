@@ -1,11 +1,15 @@
 import { useState, type FocusEvent } from 'react';
 import PhoneInput from './PhoneInput';
 import { track } from '../lib/analytics';
+import { fmt } from '../i18n/fmt';
+import { fmtNode } from '../i18n/format';
+import { intlLocale, type Locale } from '../lib/i18n';
+import type { Dictionary } from '../i18n/dictionaries';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
-import { isFriday, FRIDAY_CLOSED_MESSAGE, todayIst } from '../lib/availability';
+import { isFriday, todayIst } from '../lib/availability';
 import { NIGHT_VIEWING_DATE_MESSAGE } from '../lib/nightViewing';
 import { pickPricingTier, computeDepositAmount, FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE, type PricingTier } from '../lib/catalog';
-import { bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer, offerBadgeValue } from '../lib/offers';
+import { FOUNDING_GUEST_OFFER_ID, bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer, type OfferText, offerBadgeValue } from '../lib/offers';
 
 // Same as MAX_TRAVELERS_PER_DATE in src/lib/db.ts (one vehicle per date);
 // the server enforces it — this only keeps the stepper in range.
@@ -15,12 +19,12 @@ type ContactField = 'name' | 'email' | 'phone';
 // Checked before payment: a mistyped email means the confirmation and
 // tickets never arrive; a phone without a country code can't be reached on
 // WhatsApp.
-function contactErrors(name: string, email: string, phone: string): Partial<Record<ContactField, string>> {
+function contactErrors(name: string, email: string, phone: string, tr: Dictionary['booking']): Partial<Record<ContactField, string>> {
   const errors: Partial<Record<ContactField, string>> = {};
-  if (name.trim().length < 2) errors.name = 'Please enter your full name.';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) errors.email = 'Please check your email address — we send your confirmation there.';
+  if (name.trim().length < 2) errors.name = tr.errName;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) errors.email = tr.errEmail;
   const digits = phone.replace(/[\s().-]/g, '');
-  if (!/^\+\d{8,15}$/.test(digits)) errors.phone = 'Please enter your phone number and check the country code.';
+  if (!/^\+\d{8,15}$/.test(digits)) errors.phone = tr.errPhone;
   return errors;
 }
 
@@ -75,6 +79,10 @@ interface BookingWidgetProps {
   initialName?: string;
   initialEmail?: string;
   initialPhone?: string;
+  // The visitor's language: strings, offer wording and date style.
+  tr: Dictionary['booking'];
+  offerText: OfferText;
+  locale: Locale;
 }
 
 export default function BookingWidget({
@@ -92,6 +100,9 @@ export default function BookingWidget({
   initialName = '',
   initialEmail = '',
   initialPhone = '',
+  tr,
+  offerText,
+  locale,
 }: BookingWidgetProps) {
   const foundingGuestEligible = foundingGuestSlotsLeft > 0;
   const [date, setDate] = useState(allowedDates ? (allowedDates[0] ?? '') : minDate);
@@ -135,7 +146,8 @@ export default function BookingWidget({
   const activeTier = pickPricingTier(pricingTiers, travelers);
   const tierLadder = sortedTiers.map((tier, i) => {
     const next = sortedTiers[i + 1];
-    const label = tier.travelers === 1 && !next ? 'Any group size' : !next ? `${tier.travelers}+ travelers` : next.travelers - 1 === tier.travelers ? `${tier.travelers} ${tier.travelers === 1 ? 'traveler' : 'travelers'}` : `${tier.travelers}-${next.travelers - 1} travelers`;
+    const plural = (n: number) => fmt(n === 1 ? tr.oneTraveler : tr.manyTravelers, { n });
+    const label = tier.travelers === 1 && !next ? tr.anyGroup : !next ? fmt(tr.plusTravelers, { n: tier.travelers }) : next.travelers - 1 === tier.travelers ? plural(tier.travelers) : fmt(tr.rangeTravelers, { from: tier.travelers, to: next.travelers - 1 });
     const base = sortedTiers[0].amount;
     return { travelers: tier.travelers, amount: tier.amount, label, active: activeTier?.travelers === tier.travelers, savePct: base > 0 ? Math.round(((base - tier.amount) / base) * 100) : 0 };
   });
@@ -144,7 +156,7 @@ export default function BookingWidget({
   // of the Founding Guest Offer, automatic offers and the entered coupon,
   // on the full total (tour + add-ons).
   const bookingCtx = { tourId, travelDate: date, travelers, currency, today: todayIst() };
-  const couponProblem = coupon ? offerProblem(coupon, bookingCtx) : null;
+  const couponProblem = coupon ? offerProblem(coupon, bookingCtx, offerText) : null;
   const discount = bestDiscount(rawTotal, bookingCtx, coupon && !couponProblem ? [...offers, coupon] : offers, foundingGuestEligible);
   const total = rawTotal - (discount?.amount ?? 0);
 
@@ -160,7 +172,7 @@ export default function BookingWidget({
         body: JSON.stringify({ code, tourId }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "That code isn't valid.");
+      if (!res.ok) throw new Error(body.error || tr.couponInvalid);
       setCoupon(body.offer);
     } catch (err: any) {
       setCoupon(null);
@@ -190,10 +202,10 @@ export default function BookingWidget({
   const handleBook = async () => {
     setError(null);
 
-    if (!date) return setError(allowedDates && allowedDates.length === 0 ? 'No night-viewing dates are open for booking right now.' : 'Please choose a travel date.');
-    if (isFriday(date)) return setError(FRIDAY_CLOSED_MESSAGE);
+    if (!date) return setError(allowedDates && allowedDates.length === 0 ? tr.noNightDates : tr.chooseDate);
+    if (isFriday(date)) return setError(tr.fridayClosed);
     if (allowedDates && !allowedDates.includes(date)) return setError(NIGHT_VIEWING_DATE_MESSAGE);
-    const errors = contactErrors(name, email, phone);
+    const errors = contactErrors(name, email, phone, tr);
     setFieldErrors(errors);
     const firstBad = (['name', 'email', 'phone'] as ContactField[]).find((f) => errors[f]);
     if (firstBad) {
@@ -208,7 +220,7 @@ export default function BookingWidget({
     setLoading(true);
     try {
       const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) throw new Error('Failed to load payment gateway. Check your connection.');
+      if (!scriptLoaded) throw new Error(tr.gatewayLoad);
 
       // Only the tourId, date, traveler count, and add-on ids are sent — the
       // server is the source of truth for pricing (see src/lib/catalog.ts).
@@ -231,11 +243,11 @@ export default function BookingWidget({
 
       if (!orderRes.ok) {
         const { error: msg } = await orderRes.json();
-        throw new Error(msg || 'Could not create booking');
+        throw new Error(msg || tr.couldNotCreate);
       }
 
       const { orderId, amount, currency: orderCurrency, publicKey } = await orderRes.json();
-      if (!publicKey) throw new Error('Payment gateway response was incomplete. Please contact support.');
+      if (!publicKey) throw new Error(tr.gatewayIncomplete);
 
       const options = {
         key: publicKey,
@@ -270,10 +282,10 @@ export default function BookingWidget({
               // contact us) — its message explains which.
               setConfirming(false);
               setLoading(false);
-              setError(body.error || 'This date just sold out. Please contact us.');
+              setError(body.error || tr.soldOut);
               return;
             }
-            if (!verifyRes.ok) throw new Error(body.error || 'verify failed');
+            if (!verifyRes.ok) throw new Error(body.error || tr.verifyFailed);
             setConfirmed(body.payment_id);
             window.location.href = `/booking/confirmation?payment_id=${body.payment_id}`;
           } catch {
@@ -292,14 +304,14 @@ export default function BookingWidget({
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', (resp: { error: { description: string } }) => {
-        setError(resp.error.description || 'Payment failed');
+        setError(resp.error.description || tr.paymentFailed);
         setLoading(false);
       });
       // Stays "loading" (button locked) while the payment window is open;
       // ondismiss, payment.failed or the handler above release it.
       rzp.open();
     } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+      setError(err.message || tr.wentWrong);
       setLoading(false);
     }
   };
@@ -308,6 +320,12 @@ export default function BookingWidget({
     return <p className="text-emerald-700 font-medium">Booking confirmed — payment {confirmed}.</p>;
   }
 
+  // The discount's name in the visitor's language (the server stores it in English).
+  const discountLabel = (d: { offerId: string; label: string }) => {
+    if (d.offerId === FOUNDING_GUEST_OFFER_ID) return fmt(offerText.founding ?? d.label, { percent: Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100) });
+    const o = [...offers, ...(coupon ? [coupon] : [])].find((x) => x.id === d.offerId);
+    return o ? `${o.name} (${offerValueLabel(o, currency, offerText)})` : d.label;
+  };
   const money = (n: number) => `${CURRENCY_SYMBOLS[currency]}${n.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}`;
 
   // Phones: the floating WhatsApp button sits over the right end of these
@@ -333,21 +351,21 @@ export default function BookingWidget({
           <div className="relative flex items-center gap-2.5">
             <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-full bg-amber-300 leading-none text-brand-950 shadow-md ring-4 ring-white/20">
               <span className="text-sm font-extrabold">{Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100)}%</span>
-              <span className="mt-0.5 text-[8px] font-bold tracking-widest">OFF</span>
+              <span className="mt-0.5 text-[8px] font-bold tracking-widest">{offerText.offBadge}</span>
             </span>
             <div className="min-w-0">
-              <p className="whitespace-nowrap font-serif text-[15px] font-semibold leading-tight">Founding Guest offer</p>
-              <p className="mt-0.5 text-[11px] leading-snug text-brand-50">No code needed; it comes off at checkout.</p>
+              <p className="whitespace-nowrap font-serif text-[15px] font-semibold leading-tight">{tr.foundingTitle}</p>
+              <p className="mt-0.5 text-[11px] leading-snug text-brand-50">{tr.foundingBody}</p>
             </div>
           </div>
           <div className="relative mt-3">
             <div className="flex items-center justify-between text-[11px] font-semibold">
-              <span className="text-amber-200">{`Only ${foundingGuestSlotsLeft} ${foundingGuestSlotsLeft === 1 ? 'spot' : 'spots'} left`}</span>
-              <span className="text-brand-100">{`${FOUNDING_GUEST_SLOT_CAP - foundingGuestSlotsLeft} of ${FOUNDING_GUEST_SLOT_CAP} claimed`}</span>
+              <span className="text-amber-200">{foundingGuestSlotsLeft === 1 ? tr.foundingOne : fmt(tr.foundingLeft, { n: foundingGuestSlotsLeft })}</span>
+              <span className="text-brand-100">{fmt(tr.foundingClaimed, { n: FOUNDING_GUEST_SLOT_CAP - foundingGuestSlotsLeft, cap: FOUNDING_GUEST_SLOT_CAP })}</span>
             </div>
             <div
               role="progressbar"
-              aria-label="Founding Guest spots claimed"
+              aria-label={tr.foundingAria}
               aria-valuemin={0}
               aria-valuemax={FOUNDING_GUEST_SLOT_CAP}
               aria-valuenow={FOUNDING_GUEST_SLOT_CAP - foundingGuestSlotsLeft}
@@ -363,7 +381,7 @@ export default function BookingWidget({
       )}
       {offers.map((offer) => {
         const badgeValue = offerBadgeValue(offer, currency);
-        const conditions = offerConditions(offer);
+        const conditions = offerConditions(offer, {}, offerText);
         return (
           <div
             key={offer.id}
@@ -374,12 +392,12 @@ export default function BookingWidget({
             <div className="relative flex items-center gap-2.5">
               <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-full bg-amber-300 leading-none text-brand-950 shadow-md ring-4 ring-white/20">
                 <span className={`font-extrabold ${badgeValue.length > 5 ? 'text-[10px]' : 'text-sm'}`}>{badgeValue}</span>
-                <span className="mt-0.5 text-[8px] font-bold tracking-widest">OFF</span>
+                <span className="mt-0.5 text-[8px] font-bold tracking-widest">{offerText.offBadge}</span>
               </span>
               <div className="min-w-0">
                 <p className="font-serif text-[15px] font-semibold leading-tight">{offer.name}</p>
                 <p className="mt-0.5 text-[11px] leading-snug text-brand-50">
-                  {conditions ? `${conditions}. ` : ''}No code needed; it comes off at checkout.
+                  {conditions ? `${conditions}. ` : ''}{offerText.checkout}
                 </p>
               </div>
             </div>
@@ -387,7 +405,7 @@ export default function BookingWidget({
         );
       })}
       <div>
-        <label htmlFor="travel-date" className="block text-sm font-medium mb-1">Travel date</label>
+        <label htmlFor="travel-date" className="block text-sm font-medium mb-1">{tr.travelDate}</label>
         {allowedDates ? (
           allowedDates.length > 0 ? (
             <>
@@ -402,17 +420,17 @@ export default function BookingWidget({
               >
                 {allowedDates.map((d) => (
                   <option key={d} value={d}>
-                    {new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                    {new Date(`${d}T00:00:00Z`).toLocaleDateString(intlLocale(locale), { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
                   </option>
                 ))}
               </select>
               <p className="text-xs text-stone-500 mt-1">
-                Night viewing is only on the full-moon night and the two nights either side (never a Friday), as set by the Archaeological Survey of India.
+                {tr.nightRule}
               </p>
             </>
           ) : (
             <p className="text-sm text-stone-700 rounded border border-amber-200 bg-amber-50 px-3 py-2" role="status">
-              No night-viewing dates are open for booking right now. The ASI publishes the dates a year at a time, so message us on WhatsApp and we will tell you the next one.
+              {tr.noNightDatesLong}
             </p>
           )
         ) : (
@@ -431,11 +449,11 @@ export default function BookingWidget({
           {/* A native date input can't grey out weekdays, so say it up front and
               flag a Friday pick straight away (the server rejects it too). */}
           {date && isFriday(date) ? (
-            <p className="text-xs text-red-600 mt-1" role="alert">{FRIDAY_CLOSED_MESSAGE}</p>
+            <p className="text-xs text-red-600 mt-1" role="alert">{tr.fridayClosed}</p>
           ) : (
             <p className="text-xs text-stone-500 mt-1">
               {availabilityLabel && <span className="text-accent-700">{availabilityLabel} · </span>}
-              No tours on Fridays (Taj Mahal closed)
+              {tr.noFridays}
             </p>
           )}
           </>
@@ -443,7 +461,7 @@ export default function BookingWidget({
       </div>
 
       <div>
-        <p id="travelers-label" className="block text-sm font-medium mb-1">Travelers</p>
+        <p id="travelers-label" className="block text-sm font-medium mb-1">{tr.travelers}</p>
         {/* − / + instead of a number box: on phones, clearing the box to type
             a new number snapped it to 1, so "4" became "14". */}
         <div id="travelers" role="group" aria-labelledby="travelers-label" className="flex items-center gap-3">
@@ -451,7 +469,7 @@ export default function BookingWidget({
             type="button"
             onClick={() => setTravelers((t) => Math.max(1, t - 1))}
             disabled={travelers <= 1}
-            aria-label="One fewer traveler"
+            aria-label={tr.fewer}
             className="h-11 w-11 rounded-full border border-stone-300 text-xl leading-none disabled:opacity-40"
           >
             −
@@ -461,16 +479,16 @@ export default function BookingWidget({
             type="button"
             onClick={() => setTravelers((t) => Math.min(MAX_TRAVELERS, t + 1))}
             disabled={travelers >= MAX_TRAVELERS}
-            aria-label="One more traveler"
+            aria-label={tr.more}
             className="h-11 w-11 rounded-full border border-stone-300 text-xl leading-none disabled:opacity-40"
           >
             +
           </button>
-          {travelers >= MAX_TRAVELERS && <span className="text-xs text-stone-500">Up to {MAX_TRAVELERS} per booking</span>}
+          {travelers >= MAX_TRAVELERS && <span className="text-xs text-stone-500">{fmt(tr.upTo, { n: MAX_TRAVELERS })}</span>}
         </div>
         {pricingTiers.length > 0 && (
           <p className="text-xs text-stone-500 mt-1">
-            {CURRENCY_SYMBOLS[currency]}{currentRate.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}/person for {travelers} {travelers === 1 ? 'traveler' : 'travelers'}
+            {fmt(tr.perPersonFor, { price: money(currentRate), count: fmt(travelers === 1 ? tr.oneTraveler : tr.manyTravelers, { n: travelers }) })}
           </p>
         )}
         {/* Group-size slider and price ladder: only when the rate really changes
@@ -486,7 +504,7 @@ export default function BookingWidget({
               value={travelers}
               onChange={(e) => setTravelers(Number(e.target.value))}
               onPointerUp={() => track('group_slider_used', { tour_id: tourId, travelers })}
-              aria-label={`Group size: ${travelers} ${travelers === 1 ? 'traveler' : 'travelers'}`}
+              aria-label={fmt(tr.groupAria, { count: fmt(travelers === 1 ? tr.oneTraveler : tr.manyTravelers, { n: travelers }) })}
               className="h-11 w-full cursor-pointer accent-brand-700"
             />
             <ul className="mt-1 grid gap-1.5 text-xs">
@@ -497,7 +515,7 @@ export default function BookingWidget({
                 >
                   <span>{row.label}</span>
                   <span className="whitespace-nowrap">
-                    {CURRENCY_SYMBOLS[currency]}{row.amount.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}/person
+                    {money(row.amount)}{tr.perPerson}
                     {row.savePct > 0 && <span className={row.active ? 'ml-1.5 text-brand-100' : 'ml-1.5 text-green-700'}>save {row.savePct}%</span>}
                   </span>
                 </li>
@@ -509,7 +527,7 @@ export default function BookingWidget({
 
       {addOns.length > 0 && (
         <div>
-          <label className="block text-sm font-medium mb-1">Add-ons</label>
+          <label className="block text-sm font-medium mb-1">{tr.addOns}</label>
           {addOns.map((addOn) => (
             <label key={addOn.id} className="flex items-center gap-2 text-sm py-2">
               <input
@@ -522,15 +540,17 @@ export default function BookingWidget({
                 <span>
                   {addOn.name}{' '}
                   <span className="text-emerald-700">
-                    (included{addOn.perTraveler ? ` — ${CURRENCY_SYMBOLS[currency]}${addOn.amount.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')} × ${travelers} travelers` : ''} — uncheck to remove)
+                    {addOn.perTraveler ? fmt(tr.includedAddOnPer, { price: money(addOn.amount), n: travelers }) : tr.includedAddOn}
                   </span>
                 </span>
               ) : (
                 <span>
                   {addOn.name}{' '}
                   {addOn.amount === 0
-                    ? '(free)'
-                    : `(+${CURRENCY_SYMBOLS[currency]}${addOn.amount.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}${addOn.perTraveler ? ` × ${travelers}` : ''})`}
+                    ? tr.free
+                    : addOn.perTraveler
+                      ? fmt(tr.addOnCostPer, { price: money(addOn.amount), n: travelers })
+                      : fmt(tr.addOnCost, { price: money(addOn.amount) })}
                 </span>
               )}
             </label>
@@ -539,37 +559,36 @@ export default function BookingWidget({
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-1">Payment</label>
+        <label className="block text-sm font-medium mb-1">{tr.payment}</label>
         <div className="space-y-2">
           <label className="flex items-start gap-2 text-sm border border-stone-300 rounded px-3 py-2 cursor-pointer has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
             <input type="radio" name="paymentType" checked={paymentType === 'full'} onChange={() => setPaymentType('full')} className="mt-0.5" />
             <span>
-              Pay in full — {CURRENCY_SYMBOLS[currency]}{total.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}
+              {fmt(tr.payFull, { amount: money(total) })}
             </span>
           </label>
           <label className="flex items-start gap-2 text-sm border border-stone-300 rounded px-3 py-2 cursor-pointer has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
             <input type="radio" name="paymentType" checked={paymentType === 'deposit'} onChange={() => setPaymentType('deposit')} className="mt-0.5" />
             <span>
-              Pay 25% deposit now — {CURRENCY_SYMBOLS[currency]}{depositAmount.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}, balance{' '}
-              {CURRENCY_SYMBOLS[currency]}{balanceDue.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')} due on pickup
+              {fmt(tr.payDeposit, { amount: money(depositAmount), balance: money(balanceDue) })}
             </span>
           </label>
         </div>
         {paymentType === 'deposit' && (
           <p className="text-xs text-stone-500 mt-1">
-            If you cancel less than 24 hours before your tour, 50% of the deposit is refunded, since your vehicle and guide are already committed by then.
+            {tr.depositNote}
           </p>
         )}
       </div>
 
       <div className="grid grid-cols-1 gap-3">
         <div>
-          <label htmlFor="traveler-name" className="block text-sm font-medium mb-1">Full name</label>
+          <label htmlFor="traveler-name" className="block text-sm font-medium mb-1">{tr.fullName}</label>
           <input
             id="traveler-name"
             type="text"
             autoComplete="name"
-            placeholder="e.g. Priya Sharma"
+            placeholder={tr.namePlaceholder}
             value={name}
             onChange={(e) => {
               setName(e.target.value);
@@ -582,12 +601,12 @@ export default function BookingWidget({
           {fieldErrors.name && <p id="traveler-name-error" className="text-xs text-red-600 mt-1">{fieldErrors.name}</p>}
         </div>
         <div>
-          <label htmlFor="traveler-email" className="block text-sm font-medium mb-1">Email</label>
+          <label htmlFor="traveler-email" className="block text-sm font-medium mb-1">{tr.email}</label>
           <input
             id="traveler-email"
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={tr.emailPlaceholder}
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
@@ -600,7 +619,7 @@ export default function BookingWidget({
           {fieldErrors.email && <p id="traveler-email-error" className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>}
         </div>
         <div>
-          <label htmlFor="traveler-phone" className="block text-sm font-medium mb-1">Phone number</label>
+          <label htmlFor="traveler-phone" className="block text-sm font-medium mb-1">{tr.phone}</label>
           <PhoneInput
             id="traveler-phone"
             value={phone}
@@ -628,7 +647,7 @@ export default function BookingWidget({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" />
               </svg>
             </span>
-            <span className="flex-1">Have a coupon code?</span>
+            <span className="flex-1">{tr.haveCoupon}</span>
             <span aria-hidden="true" className="text-lg leading-none text-brand-500 transition group-hover:translate-x-0.5">+</span>
           </button>
         ) : (
@@ -639,7 +658,7 @@ export default function BookingWidget({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" />
               </svg>
               </span>
-              Coupon code
+              {tr.couponLabel}
             </label>
             <div className="flex gap-2">
               <input
@@ -661,7 +680,7 @@ export default function BookingWidget({
                   }
                 }}
                 className="min-w-0 flex-1 rounded-xl border border-brand-200 bg-white px-3 py-2 text-base uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-300"
-                placeholder="Enter code"
+                placeholder={tr.couponPlaceholder}
               />
               {coupon ? (
                 <button
@@ -672,7 +691,7 @@ export default function BookingWidget({
                   }}
                   className="min-h-11 rounded-xl border border-brand-300 bg-white px-4 font-medium text-brand-800 transition hover:bg-brand-50"
                 >
-                  Remove
+                  {tr.remove}
                 </button>
               ) : (
                 <button
@@ -681,7 +700,7 @@ export default function BookingWidget({
                   disabled={couponChecking || !couponInput.trim()}
                   className="min-h-11 rounded-xl bg-gradient-to-r from-brand-700 to-brand-600 px-5 font-semibold text-white shadow-sm transition hover:from-brand-800 hover:to-brand-700 disabled:opacity-50"
                 >
-                  {couponChecking ? 'Checking…' : 'Apply'}
+                  {couponChecking ? tr.checking : tr.apply}
                 </button>
               )}
             </div>
@@ -689,10 +708,10 @@ export default function BookingWidget({
               {couponError && <span className="block rounded-lg bg-red-50 px-3 py-1.5 text-red-700">{couponError}</span>}
               {coupon && couponProblem && <span className="block rounded-lg bg-red-50 px-3 py-1.5 text-red-700">{couponProblem}</span>}
               {coupon && !couponProblem && discount?.offerId === coupon.id && (
-                <span className="block rounded-lg bg-emerald-50 px-3 py-1.5 text-emerald-800">✓ {coupon.name} applied: −{money(discount.amount)}</span>
+                <span className="block rounded-lg bg-emerald-50 px-3 py-1.5 text-emerald-800">{fmt(tr.couponApplied, { name: coupon.name, amount: money(discount.amount) })}</span>
               )}
               {coupon && !couponProblem && discount && discount.offerId !== coupon.id && (
-                <span className="block rounded-lg bg-stone-100 px-3 py-1.5 text-stone-700">Your {discount.label} already gives a bigger discount, so this code isn't needed.</span>
+                <span className="block rounded-lg bg-stone-100 px-3 py-1.5 text-stone-700">{fmt(tr.couponBigger, { label: discountLabel(discount) })}</span>
               )}
             </p>
           </div>
@@ -700,20 +719,20 @@ export default function BookingWidget({
       </div>
 
       <div className="text-lg font-semibold">
-        {paymentType === 'deposit' ? 'Due now (deposit)' : 'Total'}: {CURRENCY_SYMBOLS[currency]}{amountDueNow.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}
+        {paymentType === 'deposit' ? tr.dueNowDeposit : tr.total}: {money(amountDueNow)}
         {paymentType === 'deposit' && (
           <span className="block text-sm font-normal text-stone-500">
-            + {CURRENCY_SYMBOLS[currency]}{balanceDue.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')} on pickup
+            {fmt(tr.onPickup, { amount: money(balanceDue) })}
           </span>
         )}
         {discount && (
           <>
             <span className="block text-sm font-normal text-stone-500">
               <s>{money(rawTotal)}</s>
-              {paymentType === 'deposit' && <> {money(total)} tour total</>}
+              {paymentType === 'deposit' && <> {fmt(tr.tourTotal, { amount: money(total) })}</>}
             </span>
             <span className="block text-sm font-normal text-amber-700">
-              {discount.label} <span className="whitespace-nowrap">−{money(discount.amount)}</span>
+              {discountLabel(discount)} <span className="whitespace-nowrap">−{money(discount.amount)}</span>
             </span>
           </>
         )}
@@ -724,31 +743,25 @@ export default function BookingWidget({
         disabled={loading || confirming || !!paidUnconfirmed}
         className="w-full rounded-full bg-brand-800 hover:bg-brand-900 text-white py-3 font-medium disabled:opacity-60 transition"
       >
-        {confirming ? 'Confirming your payment…' : loading ? 'Processing…' : 'Book & Pay'}
+        {confirming ? tr.confirming : loading ? tr.processing : tr.bookPay}
       </button>
 
-      <p className="text-xs text-stone-500">
-        By booking you agree to our <a href="/terms" className="text-brand-800 underline">Terms</a> and{' '}
-        <a href="/cancellation-refund-policy" className="text-brand-800 underline">Cancellation &amp; Refund Policy</a>.
-      </p>
+      <p className="text-xs text-stone-500" dangerouslySetInnerHTML={{ __html: tr.agreeHtml }} />
 
       <div className="text-xs text-stone-500 space-y-0.5">
-        <p>✓ Free cancellation up to 24 hours before your tour</p>
-        <p>✓ Instant confirmation</p>
+        <p>{tr.freeCancel}</p>
+        <p>{tr.instant}</p>
       </div>
 
       {confirming && (
         <p role="status" aria-live="polite" className="rounded-lg bg-brand-50 border border-brand-100 px-3 py-2 text-sm text-brand-900">
-          Payment received — confirming your booking. Please don't close this page.
+          {tr.received}
         </p>
       )}
 
       {paidUnconfirmed && (
         <div role="alert" className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-3 text-sm text-amber-900 space-y-2">
-          <p>
-            Your payment went through (reference <span className="font-mono break-all">{paidUnconfirmed}</span>), but we
-            couldn't finish your booking automatically. Please WhatsApp us with this reference — you won't be charged twice.
-          </p>
+          <p>{fmtNode(tr.unconfirmed, { ref: <span className="font-mono break-all">{paidUnconfirmed}</span> })}</p>
           <a
             href={`https://wa.me/916399226633?text=${encodeURIComponent(`Hi! I paid for the ${tourTitle} on ${date} but my booking didn't confirm. Payment reference: ${paidUnconfirmed} (ref: PAY-UNCONFIRMED)`)}`}
             target="_blank"
@@ -756,7 +769,7 @@ export default function BookingWidget({
             data-wa-ref="PAY-UNCONFIRMED"
             className="inline-flex min-h-11 items-center rounded-full bg-green-700 px-5 font-semibold text-white hover:bg-green-800"
           >
-            WhatsApp us
+            {tr.whatsappUs}
           </a>
         </div>
       )}

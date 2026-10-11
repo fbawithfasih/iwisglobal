@@ -2,6 +2,7 @@
 // The facts every listed tour shares (see sharedTourFacts in lib/tours.ts),
 // shown once above a tour listing so the cards can show only what differs.
 import Icon from './Icon.astro';
+import { pageI18n } from '../i18n/dictionaries';
 
 interface Props {
   facts: string[];
@@ -9,9 +10,10 @@ interface Props {
 }
 
 const { facts } = Astro.props;
+const { t } = pageI18n(Astro);
 ---
 {facts.length > 0 && (
-  <ul class:list={['flex flex-wrap gap-x-5 gap-y-2 text-sm text-stone-700', Astro.props.class]} aria-label="Every tour includes">
+  <ul class:list={['flex flex-wrap gap-x-5 gap-y-2 text-sm text-stone-700', Astro.props.class]} aria-label={t.shared.aria}>
     {facts.map((fact) => (
       <li class="flex items-center gap-1.5">
         <Icon name="check" class="h-4 w-4 shrink-0 text-brand-700" strokeWidth={2.5} />

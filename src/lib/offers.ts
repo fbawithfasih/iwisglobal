@@ -46,35 +46,86 @@ export interface Discount {
 
 export const FOUNDING_GUEST_OFFER_ID = 'founding-guest';
 
-const shortDate = (ymd: string) => formatTravelDate(ymd).replace(/^\w+, /, '');
+// "12 Oct 2026" without the weekday, in the given Intl locale tag.
+const shortDate = (ymd: string, tag = 'en-GB') =>
+  new Date(`${ymd}T00:00:00Z`).toLocaleDateString(tag, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+// Sentence templates for everything an offer says to the customer. The
+// English set is the default (the server and admin use it); pages pass the
+// visitor's language from the dictionary. "{value}", "{date}" ... are filled in.
+export interface OfferText {
+  off: string;
+  bookBy: string;
+  travelRange: string;
+  travelFrom: string;
+  travelBy: string;
+  minTravelers: string;
+  inactive: string;
+  wrongTour: string;
+  startsOn: string;
+  ended: string;
+  validFrom: string;
+  validUntil: string;
+  minTravelersProblem: string;
+  notInCurrency: string;
+  // Display extras used by the tour page and booking widget (English defaults below).
+  offBadge?: string;
+  applied?: string;
+  checkout?: string;
+  founding?: string;
+  dateTag?: string;
+}
+export const EN_OFFER_TEXT: OfferText = {
+  off: '{value} off',
+  bookBy: 'book by {date}',
+  travelRange: 'travel {from}–{to}',
+  travelFrom: 'travel from {date}',
+  travelBy: 'travel by {date}',
+  minTravelers: '{n}+ travelers',
+  inactive: 'This code is no longer active.',
+  wrongTour: "This code isn't valid for this tour.",
+  startsOn: 'This offer starts on {date}.',
+  ended: 'This offer has ended.',
+  validFrom: 'Valid for travel from {date}.',
+  validUntil: 'Valid for travel until {date}.',
+  minTravelersProblem: 'Valid for {n} or more travelers.',
+  notInCurrency: 'Not available when paying in {currency}.',
+  offBadge: 'OFF',
+  applied: 'Applied automatically, no code needed.',
+  checkout: 'No code needed; it comes off at checkout.',
+  founding: 'Founding Guest Offer ({percent}% off)',
+};
+const fill = (template: string, values: Record<string, string | number>) =>
+  template.replace(/\{(\w+)\}/g, (_, k: string) => String(values[k] ?? ''));
 
 function fixedAmount(offer: Offer, currency: Currency): number | null {
   return currency === 'USD' ? offer.amountUsd : offer.amountInr;
 }
 
-// "10% off" / "₹1,000 off".
-export function offerValueLabel(offer: Offer, currency: Currency): string {
-  if (offer.kind === 'percent') return `${offer.percent}% off`;
+// "10%" / "₹1,000": the amount alone.
+export function offerBadgeValue(offer: Offer, currency: Currency): string {
+  if (offer.kind === 'percent') return `${offer.percent}%`;
   const amount = fixedAmount(offer, currency) ?? offer.amountInr ?? 0;
   const cur: Currency = fixedAmount(offer, currency) != null ? currency : 'INR';
-  return `${CURRENCY_SYMBOLS[cur]}${amount.toLocaleString(cur === 'USD' ? 'en-US' : 'en-IN')} off`;
+  return `${CURRENCY_SYMBOLS[cur]}${amount.toLocaleString(cur === 'USD' ? 'en-US' : 'en-IN')}`;
 }
 
-// The value for a round "OFF" badge: "10%" or "₹500" (the label without " off").
-export function offerBadgeValue(offer: Offer, currency: Currency): string {
-  return offerValueLabel(offer, currency).replace(/ off$/, '');
+// "10% off" / "₹1,000 off".
+export function offerValueLabel(offer: Offer, currency: Currency, text: OfferText = EN_OFFER_TEXT): string {
+  return fill(text.off, { value: offerBadgeValue(offer, currency) });
 }
 
 // The conditions a customer needs to know, e.g. "book by 5 Nov · travel
 // 1 Dec–31 Jan · 4+ travelers". The admin list shows the booking window
 // separately (offerBookingWindow), so it passes includeBookBy: false.
-export function offerConditions(offer: Offer, { includeBookBy = true } = {}): string {
+export function offerConditions(offer: Offer, { includeBookBy = true } = {}, text: OfferText = EN_OFFER_TEXT): string {
+  const d = (ymd: string) => shortDate(ymd, text.dateTag);
   const parts: string[] = [];
-  if (includeBookBy && offer.endsOn) parts.push(`book by ${shortDate(offer.endsOn)}`);
-  if (offer.travelFrom && offer.travelTo) parts.push(`travel ${shortDate(offer.travelFrom)}–${shortDate(offer.travelTo)}`);
-  else if (offer.travelFrom) parts.push(`travel from ${shortDate(offer.travelFrom)}`);
-  else if (offer.travelTo) parts.push(`travel by ${shortDate(offer.travelTo)}`);
-  if (offer.minTravelers && offer.minTravelers > 1) parts.push(`${offer.minTravelers}+ travelers`);
+  if (includeBookBy && offer.endsOn) parts.push(fill(text.bookBy, { date: d(offer.endsOn) }));
+  if (offer.travelFrom && offer.travelTo) parts.push(fill(text.travelRange, { from: d(offer.travelFrom), to: d(offer.travelTo) }));
+  else if (offer.travelFrom) parts.push(fill(text.travelFrom, { date: d(offer.travelFrom) }));
+  else if (offer.travelTo) parts.push(fill(text.travelBy, { date: d(offer.travelTo) }));
+  if (offer.minTravelers && offer.minTravelers > 1) parts.push(fill(text.minTravelers, { n: offer.minTravelers }));
   return parts.join(' · ');
 }
 
@@ -88,9 +139,9 @@ export function offerBookingWindow(offer: Offer): string | null {
 
 // Short badge for a tour card, e.g. "Diwali Offer · 10% off", from the
 // first automatic offer live for the tour (offers from listLiveAutomaticOffers).
-export function offerBadge(offers: Offer[], tourId: string, currency: Currency): string | null {
+export function offerBadge(offers: Offer[], tourId: string, currency: Currency, text: OfferText = EN_OFFER_TEXT): string | null {
   const offer = offers.find((o) => o.tourIds.length === 0 || o.tourIds.includes(tourId));
-  return offer ? `${offer.name} · ${offerValueLabel(offer, currency)}` : null;
+  return offer ? `${offer.name} · ${offerValueLabel(offer, currency, text)}` : null;
 }
 
 // Whether the offer is live for this tour on this booking date — the part
@@ -105,15 +156,16 @@ export function offerLiveFor(offer: Offer, tourId: string, today: string): boole
 }
 
 // Why the offer can't be used for this booking, or null if it can.
-export function offerProblem(offer: Offer, ctx: BookingContext): string | null {
-  if (!offer.active) return 'This code is no longer active.';
-  if (offer.tourIds.length > 0 && !offer.tourIds.includes(ctx.tourId)) return "This code isn't valid for this tour.";
-  if (offer.startsOn && ctx.today < offer.startsOn) return `This offer starts on ${shortDate(offer.startsOn)}.`;
-  if (offer.endsOn && ctx.today > offer.endsOn) return 'This offer has ended.';
-  if (offer.travelFrom && ctx.travelDate < offer.travelFrom) return `Valid for travel from ${shortDate(offer.travelFrom)}.`;
-  if (offer.travelTo && ctx.travelDate > offer.travelTo) return `Valid for travel until ${shortDate(offer.travelTo)}.`;
-  if (offer.minTravelers && ctx.travelers < offer.minTravelers) return `Valid for ${offer.minTravelers} or more travelers.`;
-  if (offer.kind === 'fixed' && fixedAmount(offer, ctx.currency) == null) return `Not available when paying in ${ctx.currency}.`;
+export function offerProblem(offer: Offer, ctx: BookingContext, text: OfferText = EN_OFFER_TEXT): string | null {
+  const d = (ymd: string) => shortDate(ymd, text.dateTag);
+  if (!offer.active) return text.inactive;
+  if (offer.tourIds.length > 0 && !offer.tourIds.includes(ctx.tourId)) return text.wrongTour;
+  if (offer.startsOn && ctx.today < offer.startsOn) return fill(text.startsOn, { date: d(offer.startsOn) });
+  if (offer.endsOn && ctx.today > offer.endsOn) return text.ended;
+  if (offer.travelFrom && ctx.travelDate < offer.travelFrom) return fill(text.validFrom, { date: d(offer.travelFrom) });
+  if (offer.travelTo && ctx.travelDate > offer.travelTo) return fill(text.validUntil, { date: d(offer.travelTo) });
+  if (offer.minTravelers && ctx.travelers < offer.minTravelers) return fill(text.minTravelersProblem, { n: offer.minTravelers });
+  if (offer.kind === 'fixed' && fixedAmount(offer, ctx.currency) == null) return fill(text.notInCurrency, { currency: ctx.currency });
   return null;
 }
 

@@ -7,7 +7,7 @@ import MobileActionBar from '../../components/MobileActionBar.astro';
 import { listTours, sharedTourFacts } from '../../lib/tours';
 import FoundingGuestNote from '../../components/FoundingGuestNote.astro';
 import { resolveEnv } from '../../lib/env';
-import { pageI18n } from '../../i18n/dictionaries';
+import { pageI18n, languageName } from '../../i18n/dictionaries';
 import { resolveCurrency, sortByFromPrice } from '../../lib/currency';
 import SharedTourFacts from '../../components/SharedTourFacts.astro';
 
@@ -15,7 +15,7 @@ export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
 const { locale, t } = pageI18n(Astro);
-const publishedTours = env.DB ? await listTours(env.DB, { status: 'published' }) : [];
+const publishedTours = env.DB ? await listTours(env.DB, { status: 'published' }, locale) : [];
 
 const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
 if (Astro.url.searchParams.get('currency')) {
@@ -27,22 +27,18 @@ const tours = sortByFromPrice(publishedTours, currency);
 
 // Facts every tour shares are listed once above the cards, which then show
 // only what differs (see sharedTourFacts).
-const sharedFacts = sharedTourFacts(tours);
+const sharedFacts = sharedTourFacts(tours, t.shared, (l) => languageName(t, l));
 const sharedFactsShown = sharedFacts.length > 0;
 ---
 <BaseLayout
-  title="Private Delhi to Agra Taj Mahal Tours | IWIS Global"
-  description="Private Delhi to Agra Taj Mahal tours by car or Gatimaan Express train. Guide and tickets included, fixed prices, no hidden commissions."
+  title={t.toursPage.metaTitle}
+  description={t.toursPage.metaDesc}
 >
   <section class="max-w-6xl mx-auto px-6 py-16">
     <div class="mb-8 rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/20 sm:p-8">
-      <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-100">Private tours</span>
-      <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-3">Delhi to Agra Taj Mahal tours</h1>
-    <p class="max-w-2xl text-white/90">
-      Private, guided one-day Delhi to Agra tours, by car or by Gatimaan Express train, covering the Taj Mahal
-      and Agra Fort, booked and run directly by IWIS Global, not through a marketplace. Not sure what a ticket costs first?
-      <a href="/guides/taj-mahal-ticket-price-2026" class="font-semibold text-white underline underline-offset-2 hover:text-brand-100">See the full Taj Mahal ticket price breakdown</a>.
-    </p>
+      <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-100">{t.toursPage.badge}</span>
+      <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-3">{t.toursPage.h1}</h1>
+    <p class="max-w-2xl text-white/90" set:html={t.toursPage.introHtml} />
     </div>
     <SharedTourFacts facts={sharedFacts} class="mb-6" />
     <FoundingGuestNote class="mb-8" />
@@ -55,38 +51,30 @@ const sharedFactsShown = sharedFacts.length > 0;
   <!-- Plain-language guidance under the cards: helps visitors choose, and
        gives search engines text to read on a page that is mostly cards. -->
   <section class="max-w-3xl mx-auto px-6 pb-16">
-    <h2 class="mb-4 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Which Taj Mahal tour is right for you?</h2>
-    <p class="text-stone-700 mb-4">
-      Our full-day tours start from your Delhi hotel or the airport and cover the Taj Mahal and Agra Fort with a
-      private guide. The difference is how you travel and when you start:
-    </p>
+    <h2 class="mb-4 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">{t.toursPage.whichTitle}</h2>
+    <p class="text-stone-700 mb-4">{t.toursPage.whichIntro}</p>
     <ul class="list-disc pl-5 text-stone-700 space-y-2 mb-8 marker:text-brand-500">
-      <li><strong>By car:</strong> a private air-conditioned vehicle door to door, about 230 km each way on the Yamuna Expressway. The most flexible option, and the best value for a group because the vehicle cost is shared.</li>
-      <li><strong>By Gatimaan Express train:</strong> India's first semi-high-speed train takes 1 hour 40 minutes each way, so more of your day is spent at the monuments. It doesn't run on Fridays, and train seats are priced per person.</li>
-      <li><strong>Sunrise tour:</strong> the Taj Mahal opens 30 minutes before sunrise, and the first hour is the quietest. The start is in the small hours of the night.</li>
-      <li><strong>Luxury car tour:</strong> the same day in a chauffeur-driven Mercedes-Benz or BMW sedan, with a quieter cabin and more comfortable seating.</li>
-      <li><strong>Art Gallery Experience:</strong> a 30-minute visit near the Taj Mahal to see how stone is carved by hand.</li>
+      <li set:html={t.toursPage.byCar} />
+      <li set:html={t.toursPage.byTrain} />
+      <li set:html={t.toursPage.sunrise} />
+      <li set:html={t.toursPage.luxury} />
+      <li set:html={t.toursPage.gallery} />
     </ul>
-    <h2 class="mb-4 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">Good to know before you book</h2>
+    <h2 class="mb-4 border-l-4 border-brand-500 pl-3 text-2xl font-serif font-semibold text-brand-900">{t.toursPage.goodTitle}</h2>
     <ul class="list-disc pl-5 text-stone-700 space-y-2 mb-6 marker:text-brand-500">
-      <li>The Taj Mahal is closed every Friday, so these tours don't run on Fridays.</li>
-      <li>Same-day booking is open until 9 PM IST the night before your travel date.</li>
-      <li>Prices are fixed and shown before you pay, and we take no commission from any shop or stop. Read our <a href="/no-commission-pledge" class="text-brand-700 hover:underline">no-commission pledge</a>.</li>
+      <li>{t.toursPage.good1}</li>
+      <li>{t.toursPage.good2}</li>
+      <li set:html={t.toursPage.good3Html} />
     </ul>
-    <p class="rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-stone-700">
-      Still deciding? Compare the options in our guide to
-      <a href="/blog/how-to-travel-by-train-from-delhi-to-agra" class="text-brand-700 hover:underline">travelling from Delhi to Agra by train</a>,
-      see <a href="/guides/is-one-day-enough-taj-mahal" class="text-brand-700 hover:underline">whether one day is enough</a>,
-      or <a href="/contact" class="text-brand-700 hover:underline">ask us directly</a>.
-    </p>
+    <p class="rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-stone-700" set:html={t.toursPage.stillHtml} />
   </section>
 
   <!-- Phones: WhatsApp moves into this bar so the floating button doesn't
        sit on top of the tour cards' prices. -->
   <MobileActionBar waRef="TOURSBAR-TOURS" waMessage="Hi! I'm not sure which tour to choose — can you help?">
     <Fragment slot="info">
-      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Not sure which tour?</p>
-      <p class="text-sm font-semibold leading-tight text-stone-900">Ask us on WhatsApp</p>
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">{t.toursPage.barQuestion}</p>
+      <p class="text-sm font-semibold leading-tight text-stone-900">{t.toursPage.barAsk}</p>
     </Fragment>
   </MobileActionBar>
 </BaseLayout>

@@ -40,7 +40,9 @@ export function sunTimes(ymd: string): { sunrise: Date; sunset: Date } {
 
 export function formatTime(date: Date, locale: Locale = 'en'): string {
   // English keeps "5:24 PM"; the other languages use their own clock style.
-  return date.toLocaleTimeString(locale === 'en' ? 'en-US' : intlLocale(locale), { hour: 'numeric', minute: '2-digit', timeZone: IST });
+  return locale === 'en'
+    ? date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: IST })
+    : date.toLocaleTimeString(intlLocale(locale), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: IST });
 }
 
 function shiftDay(ymd: string, days: number): string {

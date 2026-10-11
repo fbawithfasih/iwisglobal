@@ -20,7 +20,8 @@ export function isFriday(value: string): boolean {
 
 export interface AvailabilityInfo {
   minBookableDate: string; // YYYY-MM-DD
-  label: string;
+  label: string; // English; pages show a translated version built from isTomorrow
+  isTomorrow: boolean;
 }
 
 function istDateParts(now: Date): { year: number; month: number; day: number; hour: number } {
@@ -68,7 +69,7 @@ export function getAvailability(now: Date = new Date()): AvailabilityInfo {
     offset === 1
       ? 'Book for tomorrow'
       : `Book for ${new Date(`${minBookableDate}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })}`;
-  return { minBookableDate, label };
+  return { minBookableDate, label, isTomorrow: offset === 1 };
 }
 
 // Strict "YYYY-MM-DD" check that also rejects calendar-invalid dates (e.g.

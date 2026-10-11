@@ -32,7 +32,7 @@ const tc = t.tourCard;
 const price = resolveFromPrice(tour, currency);
 // Automatic offer running on this tour, if any (src/lib/offers.ts).
 const db = resolveEnv(Astro.locals).DB;
-const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.request, todayIst()), tour.id, currency) : null;
+const badge = db ? offerBadge(await liveAutomaticOffersForRequest(db, Astro.request, todayIst()), tour.id, currency, t.offers) : null;
 ---
 <!-- The heart is a sibling of the link, not inside it: a button inside an
      anchor is invalid and would be activated by the card click. -->

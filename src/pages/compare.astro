@@ -12,7 +12,7 @@ import { resolveCurrency, resolveFromPrice, CURRENCY_SYMBOLS } from '../lib/curr
 export const prerender = false;
 
 const env = resolveEnv(Astro.locals);
-const { t: dict } = pageI18n(Astro);
+const { locale, t: dict } = pageI18n(Astro);
 const c = dict.compare;
 const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
 const wanted = (Astro.url.searchParams.get('t') ?? '')
@@ -20,7 +20,7 @@ const wanted = (Astro.url.searchParams.get('t') ?? '')
   .map((s) => s.trim())
   .filter(Boolean)
   .slice(0, 3);
-const published = env.DB ? await listTours(env.DB, { status: 'published' }) : [];
+const published = env.DB ? await listTours(env.DB, { status: 'published' }, locale) : [];
 const tours = wanted.map((slug) => published.find((t) => t.slug === slug)).filter((t): t is NonNullable<typeof t> => !!t);
 
 const money = (tour: (typeof tours)[number]) => {

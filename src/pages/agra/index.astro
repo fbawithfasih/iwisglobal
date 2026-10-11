@@ -43,7 +43,7 @@ if (Astro.url.searchParams.get('currency')) {
   Astro.cookies.set('currency', currency, { path: '/', maxAge: 60 * 60 * 24 * 365 });
 }
 // Same cards and cheapest-first order as /tours and the homepage.
-const tours = sortByFromPrice(env.DB ? await listTours(env.DB, { status: 'published' }) : [], currency);
+const tours = sortByFromPrice(env.DB ? await listTours(env.DB, { status: 'published' }, locale) : [], currency);
 // Listed once above the tour row; the cards then show only what differs.
 const sharedFacts = sharedTourFacts(tours);
 
