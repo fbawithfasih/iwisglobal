@@ -2,33 +2,29 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SocialLinks from '../components/SocialLinks.astro';
 import GrievanceOfficer from '../components/GrievanceOfficer.astro';
+import { pageI18n } from '../i18n/dictionaries';
 
 // Required page for Razorpay card-network activation. Same contact details
 // as /about (registered address, GSTIN, email, phone) — keep them in sync.
 export const prerender = false;
 
 const waHref = `https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have a question. (ref: CONTACT)')}`;
+const { t } = pageI18n(Astro);
 ---
 
+
 <BaseLayout floatingWhatsApp={false}
-  title="Contact IWIS Global | Tour Bookings & Travel Support"
-  description="Contact IWIS Global, a private Taj Mahal & Agra tour operator based in Agra: email, phone and WhatsApp, and our registered address."
+  title={t.contactPage.k30}
+  description={t.contactPage.k31}
 >
   <!-- [&_h2] styles every section heading, including the shared GrievanceOfficer block. -->
   <section class="max-w-2xl mx-auto px-6 pt-8 pb-16 md:pt-16 [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:border-l-4 [&_h2]:border-brand-500 [&_h2]:pl-3 [&_h2]:font-serif [&_h2]:text-xl [&_h2]:text-brand-900 [&_li]:marker:text-brand-500 [&_p]:leading-relaxed">
     <div class="mb-8 rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/20 sm:p-8">
-      <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-100">Get in touch</span>
-      <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-3">Contact Us</h1>
-      <p class="text-white/90">
-      Questions about a tour, or help with an existing booking? Reach us by WhatsApp, phone, or email. For an
-      existing booking, include your name and the booking ID from your confirmation email or
-      <a href="/account/bookings" class="font-semibold text-white underline underline-offset-2 hover:text-brand-100">My Bookings</a> so we can find it quickly.
-      </p>
+      <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-100" set:html={t.contactPage.k29} />
+      <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-3" set:html={t.contactPage.k1} />
+      <p class="text-white/90" set:html={t.contactPage.k2} />
     </div>
-    <p class="text-stone-700 mb-8">
-      Quick answers about cancellations, date changes and payment:
-      see <a href="/help" class="text-brand-800 underline">Help &amp; FAQs</a>.
-    </p>
+    <p class="text-stone-700 mb-8" set:html={t.contactPage.k3} />
 
     <!-- Separate Call and WhatsApp cards: one card used to say "WhatsApp /
          Phone" but only ever opened WhatsApp, never the dialer. -->
@@ -36,66 +32,50 @@ const waHref = `https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have
          squeezed info@iwisglobal.com out of its card (sideways scroll on tablets). -->
     <div class="grid sm:grid-cols-2 gap-4 mb-10">
       <a href={waHref} target="_blank" rel="noopener noreferrer" data-wa-ref="CONTACT" class="sm:col-span-2 block rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-5 shadow-sm shadow-brand-900/5 hover:border-brand-300 hover:shadow-md transition">
-        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600">WhatsApp</p>
-        <p class="text-lg font-semibold text-brand-800">Chat with us</p>
-        <p class="text-sm text-stone-600 mt-1">We usually reply within 15 minutes, 8 AM–10 PM IST daily</p>
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600" set:html={t.contactPage.k4} />
+        <p class="text-lg font-semibold text-brand-800" set:html={t.contactPage.k5} />
+        <p class="text-sm text-stone-600 mt-1" set:html={t.contactPage.k6} />
       </a>
       <a href="tel:+916399226633" class="block rounded-2xl border border-brand-100 bg-white p-5 shadow-sm shadow-brand-900/5 hover:border-brand-300 hover:shadow-md transition">
-        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600">Call</p>
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600" set:html={t.contactPage.k7} />
         <p class="text-lg font-semibold text-brand-800">+91 6399226633</p>
-        <p class="text-sm text-stone-600 mt-1">Tap to call · 8 AM–10 PM IST daily</p>
+        <p class="text-sm text-stone-600 mt-1" set:html={t.contactPage.k8} />
       </a>
       <a href="mailto:info@iwisglobal.com" class="block rounded-2xl border border-brand-100 bg-white p-5 shadow-sm shadow-brand-900/5 hover:border-brand-300 hover:shadow-md transition">
-        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600">Email</p>
-        <p class="text-lg font-semibold text-brand-800">info@iwisglobal.com</p>
-        <p class="text-sm text-stone-600 mt-1">Bookings, cancellations, and general questions</p>
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600" set:html={t.contactPage.k9} />
+        <p class="text-lg font-semibold text-brand-800" set:html={t.contactPage.k10} />
+        <p class="text-sm text-stone-600 mt-1" set:html={t.contactPage.k11} />
       </a>
     </div>
 
-    <h2 class="text-lg font-semibold mb-2">Before you message us</h2>
-    <p class="text-stone-700 mb-2">A few details help us answer in one reply:</p>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.contactPage.k12} />
+    <p class="text-stone-700 mb-2" set:html={t.contactPage.k13} />
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-4">
-      <li><strong>Planning a trip:</strong> your travel date, how many people are travelling, the tour you are considering, and the hotel or area in Delhi, Gurgaon or Noida (or the airport) you would be picked up from.</li>
-      <li><strong>An existing booking:</strong> your name and booking ID, which are in your confirmation email.</li>
+      <li set:html={t.contactPage.k14} />
+      <li set:html={t.contactPage.k15} />
     </ul>
-    <p class="text-stone-700 mb-8">
-      Two things worth knowing first: the Taj Mahal is closed on Fridays, and same-day booking on this site is open until
-      9 PM IST the night before your travel date. WhatsApp is the quickest way to reach us. We are an Agra-based
-      operator and run our tours ourselves, so you are speaking to the people who will look after your day.
-    </p>
-    <p class="text-stone-700 mb-8">
-      If you would rather write than chat, email is best for longer questions, group or special requests, and anything
-      you want in writing, such as confirmation of a booking change. Phone and WhatsApp are best for
-      quick questions about dates and pickup times, and for help on the day of your tour.
-    </p>
+    <p class="text-stone-700 mb-8" set:html={t.contactPage.k16} />
+    <p class="text-stone-700 mb-8" set:html={t.contactPage.k17} />
 
-    <p class="text-stone-700 mb-8">
-      If you are approached by a tout or run into a problem in Agra, our guide to the
-      <a href="/blog/agra-tourist-police-first-point-of-contact" class="text-brand-800 underline">Agra Tourist Police</a>
-      explains who to call.
-    </p>
+    <p class="text-stone-700 mb-8" set:html={t.contactPage.k18} />
 
-    <h2 class="text-lg font-semibold mb-1">Follow us</h2>
+    <h2 class="text-lg font-semibold mb-1" set:html={t.contactPage.k19} />
     <SocialLinks showNames class="mb-8" />
 
-    <h2 class="text-lg font-semibold mb-2">Registered address</h2>
-    <p class="mb-6 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-5 text-stone-700">
-      IWIS Global<br />
-      A-5, First Floor, ESSAR Mughal Residency, Jyoti Nagar, Shaheed Nagar,<br />
-      Agra – 282001, Uttar Pradesh, India
-    </p>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.contactPage.k20} />
+    <p class="mb-6 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-5 text-stone-700" set:html={t.contactPage.k21} />
 
-    <h2 class="text-lg font-semibold mb-2">GST registration</h2>
-    <p class="text-stone-700 mb-6">GSTIN: <span class="rounded-full bg-amber-300 px-2.5 py-0.5 font-mono text-sm font-semibold text-brand-950">09AAIFI6799J1ZH</span></p>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.contactPage.k22} />
+    <p class="text-stone-700 mb-6" set:html={t.contactPage.k23} />
 
     <GrievanceOfficer />
 
-    <h2 class="text-lg font-semibold mb-2">Policies</h2>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.contactPage.k24} />
     <ul class="list-disc pl-5 text-stone-700">
-      <li><a href="/terms" class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Terms of Service</a></li>
-      <li><a href="/privacy" class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Privacy Policy</a></li>
-      <li><a href="/cancellation-refund-policy" class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Cancellation &amp; Refund Policy</a></li>
-      <li><a href="/shipping-policy" class="inline-flex min-h-11 items-center text-brand-800 hover:underline">Shipping, Delivery &amp; Exchange Policy</a></li>
+      <li set:html={t.contactPage.k25} />
+      <li set:html={t.contactPage.k26} />
+      <li set:html={t.contactPage.k27} />
+      <li set:html={t.contactPage.k28} />
     </ul>
   </section>
 </BaseLayout>

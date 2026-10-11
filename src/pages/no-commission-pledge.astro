@@ -7,68 +7,48 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MobileActionBar from '../components/MobileActionBar.astro';
+import { pageI18n } from '../i18n/dictionaries';
+const { t } = pageI18n(Astro);
 ---
 
+
 <BaseLayout
-  title="Our No-Commission Pledge — IWIS Global"
-  description="IWIS Global takes no commission from any workshop or craft stop. Any such stop is optional, and we say so plainly — most operators in this category won't."
+  title={t.pledgePage.k17}
+  description={t.pledgePage.k18}
 >
   <!-- Same [&_…] heading styling as the policy pages. -->
   <section class="max-w-3xl mx-auto px-6 py-12 md:py-16 [&_h2]:border-l-4 [&_h2]:border-brand-500 [&_h2]:pl-3 [&_h2]:font-serif [&_h2]:text-brand-900 [&_p]:leading-relaxed">
     <div class="mb-10 rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/20 sm:p-8">
-    <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-100">Our promise</span>
-    <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-4">Our no-commission pledge</h1>
+    <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-100" set:html={t.pledgePage.k15} />
+    <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-4" set:html={t.pledgePage.k1} />
 
-    <p class="text-lg text-white/90">
-      IWIS Global takes no commission from any craft workshop, marble-inlay gallery, or souvenir stop on any tour. If a
-      tour's itinerary includes an optional stop like this, it's there because some travelers enjoy it, not because we
-      earn from it. You can skip it and nothing changes about your tour or your guide.
-    </p>
+    <p class="text-lg text-white/90" set:html={t.pledgePage.k2} />
     </div>
 
-    <h2 class="text-xl font-semibold mt-10 mb-3">Why we're saying this plainly</h2>
-    <p class="text-stone-700 mb-4">
-      Scams aimed at tourists are a real problem around the Taj Mahal — in a 15-day crackdown that ended on
-      11 September 2026, Agra police arrested 50 people for scamming visitors, some posing as tour guides
-      (<a href="/blog/agra-tourist-police-first-point-of-contact" class="text-brand-800 underline">more on that, and who to call</a>).
-      Commission-driven detours are one version of it: a guide routes the day through a shop that pays them a cut,
-      and the "quick stop" eats into the time you actually came for. Our
-      <a href="/guides/how-to-avoid-taj-mahal-scams" class="text-brand-800 underline">guide to avoiding Taj Mahal scams</a>
-      covers the other common ones.
-    </p>
-    <p class="text-stone-700 mb-4">
-      We're not claiming every operator does this. We're saying we don't, and we'd rather state it outright than let
-      you wonder.
-    </p>
+    <h2 class="text-xl font-semibold mt-10 mb-3" set:html={t.pledgePage.k3} />
+    <p class="text-stone-700 mb-4" set:html={t.pledgePage.k4} />
+    <p class="text-stone-700 mb-4" set:html={t.pledgePage.k5} />
 
-    <h2 class="text-xl font-semibold mt-10 mb-3">What this means on your tour</h2>
+    <h2 class="text-xl font-semibold mt-10 mb-3" set:html={t.pledgePage.k6} />
     <ul class="mb-4 grid gap-3 sm:grid-cols-2">
-      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5"><span aria-hidden="true" class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-xs font-bold text-white">&#10003;</span><span>Any craft or workshop stop on your itinerary is clearly marked optional</span></li>
-      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5"><span aria-hidden="true" class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-xs font-bold text-white">&#10003;</span><span>Skipping it doesn't shorten your tour or change your price</span></li>
-      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5"><span aria-hidden="true" class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-xs font-bold text-white">&#10003;</span><span>Your guide has no financial reason to steer you toward one shop over another</span></li>
-      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5"><span aria-hidden="true" class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-xs font-bold text-white">&#10003;</span><span>Tipping is always your choice, never expected on top of what you've already paid</span></li>
+      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5" set:html={t.pledgePage.k7} />
+      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5" set:html={t.pledgePage.k8} />
+      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5" set:html={t.pledgePage.k9} />
+      <li class="flex items-start gap-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-4 text-stone-700 shadow-sm shadow-brand-900/5" set:html={t.pledgePage.k10} />
     </ul>
 
-    <p class="mt-10 rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-stone-700">
-      Questions about this, or about a specific tour's itinerary? <a href="/help" class="text-brand-700 hover:underline">Check our FAQs</a>
-      or <a href="https://wa.me/916399226633?text=Hi!%20I%20have%20a%20question%20about%20your%20no-commission%20pledge.%20(ref:%20PLEDGE)" target="_blank" rel="noopener noreferrer" data-wa-ref="PLEDGE" class="text-brand-700 hover:underline">message us on WhatsApp</a>.
-    </p>
+    <p class="mt-10 rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-stone-700" set:html={t.pledgePage.k11} />
 
-    <p class="text-stone-700 mt-4">
-      Wondering how this compares to booking through a marketplace like Viator or GetYourGuide? See our
-      <a href="/guides/iwis-vs-viator-getyourguide" class="text-brand-700 hover:underline">side-by-side comparison</a>.
-    </p>
+    <p class="text-stone-700 mt-4" set:html={t.pledgePage.k12} />
   </section>
 
   <!-- Phones: WhatsApp moves into this bar so the floating button doesn't
        sit on top of the text. -->
   <MobileActionBar waRef="PLEDGEBAR-NO-COMMISSION-PLEDGE" waMessage="Hi! I have a question about your tours.">
     <Fragment slot="info">
-      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Visiting Agra?</p>
-      <p class="text-sm font-semibold leading-tight text-stone-900">Private Taj Mahal tours</p>
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500" set:html={t.pledgePage.k13} />
+      <p class="text-sm font-semibold leading-tight text-stone-900" set:html={t.pledgePage.k14} />
     </Fragment>
-    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
-      View tours
-    </a>
+    <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300" set:html={t.pledgePage.k16} />
   </MobileActionBar>
 </BaseLayout>

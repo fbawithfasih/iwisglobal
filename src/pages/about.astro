@@ -1,83 +1,62 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { pageI18n } from '../i18n/dictionaries';
 
 // Same reasoning as privacy.astro/terms.astro — dynamic because
 // BaseLayout's nav/footer depend on live per-request session/locale state.
 export const prerender = false;
+const { t } = pageI18n(Astro);
 ---
 
-<BaseLayout floatingWhatsApp={false} title="Taj Mahal Tour Operator in Agra – About IWIS Global" description="IWIS Global is a private Taj Mahal & Agra tour operator based in Agra, India — registered address, GST details, and how to reach us.">
+
+<BaseLayout floatingWhatsApp={false} title={t.aboutPage.k23} description={t.aboutPage.k24}>
   <section class="max-w-2xl mx-auto px-6 pt-8 pb-16 md:pt-16">
     <div class="mb-8 rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/20 sm:p-8">
-      <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-100">Based in Agra</span>
-      <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-4">About IWIS Global</h1>
-      <p class="text-white/90">
-        IWIS Global is a Taj Mahal &amp; Agra tour operator based in Agra, India. We run private,
-        guided same-day tours from Delhi to the Taj Mahal and Agra, by car or on the Gatimaan Express
-        train — booked and paid for online, with transparent pricing and no hidden commissions. See our
-        <a href="/no-commission-pledge" class="font-semibold text-white underline underline-offset-2 hover:text-brand-100">No-Commission Pledge</a> for what
-        that means in practice.
-      </p>
+      <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-100" set:html={t.aboutPage.k21} />
+      <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-4" set:html={t.aboutPage.k1} />
+      <p class="text-white/90" set:html={t.aboutPage.k2} />
     </div>
-    <p class="mb-8 flex items-center gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3 text-stone-700 shadow-sm shadow-brand-900/5">
-      <span aria-hidden="true" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-base font-semibold text-white">F</span>
-      <span>IWIS Global is run by Fasih Ahmer (Partner) from Agra.</span>
-    </p>
+    <p class="mb-8 flex items-center gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3 text-stone-700 shadow-sm shadow-brand-900/5" set:html={t.aboutPage.k3} />
 
     <div class="mb-8 grid gap-4 sm:grid-cols-2">
       <div class="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-5">
-        <h2 class="mb-2 font-serif text-lg font-semibold text-brand-900">Registered address</h2>
-        <p class="text-stone-700">
-          A-5, First Floor, ESSAR Mughal Residency, Jyoti Nagar, Shaheed Nagar,<br />
-          Agra – 282001, Uttar Pradesh, India
-        </p>
+        <h2 class="mb-2 font-serif text-lg font-semibold text-brand-900" set:html={t.aboutPage.k4} />
+        <p class="text-stone-700" set:html={t.aboutPage.k5} />
       </div>
       <div class="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/70 to-white p-5">
-        <h2 class="mb-2 font-serif text-lg font-semibold text-brand-900">GST registration</h2>
-        <p class="text-stone-700 mb-2">
-          IWIS Global is a partnership firm, registered for GST in Uttar Pradesh since 6 April 2021.
-        </p>
-        <p class="text-stone-700">GSTIN: <span class="rounded-full bg-amber-300 px-2.5 py-0.5 font-mono text-sm font-semibold text-brand-950">09AAIFI6799J1ZH</span></p>
+        <h2 class="mb-2 font-serif text-lg font-semibold text-brand-900" set:html={t.aboutPage.k6} />
+        <p class="text-stone-700 mb-2" set:html={t.aboutPage.k7} />
+        <p class="text-stone-700" set:html={t.aboutPage.k8} />
       </div>
     </div>
-    <p class="text-stone-600 text-sm mb-10">
-      You can check this number yourself on the government's
-      <a href="https://services.gst.gov.in/services/searchtp" target="_blank" rel="noopener noreferrer" class="text-brand-800 underline">GST portal (Search Taxpayer)</a>:
-      it should show IWIS Global, registered in Uttar Pradesh.
-    </p>
+    <p class="text-stone-600 text-sm mb-10" set:html={t.aboutPage.k9} />
 
-    <h2 class="mb-3 font-serif text-xl font-semibold">Contact us</h2>
+    <h2 class="mb-3 font-serif text-xl font-semibold" set:html={t.aboutPage.k10} />
     <!-- Same cards as /contact: big tap targets instead of inline links. -->
     <!-- WhatsApp full width, then Call + Email side by side: three columns
          squeezed info@iwisglobal.com out of its card (sideways scroll on tablets). -->
     <div class="grid sm:grid-cols-2 gap-4 mb-10">
       <a href={`https://wa.me/916399226633?text=${encodeURIComponent('Hi! (ref: ABOUT)')}`} target="_blank" rel="noopener noreferrer" data-wa-ref="ABOUT" class="sm:col-span-2 block rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-5 shadow-sm shadow-brand-900/5 hover:border-brand-300 hover:shadow-md transition">
-        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600">WhatsApp</p>
-        <p class="text-lg font-semibold text-brand-800">Chat with us</p>
-        <p class="text-sm text-stone-600 mt-1">We usually reply within 15 minutes, 8 AM–10 PM IST daily</p>
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600" set:html={t.aboutPage.k11} />
+        <p class="text-lg font-semibold text-brand-800" set:html={t.aboutPage.k12} />
+        <p class="text-sm text-stone-600 mt-1" set:html={t.aboutPage.k13} />
       </a>
       <a href="tel:+916399226633" class="block rounded-2xl border border-brand-100 bg-white p-5 shadow-sm shadow-brand-900/5 hover:border-brand-300 hover:shadow-md transition">
-        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600">Call</p>
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600" set:html={t.aboutPage.k14} />
         <p class="text-lg font-semibold text-brand-800">+91 6399226633</p>
-        <p class="text-sm text-stone-600 mt-1">Tap to call · 8 AM–10 PM IST daily</p>
+        <p class="text-sm text-stone-600 mt-1" set:html={t.aboutPage.k15} />
       </a>
       <a href="mailto:info@iwisglobal.com" class="block rounded-2xl border border-brand-100 bg-white p-5 shadow-sm shadow-brand-900/5 hover:border-brand-300 hover:shadow-md transition">
-        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600">Email</p>
-        <p class="text-lg font-semibold text-brand-800">info@iwisglobal.com</p>
-        <p class="text-sm text-stone-600 mt-1">Bookings, cancellations, and general questions</p>
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600" set:html={t.aboutPage.k16} />
+        <p class="text-lg font-semibold text-brand-800" set:html={t.aboutPage.k17} />
+        <p class="text-sm text-stone-600 mt-1" set:html={t.aboutPage.k18} />
       </a>
     </div>
 
     <div class="rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-white shadow-lg shadow-brand-900/20 sm:p-8">
-      <h2 class="font-serif text-xl font-semibold mb-1">Planning a Taj Mahal trip?</h2>
-      <p class="text-white/90 mb-4">
-        See our private same-day tours from Delhi, or start with our
-        <a href="/agra" class="font-semibold text-white underline underline-offset-2 hover:text-brand-100">guide to Agra</a> and
-        <a href="/guides" class="font-semibold text-white underline underline-offset-2 hover:text-brand-100">travel guides</a>.
-      </p>
-      <a href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-6 font-semibold text-brand-800 shadow-md shadow-brand-950/20 transition hover:bg-brand-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200">
-        View our tours
-      </a>
+      <h2 class="font-serif text-xl font-semibold mb-1" set:html={t.aboutPage.k19} />
+      <p class="text-white/90 mb-4" set:html={t.aboutPage.k20} />
+      <a href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-6 font-semibold text-brand-800 shadow-md shadow-brand-950/20 transition hover:bg-brand-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200" set:html={t.aboutPage.k22} />
     </div>
   </section>
 </BaseLayout>

@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import LegalNotice from '../components/LegalNotice.astro';
 import GrievanceOfficer from '../components/GrievanceOfficer.astro';
+import { pageI18n } from '../i18n/dictionaries';
 
 // Dynamic (not prerendered) because BaseLayout's nav/footer depend on
 // live per-request session and locale state via Astro.cookies.
@@ -15,100 +17,70 @@ export const prerender = false;
 // named under Accounts (same in privacy.astro); add Apple back when it is.
 // The business details in the intro match /about and /contact.
 const lastUpdated = '28 September 2026';
+const { t } = pageI18n(Astro);
 ---
 
-<BaseLayout title="Terms of Service — IWIS Global" description="The terms and conditions that apply when you book a Taj Mahal or Agra tour with IWIS Global.">
+
+<BaseLayout title={t.termsPage.k35} description={t.termsPage.k36}>
   <!-- The [&_…] classes style every section heading and list on the page,
          including the shared GrievanceOfficer block, without touching /contact. -->
   <section class="max-w-2xl mx-auto px-6 py-12 md:py-16 [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:border-l-4 [&_h2]:border-brand-500 [&_h2]:pl-3 [&_h2]:font-serif [&_h2]:text-xl [&_h2]:text-brand-900 [&_li]:marker:text-brand-500 [&_p]:leading-relaxed">
-    <span class="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Legal</span>
-    <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-2">Terms of Service</h1>
-    <p class="mb-6 inline-block rounded-full border border-brand-100 bg-white px-3 py-1 text-sm text-stone-500">Last updated: {lastUpdated}</p>
+    <span class="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800" set:html={t.termsPage.k32} />
+    <h1 class="mt-3 text-3xl md:text-4xl font-serif font-semibold mb-2" set:html={t.termsPage.k1} />
+    <LegalNotice updated={lastUpdated} />
 
-    <p class="mb-2 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-5 text-stone-700 shadow-sm shadow-brand-900/5">
-      These terms apply when you book a tour through this website, operated by IWIS Global ("we", "us"), a
-      partnership firm based in Agra, Uttar Pradesh, India (GSTIN 09AAIFI6799J1ZH), whose registered address is
-      A-5, First Floor, ESSAR Mughal Residency, Jyoti Nagar, Shaheed Nagar, Agra – 282001. By booking a tour,
-      you agree to them.
-    </p>
+    <p class="mb-2 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-5 text-stone-700 shadow-sm shadow-brand-900/5" set:html={t.termsPage.k2} />
 
-    <h2 class="text-lg font-semibold mb-2">Booking and payment</h2>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.termsPage.k3} />
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
-      <li>The price shown on the tour page at checkout — including any add-ons you select, and after any discount — is the price you pay. There are no hidden fees.</li>
-      <li>Payments are processed securely by Razorpay. Prices are quoted in Indian Rupees (INR), with US Dollar (USD) pricing available for tours where we've set a USD rate.</li>
-      <li>You can pay the full price, or a 25% deposit online to secure your booking with the balance paid on pickup. If you cancel, any refund is worked out on the amount you paid.</li>
-      <li>Your booking is confirmed once payment succeeds; you'll receive confirmation immediately.</li>
-      <li>You don't need to create an account to book — an account is only needed if you want to see your booking history for tours you book while signed in.</li>
+      <li set:html={t.termsPage.k4} />
+      <li set:html={t.termsPage.k5} />
+      <li set:html={t.termsPage.k6} />
+      <li set:html={t.termsPage.k7} />
+      <li set:html={t.termsPage.k8} />
     </ul>
 
-    <h2 class="text-lg font-semibold mb-2">Offers and coupon codes</h2>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.termsPage.k9} />
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
-      <li>Only one discount applies per booking. If more than one offer or code could apply, you automatically get the biggest one.</li>
-      <li>An offer or code can be limited to certain tours, booking dates, travel dates, or group sizes. The conditions are shown with the offer, or when you apply the code.</li>
-      <li>A discount applies only if it's valid when you pay. It can't be added to a booking after payment.</li>
-      <li>We can end or change an offer at any time. This doesn't affect bookings already paid for.</li>
-      <li>If you cancel, any refund is worked out on the amount you actually paid, after the discount.</li>
+      <li set:html={t.termsPage.k10} />
+      <li set:html={t.termsPage.k11} />
+      <li set:html={t.termsPage.k12} />
+      <li set:html={t.termsPage.k13} />
+      <li set:html={t.termsPage.k14} />
     </ul>
 
-    <h2 class="text-lg font-semibold mb-2">How late you can book</h2>
-    <p class="text-stone-700 mb-6">
-      Tours can be booked until 9 PM India Standard Time (IST) the night before, to allow time to arrange your
-      vehicle and guide. After 9 PM, the earliest date you can book is the day after tomorrow. Tours don't run
-      on Fridays, when the Taj Mahal is closed.
-    </p>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.termsPage.k15} />
+    <p class="text-stone-700 mb-6" set:html={t.termsPage.k16} />
 
-    <h2 class="text-lg font-semibold mb-2">Cancellations, refunds, and date changes</h2>
-    <p class="text-stone-700 mb-6">
-      You can cancel for a full refund up to 24 hours before your tour's scheduled start time; cancellations
-      made less than 24 hours before receive a 50% refund, and no-shows aren't refunded. Date changes are free
-      up to 24 hours before, subject to availability. To cancel, contact us using the details below. Full
-      details, including refund timelines and what happens if we cancel, are in our
-      <a href="/cancellation-refund-policy" class="text-brand-800 hover:underline">Cancellation &amp; Refund Policy</a>.
-    </p>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.termsPage.k17} />
+    <p class="text-stone-700 mb-6" set:html={t.termsPage.k18} />
 
-    <h2 class="text-lg font-semibold mb-2">Your responsibilities</h2>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.termsPage.k19} />
     <ul class="list-disc pl-5 text-stone-700 space-y-1 mb-6">
-      <li>Provide accurate traveler details (name, contact information, number of travelers) at the time of booking.</li>
-      <li>Arrive at the agreed pickup point and time — tours may not be able to wait for late arrivals.</li>
-      <li>Carry valid ID and any tickets/permits required for the sites visited (e.g. the Taj Mahal), where applicable.</li>
+      <li set:html={t.termsPage.k20} />
+      <li set:html={t.termsPage.k21} />
+      <li set:html={t.termsPage.k22} />
     </ul>
 
-    <h2 class="text-lg font-semibold mb-2">Changes and disruptions</h2>
-    <p class="text-stone-700 mb-6">
-      Tours may occasionally be affected by circumstances outside our control — site closures, weather,
-      traffic, or local restrictions. If we have to cancel your tour, you choose a full refund of everything
-      you've paid or a free change to a new date, as set out in our
-      <a href="/cancellation-refund-policy" class="text-brand-800 hover:underline">Cancellation &amp; Refund Policy</a>.
-      Otherwise, we'll work with you to resolve the issue; we are not responsible for losses caused by such
-      circumstances beyond our control.
-    </p>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.termsPage.k23} />
+    <p class="text-stone-700 mb-6" set:html={t.termsPage.k24} />
 
-    <h2 class="text-lg font-semibold mb-2">Accounts</h2>
-    <p class="text-stone-700 mb-6">
-      Signing in with Google, or with an email and password, is optional and only used to show you your own
-      booking history. You're responsible for keeping your sign-in details secure.
-    </p>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.termsPage.k25} />
+    <p class="text-stone-700 mb-6" set:html={t.termsPage.k26} />
 
-    <h2 class="text-lg font-semibold mb-2">Changes to these terms</h2>
-    <p class="text-stone-700 mb-6">
-      We may update these terms from time to time; the "last updated" date above reflects the most recent
-      change. Continuing to use the site after an update means you accept the revised terms.
-    </p>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.termsPage.k27} />
+    <p class="text-stone-700 mb-6" set:html={t.termsPage.k28} />
 
     <GrievanceOfficer />
 
-    <h2 class="text-lg font-semibold mb-2">Governing law</h2>
-    <p class="text-stone-700 mb-6">
-      These terms are governed by the laws of India. Any dispute will be handled by the courts in Agra,
-      Uttar Pradesh, India. This doesn't affect your right as a consumer to file a complaint with a
-      consumer commission where Indian consumer law allows.
-    </p>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.termsPage.k29} />
+    <p class="text-stone-700 mb-6" set:html={t.termsPage.k30} />
 
-    <h2 class="text-lg font-semibold mb-2">Contact us</h2>
+    <h2 class="text-lg font-semibold mb-2" set:html={t.termsPage.k31} />
     <p class="rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-stone-700">
       Questions about these terms, or to cancel a booking, contact us at
-      <a href="mailto:info@iwisglobal.com" class="text-brand-800 hover:underline">info@iwisglobal.com</a> or via
-      <a href={`https://wa.me/916399226633?text=${encodeURIComponent('Hi! (ref: TERMS)')}`} target="_blank" rel="noopener noreferrer" data-wa-ref="TERMS" class="text-brand-800 hover:underline">WhatsApp</a>.
+      <a href="mailto:info@iwisglobal.com" class="text-brand-800 hover:underline" set:html={t.termsPage.k33} /> or via
+      <a href={`https://wa.me/916399226633?text=${encodeURIComponent('Hi! (ref: TERMS)')}`} target="_blank" rel="noopener noreferrer" data-wa-ref="TERMS" class="text-brand-800 hover:underline" set:html={t.termsPage.k34} />.
     </p>
   </section>
 </BaseLayout>

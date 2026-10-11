@@ -6,7 +6,9 @@ import { resolveEnv } from '../../lib/env';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
 import PhoneInput from '../../components/PhoneInput';
 import { getCustomerById, listCustomerBookings, normalizeAccountPhone, updateCustomerPhone, type CustomerBookingRow } from '../../lib/customers';
-import { getTourById, type ParsedTour } from '../../lib/tours';
+import { getTourById, localizeTours, type ParsedTour } from '../../lib/tours';
+import { pageI18n, fmt } from '../../i18n/dictionaries';
+import { intlLocale } from '../../lib/i18n';
 import { chosenAddOnNames } from '../../lib/entryTickets';
 import { canBeReviewed, ensureReviewToken, reviewedBookingIds, reviewUrl, SITE_URL } from '../../lib/reviews';
 import { CURRENCY_SYMBOLS, type Currency } from '../../lib/currency';
@@ -14,6 +16,8 @@ import { linkGuestBookings, createEmailVerificationLink } from '../../lib/emailV
 import { sendEmailVerificationEmail } from '../../lib/email';
 
 const env = resolveEnv(Astro.locals);
+const { locale, t } = pageI18n(Astro);
+const a = t.account;
 const customerId = await getSessionCustomerId(Astro.cookies, env.CUSTOMER_SESSION_SECRET);
 // Keeps ?email=confirmed (from the confirmation link) through sign-in.
 const signInRedirect = `/login?redirect=${encodeURIComponent(`/account/bookings${Astro.url.search}`)}`;
@@ -56,11 +60,18 @@ const emailParam = Astro.url.searchParams.get('email');
 const bookings = db ? await listCustomerBookings(db, customerId) : [];
 // Set by /reset-password after a new password is saved.
 const passwordChanged = Astro.url.searchParams.get('password') === 'changed';
+// English tours are used for the message we send to the team; localized copies for what's shown.
 const tours = new Map<string, ParsedTour | null>();
+const toursShown = new Map<string, ParsedTour | null>();
 if (db) {
   const tourIds = [...new Set(bookings.map((b) => b.tour_id))];
   const found = await Promise.all(tourIds.map((id) => getTourById(db, id)));
-  tourIds.forEach((id, i) => tours.set(id, found[i]));
+  const present = found.filter((x): x is ParsedTour => !!x);
+  const localized = new Map((await localizeTours(db, present, locale)).map((x) => [x.id, x]));
+  tourIds.forEach((id, i) => {
+    tours.set(id, found[i]);
+    toursShown.set(id, localized.get(id) ?? found[i]);
+  });
 }
 
 // Today in India (tours run there), as YYYY-MM-DD for comparing travel dates.
@@ -76,8 +87,8 @@ const past = active
   .filter((b) => !upcoming.includes(b))
   .sort((a, b) => b.travel_date.localeCompare(a.travel_date));
 
-const formatDate = (ymd: string) =>
-  new Date(`${ymd}T00:00:00Z`).toLocaleDateString('en-GB', {
+const formatDate = (ymd: string, tag = 'en-GB') =>
+  new Date(`${ymd}T00:00:00Z`).toLocaleDateString(tag, {
     weekday: 'short',
     day: 'numeric',
     month: 'long',
@@ -92,9 +103,9 @@ const formatMoney = (minor: number, currency: string) => {
 
 type StatusStyle = { label: string; cls: string };
 const STATUS: Record<string, StatusStyle> = {
-  confirmed: { label: 'Confirmed', cls: 'bg-green-100 text-green-800 ring-1 ring-green-200' },
-  completed: { label: 'Completed', cls: 'bg-stone-200 text-stone-700' },
-  cancelled: { label: 'Cancelled', cls: 'bg-red-100 text-red-800' },
+  confirmed: { label: a.confirmed, cls: 'bg-green-100 text-green-800 ring-1 ring-green-200' },
+  completed: { label: a.completed, cls: 'bg-stone-200 text-stone-700' },
+  cancelled: { label: a.cancelled, cls: 'bg-red-100 text-red-800' },
 };
 const statusOf = (status: string) =>
   STATUS[status] ?? { label: status.charAt(0).toUpperCase() + status.slice(1), cls: 'bg-stone-200 text-stone-700' };
@@ -120,7 +131,7 @@ if (db) {
 
 const withDetails = (list: CustomerBookingRow[]) =>
   list.map((b) => {
-    const tour = tours.get(b.tour_id);
+    const tour = toursShown.get(b.tour_id);
     return {
       b,
       title: tour?.title ?? b.tour_id,
@@ -133,46 +144,46 @@ const withDetails = (list: CustomerBookingRow[]) =>
     };
   });
 const sections = [
-  { title: 'Upcoming', items: withDetails(upcoming), canChange: true },
-  { title: 'Past trips', items: withDetails(past), canChange: false },
-  { title: 'Cancelled', items: withDetails(cancelled), canChange: false },
+  { title: a.upcoming, items: withDetails(upcoming), canChange: true },
+  { title: a.past, items: withDetails(past), canChange: false },
+  { title: a.cancelled, items: withDetails(cancelled), canChange: false },
 ].filter((s) => s.items.length > 0);
 ---
 
-<BaseLayout floatingWhatsApp={false} title="My Bookings — IWIS Global" noindex>
+<BaseLayout floatingWhatsApp={false} title={a.title} noindex>
   <section class="max-w-3xl mx-auto px-6 pt-8 pb-28 md:pt-16 md:pb-16">
     <div class="flex items-center justify-between gap-4 mb-4">
       <div>
-        <span class="mb-2 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Your account</span>
-        <h1 class="text-3xl md:text-4xl font-serif font-semibold">My Bookings</h1>
+        <span class="mb-2 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">{t.auth.yourAccount}</span>
+        <h1 class="text-3xl md:text-4xl font-serif font-semibold">{a.h1}</h1>
       </div>
       <form method="POST" action="/auth/logout">
-        <button type="submit" class="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-4 text-sm text-stone-600 hover:border-brand-300 hover:text-brand-800 transition cursor-pointer">Sign out</button>
+        <button type="submit" class="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-4 text-sm text-stone-600 hover:border-brand-300 hover:text-brand-800 transition cursor-pointer">{a.signOut}</button>
       </form>
     </div>
     {emailParam === 'confirmed' && !emailUnconfirmed && (
       <p role="status" class="mb-4 flex items-start gap-2 rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-white px-4 py-3 text-sm font-medium text-green-800 shadow-sm">
         <span aria-hidden="true" class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs text-white">&#10003;</span>
-        <span>Email confirmed. Bookings made with {customer.email} now show here.</span>
+        <span>{fmt(a.emailConfirmed, { email: customer.email })}</span>
       </p>
     )}
     {emailParam === 'link-expired' && emailUnconfirmed && (
       <p role="alert" class="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white px-4 py-3 text-sm text-amber-900 shadow-sm">
         <span aria-hidden="true" class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-amber-950">!</span>
-        <span>That confirmation link has expired or was already used. Send a new one below.</span>
+        <span>{a.linkExpired}</span>
       </p>
     )}
     {emailUnconfirmed && (
       <div class="mb-6 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-4 shadow-sm shadow-brand-900/5 sm:p-5">
         <p class="text-sm text-stone-700">
-          <span class="font-semibold text-stone-900">Confirm your email to see bookings made before you signed up.</span>
-          We'll email a confirmation link to <span class="font-medium break-all">{customer.email}</span>.
+          <span class="font-semibold text-stone-900">{a.confirmYour}</span>
+          {a.weWillEmail.split('{email}')[0]}<span class="font-medium break-all">{customer.email}</span>{a.weWillEmail.split('{email}')[1]}
         </p>
-        {resent === 'sent' && <p role="status" class="mt-2 text-sm font-medium text-green-800">Sent. Check your inbox (and spam folder).</p>}
-        {resent === 'limit' && <p role="alert" class="mt-2 text-sm text-amber-900">We've sent several links in the last hour. Please use the latest one, or try again later.</p>}
+        {resent === 'sent' && <p role="status" class="mt-2 text-sm font-medium text-green-800">{a.sent}</p>}
+        {resent === 'limit' && <p role="alert" class="mt-2 text-sm text-amber-900">{a.limit}</p>}
         {resent !== 'sent' && (
           <form method="POST" class="mt-3">
-            <button type="submit" class="inline-flex min-h-11 items-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-5 text-sm font-semibold text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 cursor-pointer">Email me a confirmation link</button>
+            <button type="submit" class="inline-flex min-h-11 items-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 px-5 text-sm font-semibold text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 cursor-pointer">{a.emailMe}</button>
           </form>
         )}
       </div>
@@ -180,7 +191,7 @@ const sections = [
     {passwordChanged && (
       <p role="status" class="mb-4 flex items-start gap-2 rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-white px-4 py-3 text-sm font-medium text-green-800 shadow-sm">
         <span aria-hidden="true" class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs text-white">&#10003;</span>
-        <span>Your password has been changed.</span>
+        <span>{a.pwChanged}</span>
       </p>
     )}
     <p class="mb-6 flex items-center gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3 shadow-sm shadow-brand-900/5">
@@ -190,23 +201,21 @@ const sections = [
 
     <form method="POST" class="mb-8 rounded-xl border border-brand-100 bg-brand-50/60 p-4">
       <input type="hidden" name="_action" value="phone" />
-      <label for="accountPhone" class="block text-sm font-semibold text-stone-900 mb-1">Phone number</label>
-      <p class="text-xs text-stone-500 mb-2">Optional. Handy for your guide to reach you on the day of your tour.</p>
+      <label for="accountPhone" class="block text-sm font-semibold text-stone-900 mb-1">{a.phone}</label>
+      <p class="text-xs text-stone-500 mb-2">{a.phoneHelp}</p>
       <PhoneInput client:load id="accountPhone" name="phone" defaultValue={customer.phone ?? undefined} invalid={phoneStatus === 'invalid'} />
       <div class="mt-3 flex flex-wrap items-center gap-3">
-        <button type="submit" class="inline-flex min-h-11 items-center rounded-full bg-brand-700 px-5 text-sm font-semibold text-white hover:bg-brand-800 transition cursor-pointer">Save phone number</button>
-        {phoneStatus === 'saved' && <p role="status" class="text-sm font-medium text-green-800">Saved.</p>}
-        {phoneStatus === 'cleared' && <p role="status" class="text-sm font-medium text-green-800">Phone number removed.</p>}
-        {phoneStatus === 'invalid' && <p role="alert" class="text-sm text-red-700">Please enter a valid phone number and check the country code.</p>}
+        <button type="submit" class="inline-flex min-h-11 items-center rounded-full bg-brand-700 px-5 text-sm font-semibold text-white hover:bg-brand-800 transition cursor-pointer">{a.savePhone}</button>
+        {phoneStatus === 'saved' && <p role="status" class="text-sm font-medium text-green-800">{a.saved}</p>}
+        {phoneStatus === 'cleared' && <p role="status" class="text-sm font-medium text-green-800">{a.removed}</p>}
+        {phoneStatus === 'invalid' && <p role="alert" class="text-sm text-red-700">{a.invalid}</p>}
       </div>
     </form>
 
     {bookings.length === 0 && (
       <div class="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-8 text-center shadow-sm shadow-brand-900/5">
-        <p class="text-stone-600 mb-4">No bookings on this account yet. Bookings you make while signed in will show up here.</p>
-        <a href="/tours" class="inline-flex min-h-11 items-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 px-5 text-sm font-semibold">
-          Browse tours
-        </a>
+        <p class="text-stone-600 mb-4">{a.none}</p>
+        <a href="/tours" class="inline-flex min-h-11 items-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 px-5 text-sm font-semibold">{a.browse}</a>
       </div>
     )}
 
@@ -220,7 +229,7 @@ const sections = [
                     {href ? (
                       <a href={href} class="group min-w-0">
                         <span class="block font-semibold text-stone-900 group-hover:text-brand-800">{title}</span>
-                        <span class="text-sm font-medium text-brand-800 group-hover:underline">View booking &rarr;</span>
+                        <span class="text-sm font-medium text-brand-800 group-hover:underline">{a.viewBooking}</span>
                       </a>
                     ) : (
                       <p class="font-semibold">{title}</p>
@@ -228,40 +237,37 @@ const sections = [
                     <span class={`shrink-0 text-xs font-medium px-2.5 py-0.5 rounded-full ${status.cls}`}>{status.label}</span>
                   </div>
                   <p class="text-sm text-stone-600 mt-1">
-                    {formatDate(b.travel_date)} · {b.travelers} traveler{b.travelers > 1 ? 's' : ''}
+                    {formatDate(b.travel_date, intlLocale(locale))} · {fmt(b.travelers > 1 ? t.booking.manyTravelers : t.booking.oneTraveler, { n: b.travelers })}
                   </p>
                   {section.canChange && b.pickup_time && (
-                    <p class="text-sm text-stone-800 mt-1"><span class="text-stone-500">Pickup:</span> <span class="font-semibold">{b.pickup_time}</span></p>
+                    <p class="text-sm text-stone-800 mt-1"><span class="text-stone-500">{a.pickup}</span> <span class="font-semibold">{b.pickup_time}</span></p>
                   )}
                   {b.status !== 'cancelled' && addOns.length > 0 && (
-                    <p class="text-sm text-stone-600 mt-1"><span class="text-stone-500">Add-ons:</span> {addOns.join(', ')}</p>
+                    <p class="text-sm text-stone-600 mt-1"><span class="text-stone-500">{a.addOns}</span> {addOns.join(', ')}</p>
                   )}
                   {b.status === 'cancelled' ? (
-                    <p class="text-sm text-stone-600 mt-2">
-                      Any refund goes back to your original payment method —
-                      <a href="/cancellation-refund-policy" class="text-brand-800 underline">refund policy</a>.
-                    </p>
+                    <p class="text-sm text-stone-600 mt-2" set:html={a.refundHtml} />
                   ) : (
                   <p class="text-sm mt-2">
                     <span class="font-semibold">{formatMoney(b.amount_paid, b.currency)}</span>
-                    <span class="text-stone-500"> paid</span>
+                    <span class="text-stone-500">{a.paid}</span>
                     {b.payment_type === 'deposit' && (
                       <>
-                        <span class="text-stone-500"> of {formatMoney(b.total_amount, b.currency)}</span>
-                        <span class="ml-1 inline-block rounded-full bg-amber-300 px-2 py-0.5 text-xs font-semibold text-brand-950">{formatMoney(b.total_amount - b.amount_paid, b.currency)} due on pickup</span>
+                        <span class="text-stone-500">{fmt(a.ofTotal, { amount: formatMoney(b.total_amount, b.currency) })}</span>
+                        <span class="ml-1 inline-block rounded-full bg-amber-300 px-2 py-0.5 text-xs font-semibold text-brand-950">{fmt(a.dueOnPickup, { amount: formatMoney(b.total_amount - b.amount_paid, b.currency) })}</span>
                       </>
                     )}
                   </p>
                   )}
                   {b.status !== 'cancelled' && b.discount_label && b.discount_amount ? (
-                    <p class="text-xs text-emerald-700 mt-0.5">{b.discount_label}: saved {formatMoney(b.discount_amount, b.currency)}</p>
+                    <p class="text-xs text-emerald-700 mt-0.5">{fmt(a.savedAmount, { label: /^Founding Guest/i.test(b.discount_label) ? fmt(t.offers.founding, { percent: b.discount_label.match(/(\d+)%/)?.[1] ?? '' }) : b.discount_label, amount: formatMoney(b.discount_amount, b.currency) })}</p>
                   ) : null}
                   <p class="text-xs text-stone-500 mt-1 break-all">
-                    Booking ID: <span class="font-mono text-stone-700">{b.id}</span>
+                    {a.bookingId} <span class="font-mono text-stone-700">{b.id}</span>
                   </p>
                   {reviewHref && (
                     <a href={reviewHref} class="mt-3 inline-flex min-h-11 items-center rounded-full bg-gradient-to-r from-brand-900 via-brand-700 to-brand-600 text-white shadow-md shadow-brand-900/20 transition hover:brightness-110 px-4 text-sm font-semibold">
-                      {hasReview ? 'Edit your review' : 'Rate your tour'}
+                      {hasReview ? a.editReview : a.rate}
                     </a>
                   )}
                   {section.canChange && b.status === 'confirmed' && (
@@ -272,7 +278,7 @@ const sections = [
                       data-wa-ref="MYBOOKINGS"
                       class="mt-3 inline-flex min-h-11 items-center rounded-full border border-brand-200 bg-brand-50 px-4 text-sm font-medium text-brand-800 hover:border-brand-400 transition"
                     >
-                      Change or cancel on WhatsApp
+                      {a.change}
                     </a>
                   )}
                 </div>

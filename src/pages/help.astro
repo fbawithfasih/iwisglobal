@@ -5,6 +5,7 @@ import MobileActionBar from '../components/MobileActionBar.astro';
 import { resolveEnv } from '../lib/env';
 import { countBookings } from '../lib/db';
 import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../lib/catalog';
+import { pageI18n, fmt } from '../i18n/dictionaries';
 
 // Was prerender = true (static) — flipped to per-request now that
 // BaseLayout's nav reflects live sign-in state via Astro.cookies, which
@@ -25,127 +26,26 @@ interface FaqCategory {
   items: FaqItem[];
 }
 
+const { t } = pageI18n(Astro);
+const h = t.help;
+
 // The Founding Guest offer is mentioned only while spots remain.
 const db = resolveEnv(Astro.locals).DB;
 const foundingGuestOpen = db ? (await countBookings(db)) < FOUNDING_GUEST_SLOT_CAP : false;
 const foundingGuestLine = foundingGuestOpen
-  ? ` Right now, our first ${FOUNDING_GUEST_SLOT_CAP} guests get ${Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100)}% off automatically, with no code needed (the Founding Guest offer).`
+  ? fmt(h.foundingLine, { cap: FOUNDING_GUEST_SLOT_CAP, percent: Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100) })
   : '';
 
-const categories: FaqCategory[] = [
-  {
-    title: 'Booking',
-    items: [
-      {
-        id: 'how-to-book',
-        question: 'How do I book a tour?',
-        answer:
-          "Choose a tour, pick your travel date and number of travelers, and pay securely online. You'll get instant confirmation by email as soon as your payment goes through — no waiting for a callback.",
-      },
-      {
-        id: 'after-booking',
-        question: 'What happens after I book?',
-        answer:
-          "You get a confirmation email right away, with a link to view your booking any time. Then send us your hotel or pickup address on WhatsApp — and, if your tour includes entry tickets, each traveler's full name and nationality, which the Archaeological Survey of India (ASI) needs for the tickets. You can also add the tour to your calendar from the booking page.",
-      },
-      {
-        id: 'same-day',
-        question: 'How late can I book?',
-        answer:
-          "Until 9 PM India time (IST) the night before your tour — pickups start early in the morning, so we need the evening to arrange your vehicle and guide. After 9 PM, the earliest date you can book is the day after tomorrow. Tours don't run on Fridays, when the Taj Mahal is closed.",
-      },
-      {
-        id: 'account',
-        question: 'Do I need to create an account?',
-        answer:
-          "No — you can book without one; you just enter your name, email and phone number at checkout. If you'd like all your bookings in one place, create an account with the same email you booked with and confirm it (or use Continue with Google): bookings you've already made will show in My Bookings too.",
-        links: [{ text: 'create an account', href: '/signup' }],
-      },
-      {
-        id: 'scams',
-        question: 'How do I avoid Taj Mahal scams?',
-        answer:
-          "Buy monument tickets only through ASI's official channels, agree any guide's full price before you start, and don't book anything at an office a driver takes you to. Before paying any tour company, check its GST number on the government's GST portal. Our guide to avoiding Taj Mahal scams covers the common ones, from fake ticket websites to gate touts.",
-        links: [{ text: 'guide to avoiding Taj Mahal scams', href: '/guides/how-to-avoid-taj-mahal-scams' }],
-      },
-    ],
-  },
-  {
-    title: 'Payment',
-    items: [
-      {
-        id: 'payment-methods',
-        question: 'What payment methods and currencies do you support?',
-        answer:
-          "Payments are processed securely through Razorpay. You can pay in Indian Rupees (INR) or US Dollars (USD) — switch with the currency menu at the top of the page. If a tour has no USD price, it's shown and charged in INR.",
-      },
-      {
-        id: 'payment-security',
-        question: 'Is my payment secure?',
-        answer:
-          "Yes. Card and payment details are handled entirely by Razorpay — we never see or store them — and every payment is cryptographically verified on our server before a booking is confirmed.",
-      },
-      {
-        id: 'hidden-fees',
-        question: 'Are there any hidden fees?',
-        answer: 'No hidden fees. The price shown on the tour page — including any add-ons you select — is exactly what you pay.',
-      },
-      {
-        id: 'discounts',
-        question: 'Do you have discounts or coupon codes?',
-        answer:
-          `Sometimes. Running offers show on our tour pages and apply automatically.${foundingGuestLine} If you have a coupon code, enter it at checkout under "Have a coupon code?". One discount applies per booking, and you automatically get the biggest one.`,
-      },
-      {
-        id: 'deposit',
-        question: 'Can I pay a deposit instead of the full price?',
-        answer:
-          "Yes. At checkout you can pay a 25% deposit online to secure your booking, and the balance is paid on pickup. If you cancel, the refund is worked out on the deposit you paid.",
-      },
-    ],
-  },
-  {
-    title: 'Cancellation & Refunds',
-    items: [
-      {
-        id: 'cancellation',
-        question: "What's your cancellation policy?",
-        answer:
-          "Free cancellation up to 24 hours before your tour starts. Cancel less than 24 hours before and you get a 50% refund of what you paid; no-shows aren't refunded. Refunds are started within 2 business days and usually reach your account 7–10 business days after that. Full details are on our Cancellation & Refund Policy page.",
-        links: [{ text: 'Cancellation & Refund Policy', href: '/cancellation-refund-policy' }],
-      },
-      {
-        id: 'change-date',
-        question: 'Can I change my tour date?',
-        answer:
-          'Yes — free of charge up to 24 hours before your tour, subject to availability. If the new date or a change in group size costs more, you pay the difference. Just message us on WhatsApp or email with your name and the booking ID from your confirmation email or My Bookings.',
-        links: [{ text: 'My Bookings', href: '/account/bookings' }],
-      },
-    ],
-  },
-  {
-    title: 'Your Tour',
-    items: [
-      {
-        id: 'included',
-        question: "What's included in the price?",
-        answer:
-          "Every tour is private to your group, with an English-speaking guide and a private car (on the Gatimaan tour you travel to Agra on the scheduled express train). Most also include Taj Mahal and Agra Fort entry tickets in the price; the tour card says \"Entry tickets included\" when they do. Check the \"Included\" and \"Not included\" sections on the tour you're booking before you pay.",
-      },
-    ],
-  },
-  {
-    title: 'Contact',
-    items: [
-      {
-        id: 'contact',
-        question: 'How do I contact you with a question?',
-        answer: 'Message us on WhatsApp — tap any WhatsApp link, or the WhatsApp button at the bottom of the page; we usually reply within 15 minutes between 8 AM and 10 PM India time (IST), every day. You can also call or email us; everything is on our Contact Us page.',
-        links: [{ text: 'Contact Us', href: '/contact' }],
-      },
-    ],
-  },
-];
+// The FAQ lives in the dictionaries (src/i18n/*.ts) so every language has it.
+const categories: FaqCategory[] = h.categories.map((cat) => ({
+  title: cat.title,
+  items: cat.items.map((item) => ({
+    id: item.id,
+    question: item.question,
+    answer: item.answer.replace('{founding}', foundingGuestLine),
+    links: item.links.length ? item.links : undefined,
+  })),
+}));
 
 const allFaqs = categories.flatMap((c) => c.items);
 
@@ -177,13 +77,14 @@ const faqJsonLd = {
 };
 ---
 
-<BaseLayout title="Taj Mahal Tour FAQs & Help — IWIS Global" description="Answers to common questions about booking, payment, and cancellation for IWIS Global Agra tours.">
+
+<BaseLayout title={t.helpPage.k1} description={t.helpPage.k2}>
   <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
   <section class="max-w-4xl mx-auto px-6 py-12">
     <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 text-white p-8 shadow-lg shadow-brand-900/20 flex items-center justify-between gap-6 flex-wrap">
       <div>
-        <p class="text-xl font-serif font-semibold mb-1">Have a question about an existing booking?</p>
-        <p class="text-white/80 text-sm max-w-md">Message us on WhatsApp with your name or the booking ID from your confirmation email, and we'll pull up your booking.</p>
+        <p class="text-xl font-serif font-semibold mb-1">{h.heroTitle}</p>
+        <p class="text-white/80 text-sm max-w-md">{h.heroBody}</p>
         <Button
           href={`https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have a question about an existing booking. (ref: HELP-HERO)')}`}
           target="_blank"
@@ -192,7 +93,7 @@ const faqJsonLd = {
           variant="ghost"
           class="mt-4"
         >
-          WhatsApp us
+          {h.waUs}
         </Button>
       </div>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" class="hidden sm:block h-20 w-20 text-white/25 shrink-0" aria-hidden="true">
@@ -200,8 +101,8 @@ const faqJsonLd = {
       </svg>
     </div>
 
-    <span class="mt-12 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">Help centre</span>
-    <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-3 mb-6">Frequently asked questions</h1>
+    <span class="mt-12 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">{h.badge}</span>
+    <h1 class="text-3xl md:text-4xl font-serif font-semibold mt-3 mb-6">{h.h1}</h1>
 
     <div class="relative mb-10">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-500" aria-hidden="true">
@@ -211,7 +112,7 @@ const faqJsonLd = {
       <input
         id="faq-search"
         type="search"
-        placeholder="What can we help you with?"
+        placeholder={h.searchPlaceholder}
         class="w-full rounded-full border border-brand-200 bg-white pl-11 pr-4 py-3 text-base shadow-sm shadow-brand-900/5 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
       />
     </div>
@@ -234,11 +135,11 @@ const faqJsonLd = {
         </div>
       ))}
     </div>
-    <p id="faq-no-results" class="hidden text-sm text-stone-500 -mt-12 mb-16">No results — try WhatsApp or email below.</p>
+    <p id="faq-no-results" class="hidden text-sm text-stone-500 -mt-12 mb-16">{h.noResults}</p>
 
     <!-- Phones get the same two buttons in the bottom bar instead. -->
     <div class="hidden sm:flex items-center gap-4 flex-wrap mb-16 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white px-6 py-5 shadow-sm shadow-brand-900/5">
-      <h2 class="text-xl font-serif font-semibold shrink-0">Still need help?</h2>
+      <h2 class="text-xl font-serif font-semibold shrink-0">{h.stillNeed}</h2>
       <Button
         href={`https://wa.me/916399226633?text=${encodeURIComponent('Hi! I have a question. (ref: HELP-STILLNEEDHELP)')}`}
         target="_blank"
@@ -246,10 +147,10 @@ const faqJsonLd = {
         data-wa-ref="HELP-STILLNEEDHELP"
         variant="secondary"
       >
-        WhatsApp us
+        {h.waUs}
       </Button>
       <Button href="mailto:info@iwisglobal.com" variant="secondary">
-        Email us
+        {h.emailUs}
       </Button>
     </div>
 
@@ -283,12 +184,10 @@ const faqJsonLd = {
        have mostly booked already. -->
   <MobileActionBar waRef="HELPBAR-HELP" waMessage="Hi! I have a question.">
     <Fragment slot="info">
-      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">Still have a question?</p>
-      <p class="text-sm font-semibold leading-tight text-stone-900">Message or email us</p>
+      <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">{h.barQuestion}</p>
+      <p class="text-sm font-semibold leading-tight text-stone-900">{h.barAnswer}</p>
     </Fragment>
-    <a slot="action" href="mailto:info@iwisglobal.com" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
-      Email us
-    </a>
+    <a slot="action" href="mailto:info@iwisglobal.com" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">{h.emailUs}</a>
   </MobileActionBar>
 </BaseLayout>
 

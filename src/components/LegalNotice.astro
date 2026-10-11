@@ -1,0 +1,20 @@
+---
+// The "Last updated" chip every policy page shows, plus, in every language but
+// English, a note that the translation is a convenience and the English text
+// applies if the two ever differ.
+import { pageI18n, fmt } from '../i18n/dictionaries';
+import { intlLocale } from '../lib/i18n';
+interface Props {
+  updated: string; // English date, e.g. "2 October 2026"
+}
+const { updated } = Astro.props;
+const { locale, t } = pageI18n(Astro);
+const parsed = new Date(`${updated} UTC`);
+const date = Number.isNaN(parsed.getTime())
+  ? updated
+  : parsed.toLocaleDateString(intlLocale(locale), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+---
+<p class="mb-6 inline-block rounded-full border border-brand-100 bg-white px-3 py-1 text-sm text-stone-500">{fmt(t.legal.lastUpdated, { date })}</p>
+{locale !== 'en' && (
+  <p role="note" class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{t.legal.notice}</p>
+)}

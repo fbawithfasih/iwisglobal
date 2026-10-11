@@ -5,26 +5,26 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { pageI18n } from '../i18n/dictionaries';
+
+const { t } = pageI18n(Astro);
 
 const links = [
-  { href: '/tours', title: 'Taj Mahal tours', note: 'Private Delhi to Agra day trips by car or train' },
-  { href: '/agra', title: 'Things to do in Agra', note: 'Ticket prices, opening hours and how to plan a visit' },
-  { href: '/guides', title: 'Travel guides', note: 'Sourced answers about tickets, timing and scams' },
-  { href: '/blog', title: 'Blog', note: 'Travel tips and seasonal Agra updates' },
+  { href: '/tours', title: t.notFoundPage.l1t, note: t.notFoundPage.l1n },
+  { href: '/agra', title: t.notFoundPage.l2t, note: t.notFoundPage.l2n },
+  { href: '/guides', title: t.notFoundPage.l3t, note: t.notFoundPage.l3n },
+  { href: '/blog', title: t.notFoundPage.l4t, note: t.notFoundPage.l4n },
 ];
 ---
 
-<BaseLayout floatingWhatsApp={false} title="Page not found — IWIS Global" description="We couldn't find that page." noindex>
+
+<BaseLayout floatingWhatsApp={false} title={t.notFoundPage.k5} description={t.notFoundPage.k6} noindex>
   <section class="max-w-2xl md:max-w-3xl lg:max-w-5xl 2xl:max-w-6xl min-[2200px]:max-w-7xl mx-auto px-6 pt-8 pb-16 md:pt-20 md:pb-24 lg:flex lg:min-h-[calc(100svh-23rem)] lg:flex-col lg:justify-center">
     <div class="mb-8 rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-600 p-6 text-center text-white shadow-lg shadow-brand-900/20 sm:p-10 md:mb-10 md:py-16 2xl:py-24 min-[2200px]:py-32">
       <p class="font-serif text-6xl font-semibold leading-none text-amber-300 md:text-8xl 2xl:text-9xl min-[2200px]:text-[11rem]">404</p>
-      <h1 class="mt-4 text-3xl md:text-5xl 2xl:text-6xl min-[2200px]:text-7xl font-serif font-semibold">We couldn't find that page</h1>
-      <p class="mx-auto mt-3 max-w-xl text-white/90 md:text-lg 2xl:text-xl min-[2200px]:text-2xl">
-        The address may have changed, or have a typo in it. Here are some places to go instead.
-      </p>
-      <a href="/" class="mt-6 inline-flex min-h-11 min-[2200px]:min-h-14 min-[2200px]:px-10 min-[2200px]:text-lg items-center justify-center rounded-full bg-white px-6 font-semibold text-brand-800 shadow-md shadow-brand-950/20 transition hover:bg-brand-50">
-        Back to the homepage
-      </a>
+      <h1 class="mt-4 text-3xl md:text-5xl 2xl:text-6xl min-[2200px]:text-7xl font-serif font-semibold" set:html={t.notFoundPage.k1} />
+      <p class="mx-auto mt-3 max-w-xl text-white/90 md:text-lg 2xl:text-xl min-[2200px]:text-2xl" set:html={t.notFoundPage.k2} />
+      <a href="/" class="mt-6 inline-flex min-h-11 min-[2200px]:min-h-14 min-[2200px]:px-10 min-[2200px]:text-lg items-center justify-center rounded-full bg-white px-6 font-semibold text-brand-800 shadow-md shadow-brand-950/20 transition hover:bg-brand-50" set:html={t.notFoundPage.k4} />
     </div>
 
     <ul class="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
@@ -38,8 +38,6 @@ const links = [
       ))}
     </ul>
 
-    <p class="mt-8 text-center text-sm text-stone-600">
-      Looking for something specific? <a href="/contact" class="font-medium text-brand-800 underline">Contact us</a> and we'll point you the right way.
-    </p>
+    <p class="mt-8 text-center text-sm text-stone-600" set:html={t.notFoundPage.k3} />
   </section>
 </BaseLayout>

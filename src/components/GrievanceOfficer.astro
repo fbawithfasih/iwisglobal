@@ -1,14 +1,12 @@
 ---
+import { pageI18n } from '../i18n/dictionaries';
 // Consumer Protection (E-Commerce) Rules, 2020, rule 4(4)–(5): the site must
 // show the grievance officer's name, designation and contact details, and
 // complaints must be acknowledged within 48 hours and resolved within one
 // month. Shown on /terms and /contact.
+const { t } = pageI18n(Astro);
 ---
 
-<h2 class="text-lg font-semibold mb-2">Complaints and grievances</h2>
-<p class="text-stone-700 mb-6">
-  For a complaint about a booking or a tour, contact our Grievance Officer, <strong>Fasih Ahmer</strong> (Partner),
-  at <a href="tel:+916399226633" class="text-brand-800 hover:underline">+91 6399226633</a> or
-  <a href="mailto:info@iwisglobal.com" class="text-brand-800 hover:underline">info@iwisglobal.com</a>. We acknowledge
-  every complaint within 48 hours and resolve it within one month of receiving it.
-</p>
+
+<h2 class="text-lg font-semibold mb-2" set:html={t.grievance.k1} />
+<p class="text-stone-700 mb-6" set:html={t.grievance.k2} />
