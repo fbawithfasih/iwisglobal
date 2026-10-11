@@ -269,14 +269,14 @@ const BRAND_SUFFIX = ' — IWIS Global';
       <ul class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6" aria-label="Key facts">
         {factTiles.map((tile, i) => (
           <li class:list={[
-            'flex items-start gap-3 rounded-xl border border-brand-100 bg-white p-3 transition hover:border-brand-300 hover:shadow-sm',
+            'flex items-start gap-2 rounded-xl border border-brand-100 bg-white p-2.5 transition hover:border-brand-300 hover:shadow-sm min-[400px]:gap-3 min-[400px]:p-3',
             // A lone tile on the last row stretches across it: two columns on a
             // phone or foldable cover screen, three from 640px up.
             i === factTiles.length - 1 && factTiles.length % 2 === 1 && 'col-span-2 sm:col-span-1',
             i === factTiles.length - 1 && factTiles.length % 3 === 1 && 'sm:col-span-3',
             i === factTiles.length - 1 && factTiles.length % 3 === 2 && 'sm:col-span-2',
           ]}>
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700 min-[400px]:h-9 min-[400px]:w-9">
               <Icon name={tile.icon} class="h-5 w-5" />
             </span>
             <span class="min-w-0">
