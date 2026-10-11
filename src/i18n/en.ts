@@ -1201,12 +1201,6 @@ export const en = {
       k16: "Rate your IWIS Global tour.",
       k17: "What did you enjoy? How was your guide, the driver, the timing?",
     },
-  attractionExtra: {
-      breadcrumb: "Agra Attractions",
-      title: "{name} — Agra Visitor Guide | IWIS Global",
-      toursThatVisit: "Tours that visit {name}",
-      lastUpdated: "Last updated {date}.",
-    },
   agraExtra: {
       navAtGlance: "At a glance",
       navSites: "The sites",
@@ -1284,7 +1278,16 @@ export const en = {
       byline: "By {author} · Published {published}",
       bylineUpdated: "By {author} · Published {published} · Updated {updated}",
     },
+  attractionExtra: {
+      closed: "Closed",
+      open: "Open",
+      breadcrumb: "Agra Attractions",
+      title: "{name} — Agra Visitor Guide | IWIS Global",
+      toursThatVisit: "Tours that visit {name}",
+      lastUpdated: "Last updated {date}.",
+    },
   blogExtra: {
+      illustration: "Illustration",
       allPosts: "← All posts",
       by: "By {author}",
       published: "Published {date}",

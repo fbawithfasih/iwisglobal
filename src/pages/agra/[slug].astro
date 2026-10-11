@@ -103,7 +103,7 @@ const attractionJsonLd = {
       </div>
       <div class="rounded-xl border border-brand-100 bg-white p-3">
         <p class="text-brand-600 uppercase text-xs font-semibold tracking-wide mb-1" set:html={t.attractionPage.k5} />
-        <p class="font-semibold"><span class={closedFriday ? 'rounded-full bg-red-100 px-2.5 py-0.5 text-red-800' : 'rounded-full bg-green-100 px-2.5 py-0.5 text-green-800'}>{closedFriday ? 'Closed' : 'Open'}</span></p>
+        <p class="font-semibold"><span class={closedFriday ? 'rounded-full bg-red-100 px-2.5 py-0.5 text-red-800' : 'rounded-full bg-green-100 px-2.5 py-0.5 text-green-800'}>{closedFriday ? t.attractionExtra.closed : t.attractionExtra.open}</span></p>
       </div>
     </div>
 

@@ -1200,12 +1200,6 @@ export const fr: Dictionary = {
       k16: "Notez votre circuit IWIS Global.",
       k17: "Qu'avez-vous apprécié ? Comment étaient le guide, le chauffeur, les horaires ?",
     },
-  attractionExtra: {
-      breadcrumb: "Attractions d'Agra",
-      title: "{name} — Guide du visiteur d'Agra | IWIS Global",
-      toursThatVisit: "Circuits qui visitent {name}",
-      lastUpdated: "Dernière mise à jour : {date}.",
-    },
   agraExtra: {
       navAtGlance: "En un coup d'œil",
       navSites: "Les sites",
@@ -1283,7 +1277,16 @@ export const fr: Dictionary = {
       byline: "Par {author} · Publié le {published}",
       bylineUpdated: "Par {author} · Publié le {published} · Mis à jour le {updated}",
     },
+  attractionExtra: {
+      closed: "Fermé",
+      open: "Ouvert",
+      breadcrumb: "Attractions d'Agra",
+      title: "{name} — Guide du visiteur d'Agra | IWIS Global",
+      toursThatVisit: "Circuits qui visitent {name}",
+      lastUpdated: "Dernière mise à jour : {date}.",
+    },
   blogExtra: {
+      illustration: "Illustration",
       allPosts: "← Tous les articles",
       by: "Par {author}",
       published: "Publié le {date}",

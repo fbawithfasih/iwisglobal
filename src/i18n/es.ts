@@ -1200,12 +1200,6 @@ export const es: Dictionary = {
       k16: "Valora tu tour de IWIS Global.",
       k17: "¿Qué te gustó? ¿Qué tal el guía, el conductor, los horarios?",
     },
-  attractionExtra: {
-      breadcrumb: "Atracciones de Agra",
-      title: "{name} — Guía del visitante de Agra | IWIS Global",
-      toursThatVisit: "Tours que visitan {name}",
-      lastUpdated: "Última actualización: {date}.",
-    },
   agraExtra: {
       navAtGlance: "De un vistazo",
       navSites: "Los lugares",
@@ -1283,7 +1277,16 @@ export const es: Dictionary = {
       byline: "Por {author} · Publicado el {published}",
       bylineUpdated: "Por {author} · Publicado el {published} · Actualizado el {updated}",
     },
+  attractionExtra: {
+      closed: "Cerrado",
+      open: "Abierto",
+      breadcrumb: "Atracciones de Agra",
+      title: "{name} — Guía del visitante de Agra | IWIS Global",
+      toursThatVisit: "Tours que visitan {name}",
+      lastUpdated: "Última actualización: {date}.",
+    },
   blogExtra: {
+      illustration: "Ilustración",
       allPosts: "← Todas las entradas",
       by: "Por {author}",
       published: "Publicado el {date}",

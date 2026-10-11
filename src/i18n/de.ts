@@ -1200,12 +1200,6 @@ export const de: Dictionary = {
       k16: "Bewerten Sie Ihre IWIS-Global-Tour.",
       k17: "Was hat Ihnen gefallen? Wie waren Guide, Fahrer und Zeitplan?",
     },
-  attractionExtra: {
-      breadcrumb: "Sehenswürdigkeiten in Agra",
-      title: "{name} — Besucherführer für Agra | IWIS Global",
-      toursThatVisit: "Touren zu {name}",
-      lastUpdated: "Zuletzt aktualisiert: {date}.",
-    },
   agraExtra: {
       navAtGlance: "Auf einen Blick",
       navSites: "Die Sehenswürdigkeiten",
@@ -1283,7 +1277,16 @@ export const de: Dictionary = {
       byline: "Von {author} · Veröffentlicht am {published}",
       bylineUpdated: "Von {author} · Veröffentlicht am {published} · Aktualisiert am {updated}",
     },
+  attractionExtra: {
+      closed: "Geschlossen",
+      open: "Geöffnet",
+      breadcrumb: "Sehenswürdigkeiten in Agra",
+      title: "{name} — Besucherführer für Agra | IWIS Global",
+      toursThatVisit: "Touren zu {name}",
+      lastUpdated: "Zuletzt aktualisiert: {date}.",
+    },
   blogExtra: {
+      illustration: "Illustration",
       allPosts: "← Alle Beiträge",
       by: "Von {author}",
       published: "Veröffentlicht am {date}",
