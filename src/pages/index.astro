@@ -95,10 +95,9 @@ function highlightHref(id: string): string {
           class="absolute inset-0 w-full h-full object-cover object-[center_40%]"
         />
       </picture>
-      <!-- The text sits in the lower part of the frame. Phones darken the whole lower
-           part; larger screens darken only a soft patch behind the text so the
-           travellers at the sides stay bright. -->
-      <div class="absolute inset-0 bg-[linear-gradient(to_top,rgba(46,16,101,0.94)_0%,rgba(46,16,101,0.82)_30%,rgba(46,16,101,0.35)_50%,rgba(46,16,101,0)_66%)] md:bg-[radial-gradient(ellipse_44%_34%_at_50%_80%,rgba(46,16,101,0.82)_0%,rgba(46,16,101,0.6)_45%,rgba(46,16,101,0)_100%),linear-gradient(to_top,rgba(46,16,101,0.5)_0%,rgba(46,16,101,0)_40%)]"></div>
+      <!-- The text sits in the lower part of the frame on every screen size, so
+           only that part is darkened and the monument above it stays bright. -->
+      <div class="absolute inset-0 bg-[linear-gradient(to_top,rgba(46,16,101,0.94)_0%,rgba(46,16,101,0.82)_30%,rgba(46,16,101,0.35)_50%,rgba(46,16,101,0)_66%)]"></div>
     </div>
     <div class="mx-auto w-full max-w-3xl px-5 pb-8 pt-56 text-center md:px-6 md:pb-14 md:pt-80">
       <h1 class="mb-3 font-serif font-semibold text-white [text-shadow:0_2px_14px_rgba(30,10,60,0.45)] md:mb-4">
