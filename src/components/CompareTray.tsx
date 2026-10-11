@@ -32,26 +32,29 @@ export default function CompareTray() {
         ))}
       </ul>
       <div className="flex items-center gap-1.5">
-        <span className="shrink-0 pl-2 pr-0.5 text-sm font-bold text-brand-800 sm:hidden [@media(max-height:500px)]:!inline" aria-label={`${items.length} tours saved`}>
+        <span className="shrink-0 pl-2 pr-0.5 text-sm font-bold text-brand-800 max-[299px]:hidden sm:hidden [@media(max-height:500px)]:!inline" aria-label={`${items.length} tours saved`}>
           <svg viewBox="0 0 24 24" className="mr-1 inline h-4 w-4 align-[-2px]" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.2-9.3C1.7 8.2 3.4 5 6.6 5c2 0 3.5 1.1 5.4 3.2C13.9 6.1 15.4 5 17.4 5c3.2 0 4.9 3.2 3.8 6.2-1.7 4.7-9.2 9.3-9.2 9.3Z" /></svg>
           {items.length}
         </span>
         <a
           href={compareHref}
           onClick={() => track('compare_open', { count: items.length })}
-          className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-3 text-sm font-semibold sm:flex-none sm:px-3.5 2xl:px-5 2xl:text-base ${items.length >= 2 ? 'bg-brand-700 text-white hover:bg-brand-800' : 'pointer-events-none bg-stone-100 text-stone-400'}`}
+          className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-2.5 text-sm font-semibold min-[300px]:px-3 sm:flex-none sm:px-3.5 2xl:px-5 2xl:text-base ${items.length >= 2 ? 'bg-brand-700 text-white hover:bg-brand-800' : 'pointer-events-none bg-stone-100 text-stone-400'}`}
           aria-disabled={items.length < 2}
         >
           {items.length >= 2 ? 'Compare' : 'Save one more'}
+          {items.length >= 2 && <span className="ml-1 min-[300px]:hidden sm:hidden">{items.length}</span>}
         </a>
         <a
           href={`https://wa.me/?text=${encodeURIComponent(shareText())}`}
           target="_blank"
           rel="noopener"
+          aria-label="Share saved tours on WhatsApp"
           onClick={() => track('shortlist_share', { count: items.length })}
           className="inline-flex min-h-11 items-center rounded-full border border-brand-200 px-3 text-sm font-semibold text-brand-800 hover:bg-brand-50 sm:px-3.5 2xl:px-5 2xl:text-base"
         >
-          Share
+          <span className="max-[299px]:hidden">Share</span>
+          <svg viewBox="0 0 24 24" className="h-5 w-5 min-[300px]:hidden" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0 4 4m-4-4L8 8M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" /></svg>
         </a>
         <button type="button" onClick={clear} aria-label="Clear saved tours" className="min-h-11 min-w-9 px-1.5 text-xs font-semibold text-stone-500 sm:underline sm:underline-offset-2 2xl:text-sm">
           <span className="sm:hidden [@media(max-height:500px)]:!inline" aria-hidden="true">✕</span><span className="hidden sm:inline [@media(max-height:500px)]:!hidden">Clear</span>
