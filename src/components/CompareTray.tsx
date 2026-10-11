@@ -22,8 +22,8 @@ export default function CompareTray() {
       <ul className="mb-1 hidden gap-1 px-1 sm:grid">
         {items.map((i) => (
           <li key={i.slug} className="flex items-center justify-between gap-2 text-xs text-stone-700">
-            <span className="truncate">{i.title}</span>
-            <button type="button" onClick={() => toggle(i)} aria-label={`Remove ${i.title}`} className="min-h-6 shrink-0 px-1 text-stone-500 hover:text-red-700">
+            <span className="truncate pl-1">{i.title}</span>
+            <button type="button" onClick={() => toggle(i)} aria-label={`Remove ${i.title}`} className="flex min-h-9 min-w-9 shrink-0 items-center justify-center text-base text-stone-500 hover:text-red-700">
               ×
             </button>
           </li>
