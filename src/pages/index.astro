@@ -110,6 +110,12 @@ function highlightHref(id: string): string {
 }
 ---
 <BaseLayout title="Private Delhi to Agra Taj Mahal Tour | IWIS Global">
+  <!-- Fetch the hero still (the largest paint) as early as possible, in the
+       size this screen will use. -->
+  <Fragment slot="head">
+    <link rel="preload" as="image" href="/hero-taj-mahal-720.webp" type="image/webp" media="(max-width: 767px)" fetchpriority="high" />
+    <link rel="preload" as="image" href="/hero-taj-mahal.webp" type="image/webp" media="(min-width: 768px)" fetchpriority="high" />
+  </Fragment>
   <section class="relative isolate flex min-h-[82svh] flex-col justify-end md:min-h-[min(88svh,820px)]">
     <div class="absolute inset-0 -z-10 overflow-hidden" id="hero-frame">
       <!-- The still behind the video (instead of a poster="" attribute, which
@@ -117,7 +123,9 @@ function highlightHref(id: string): string {
            the 577 KB 1920×1920 one. The video covers it once it plays; with
            reduced motion or Save-Data it stays as the hero image. -->
       <picture>
+        <source srcset="/hero-taj-mahal-720.webp" media="(max-width: 767px)" type="image/webp" />
         <source srcset="/hero-taj-mahal-720.jpg" media="(max-width: 767px)" />
+        <source srcset="/hero-taj-mahal.webp" type="image/webp" />
         <img
           src="/hero-taj-mahal.jpg"
           width="1920"
@@ -170,6 +178,7 @@ function highlightHref(id: string): string {
                           width={l.mini.w}
                           height={l.mini.h}
                           loading="eager"
+                          fetchpriority="low"
                           decoding="async"
                           class:list={['hero-mini', l.mini.alt && 'max-md:hidden']}
                           style={`--h:${l.mini.h};--top:${l.mini.top}em;--sink:${l.mini.sink ?? 0};--d:${(l.mini.n % 5) * 0.4}s`}

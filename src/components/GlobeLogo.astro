@@ -3,7 +3,7 @@
 // axis (a flat image can only spin in-plane or flip like a coin). Dots sit
 // on a latitude/longitude grid on a sphere; lighting is fixed on the left
 // so the halftone shading of logo.png stays put while the surface turns.
-// public/logo-globe.png (the globe cropped from logo.png) shows until the
+// public/logo-globe.webp (the globe cropped from logo.png) shows until the
 // canvas has drawn, and stays if JavaScript is off. Reduced-motion users
 // get one still frame. Decorative: the link it sits in carries the name.
 interface Props {
@@ -14,7 +14,7 @@ const { class: className = '', animate = true } = Astro.props;
 ---
 
 <span class:list={['relative inline-block shrink-0', className]}>
-  <img src="/logo-globe.png" alt="" width="174" height="174" class="globe-fallback absolute inset-0 h-full w-full object-contain" />
+  <img src="/logo-globe.webp" alt="" width="160" height="160" class="globe-fallback absolute inset-0 h-full w-full object-contain" />
   <canvas class="globe-canvas absolute inset-0 h-full w-full" data-animate={animate ? 'true' : 'false'} aria-hidden="true"></canvas>
 </span>
 
