@@ -80,6 +80,11 @@ const faqJsonLd = {
     <p class="text-lg text-white/90" set:html={t.agraPage.k2} />
     </div>
     <p class="text-stone-600 mb-4" set:html={t.agraPage.k3} />
+    {locale === 'en' && (
+      <p class="text-stone-600 mb-4">
+        Prefer a single read? See our <a href="/blog/best-places-to-visit-in-agra-taj-mahal-agra-fort-fatehpur-sikri-travel-guide" class="font-semibold text-brand-800 underline">best places to visit in Agra: Taj Mahal, Agra Fort and Fatehpur Sikri travel guide</a>.
+      </p>
+    )}
     <!-- The page runs to ~10 phone screens, so let readers jump straight to a section. -->
     <nav aria-label={t.agraPage.k29} class="mb-10 flex flex-wrap gap-2 text-sm">
       {[
