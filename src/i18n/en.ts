@@ -880,7 +880,7 @@ export const en = {
       k45: "Ahrefs Web Analytics sets no cookies.",
       k46: "You can change your choice at any time with “Cookie settings” at the bottom of every page. Rejecting removes the Google Analytics and Meta cookies from this site.",
       k47: "Data retention",
-      k48: "We keep booking records for as long as needed for accounting, legal, and customer-support purposes. You can ask us to delete your account and associated personal data by contacting us — see below.",
+      k48: "We keep booking records for as long as needed for accounting, legal, and customer-support purposes. You can ask us to delete your account and associated personal data by contacting us — see below. WhatsApp message text is kept for 12 months and then deleted.",
       k49: "Your choices",
       k50: "You can book a tour as a guest without creating an account. If you do sign in, you can stop using that account at any time, and can ask us to delete your data by contacting us. You can accept or reject analytics and advertising cookies, and change that choice later, with “Cookie settings” at the bottom of every page.",
       k51: "Contact us",

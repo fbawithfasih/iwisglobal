@@ -6,6 +6,7 @@ import { routeIncoming, onStaffReply, markHandedOff } from '../../../lib/waInbox
 import { sendWhatsappHandoffEmail, sendAutoReplyAlertEmail } from '../../../lib/email';
 import { getAutoSettings, autoPermission, holdingPermission } from '../../../lib/waAuto';
 import type { D1Like } from '../../../lib/db';
+import { maybePurge } from '../../../lib/waLearning';
 
 export const prerender = false;
 
@@ -102,6 +103,12 @@ async function processMessages(env: Record<string, any>, db: D1Like, messages: W
     } catch (err) {
       console.error('whatsapp webhook: processing failed', err);
     }
+  }
+  // Old message text is deleted once a day, triggered by whichever message arrives first.
+  try {
+    await maybePurge(db);
+  } catch (err) {
+    console.error('whatsapp webhook: retention purge failed', err);
   }
 }
 

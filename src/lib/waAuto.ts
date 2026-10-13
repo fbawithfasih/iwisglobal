@@ -284,12 +284,13 @@ export interface AutoSentRow {
   audit: string;
   sent_at: string;
   conversation_id: string;
+  kb_ids: string;
 }
 
 export async function listAutoSent(db: D1Like, limit = 50): Promise<AutoSentRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT d.id, d.intent, d.body, d.audit, d.updated_at AS sent_at, d.conversation_id, m.body AS guest
+      `SELECT d.id, d.intent, d.body, d.audit, d.updated_at AS sent_at, d.conversation_id, d.kb_ids, m.body AS guest
        FROM wa_drafts d JOIN wa_messages m ON m.wa_message_id = d.message_id
        WHERE d.sent_by = 'auto' AND d.status = 'sent' ORDER BY d.id DESC LIMIT ?`
     )

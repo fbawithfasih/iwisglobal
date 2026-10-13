@@ -879,7 +879,7 @@ export const fr: Dictionary = {
       k45: "Ahrefs Web Analytics ne dépose aucun cookie.",
       k46: "Vous pouvez modifier votre choix à tout moment avec « Paramètres des cookies » en bas de chaque page. Refuser supprime de ce site les cookies de Google Analytics et de Meta.",
       k47: "Conservation des données",
-      k48: "Nous conservons les enregistrements de réservation aussi longtemps que nécessaire à des fins comptables, légales et d'assistance client. Vous pouvez nous demander de supprimer votre compte et les données personnelles associées en nous contactant — voir ci-dessous.",
+      k48: "Nous conservons les enregistrements de réservation aussi longtemps que nécessaire à des fins comptables, légales et d'assistance client. Vous pouvez nous demander de supprimer votre compte et les données personnelles associées en nous contactant — voir ci-dessous. Le texte des messages WhatsApp est conservé 12 mois, puis supprimé.",
       k49: "Vos choix",
       k50: "Vous pouvez réserver un circuit en tant qu'invité sans créer de compte. Si vous vous connectez, vous pouvez cesser d'utiliser ce compte à tout moment et nous demander de supprimer vos données en nous contactant. Vous pouvez accepter ou refuser les cookies de statistiques et de publicité, et modifier ce choix plus tard avec « Paramètres des cookies » en bas de chaque page.",
       k51: "Nous contacter",

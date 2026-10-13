@@ -1,8 +1,10 @@
 ---
 // WhatsApp knowledge base: the question-and-answer entries the reply agent may
-// use (src/lib/waKnowledge.ts). "Build from site" proposes entries from the FAQ,
-// policy pages, guides and attractions; nothing is used until a person approves
-// it. Below that, the questions guests asked that no approved entry answered.
+// use (src/lib/waKnowledge.ts), and the queue of proposals waiting for a person
+// (src/lib/waLearning.ts). Proposals come from the site, from drafts staff
+// edited, from replies typed in the WhatsApp Business app, from questions the
+// agent could not answer, and from an imported chat export. Nothing is used until
+// it is approved here; there is no bulk approve.
 export const prerender = false;
 
 import { getCollection } from 'astro:content';
@@ -10,6 +12,8 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import type { D1Like } from '../../../lib/db';
+import { listTours } from '../../../lib/tours';
+import { listBlogPosts } from '../../../lib/blog';
 import {
   addStaffEntry,
   approveEntry,
@@ -19,8 +23,19 @@ import {
   proposeFromItems,
   retireEntry,
   siteSourceItems,
+  sourceChanges,
+  type Evidence,
   type KbEntry,
 } from '../../../lib/waKnowledge';
+import {
+  RETENTION_DAYS,
+  findSuggestions,
+  importPairs,
+  pairsFromExport,
+  parseWhatsAppExport,
+  purgeOld,
+  type ImportPair,
+} from '../../../lib/waLearning';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -29,6 +44,22 @@ if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
 
 const db = env.DB as D1Like | undefined;
 const APPROVER = 'admin';
+const MAX_EXPORT_BYTES = 2 * 1024 * 1024;
+
+// Everything the site can be turned into entries from: FAQ, policies, guides,
+// attractions, the published tours (no prices) and published blog posts.
+async function loadSiteItems() {
+  const guides = (await getCollection('guides')).map((g) => ({ slug: g.slug, title: g.data.title, description: g.data.description, body: g.body }));
+  const attractions = (await getCollection('attractions')).map((a) => ({ slug: a.slug, ...a.data }));
+  const tours = db ? await listTours(db, { status: 'published' }) : [];
+  const posts = db
+    ? (await listBlogPosts(db, { status: 'published' })).map((p) => ({ slug: p.slug, title: p.title, description: p.description, body: p.body }))
+    : [];
+  return siteSourceItems(guides, attractions, { tours, posts });
+}
+
+let preview: { pairs: ImportPair[]; business: string; total: number } | null = null;
+let error = '';
 
 if (Astro.request.method === 'POST' && db) {
   const form = await Astro.request.formData();
@@ -37,11 +68,17 @@ if (Astro.request.method === 'POST' && db) {
   const question = String(form.get('question') ?? '');
   const answer = String(form.get('answer') ?? '');
   let note = '';
+
   if (action === 'build') {
-    const guides = (await getCollection('guides')).map((g) => ({ slug: g.slug, title: g.data.title, description: g.data.description, body: g.body }));
-    const attractions = (await getCollection('attractions')).map((a) => ({ slug: a.slug, ...a.data }));
-    const { created, updated } = await proposeFromItems(db, siteSourceItems(guides, attractions));
-    note = `Built from the site: ${created} new, ${updated} changed.`;
+    const r = await proposeFromItems(db, await loadSiteItems());
+    note = `Built from the site: ${r.created} new, ${r.updated} changed, ${r.removed} flagged as removed.`;
+  } else if (action === 'suggest') {
+    const r = await findSuggestions(env, db, await loadSiteItems());
+    note =
+      `Find suggestions: site ${r.site.created} new, ${r.site.updated} changed, ${r.site.removed} removed; ` +
+      `edited drafts ${r.edits.created} new (${r.edits.duplicate} matched an existing entry, ${r.edits.skipped} skipped); ` +
+      `app replies ${r.appReplies.created} new (${r.appReplies.duplicate} matched, ${r.appReplies.skipped} skipped); ` +
+      `unanswered questions ${r.gaps.drafted} drafted, ${r.gaps.declined} not answerable from the sources.`;
   } else if (action === 'save') {
     if (question.trim() && answer.trim()) await editEntry(db, id, question, answer);
   } else if (action === 'save_approve') {
@@ -53,19 +90,74 @@ if (Astro.request.method === 'POST' && db) {
     await retireEntry(db, id);
   } else if (action === 'add') {
     if (question.trim() && answer.trim()) await addStaffEntry(db, question, answer, APPROVER);
+  } else if (action === 'import_preview') {
+    const file = form.get('export');
+    const business = String(form.get('business') ?? '').trim();
+    if (!(file instanceof File) || !file.size) error = 'Choose the exported chat file (.txt).';
+    else if (file.size > MAX_EXPORT_BYTES) error = 'That file is too large (2 MB maximum). Export a shorter period.';
+    else if (!business) error = 'Type your name exactly as it appears in the chat (the business side).';
+    else {
+      const messages = parseWhatsAppExport(await file.text());
+      const pairs = pairsFromExport(messages, business);
+      if (!messages.length) error = 'No messages could be read from that file. Export the chat "without media" as a text file.';
+      else if (!pairs.length) error = 'No usable question-and-answer pairs were found. Check that the name matches the chat exactly.';
+      else preview = { pairs: pairs.slice(0, 50), business, total: pairs.length };
+    }
+  } else if (action === 'import_confirm') {
+    let pairs: ImportPair[] = [];
+    try {
+      const all = JSON.parse(String(form.get('pairs') ?? '[]'));
+      const picked = new Set(form.getAll('pick').map(Number));
+      pairs = Array.isArray(all) ? all.filter((_: unknown, i: number) => picked.has(i)) : [];
+    } catch {
+      pairs = [];
+    }
+    const r = await importPairs(db, pairs);
+    note = `Imported: ${r.created} new proposals, ${r.duplicate} matched an existing entry, ${r.skipped} skipped.`;
+  } else if (action === 'purge' && form.get('confirm') === 'yes') {
+    const r = await purgeOld(db);
+    note = `Deleted ${r.messages} messages, ${r.drafts} drafts and ${r.conversations} old conversations. Knowledge entries were not touched.`;
   }
-  return Astro.redirect(note ? `/admin/whatsapp/knowledge?note=${encodeURIComponent(note)}` : '/admin/whatsapp/knowledge');
+  if (!preview && !error) {
+    return Astro.redirect(note ? `/admin/whatsapp/knowledge?note=${encodeURIComponent(note)}` : '/admin/whatsapp/knowledge');
+  }
 }
 
-const proposed = db ? await listEntries(db, 'proposed') : [];
+const sourceFilter = Astro.url.searchParams.get('source') ?? 'all';
+const SITE_FILTER = ['faq', 'policy', 'guide', 'attraction', 'tour', 'blog'];
+const proposedAll = db ? await listEntries(db, 'proposed') : [];
+const proposed = proposedAll.filter((e) => sourceFilter === 'all' || (sourceFilter === 'site' ? SITE_FILTER.includes(e.source) : e.source === sourceFilter));
 const approved = db ? await listEntries(db, 'approved') : [];
 const retired = db ? await listEntries(db, 'retired') : [];
 const gaps = db ? await listGaps(db) : [];
+const changes = db ? await sourceChanges(db, await loadSiteItems()) : { added: 0, changed: 0, removed: 0 };
+const retention = db ? await purgeOld(db, new Date(), true) : { messages: 0, drafts: 0, conversations: 0 };
 const note = Astro.url.searchParams.get('note');
+const prefillQuestion = Astro.url.searchParams.get('q') ?? '';
+
 const btn = 'min-h-11 rounded px-4 text-sm font-medium';
 const field = 'w-full rounded-lg border border-stone-300 bg-white p-2 text-sm';
+const sourceLabel: Record<string, string> = {
+  faq: 'FAQ', policy: 'Policy page', guide: 'Guide', attraction: 'Attraction', tour: 'Tour', blog: 'Blog post',
+  staff: 'Written by staff', staff_edit: 'Staff edited a draft', staff_reply: 'Staff reply in the app', gap: 'Drafted for an unanswered question', import: 'Imported chat',
+};
+const filters = [
+  ['all', 'All'], ['site', 'Site'], ['staff_edit', 'Edited drafts'], ['staff_reply', 'App replies'], ['gap', 'Unanswered'], ['import', 'Imported'],
+];
+const flagLabel: Record<string, string> = {
+  figures: 'Contains an amount: prices should come from the catalogue, check before approving',
+  source_removed: 'The page it came from no longer exists: retire it or keep it',
+};
+const evidenceOf = (e: KbEntry): Evidence[] => {
+  try {
+    const list = JSON.parse(e.evidence ?? '[]');
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+};
 const sections = [
-  { title: 'Proposed', list: proposed, canApprove: true, hint: 'Read each one, edit if needed, then approve. Not used until approved.' },
+  { title: 'Proposed', list: proposed, canApprove: true, hint: 'Read each one, edit if needed, then approve. Reject discards it. Not used until approved.' },
   { title: 'Approved', list: approved, canApprove: false, hint: 'In use. Retiring takes effect on the next draft.' },
 ];
 ---
@@ -76,42 +168,86 @@ const sections = [
     <a href="/admin/whatsapp" class="ml-2 text-brand-800 hover:underline">Back to chats</a>
   </p>
   {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
+  {error && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
 
-  <form method="POST" class="my-4">
-    <input type="hidden" name="_action" value="build" />
-    <button type="submit" class={`${btn} bg-amber-800 text-white`}>Build from site</button>
-    <span class="ml-2 text-xs text-stone-500">Adds the FAQ, policies, guides and attractions as proposed entries. Run it again after the site changes.</span>
+  {(changes.added || changes.changed || changes.removed) ? (
+    <p class="my-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">
+      The site has changed since the last build: {changes.added} new, {changes.changed} changed, {changes.removed} removed. Press Find suggestions to bring it in.
+    </p>
+  ) : null}
+
+  <form method="POST" class="my-4 flex flex-wrap items-center gap-3">
+    <button type="submit" name="_action" value="suggest" class={`${btn} bg-amber-800 text-white`}>Find suggestions</button>
+    <button type="submit" name="_action" value="build" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Build from site only</button>
+    <span class="text-xs text-stone-500">Looks at the site, drafts staff edited, replies typed in the WhatsApp Business app and unanswered questions. Safe to press again: nothing is duplicated.</span>
   </form>
 
-  <h2 class="text-lg font-semibold mt-8 mb-2">Needs an answer ({gaps.length})</h2>
+  <h2 class="text-lg font-semibold mt-8 mb-2" id="gaps">Needs an answer ({gaps.length})</h2>
   {gaps.length === 0 ? (
     <p class="text-stone-500 text-sm">Nothing yet. Questions the agent could not answer show here, most asked first.</p>
   ) : (
     <ul class="space-y-1 text-sm mb-2">
-      {gaps.map((g) => <li><span class="rounded bg-stone-200 px-2 py-0.5 text-xs">{g.count}×</span> {g.question}</li>)}
+      {gaps.map((g) => (
+        <li>
+          <span class="rounded bg-stone-200 px-2 py-0.5 text-xs">{g.count}×</span> {g.question}
+          <a href={`/admin/whatsapp/knowledge?q=${encodeURIComponent(g.question)}#add`} class="ml-2 text-brand-800 hover:underline">Answer this</a>
+        </li>
+      ))}
     </ul>
   )}
 
-  <h2 class="text-lg font-semibold mt-8 mb-2">Add an answer</h2>
+  <h2 class="text-lg font-semibold mt-8 mb-2" id="add">Add an answer</h2>
   <form method="POST" class="space-y-2 max-w-2xl rounded-xl border border-stone-200 bg-white p-4">
     <input type="hidden" name="_action" value="add" />
     <label class="block text-sm" for="new-q">Question a guest might ask</label>
-    <input id="new-q" name="question" required class={field} />
+    <input id="new-q" name="question" required value={prefillQuestion} class={field} />
     <label class="block text-sm" for="new-a">Answer (this goes live as soon as you add it)</label>
     <textarea id="new-a" name="answer" rows="3" required class={field}></textarea>
     <button type="submit" class={`${btn} bg-emerald-600 text-white`}>Add and approve</button>
   </form>
 
+  <nav class="mt-8 flex flex-wrap gap-2" aria-label="Filter proposals by source">
+    {filters.map(([id, label]) => (
+      <a href={`/admin/whatsapp/knowledge?source=${id}`} aria-current={sourceFilter === id ? 'page' : undefined}
+        class={`min-h-11 inline-flex items-center rounded-full px-4 text-sm ${sourceFilter === id ? 'bg-brand-800 text-white' : 'border border-stone-300 bg-white text-stone-700'}`}>{label}</a>
+    ))}
+  </nav>
+
   {sections.map((section) => (
-    <section class="mt-8">
+    <section class="mt-6">
       <h2 class="text-lg font-semibold mb-1">{section.title} ({section.list.length})</h2>
       <p class="text-stone-500 text-sm mb-3">{section.hint}</p>
       <ul class="space-y-3">
         {section.list.map((e: KbEntry) => (
-          <li class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+          <li id={`entry-${e.id}`} class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+            <p class="text-xs text-stone-400 mb-1">{sourceLabel[e.source] ?? e.source}{e.source_ref && !/^\d+$/.test(e.source_ref) && e.source_ref.length < 40 ? ` · ${e.source_ref}` : ''}</p>
+            {(e.flag ?? '').split(',').filter(Boolean).map((f) => (
+              <p class="mb-2 rounded bg-amber-100 px-2 py-1 text-xs text-amber-900">{flagLabel[f] ?? f}</p>
+            ))}
+            {e.prev_answer && (
+              <div class="mb-3 grid gap-2 md:grid-cols-2">
+                <div class="rounded-lg bg-red-50 p-2 text-xs"><p class="font-medium text-red-800">Before</p><p class="mt-1 whitespace-pre-line">{e.prev_question}</p><p class="mt-1 whitespace-pre-line">{e.prev_answer}</p></div>
+                <div class="rounded-lg bg-green-50 p-2 text-xs"><p class="font-medium text-green-800">Now</p><p class="mt-1 whitespace-pre-line">{e.question}</p><p class="mt-1 whitespace-pre-line">{e.answer}</p></div>
+              </div>
+            )}
+            {evidenceOf(e).length > 0 && (
+              <details class="mb-2 text-xs text-stone-600">
+                <summary class="cursor-pointer">Why this was suggested ({evidenceOf(e).length})</summary>
+                <ul class="mt-1 space-y-2">
+                  {evidenceOf(e).map((ev) => (
+                    <li class="rounded bg-stone-50 p-2">
+                      <span class="font-medium">{sourceLabel[ev.kind] ?? ev.kind}</span>
+                      {ev.question && <p class="mt-1"><span class="text-stone-400">Guest asked:</span> {ev.question}</p>}
+                      {ev.original && <p class="mt-1"><span class="text-stone-400">Draft said:</span> {ev.original}</p>}
+                      {ev.staff && <p class="mt-1"><span class="text-stone-400">Staff wrote:</span> {ev.staff}</p>}
+                      {ev.note && <p class="mt-1">{ev.note}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
             <form method="POST" class="space-y-2">
               <input type="hidden" name="id" value={e.id} />
-              <p class="text-xs text-stone-400">{e.source} · {e.source_ref}</p>
               <label class="sr-only" for={`q-${e.id}`}>Question</label>
               <input id={`q-${e.id}`} name="question" value={e.question} class={`${field} font-semibold`} />
               <label class="sr-only" for={`a-${e.id}`}>Answer</label>
@@ -119,7 +255,7 @@ const sections = [
               <div class="flex flex-wrap gap-2">
                 {section.canApprove && <button type="submit" name="_action" value="save_approve" class={`${btn} bg-green-700 text-white`}>Approve</button>}
                 <button type="submit" name="_action" value="save" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Save edits</button>
-                <button type="submit" name="_action" value="retire" formnovalidate class={`${btn} border border-stone-300 bg-white text-stone-700`}>Retire</button>
+                <button type="submit" name="_action" value="retire" formnovalidate class={`${btn} border border-stone-300 bg-white text-stone-700`}>{section.canApprove ? 'Reject' : 'Retire'}</button>
               </div>
             </form>
           </li>
@@ -129,9 +265,53 @@ const sections = [
   ))}
 
   <details class="mt-8">
-    <summary class="cursor-pointer text-sm text-stone-600">Retired ({retired.length})</summary>
+    <summary class="cursor-pointer text-sm text-stone-600">Retired and rejected ({retired.length})</summary>
     <ul class="mt-2 space-y-1 text-sm text-stone-500">
       {retired.map((e) => <li>{e.question}</li>)}
     </ul>
   </details>
+
+  <h2 class="text-lg font-semibold mt-10 mb-1">Import a chat export</h2>
+  <p class="text-stone-500 text-sm mb-3 max-w-2xl">
+    In WhatsApp open the chat, choose Export chat, Without media, and save the .txt file. Names, numbers, emails and references are removed before anything is shown, and
+    chats about money, bookings and health are skipped. You see a preview and pick what to keep; picked pairs become proposals, not live answers.
+  </p>
+  <form method="POST" enctype="multipart/form-data" class="max-w-xl space-y-2 rounded-xl border border-stone-200 bg-white p-4 text-sm">
+    <input type="hidden" name="_action" value="import_preview" />
+    <label class="block" for="export-file">Exported chat file (.txt, up to 2 MB)</label>
+    <input id="export-file" name="export" type="file" accept=".txt,text/plain" class="block w-full" />
+    <label class="block" for="export-business">Your name exactly as it appears in the chat</label>
+    <input id="export-business" name="business" class={field} />
+    <button type="submit" class={`${btn} bg-brand-800 text-white`}>Preview</button>
+  </form>
+
+  {preview && (
+    <form method="POST" class="mt-4 space-y-3 rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm">
+      <input type="hidden" name="_action" value="import_confirm" />
+      <input type="hidden" name="pairs" value={JSON.stringify(preview.pairs)} />
+      <p class="font-medium">Preview: {preview.pairs.length} of {preview.total} pairs shown. Tick the ones worth keeping.</p>
+      <ul class="space-y-3">
+        {preview.pairs.map((p, i) => (
+          <li class="rounded-lg bg-white p-3">
+            <label class="flex items-start gap-3">
+              <input type="checkbox" name="pick" value={i} class="mt-1" />
+              <span><span class="text-stone-400">Guest:</span> {p.question}<br /><span class="text-stone-400">Reply:</span> {p.answer}</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <button type="submit" class={`${btn} bg-emerald-600 text-white`}>Add ticked pairs as proposals</button>
+    </form>
+  )}
+
+  <h2 class="text-lg font-semibold mt-10 mb-1">Retention</h2>
+  <p class="text-stone-500 text-sm mb-3 max-w-2xl">
+    Message text is deleted after {RETENTION_DAYS} days. This happens by itself at most once a day when a message arrives; you can also run it here. Knowledge entries are never deleted by this.
+  </p>
+  <form method="POST" class="max-w-xl space-y-2 rounded-xl border border-stone-200 bg-white p-4 text-sm">
+    <input type="hidden" name="_action" value="purge" />
+    <p>Ready to delete now: {retention.messages} messages, {retention.drafts} drafts, {retention.conversations} conversations.</p>
+    <label class="flex items-center gap-2"><input type="checkbox" name="confirm" value="yes" /> I understand this cannot be undone</label>
+    <button type="submit" class={`${btn} border border-red-300 bg-white text-red-700`}>Delete now</button>
+  </form>
 </AdminLayout>

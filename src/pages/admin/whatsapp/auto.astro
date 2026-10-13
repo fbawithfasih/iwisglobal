@@ -10,6 +10,7 @@ import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
 import { sendAutoReplyAlertEmail } from '../../../lib/email';
+import { entryQuestions } from '../../../lib/waKnowledge';
 import {
   OFFERABLE_INTENTS,
   MIN_REVIEWED_TOTAL,
@@ -79,6 +80,16 @@ const settings = db ? await getAutoSettings(db) : null;
 const ready = db ? await readiness(db) : { reviewed: 0, byIntent: {} };
 const held = db ? await decisionCounts(db) : [];
 const sent = db ? await listAutoSent(db) : [];
+// The knowledge entries each automatic reply used, so a wrong one can be traced and fixed.
+const idsOf = (kb: string): number[] => {
+  try {
+    const list = JSON.parse(kb);
+    return Array.isArray(list) ? list.map(Number).filter(Number.isInteger) : [];
+  } catch {
+    return [];
+  }
+};
+const usedQuestions = db ? await entryQuestions(db, sent.flatMap((r) => idsOf(r.kb_ids))) : new Map<number, string>();
 const error = Astro.url.searchParams.get('err');
 const note = Astro.url.searchParams.get('note');
 const btn = 'min-h-11 rounded px-4 text-sm font-medium';
@@ -202,6 +213,14 @@ const intentLabel: Record<string, string> = {
               <p class="text-xs text-stone-500">{formatDateTimeIst(r.sent_at)} · {intentLabel[r.intent] ?? r.intent} · <a href={`/admin/whatsapp?c=${r.conversation_id}`} class="hover:underline">open chat</a></p>
               <p class="mt-1"><span class="font-medium">Guest:</span> {r.guest}</p>
               <p class="mt-1 whitespace-pre-line"><span class="font-medium">Sent:</span> {r.body}</p>
+              {idsOf(r.kb_ids).length > 0 && (
+                <p class="mt-1 text-xs text-stone-500">
+                  Used knowledge:
+                  {idsOf(r.kb_ids).map((id) => (
+                    <a href={`/admin/whatsapp/knowledge#entry-${id}`} class="ml-2 text-brand-800 hover:underline">{usedQuestions.get(id) ?? `entry ${id}`}</a>
+                  ))}
+                </p>
+              )}
               <form method="POST" class="mt-2 flex flex-wrap items-center gap-2">
                 <input type="hidden" name="_action" value="audit" />
                 <input type="hidden" name="draftId" value={r.id} />

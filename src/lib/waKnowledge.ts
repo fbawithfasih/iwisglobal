@@ -5,6 +5,7 @@
 // schema_whatsapp_kb.sql. Used by src/lib/waDraft.ts and /admin/whatsapp/knowledge.
 import type { D1Like } from './db';
 import { en } from '../i18n/en';
+import type { ParsedTour } from './tours';
 
 export const SITE_URL = 'https://www.iwisglobal.com';
 
@@ -19,6 +20,11 @@ export interface KbEntry {
   status: KbStatus;
   approved_at: string | null;
   updated_at: string;
+  // Only loaded by listEntries (the review queue).
+  prev_question?: string;
+  prev_answer?: string;
+  flag?: string;
+  evidence?: string;
 }
 
 export interface KbSourceItem {
@@ -46,6 +52,28 @@ export interface AttractionSource {
   closedFriday: boolean;
   distanceFromTaj: string;
 }
+
+export interface BlogSource {
+  slug: string;
+  title: string;
+  description: string;
+  body: string;
+}
+
+// A currency amount in the text. Amounts go stale and are answered by the live
+// catalogue and tools, so a proposal containing one is flagged for the reviewer.
+const MONEY = /[₹$€£]\s?\d|\b\d[\d,]*(?:\.\d+)?\s?(?:rupees?|inr|usd|dollars?)\b/i;
+export const hasMoney = (text: string) => MONEY.test(text);
+
+// Sources where an amount is unexpected. Attractions and policy pages legitimately quote them.
+const FIGURE_CHECKED_SOURCES = new Set(['tour', 'blog', 'staff_edit', 'staff_reply', 'gap', 'import']);
+export const flagsFor = (source: string, answer: string) => (FIGURE_CHECKED_SOURCES.has(source) && hasMoney(answer) ? 'figures' : '');
+
+// Entries built from the site itself (as opposed to staff or learned ones).
+const SITE_SOURCES = ['faq', 'policy', 'guide', 'attraction', 'tour', 'blog'];
+
+const withFlag = (flag: string, add: string) => [...new Set([...flag.split(',').filter(Boolean), add])].join(',');
+const withoutFlag = (flag: string, drop: string) => flag.split(',').filter((f) => f && f !== drop).join(',');
 
 export function stripHtml(value: string): string {
   return value
@@ -141,9 +169,33 @@ function faqItems(): KbSourceItem[] {
   );
 }
 
-export function siteSourceItems(guides: GuideSource[], attractions: AttractionSource[]): KbSourceItem[] {
+function tourItem(t: ParsedTour): KbSourceItem {
+  const parts = [`Starts at: ${t.startPoint}.`, `Duration: ${t.durationLabel}.`];
+  if (t.includes.length) parts.push(`Includes: ${t.includes.join('; ')}.`);
+  if (t.excludes.length) parts.push(`Not included: ${t.excludes.join('; ')}.`);
+  const stops = t.itinerary.map((step) => step.activity).filter(Boolean);
+  if (stops.length) parts.push(`The day: ${stops.join('; ')}.`);
+  if (t.privateTour) parts.push('Private tour, just your group.');
+  if (t.pickupIncluded) parts.push('Hotel pickup is included.');
+  parts.push(`Details and booking: ${SITE_URL}/tours/${t.slug}`);
+  return { source: 'tour', ref: t.id, question: `What does the ${t.title} include, and how does it run?`, answer: parts.join(' ') };
+}
+
+// Tour facts never include prices: those always come from the live catalogue.
+export function siteSourceItems(
+  guides: GuideSource[],
+  attractions: AttractionSource[],
+  extra: { tours?: ParsedTour[]; posts?: BlogSource[] } = {}
+): KbSourceItem[] {
   return [
     ...faqItems(),
+    ...(extra.tours ?? []).map(tourItem),
+    ...(extra.posts ?? []).map((p) => ({
+      source: 'blog',
+      ref: p.slug,
+      question: p.title,
+      answer: `${p.description} ${stripMarkdown(p.body).slice(0, GUIDE_BODY_CHARS)} Read more: ${SITE_URL}/blog/${p.slug}`,
+    })),
     ...policyItems(),
     ...guides.map((g) => ({
       source: 'guide',
@@ -170,7 +222,7 @@ export function siteSourceItems(guides: GuideSource[], attractions: AttractionSo
   ];
 }
 
-async function sha256Hex(value: string): Promise<string> {
+export async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, '0'))
@@ -189,39 +241,80 @@ async function syncIndex(db: D1Like, id: number): Promise<void> {
 
 // Creates a proposed entry for each new source item, and re-proposes an
 // existing one only when its source text changed (so an edited or approved
-// entry is left alone while its source is unchanged).
-export async function proposeFromItems(db: D1Like, items: KbSourceItem[]): Promise<{ created: number; updated: number }> {
+// entry is left alone while its source is unchanged). A re-proposal keeps the
+// old text for the side-by-side view. Entries whose source has gone are flagged.
+export async function proposeFromItems(db: D1Like, items: KbSourceItem[]): Promise<{ created: number; updated: number; removed: number }> {
   const now = new Date().toISOString();
   let created = 0;
   let updated = 0;
   for (const item of items) {
     const hash = await sha256Hex(`${item.question}\n${item.answer}`);
+    const flag = flagsFor(item.source, item.answer);
     const existing = await db
-      .prepare(`SELECT id, source_hash FROM wa_kb_entries WHERE source = ? AND source_ref = ?`)
+      .prepare(`SELECT id, source_hash, flag FROM wa_kb_entries WHERE source = ? AND source_ref = ?`)
       .bind(item.source, item.ref)
-      .first<{ id: number; source_hash: string }>();
+      .first<{ id: number; source_hash: string; flag: string }>();
     if (!existing) {
       await db
         .prepare(
-          `INSERT INTO wa_kb_entries (question, answer, source, source_ref, source_hash, status, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, 'proposed', ?, ?)`
+          `INSERT INTO wa_kb_entries (question, answer, source, source_ref, source_hash, status, flag, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, 'proposed', ?, ?, ?)`
         )
-        .bind(item.question, item.answer, item.source, item.ref, hash, now, now)
+        .bind(item.question, item.answer, item.source, item.ref, hash, flag, now, now)
         .run();
       created++;
     } else if (existing.source_hash !== hash) {
       await db
         .prepare(
-          `UPDATE wa_kb_entries SET question = ?, answer = ?, source_hash = ?, status = 'proposed',
+          `UPDATE wa_kb_entries SET prev_question = question, prev_answer = answer,
+             question = ?, answer = ?, source_hash = ?, status = 'proposed', flag = ?,
              approved_by = NULL, approved_at = NULL, updated_at = ? WHERE id = ?`
         )
-        .bind(item.question, item.answer, hash, now, existing.id)
+        .bind(item.question, item.answer, hash, flag, now, existing.id)
         .run();
       await syncIndex(db, existing.id);
       updated++;
+    } else if (existing.flag.includes('source_removed')) {
+      await db.prepare(`UPDATE wa_kb_entries SET flag = ? WHERE id = ?`).bind(withoutFlag(existing.flag, 'source_removed'), existing.id).run();
     }
   }
-  return { created, updated };
+  return { created, updated, removed: await markRemovedSources(db, items) };
+}
+
+// Site-built entries whose page, post or tour no longer exists get a
+// "source removed" flag. Their status is left alone: a person decides.
+async function markRemovedSources(db: D1Like, items: KbSourceItem[]): Promise<number> {
+  const live = new Set(items.map((i) => `${i.source}:${i.ref}`));
+  const { results } = await db
+    .prepare(`SELECT id, source, source_ref, flag FROM wa_kb_entries WHERE source IN (${SITE_SOURCES.map(() => '?').join(',')}) AND status != 'retired'`)
+    .bind(...SITE_SOURCES)
+    .all<{ id: number; source: string; source_ref: string; flag: string }>();
+  let flagged = 0;
+  for (const r of results) {
+    if (live.has(`${r.source}:${r.source_ref}`) || r.flag.includes('source_removed')) continue;
+    await db.prepare(`UPDATE wa_kb_entries SET flag = ? WHERE id = ?`).bind(withFlag(r.flag, 'source_removed'), r.id).run();
+    flagged++;
+  }
+  return flagged;
+}
+
+// What a build would do right now, without writing anything (for the banner).
+export async function sourceChanges(db: D1Like, items: KbSourceItem[]): Promise<{ added: number; changed: number; removed: number }> {
+  const { results } = await db
+    .prepare(`SELECT source, source_ref, source_hash, status, flag FROM wa_kb_entries WHERE source IN (${SITE_SOURCES.map(() => '?').join(',')})`)
+    .bind(...SITE_SOURCES)
+    .all<{ source: string; source_ref: string; source_hash: string; status: string; flag: string }>();
+  const stored = new Map(results.map((r) => [`${r.source}:${r.source_ref}`, r]));
+  let added = 0;
+  let changed = 0;
+  for (const item of items) {
+    const row = stored.get(`${item.source}:${item.ref}`);
+    if (!row) added++;
+    else if (row.source_hash !== (await sha256Hex(`${item.question}\n${item.answer}`))) changed++;
+  }
+  const live = new Set(items.map((i) => `${i.source}:${i.ref}`));
+  const removed = results.filter((r) => r.status !== 'retired' && !live.has(`${r.source}:${r.source_ref}`) && !r.flag.includes('source_removed')).length;
+  return { added, changed, removed };
 }
 
 export async function approveEntry(db: D1Like, id: number, by: string): Promise<void> {
@@ -265,7 +358,7 @@ export async function addStaffEntry(db: D1Like, question: string, answer: string
 export async function listEntries(db: D1Like, status: KbStatus): Promise<KbEntry[]> {
   const { results } = await db
     .prepare(
-      `SELECT id, question, answer, source, source_ref, status, approved_at, updated_at
+      `SELECT id, question, answer, source, source_ref, status, approved_at, updated_at, prev_question, prev_answer, flag, evidence
        FROM wa_kb_entries WHERE status = ? ORDER BY source, question LIMIT 500`
     )
     .bind(status)
@@ -323,4 +416,79 @@ export async function listGaps(db: D1Like): Promise<{ question: string; count: n
     .bind()
     .all<{ question: string; count: number }>();
   return results;
+}
+
+// ------------------------------------------------------------ learned proposals
+
+export interface Evidence {
+  kind: string; // 'staff_edit', 'staff_reply', 'gap', 'import'
+  question?: string;
+  staff?: string;
+  original?: string;
+  note?: string;
+}
+
+// Another entry (in any state, so a rejected one is not offered again) whose
+// question is the same or nearly the same.
+export async function findSimilar(db: D1Like, question: string): Promise<{ id: number; status: string } | null> {
+  const normal = (t: string) => (t.toLowerCase().match(/[a-z0-9]+/g) ?? []).join(' ');
+  const mine = new Set(searchTerms(question));
+  const { results } = await db.prepare(`SELECT id, question, status FROM wa_kb_entries LIMIT 2000`).bind().all<{ id: number; question: string; status: string }>();
+  for (const r of results) {
+    if (normal(r.question) === normal(question)) return { id: r.id, status: r.status };
+    const theirs = new Set(searchTerms(r.question));
+    if (mine.size < 2 || theirs.size < 2) continue;
+    const shared = [...mine].filter((t) => theirs.has(t)).length;
+    if (shared / (mine.size + theirs.size - shared) >= 0.75) return { id: r.id, status: r.status };
+  }
+  return null;
+}
+
+async function addEvidence(db: D1Like, id: number, ev: Evidence): Promise<void> {
+  const row = await db.prepare(`SELECT evidence FROM wa_kb_entries WHERE id = ?`).bind(id).first<{ evidence: string }>();
+  let list: Evidence[] = [];
+  try {
+    list = JSON.parse(row?.evidence ?? '[]');
+  } catch {
+    list = [];
+  }
+  if (list.some((e) => e.question === ev.question && e.staff === ev.staff && e.note === ev.note)) return;
+  list.push(ev);
+  await db.prepare(`UPDATE wa_kb_entries SET evidence = ?, updated_at = ? WHERE id = ?`).bind(JSON.stringify(list.slice(-5)), new Date().toISOString(), id).run();
+}
+
+// A learned proposal (from a staff edit, an app reply, a gap or an imported
+// chat). Never used until a person approves it. 'duplicate' means an entry with
+// the same question exists, so the example was attached to it as evidence.
+export async function addProposal(
+  db: D1Like,
+  p: { source: string; ref: string; question: string; answer: string; evidence: Evidence }
+): Promise<'created' | 'duplicate' | 'exists'> {
+  const same = await db.prepare(`SELECT 1 FROM wa_kb_entries WHERE source = ? AND source_ref = ?`).bind(p.source, p.ref).first();
+  if (same) return 'exists';
+  const similar = await findSimilar(db, p.question);
+  if (similar) {
+    if (similar.status !== 'retired') await addEvidence(db, similar.id, p.evidence);
+    return 'duplicate';
+  }
+  const now = new Date().toISOString();
+  await db
+    .prepare(
+      `INSERT INTO wa_kb_entries (question, answer, source, source_ref, source_hash, status, flag, evidence, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'proposed', ?, ?, ?, ?)`
+    )
+    .bind(p.question, p.answer, p.source, p.ref, await sha256Hex(`${p.question}\n${p.answer}`), flagsFor(p.source, p.answer), JSON.stringify([p.evidence]), now, now)
+    .run();
+  return 'created';
+}
+
+// The questions of the given entries, for the audit view ("this reply used...").
+export async function entryQuestions(db: D1Like, ids: number[]): Promise<Map<number, string>> {
+  const clean = [...new Set(ids.filter((n) => Number.isInteger(n)))].slice(0, 50);
+  if (!clean.length) return new Map();
+  const { results } = await db
+    .prepare(`SELECT id, question FROM wa_kb_entries WHERE id IN (${clean.map(() => '?').join(',')})`)
+    .bind(...clean)
+    .all<{ id: number; question: string }>();
+  return new Map(results.map((r) => [r.id, r.question]));
 }

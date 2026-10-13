@@ -21,6 +21,7 @@ import { generateDraft, catalogueText, COMPOSE_MODEL, CLASSIFY_MODEL } from '../
 import { groundingCheck } from '../../src/lib/waAuto';
 import { retrieve } from '../../src/lib/waKnowledge';
 import { listTours } from '../../src/lib/tours';
+import { redact, draftGapAnswer } from '../../src/lib/waLearning';
 
 const root = process.cwd() + '/';
 const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -271,4 +272,47 @@ console.log('\n---- automatic-reply readiness');
 console.log(`good drafts judged sendable:  ${goodPassed} / ${goodDrafts.length}  (${Math.round(goodRate * 100)}%, want 95% or more)`);
 console.log(`wrong drafts rejected:        ${wrongDrafts.length - missed.length} / ${wrongDrafts.length}  (${Math.round(rejectRate * 100)}%, want 95% or more)`);
 console.log(`needs-a-person drafts marked sendable: ${personSlips.length}   (must be 0)`);
-process.exit(failed.some((r) => r.critical) || rejectRate < 0.95 || personSlips.length > 0 ? 1 : 0);
+
+// ---- learning loop (src/lib/waLearning.ts)
+// 1. Redaction must leave no identifier behind, and must keep the useful text.
+interface RedactionCase { input: string; names?: string[]; forbid: string[]; keep?: string[] }
+const redactionCases: RedactionCase[] = JSON.parse(readFileSync(root + 'scripts/wa-eval/redaction-cases.json', 'utf8'));
+let redactionFailures = 0;
+for (const c of redactionCases) {
+  const out = redact(c.input, c.names ?? []);
+  const leaked = c.forbid.filter((f) => out.toLowerCase().includes(f.toLowerCase()));
+  const lost = (c.keep ?? []).filter((k) => !out.includes(k));
+  if (leaked.length || lost.length) {
+    redactionFailures++;
+    console.log(`REDACTION FAIL: "${c.input}" -> "${out}" (leaked: ${leaked.join(' | ')}; lost: ${lost.join(' | ')})`);
+  }
+}
+// 2. Drafted answers for unanswered questions: answer what the sources support, decline the rest.
+interface GapQuestion { q: string; answerable: boolean; include?: string[] }
+const gapQuestions: GapQuestion[] = JSON.parse(readFileSync(root + 'scripts/wa-eval/gap-questions.json', 'utf8'));
+const approvedEntries = sql.prepare(`SELECT question, answer FROM wa_kb_entries WHERE status = 'approved'`).all() as { question: string; answer: string }[];
+const gapSources = `${catalogue}\n\n${approvedEntries.map((e) => `${e.question}\n${e.answer}`).join('\n\n')}`;
+let answeredRight = 0;
+let answerableTotal = 0;
+let invented = 0;
+for (let i = 0; i < gapQuestions.length; i += BATCH) {
+  await Promise.all(
+    gapQuestions.slice(i, i + BATCH).map(async (g) => {
+      const r = await draftGapAnswer(apiKey, g.q, gapSources);
+      if (g.answerable) {
+        answerableTotal++;
+        if (r.answerable && (g.include ?? []).every((p) => new RegExp(p, 'i').test(r.answer))) answeredRight++;
+        else console.log(`GAP MISS (should answer): ${g.q} -> ${r.answerable ? r.answer : 'declined'}`);
+      } else if (r.answerable) {
+        invented++;
+        console.log(`GAP INVENTED: ${g.q} -> ${r.answer}`);
+      }
+    })
+  );
+}
+console.log('\n---- learning loop');
+console.log(`redaction cases clean:        ${redactionCases.length - redactionFailures} / ${redactionCases.length}  (must be all)`);
+console.log(`answerable gaps answered:     ${answeredRight} / ${answerableTotal}  (want 9 of 10 or more)`);
+console.log(`unanswerable gaps invented:   ${invented}   (must be 0)`);
+const learningFails = redactionFailures > 0 || invented > 0 || answeredRight < Math.ceil(answerableTotal * 0.9);
+process.exit(failed.some((r) => r.critical) || rejectRate < 0.95 || personSlips.length > 0 || learningFails ? 1 : 0);

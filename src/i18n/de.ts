@@ -879,7 +879,7 @@ export const de: Dictionary = {
       k45: "Ahrefs Web Analytics setzt keine Cookies.",
       k46: "Sie können Ihre Wahl jederzeit über „Cookie-Einstellungen“ am Ende jeder Seite ändern. Ablehnen entfernt die Google-Analytics- und Meta-Cookies von dieser Website.",
       k47: "Aufbewahrung von Daten",
-      k48: "Wir bewahren Buchungsunterlagen so lange auf, wie es für Buchhaltung, rechtliche Zwecke und Kundensupport nötig ist. Sie können uns bitten, Ihr Konto und die zugehörigen personenbezogenen Daten zu löschen, indem Sie uns kontaktieren — siehe unten.",
+      k48: "Wir bewahren Buchungsunterlagen so lange auf, wie es für Buchhaltung, rechtliche Zwecke und Kundensupport nötig ist. Sie können uns bitten, Ihr Konto und die zugehörigen personenbezogenen Daten zu löschen, indem Sie uns kontaktieren — siehe unten. Der Text von WhatsApp-Nachrichten wird 12 Monate lang gespeichert und dann gelöscht.",
       k49: "Ihre Wahlmöglichkeiten",
       k50: "Sie können eine Tour als Gast ohne Konto buchen. Wenn Sie sich anmelden, können Sie dieses Konto jederzeit nicht mehr nutzen und uns bitten, Ihre Daten zu löschen, indem Sie uns kontaktieren. Sie können Analyse- und Werbe-Cookies akzeptieren oder ablehnen und diese Wahl später über „Cookie-Einstellungen“ am Ende jeder Seite ändern.",
       k51: "Kontakt",

@@ -454,6 +454,8 @@ export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: n
   }
 
   const waMessageId = sent.waMessageId ?? `local-${crypto.randomUUID()}`;
+  // What the draft said before staff changed it, kept as evidence for the learning loop.
+  const edited = body !== draft.body.trim();
   await storeMessage(db, {
     waMessageId,
     phone: draft.conversation_id,
@@ -464,8 +466,8 @@ export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: n
     sentAt: now(),
   });
   await db
-    .prepare(`UPDATE wa_drafts SET status = 'sent', body = ?, sent_message_id = ?, sent_by = ?, edited = ?, updated_at = ? WHERE id = ?`)
-    .bind(body, waMessageId, by, body === draft.body.trim() ? 0 : 1, now(), draftId)
+    .prepare(`UPDATE wa_drafts SET status = 'sent', body = ?, original_body = ?, sent_message_id = ?, sent_by = ?, edited = ?, updated_at = ? WHERE id = ?`)
+    .bind(body, edited ? draft.body : '', waMessageId, by, edited ? 1 : 0, now(), draftId)
     .run();
   // An automatic reply leaves the chat's owner alone; a staff send to a chat that
   // was waiting for a person means a person has now dealt with it.

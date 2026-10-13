@@ -879,7 +879,7 @@ export const es: Dictionary = {
       k45: "Ahrefs Web Analytics no instala cookies.",
       k46: "Puedes cambiar tu elección en cualquier momento con «Ajustes de cookies» al final de cada página. Rechazar elimina de este sitio las cookies de Google Analytics y de Meta.",
       k47: "Conservación de datos",
-      k48: "Conservamos los registros de reservas durante el tiempo necesario para fines contables, legales y de atención al cliente. Puedes pedirnos que eliminemos tu cuenta y los datos personales asociados contactando con nosotros (véase abajo).",
+      k48: "Conservamos los registros de reservas durante el tiempo necesario para fines contables, legales y de atención al cliente. Puedes pedirnos que eliminemos tu cuenta y los datos personales asociados contactando con nosotros (véase abajo). El texto de los mensajes de WhatsApp se conserva durante 12 meses y después se elimina.",
       k49: "Tus opciones",
       k50: "Puedes reservar un tour como invitado sin crear una cuenta. Si inicias sesión, puedes dejar de usar esa cuenta en cualquier momento y pedirnos que eliminemos tus datos contactando con nosotros. Puedes aceptar o rechazar las cookies de analítica y publicidad y cambiar esa elección más tarde con «Ajustes de cookies» al final de cada página.",
       k51: "Contacto",
