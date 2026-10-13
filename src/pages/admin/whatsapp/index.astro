@@ -13,6 +13,7 @@ import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
 import { sendDraft, discardDraft, type DraftRow } from '../../../lib/waDraft';
 import { listInbox, inboxCounts, takeOver, giveBack, formatDuration, type InboxFilter } from '../../../lib/waInbox';
+import { auditOverdue } from '../../../lib/waLaunch';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -47,6 +48,7 @@ if (Astro.request.method === 'POST' && db) {
 }
 
 const counts = db ? await inboxCounts(db) : {};
+const overdue = db ? await auditOverdue(db) : 0;
 const waitingForPerson = counts.handed_off ?? 0;
 const tabParam = Astro.url.searchParams.get('tab');
 const tab: InboxFilter = tabParam === 'attention' || tabParam === 'staff' || tabParam === 'all' ? tabParam : waitingForPerson > 0 ? 'attention' : 'all';
@@ -113,8 +115,15 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
     Automatic replies:
     <span class={`ml-1 rounded px-2 py-0.5 text-xs font-medium ${autoReply === 'on' ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>{autoReply === 'on' ? 'On' : 'Off'}</span>
     <a href="/admin/whatsapp/auto" class="ml-2 text-brand-800 hover:underline">Settings</a>
+    <a href="/admin/whatsapp/launch" class="ml-2 text-brand-800 hover:underline">Launch readiness</a>
     <a href="/admin/whatsapp/knowledge" class="ml-4 text-brand-800 hover:underline">Knowledge base</a>
   </p>
+  {overdue > 0 && (
+    <p class="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">
+      {overdue} automatic message{overdue === 1 ? ' is' : 's are'} more than a week old and not yet audited.
+      <a href="/admin/whatsapp/auto#audit" class="ml-1 font-medium underline">Audit them now</a>
+    </p>
+  )}
   {error && <p class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
 
   <nav class="mb-4 flex flex-wrap gap-2" aria-label="Chat filters">

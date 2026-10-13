@@ -11,6 +11,7 @@ import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
 import { sendAutoReplyAlertEmail } from '../../../lib/email';
 import { entryQuestions } from '../../../lib/waKnowledge';
+import { auditOverdue } from '../../../lib/waLaunch';
 import {
   OFFERABLE_INTENTS,
   MIN_REVIEWED_TOTAL,
@@ -80,6 +81,7 @@ const settings = db ? await getAutoSettings(db) : null;
 const ready = db ? await readiness(db) : { reviewed: 0, byIntent: {} };
 const held = db ? await decisionCounts(db) : [];
 const sent = db ? await listAutoSent(db) : [];
+const overdue = db ? await auditOverdue(db) : 0;
 // The knowledge entries each automatic reply used, so a wrong one can be traced and fixed.
 const idsOf = (kb: string): number[] => {
   try {
@@ -110,7 +112,14 @@ const intentLabel: Record<string, string> = {
   <p class="text-stone-500 text-sm mb-1">
     By default the agent only drafts and you press Send. Here you can let it send routine kinds of message by itself, one kind at a time.
     <a href="/admin/whatsapp" class="ml-2 text-brand-800 hover:underline">Back to chats</a>
+    <a href="/admin/whatsapp/launch" class="ml-2 text-brand-800 hover:underline">Launch readiness</a>
   </p>
+  {overdue > 0 && (
+    <p class="my-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">
+      {overdue} automatic message{overdue === 1 ? ' is' : 's are'} more than a week old and not yet audited.
+      Scroll to the audit list below.
+    </p>
+  )}
   {error && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
   {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
 
@@ -202,7 +211,7 @@ const intentLabel: Record<string, string> = {
         </ul>
       )}
 
-      <h2 class="text-lg font-semibold mt-8 mb-1">Audit: sent automatically</h2>
+      <h2 class="text-lg font-semibold mt-8 mb-1" id="audit">Audit: sent automatically</h2>
       <p class="text-stone-500 text-sm mb-3">Read these once a week (Monday suggested). Marking one Wrong turns that kind of message off at once and emails you.</p>
       {sent.length === 0 ? (
         <p class="text-sm text-stone-500">Nothing has been sent automatically yet.</p>

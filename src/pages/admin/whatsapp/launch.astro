@@ -1,0 +1,197 @@
+---
+// Launch readiness for the WhatsApp agent (src/lib/waLaunch.ts): the launch
+// gates from the PRD with live values, the safety self-checks, and how the pilot
+// is doing against its four targets. Nothing here sends a message to a guest.
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { formatDateTimeIst } from '../../../lib/format';
+import type { D1Like } from '../../../lib/db';
+import { sendAutoReplyAlertEmail } from '../../../lib/email';
+import {
+  PILOT_DAYS,
+  evaluateGates,
+  formatMs,
+  getEvalRecord,
+  getSelfCheck,
+  parseEvalRecord,
+  pilotMetrics,
+  runSelfChecks,
+  saveEvalRecord,
+  weeklyReport,
+  type Light,
+} from '../../../lib/waLaunch';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB as D1Like | undefined;
+
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  const action = String(form.get('_action') ?? '');
+  let error = '';
+  let note = '';
+  if (action === 'selfcheck') {
+    const result = await runSelfChecks(env, db, Astro.url.origin);
+    const failed = result.items.filter((i) => !i.ok).length;
+    note = failed ? `Self-checks finished: ${failed} need attention.` : 'Self-checks finished: everything passed.';
+  } else if (action === 'record_eval') {
+    const record = parseEvalRecord(String(form.get('record') ?? ''));
+    if (!record) error = 'That is not a complete RECORD line. Paste the whole line the evaluation printed.';
+    else {
+      await saveEvalRecord(db, record);
+      note = 'Evaluation result recorded.';
+    }
+  } else if (action === 'report') {
+    const text = weeklyReport(await pilotMetrics(db), await evaluateGates(db));
+    const sent = await sendAutoReplyAlertEmail(env, { title: 'Weekly report', message: text, path: '/admin/whatsapp/launch', linkLabel: 'Open launch readiness' });
+    if (sent) note = 'The report was emailed.';
+    else error = 'The report could not be emailed (is the email service key set?).';
+  }
+  const query = new URLSearchParams();
+  if (error) query.set('err', error);
+  if (note) query.set('note', note);
+  return Astro.redirect(`/admin/whatsapp/launch${query.size ? `?${query}` : ''}`);
+}
+
+const gates = db ? await evaluateGates(db) : [];
+const metrics = db ? await pilotMetrics(db) : null;
+const selfCheck = db ? await getSelfCheck(db) : null;
+const evalRecord = db ? await getEvalRecord(db) : null;
+const error = Astro.url.searchParams.get('err');
+const note = Astro.url.searchParams.get('note');
+const allPass = gates.length > 0 && gates.every((g) => g.status === 'pass');
+const btn = 'min-h-11 rounded px-4 text-sm font-medium';
+const light: Record<Light, { text: string; style: string }> = {
+  pass: { text: 'Pass', style: 'bg-green-100 text-green-800' },
+  fail: { text: 'Not yet', style: 'bg-red-100 text-red-800' },
+  unknown: { text: 'No data', style: 'bg-stone-200 text-stone-700' },
+};
+const pctText = (x: number | null) => (x === null ? 'n/a' : `${Math.round(x * 100)}%`);
+const checkLabel: Record<string, string> = {
+  secrets: 'WhatsApp secrets set', forged: 'Forged request refused', unsigned: 'Unsigned request refused', handshake: 'Wrong verify token refused',
+  meta: 'Meta connection and number', ai: 'AI service', killswitch: 'Kill switch', tables: 'Database columns', inbound: 'Guest messages arriving',
+};
+const targets = metrics
+  ? [
+      { name: 'Resolved without staff', target: '60% or more', value: metrics.guestMessages ? `${pctText(metrics.resolvedShare)} (${metrics.autoAnswered} automatic + ${metrics.draftUnedited} unedited drafts of ${metrics.guestMessages})` : 'No messages yet', status: metrics.resolvedLight },
+      { name: 'Median first reply', target: 'Under 1 minute', value: `${formatMs(metrics.medianReplyMs)}; ${pctText(metrics.within1MinShare)} within a minute; ${metrics.unanswered} not yet answered`, status: metrics.replyLight },
+      { name: 'Wrong statements that reached a guest', target: 'None', value: `${metrics.wrong} marked wrong; ${metrics.audited} of ${metrics.autoSent} automatic messages audited; ${metrics.overdue} overdue`, status: (metrics.autoSent === 0 ? 'unknown' : metrics.wrong === 0 && metrics.overdue === 0 ? 'pass' : 'fail') as Light },
+      { name: 'Refund, complaint and booking-change messages reach a person', target: 'All of them, none answered automatically', value: `${metrics.handoffReached} of ${metrics.handoffMessages} reached a person; ${metrics.handoffBreaches} answered automatically`, status: metrics.handoffLight },
+    ]
+  : [];
+---
+<AdminLayout title="Launch readiness">
+  <h1 class="text-2xl font-semibold mb-2">Launch readiness</h1>
+  <p class="text-stone-500 text-sm mb-1">
+    Every gate that must pass before automatic replies are switched on, and how the pilot is going. Nothing here sends a message to a guest.
+    <a href="/admin/whatsapp/auto" class="ml-2 text-brand-800 hover:underline">Automatic reply settings</a>
+    <a href="/admin/whatsapp" class="ml-2 text-brand-800 hover:underline">Chats</a>
+  </p>
+  {error && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+  {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
+
+  <p class={`my-4 rounded-xl p-3 text-sm font-medium ${allPass ? 'bg-green-50 text-green-800' : 'bg-amber-50 text-amber-900'}`}>
+    {allPass ? 'All seven gates pass. Automatic replies can be switched on, starting with greetings only.' : 'Not ready yet. Automatic replies stay off until every gate passes.'}
+  </p>
+
+  <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white">
+    <table class="w-full text-sm">
+      <thead class="bg-stone-50 text-left text-stone-600"><tr><th class="px-3 py-2">Gate</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Now</th><th class="px-3 py-2">Needed</th></tr></thead>
+      <tbody>
+        {gates.map((g) => (
+          <tr class="border-t border-stone-100 align-top">
+            <td class="px-3 py-2 font-medium">{g.id}. {g.name}</td>
+            <td class="px-3 py-2"><span class={`rounded px-2 py-0.5 text-xs ${light[g.status].style}`}>{light[g.status].text}</span></td>
+            <td class="px-3 py-2">{g.value}{g.status !== 'pass' && <span class="mt-1 block text-xs text-amber-800">Next: {g.next}</span>}</td>
+            <td class="px-3 py-2 text-stone-500">{g.target}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-lg font-semibold mt-8 mb-2">Self-checks</h2>
+  <form method="POST" class="mb-3 flex flex-wrap items-center gap-3">
+    <button type="submit" name="_action" value="selfcheck" class={`${btn} bg-brand-800 text-white`}>Run self-checks</button>
+    <span class="text-xs text-stone-500">Sends two forged requests to this site, asks Meta for the phone number, and makes one tiny AI call. Nothing is sent to a guest. Run it again after every deploy.</span>
+  </form>
+  {selfCheck ? (
+    <>
+      <p class="text-xs text-stone-500 mb-2">Last run {formatDateTimeIst(selfCheck.at)}</p>
+      <ul class="space-y-1 text-sm">
+        {selfCheck.items.map((i) => (
+          <li><span class={`mr-2 rounded px-2 py-0.5 text-xs ${i.ok ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{i.ok ? 'OK' : 'Fix'}</span><span class="font-medium">{checkLabel[i.id] ?? i.id}:</span> {i.detail}</li>
+        ))}
+      </ul>
+    </>
+  ) : <p class="text-sm text-stone-500">Not run yet.</p>}
+
+  <h2 class="text-lg font-semibold mt-8 mb-2">Evaluation</h2>
+  {evalRecord ? (
+    <p class="text-sm mb-2">
+      Recorded {evalRecord.date.slice(0, 10)}: {evalRecord.passed} of {evalRecord.questions} questions passed, {evalRecord.handoffMisses} hand-off misses, {evalRecord.forbidden} forbidden;
+      fact check accepted {evalRecord.goodJudged} of {evalRecord.goodTotal} good drafts and rejected {evalRecord.wrongRejected} of {evalRecord.wrongTotal} wrong ones;
+      redaction clean {evalRecord.redactionClean} of {evalRecord.redactionTotal}; unanswered-question drafts {evalRecord.gapAnswered} of {evalRecord.gapAnswerable} right, {evalRecord.gapInvented} invented.
+    </p>
+  ) : <p class="text-sm text-stone-500 mb-2">No evaluation recorded yet.</p>}
+  <p class="text-xs text-stone-500 mb-2 max-w-2xl">
+    Run <code>sh scripts/wa-eval/run.sh</code> on the computer that holds the AI key, then paste the line that starts with RECORD here. Add your own real questions first with the download below, so the set grows past 100.
+  </p>
+  <form method="POST" class="max-w-2xl space-y-2">
+    <input type="hidden" name="_action" value="record_eval" />
+    <label class="sr-only" for="record">RECORD line</label>
+    <textarea id="record" name="record" rows="3" class="w-full rounded-lg border border-stone-300 bg-white p-2 text-xs" placeholder='RECORD {"date":"2026-10-20T10:00:00.000Z","questions":144,...}'></textarea>
+    <div class="flex flex-wrap gap-3">
+      <button type="submit" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Record result</button>
+      <a href="/admin/whatsapp/test-questions.json" class={`${btn} inline-flex items-center border border-stone-300 bg-white text-stone-700`}>Download real questions (redacted)</a>
+    </div>
+  </form>
+
+  <h2 class="text-lg font-semibold mt-8 mb-1">Pilot targets (last {PILOT_DAYS} days)</h2>
+  <p class="text-stone-500 text-sm mb-3">Measured from real chats. "Resolved" counts automatic replies and drafts you sent unedited together.</p>
+  <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white">
+    <table class="w-full text-sm">
+      <thead class="bg-stone-50 text-left text-stone-600"><tr><th class="px-3 py-2">Target</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Now</th><th class="px-3 py-2">Goal</th></tr></thead>
+      <tbody>
+        {targets.map((t) => (
+          <tr class="border-t border-stone-100 align-top">
+            <td class="px-3 py-2 font-medium">{t.name}</td>
+            <td class="px-3 py-2"><span class={`rounded px-2 py-0.5 text-xs ${light[t.status].style}`}>{light[t.status].text}</span></td>
+            <td class="px-3 py-2">{t.value}</td>
+            <td class="px-3 py-2 text-stone-500">{t.target}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  {metrics && metrics.guestMessages > 0 && (
+    <details class="mt-4">
+      <summary class="cursor-pointer text-sm text-stone-600">First reply within a minute, by hour of day (India time)</summary>
+      <ul class="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm md:grid-cols-4">
+        {metrics.byHour.filter((h) => h.n > 0).map((h) => (
+          <li>{String(h.hour).padStart(2, '0')}:00 · {h.within1Min} of {h.n}</li>
+        ))}
+      </ul>
+    </details>
+  )}
+  {metrics && metrics.tokensPerDay.length > 0 && (
+    <details class="mt-2">
+      <summary class="cursor-pointer text-sm text-stone-600">AI usage per day (tokens)</summary>
+      <ul class="mt-2 text-sm">
+        {metrics.tokensPerDay.map((d) => <li>{d.day}: {d.input.toLocaleString('en-US')} in, {d.output.toLocaleString('en-US')} out</li>)}
+      </ul>
+    </details>
+  )}
+
+  <form method="POST" class="mt-8">
+    <button type="submit" name="_action" value="report" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Email me this week's report</button>
+    <span class="ml-2 text-xs text-stone-500">Suggested every Monday, with the audit.</span>
+  </form>
+</AdminLayout>
