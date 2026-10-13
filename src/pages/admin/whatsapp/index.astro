@@ -1,0 +1,79 @@
+---
+// WhatsApp: read-only view of the chats the webhook has stored
+// (src/pages/api/webhooks/whatsapp.ts). Milestone 1 of the reply agent only
+// receives and stores; nothing here sends, and the auto-reply switch is Off.
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { formatDateTimeIst } from '../../../lib/format';
+import type { D1Like } from '../../../lib/db';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+interface Conversation { id: string; profile_name: string | null; state: string; last_message_at: string }
+interface Message { direction: string; kind: string; body: string; status: string; sent_at: string }
+
+const db = env.DB as D1Like | undefined;
+const conversations = db
+  ? (await db.prepare(`SELECT id, profile_name, state, last_message_at FROM wa_conversations ORDER BY last_message_at DESC LIMIT 100`).bind().all<Conversation>()).results
+  : [];
+const selectedId = Astro.url.searchParams.get('c') ?? conversations[0]?.id ?? '';
+const messages = db && selectedId
+  ? (await db.prepare(`SELECT direction, kind, body, status, sent_at FROM wa_messages WHERE conversation_id = ? ORDER BY sent_at ASC LIMIT 200`).bind(selectedId).all<Message>()).results
+  : [];
+const autoReply = db
+  ? (await db.prepare(`SELECT value FROM wa_settings WHERE key = 'auto_reply'`).bind().first<{ value: string }>())?.value ?? 'off'
+  : 'off';
+const selected = conversations.find((c) => c.id === selectedId);
+const who = (c: Conversation) => c.profile_name || `+${c.id}`;
+const directionLabel: Record<string, string> = { in: 'Guest', out: 'Agent', echo: 'Staff (app)' };
+---
+<AdminLayout title="WhatsApp">
+  <h1 class="text-2xl font-semibold mb-2">WhatsApp</h1>
+  <p class="text-stone-500 text-sm mb-1">
+    Every message on the business number, as the webhook stored it. This view only reads; nothing is sent from here.
+  </p>
+  <p class="text-sm mb-6">
+    Automatic replies:
+    <span class={`ml-1 rounded px-2 py-0.5 text-xs font-medium ${autoReply === 'on' ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>{autoReply === 'on' ? 'On' : 'Off'}</span>
+  </p>
+
+  {conversations.length === 0 ? (
+    <p class="text-stone-500">No messages yet. Once the webhook is connected in Meta, chats appear here.</p>
+  ) : (
+    <div class="grid gap-6 md:grid-cols-[18rem_1fr]">
+      <ul class="space-y-2" aria-label="Conversations">
+        {conversations.map((c) => (
+          <li>
+            <a
+              href={`/admin/whatsapp?c=${c.id}`}
+              aria-current={c.id === selectedId ? 'page' : undefined}
+              class={`block rounded-xl border p-3 text-sm ${c.id === selectedId ? 'border-brand-700 bg-violet-50' : 'border-stone-200 bg-white hover:bg-stone-50'}`}
+            >
+              <span class="block font-semibold">{who(c)}</span>
+              <span class="block text-stone-500">+{c.id}</span>
+              <span class="block text-xs text-stone-400">{formatDateTimeIst(c.last_message_at)}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+
+      <section aria-label="Messages">
+        {selected && <h2 class="text-lg font-semibold mb-3">{who(selected)} <span class="text-sm font-normal text-stone-500">· {selected.state}</span></h2>}
+        <ul class="space-y-2">
+          {messages.map((m) => (
+            <li class={`max-w-xl rounded-xl p-3 text-sm ${m.direction === 'in' ? 'bg-white border border-stone-200' : 'ml-auto bg-violet-100'}`}>
+              <p class="text-xs text-stone-500 mb-1">{directionLabel[m.direction] ?? m.direction} · {formatDateTimeIst(m.sent_at)}{m.direction !== 'in' && ` · ${m.status}`}</p>
+              <p class="whitespace-pre-line break-words">{m.body || `[${m.kind}]`}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  )}
+</AdminLayout>

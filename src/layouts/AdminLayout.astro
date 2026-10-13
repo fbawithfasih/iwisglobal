@@ -16,6 +16,7 @@ const isAgraHighlights = path.startsWith('/admin/agra-highlights');
 const isReviews = path.startsWith('/admin/reviews');
 const isBlog = path.startsWith('/admin/blog');
 const isOffers = path.startsWith('/admin/offers');
+const isWhatsapp = path.startsWith('/admin/whatsapp');
 ---
 <!doctype html>
 <html lang="en">
@@ -79,6 +80,7 @@ const isOffers = path.startsWith('/admin/offers');
       <a href="/admin/agra-highlights" aria-current={isAgraHighlights ? 'page' : undefined} class={navLinkClass(isAgraHighlights)}>Agra Highlights</a>
       <a href="/admin/blog" aria-current={isBlog ? 'page' : undefined} class={navLinkClass(isBlog)}>Blog</a>
       <a href="/admin/reviews" aria-current={isReviews ? 'page' : undefined} class={navLinkClass(isReviews)}>Reviews</a>
+      <a href="/admin/whatsapp" aria-current={isWhatsapp ? 'page' : undefined} class={navLinkClass(isWhatsapp)}>WhatsApp</a>
       <a href="/admin/bookings/new" class="rounded-full border border-white/30 px-3 py-1 text-violet-100 transition hover:bg-white/10 hover:text-white">+ Manual Booking</a>
       <form method="POST" action="/admin/logout" class="ml-auto">
         <button type="submit" class="rounded-full px-3 py-1 text-violet-200 transition hover:bg-white/10 hover:text-white cursor-pointer">Log out</button>
