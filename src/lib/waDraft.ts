@@ -10,6 +10,7 @@ import { listTours, type ParsedTour } from './tours';
 import { retrieve, SITE_URL, type KbEntry } from './waKnowledge';
 import { sendText, storeMessage, type WaMessage } from './whatsapp';
 import { runTools, type ToolLog, type ToolRequest } from './waTools';
+import { onAdminSend } from './waInbox';
 import { todayIst } from './availability';
 
 // Model IDs in one place. The classifier is the same small model YourGuide uses.
@@ -443,6 +444,7 @@ export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: n
     .prepare(`UPDATE wa_drafts SET status = 'sent', body = ?, sent_message_id = ?, updated_at = ? WHERE id = ?`)
     .bind(body, waMessageId, now(), draftId)
     .run();
+  await onAdminSend(db, draft.conversation_id);
   return { ok: true };
 }
 

@@ -1,13 +1,19 @@
 import type { APIRoute } from 'astro';
 import { resolveEnv } from '../../../lib/env';
-import { parseWebhook, storeWebhook, verifySignature } from '../../../lib/whatsapp';
+import { parseWebhook, storeWebhook, verifySignature, type WaMessage } from '../../../lib/whatsapp';
 import { generateDraft } from '../../../lib/waDraft';
+import { routeIncoming, onStaffReply, markHandedOff } from '../../../lib/waInbox';
+import { sendWhatsappHandoffEmail } from '../../../lib/email';
+import type { D1Like } from '../../../lib/db';
 
 export const prerender = false;
 
 // WhatsApp Business Platform webhook (reply agent). Stores every message on the
-// business number and writes a draft reply for each new guest message (milestone
-// 2). It never sends anything: staff send drafts from /admin/whatsapp.
+// business number, writes a draft reply for each new guest message, and keeps
+// track of who owns the chat (src/lib/waInbox.ts): a reply typed in the
+// WhatsApp Business app hands the chat to staff, and a message that needs a
+// person sends an email alert. It never sends anything to the guest: staff
+// send drafts from /admin/whatsapp.
 //
 // Setup (Meta developer app → WhatsApp → Configuration → Webhook):
 //   1. Callback URL https://www.iwisglobal.com/api/webhooks/whatsapp
@@ -30,6 +36,45 @@ export const GET: APIRoute = ({ url, locals }) => {
   }
   return new Response('forbidden', { status: 403 });
 };
+
+// One new guest message: apply opt-out and staff-handling rules, draft a reply,
+// and if the draft says a person is needed, move the chat there and alert staff
+// (once, not for every message).
+async function handleGuestMessage(env: Record<string, any>, db: D1Like, m: WaMessage): Promise<void> {
+  if ((await routeIncoming(db, m)) === 'skip') return;
+  await generateDraft(env, db, m);
+
+  const draft = await db
+    .prepare(`SELECT needs_person, reason, body FROM wa_drafts WHERE message_id = ?`)
+    .bind(m.waMessageId)
+    .first<{ needs_person: number; reason: string; body: string }>();
+  if (!draft?.needs_person) return;
+  if (!(await markHandedOff(db, m.phone, draft.reason || 'handoff'))) return;
+
+  const { results } = await db
+    .prepare(`SELECT direction, body FROM wa_messages WHERE conversation_id = ? ORDER BY sent_at DESC LIMIT 4`)
+    .bind(m.phone)
+    .all<{ direction: string; body: string }>();
+  await sendWhatsappHandoffEmail(env, {
+    name: m.profileName,
+    phone: m.phone,
+    reason: draft.reason || 'handoff',
+    lastMessages: results.reverse(),
+    draft: draft.body,
+  });
+}
+
+async function processMessages(env: Record<string, any>, db: D1Like, messages: WaMessage[]): Promise<void> {
+  // One at a time, so several messages in one delivery cannot race on the chat's state.
+  for (const m of messages) {
+    try {
+      if (m.direction === 'echo') await onStaffReply(db, m.phone, new Date(m.sentAt));
+      else if (m.direction === 'in') await handleGuestMessage(env, db, m);
+    } catch (err) {
+      console.error('whatsapp webhook: processing failed', err);
+    }
+  }
+}
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const env = resolveEnv(locals);
@@ -58,7 +103,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const db = env.DB;
   if (!db) return new Response('no database', { status: 503 });
 
-  let added;
+  let added: WaMessage[];
   try {
     added = await storeWebhook(db, parseWebhook(payload));
   } catch (err) {
@@ -68,9 +113,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   // Drafting calls a model, so it runs after the 200 goes back to Meta.
-  const drafting = Promise.all(added.filter((m) => m.direction === 'in').map((m) => generateDraft(env, db, m)));
+  const work = processMessages(env, db, added);
   const ctx = (locals as { runtime?: { ctx?: { waitUntil(p: Promise<unknown>): void } } }).runtime?.ctx;
-  if (ctx) ctx.waitUntil(drafting);
-  else await drafting;
+  if (ctx) ctx.waitUntil(work);
+  else await work;
   return new Response('ok', { status: 200 });
 };

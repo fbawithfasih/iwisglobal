@@ -403,6 +403,78 @@ export async function sendAdminBookingNotificationEmail(env: Record<string, any>
   }
 }
 
+export interface WhatsappHandoffEmailDetails {
+  name: string | null;
+  phone: string; // digits with country code
+  reason: string;
+  lastMessages: { direction: string; body: string }[];
+  draft: string;
+}
+
+const HANDOFF_REASON_TEXT: Record<string, string> = {
+  handoff: 'a refund, complaint, booking change or similar',
+  no_knowledge: 'there is no approved answer for the question',
+  price_mismatch: 'the draft quoted a price that is not in the catalogue',
+  unsupported: 'the guest sent a voice note, image or other non-text message',
+  format: 'the draft was not in the expected format',
+  no_booking: 'no booking was found under this WhatsApp number',
+  cap: 'the daily draft limit was reached',
+  no_api_key: 'the AI key is not set',
+  error: 'drafting failed',
+};
+
+// "A guest needs a person" alert to the business inbox when a WhatsApp chat
+// moves to needs-a-person (src/lib/waInbox.ts). Same best-effort contract as the
+// booking alert: never throws, never blocks the webhook.
+export async function sendWhatsappHandoffEmail(env: Record<string, any>, details: WhatsappHandoffEmailDetails): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const from = env.BOOKING_EMAIL_FROM || 'IWIS Global <info@iwisglobal.com>';
+  const to = env.ADMIN_NOTIFICATION_EMAIL || 'info@iwisglobal.com';
+  const who = details.name || `+${details.phone}`;
+  const chatUrl = `${SITE}/admin/whatsapp?c=${encodeURIComponent(details.phone)}`;
+  const why = HANDOFF_REASON_TEXT[details.reason] ?? details.reason;
+  const cell = 'padding:6px 0; vertical-align:top;';
+
+  const messages = details.lastMessages
+    .map(
+      (m) =>
+        `<tr><td style="${cell} color:#78716c; padding-left:14px; padding-right:12px; white-space:nowrap;">${m.direction === 'in' ? 'Guest' : 'Us'}</td><td style="${cell} padding-right:14px;">${escapeHtml(m.body)}</td></tr>`
+    )
+    .join('');
+  const draft = details.draft
+    ? `<p style="margin:16px 0 4px; font-size:13px; color:#78716c;">Drafted reply (not sent)</p><p style="margin:0; padding:12px 14px; background:#faf9ff; border:1px solid #ede9fe; border-radius:12px; white-space:pre-line;">${escapeHtml(details.draft)}</p>`
+    : '';
+
+  const html = emailHtml('A guest needs a person', `
+        <p style="margin:0 0 12px;"><strong>${escapeHtml(who)}</strong> (+${escapeHtml(details.phone)}) wrote on WhatsApp. Why: ${escapeHtml(why)}.</p>
+        <table style="width:100%; border-collapse: collapse; margin: 0 0 8px; font-size: 14px; background:#faf9ff; border:1px solid #ede9fe; border-radius:12px;">${messages}</table>
+        ${draft}
+        <p style="margin:24px 0 0; text-align:center;"><a href="${chatUrl}" style="${EMAIL_BUTTON}">Open the chat</a></p>`);
+  const text = [
+    `${who} (+${details.phone}) wrote on WhatsApp. Why: ${why}.`,
+    ``,
+    ...details.lastMessages.map((m) => `${m.direction === 'in' ? 'Guest' : 'Us'}: ${m.body}`),
+    ...(details.draft ? [``, `Drafted reply (not sent):`, details.draft] : []),
+    ``,
+    `Open the chat: ${chatUrl}`,
+  ].join('\n');
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to, subject: `WhatsApp: ${who} needs a person`, html, text }),
+    });
+    if (!res.ok) {
+      console.error('sendWhatsappHandoffEmail: Resend API error', res.status, await res.text());
+    }
+  } catch (err) {
+    console.error('sendWhatsappHandoffEmail: request failed', err);
+  }
+}
+
 export interface PasswordResetEmailDetails {
   to: string;
   name: string;
