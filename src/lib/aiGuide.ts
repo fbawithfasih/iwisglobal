@@ -90,6 +90,66 @@ export interface GuideExchange {
   a: string;
 }
 
+export interface ClaudeResult {
+  text: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+// One Messages API call, shared by YourGuide and the WhatsApp reply agent.
+// Throws on any failure; callers decide the fallback.
+export async function callAnthropic(opts: {
+  apiKey: string;
+  model: string;
+  system: string;
+  messages: { role: 'user' | 'assistant'; content: string }[];
+  maxTokens: number;
+  timeoutMs?: number;
+}): Promise<ClaudeResult> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? 15000);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': opts.apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: opts.model,
+        max_tokens: opts.maxTokens,
+        system: opts.system,
+        messages: opts.messages,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      throw new Error(`Anthropic API error: ${res.status}`);
+    }
+
+    const json: any = await res.json();
+    // Newer models can put a (possibly empty) thinking block before the text.
+    const blocks: any[] = Array.isArray(json?.content) ? json.content : [];
+    const text = blocks
+      .filter((b) => b?.type === 'text' && typeof b.text === 'string')
+      .map((b) => b.text)
+      .join('');
+    if (!text.trim()) {
+      throw new Error(`Anthropic API returned no text (stop_reason: ${json?.stop_reason ?? 'unknown'})`);
+    }
+    return {
+      text: text.trim(),
+      inputTokens: Number(json?.usage?.input_tokens) || 0,
+      outputTokens: Number(json?.usage?.output_tokens) || 0,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function askYourGuide(
   message: string,
   history: GuideExchange[],
@@ -106,37 +166,12 @@ export async function askYourGuide(
   }
   messages.push({ role: 'user', content: message });
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: AI_GUIDE_MODEL,
-        max_tokens: MAX_OUTPUT_TOKENS,
-        system: systemPrompt,
-        messages,
-      }),
-      signal: controller.signal,
-    });
-
-    if (!res.ok) {
-      throw new Error(`Anthropic API error: ${res.status}`);
-    }
-
-    const json: any = await res.json();
-    const text = json?.content?.[0]?.text;
-    if (typeof text !== 'string' || !text.trim()) {
-      throw new Error('Anthropic API returned no text');
-    }
-    return text.trim();
-  } finally {
-    clearTimeout(timeout);
-  }
+  const { text } = await callAnthropic({
+    apiKey,
+    model: AI_GUIDE_MODEL,
+    system: systemPrompt,
+    messages,
+    maxTokens: MAX_OUTPUT_TOKENS,
+  });
+  return text;
 }

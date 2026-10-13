@@ -1,0 +1,163 @@
+[
+  {
+    "id": "SAME_DAY_AGRA_DELHI",
+    "slug": "same-day-agra-from-delhi",
+    "title": "Delhi to Agra Same-Day Taj Mahal Tour by Car",
+    "duration_label": "Full Day",
+    "start_point": "New Delhi / Delhi",
+    "amount": 6299,
+    "usd_amount": 65,
+    "tiers": [
+      {
+        "travelers": 1,
+        "amount": 13299
+      },
+      {
+        "travelers": 2,
+        "amount": 7799
+      },
+      {
+        "travelers": 3,
+        "amount": 6799
+      },
+      {
+        "travelers": 4,
+        "amount": 5799
+      }
+    ]
+  },
+  {
+    "id": "TAJ_MAHAL_SUNRISE_TOUR",
+    "slug": "taj-mahal-sunrise-tour",
+    "title": "Taj Mahal Sunrise Tour from Delhi",
+    "duration_label": "Full Day",
+    "start_point": "New Delhi / Delhi",
+    "amount": 6999,
+    "usd_amount": 69,
+    "tiers": [
+      {
+        "travelers": 1,
+        "amount": 14999
+      },
+      {
+        "travelers": 2,
+        "amount": 7999
+      },
+      {
+        "travelers": 3,
+        "amount": 6499
+      },
+      {
+        "travelers": 4,
+        "amount": 5499
+      }
+    ]
+  },
+  {
+    "id": "GATIMAAN_EXPRESS_TOUR",
+    "slug": "same-day-taj-mahal-tour-by-gatimaan-express",
+    "title": "Taj Mahal Day Tour from Delhi by Gatimaan Express",
+    "duration_label": "Full Day",
+    "start_point": "New Delhi / Delhi",
+    "amount": 15949,
+    "usd_amount": 163,
+    "tiers": [
+      {
+        "travelers": 1,
+        "amount": 15949
+      },
+      {
+        "travelers": 2,
+        "amount": 9949
+      },
+      {
+        "travelers": 3,
+        "amount": 8949
+      },
+      {
+        "travelers": 4,
+        "amount": 8449
+      }
+    ]
+  },
+  {
+    "id": "TAJ_MAHAL_LUXURY_CAR_TOUR",
+    "slug": "taj-mahal-luxury-car-tour-from-delhi",
+    "title": "Taj Mahal Luxury Car Tour from Delhi",
+    "duration_label": "Full Day (12 hrs)",
+    "start_point": "Delhi NCR hotels or airport",
+    "amount": 34990,
+    "usd_amount": 419,
+    "tiers": []
+  },
+  {
+    "id": "AGRA_PRIVATE_SIGHTSEEING_TOUR",
+    "slug": "agra-private-sightseeing-tour",
+    "title": "Agra Full-Day Private Sightseeing Tour with Guide",
+    "duration_label": "Full Day",
+    "start_point": "Your hotel or railway station in Agra",
+    "amount": 3499,
+    "usd_amount": 36,
+    "tiers": []
+  },
+  {
+    "id": "TAJ_MAHAL_MOONLIGHT_TOUR",
+    "slug": "taj-mahal-moonlight-night-viewing-tour",
+    "title": "Taj Mahal Moonlight Night Viewing Tour from Agra",
+    "duration_label": "Evening",
+    "start_point": "Your hotel in Agra",
+    "amount": 2999,
+    "usd_amount": 31,
+    "tiers": []
+  },
+  {
+    "id": "AGRA_OVERNIGHT_TOUR_FROM_DELHI",
+    "slug": "agra-overnight-tour-from-delhi",
+    "title": "Agra Overnight Tour from Delhi: 2 Days, 1 Night",
+    "duration_label": "2 Days / 1 Night",
+    "start_point": "Delhi NCR hotels or airport",
+    "amount": 11999,
+    "usd_amount": 124,
+    "tiers": []
+  },
+  {
+    "id": "AGRA_MATHURA_VRINDAVAN_OVERNIGHT_TOUR",
+    "slug": "agra-mathura-vrindavan-overnight-tour",
+    "title": "Agra, Mathura & Vrindavan 2-Day Tour from Delhi",
+    "duration_label": "2 Days / 1 Night",
+    "start_point": "Delhi NCR hotels or airport",
+    "amount": 13999,
+    "usd_amount": 145,
+    "tiers": []
+  },
+  {
+    "id": "GOLDEN_TRIANGLE_3_DAYS",
+    "slug": "3-days-golden-triangle-tour-from-delhi",
+    "title": "3 Days Golden Triangle Tour from Delhi (Delhi, Agra, Jaipur)",
+    "duration_label": "3 Days / 2 Nights",
+    "start_point": "Delhi NCR hotels or airport",
+    "amount": 35000,
+    "usd_amount": 399,
+    "tiers": []
+  },
+  {
+    "id": "GOLDEN_TRIANGLE_4_DAYS",
+    "slug": "4-days-golden-triangle-tour-from-delhi",
+    "title": "4 Days Golden Triangle Tour from Delhi (Delhi, Agra, Jaipur)",
+    "duration_label": "4 Days / 3 Nights",
+    "start_point": "Delhi NCR hotels or airport",
+    "amount": 45000,
+    "usd_amount": 499,
+    "tiers": []
+  },
+  {
+    "id": "GOLDEN_TRIANGLE_5_DAYS",
+    "slug": "5-days-golden-triangle-tour-from-delhi",
+    "title": "5 Days Golden Triangle Tour from Delhi (Delhi, Agra, Jaipur)",
+    "duration_label": "5 Days / 4 Nights",
+    "start_point": "Delhi NCR hotels or airport",
+    "amount": 55000,
+    "usd_amount": 599,
+    "tiers": []
+  }
+]

@@ -157,11 +157,12 @@ export async function storeStatus(db: D1Like, s: WaStatusUpdate): Promise<void> 
   await db.prepare(`UPDATE wa_messages SET status = ? WHERE wa_message_id = ?`).bind(s.status, s.waMessageId).run();
 }
 
-// Stores everything in a parsed payload. Returns how many messages were new.
-export async function storeWebhook(db: D1Like, parsed: ParsedWebhook): Promise<number> {
-  let added = 0;
+// Stores everything in a parsed payload. Returns the messages that were new
+// (a redelivered message is not returned, so callers act on each one once).
+export async function storeWebhook(db: D1Like, parsed: ParsedWebhook): Promise<WaMessage[]> {
+  const added: WaMessage[] = [];
   for (const m of parsed.messages) {
-    if (await storeMessage(db, m)) added++;
+    if (await storeMessage(db, m)) added.push(m);
   }
   for (const s of parsed.statuses) await storeStatus(db, s);
   return added;

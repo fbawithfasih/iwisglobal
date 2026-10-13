@@ -1,11 +1,13 @@
 import type { APIRoute } from 'astro';
 import { resolveEnv } from '../../../lib/env';
 import { parseWebhook, storeWebhook, verifySignature } from '../../../lib/whatsapp';
+import { generateDraft } from '../../../lib/waDraft';
 
 export const prerender = false;
 
-// WhatsApp Business Platform webhook (reply agent, milestone 1). Stores every
-// message on the business number; it does not reply to anyone.
+// WhatsApp Business Platform webhook (reply agent). Stores every message on the
+// business number and writes a draft reply for each new guest message (milestone
+// 2). It never sends anything: staff send drafts from /admin/whatsapp.
 //
 // Setup (Meta developer app → WhatsApp → Configuration → Webhook):
 //   1. Callback URL https://www.iwisglobal.com/api/webhooks/whatsapp
@@ -56,12 +58,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const db = env.DB;
   if (!db) return new Response('no database', { status: 503 });
 
+  let added;
   try {
-    await storeWebhook(db, parseWebhook(payload));
+    added = await storeWebhook(db, parseWebhook(payload));
   } catch (err) {
     // 500 makes Meta retry; the unique message ID makes the retry safe.
     console.error('whatsapp webhook: store failed', err);
     return new Response('error', { status: 500 });
   }
+
+  // Drafting calls a model, so it runs after the 200 goes back to Meta.
+  const drafting = Promise.all(added.filter((m) => m.direction === 'in').map((m) => generateDraft(env, db, m)));
+  const ctx = (locals as { runtime?: { ctx?: { waitUntil(p: Promise<unknown>): void } } }).runtime?.ctx;
+  if (ctx) ctx.waitUntil(drafting);
+  else await drafting;
   return new Response('ok', { status: 200 });
 };

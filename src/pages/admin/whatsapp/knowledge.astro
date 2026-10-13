@@ -1,0 +1,137 @@
+---
+// WhatsApp knowledge base: the question-and-answer entries the reply agent may
+// use (src/lib/waKnowledge.ts). "Build from site" proposes entries from the FAQ,
+// policy pages, guides and attractions; nothing is used until a person approves
+// it. Below that, the questions guests asked that no approved entry answered.
+export const prerender = false;
+
+import { getCollection } from 'astro:content';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import type { D1Like } from '../../../lib/db';
+import {
+  addStaffEntry,
+  approveEntry,
+  editEntry,
+  listEntries,
+  listGaps,
+  proposeFromItems,
+  retireEntry,
+  siteSourceItems,
+  type KbEntry,
+} from '../../../lib/waKnowledge';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB as D1Like | undefined;
+const APPROVER = 'admin';
+
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  const action = String(form.get('_action') ?? '');
+  const id = Number(form.get('id'));
+  const question = String(form.get('question') ?? '');
+  const answer = String(form.get('answer') ?? '');
+  let note = '';
+  if (action === 'build') {
+    const guides = (await getCollection('guides')).map((g) => ({ slug: g.slug, title: g.data.title, description: g.data.description, body: g.body }));
+    const attractions = (await getCollection('attractions')).map((a) => ({ slug: a.slug, ...a.data }));
+    const { created, updated } = await proposeFromItems(db, siteSourceItems(guides, attractions));
+    note = `Built from the site: ${created} new, ${updated} changed.`;
+  } else if (action === 'save') {
+    if (question.trim() && answer.trim()) await editEntry(db, id, question, answer);
+  } else if (action === 'save_approve') {
+    if (question.trim() && answer.trim()) {
+      await editEntry(db, id, question, answer);
+      await approveEntry(db, id, APPROVER);
+    }
+  } else if (action === 'retire') {
+    await retireEntry(db, id);
+  } else if (action === 'add') {
+    if (question.trim() && answer.trim()) await addStaffEntry(db, question, answer, APPROVER);
+  }
+  return Astro.redirect(note ? `/admin/whatsapp/knowledge?note=${encodeURIComponent(note)}` : '/admin/whatsapp/knowledge');
+}
+
+const proposed = db ? await listEntries(db, 'proposed') : [];
+const approved = db ? await listEntries(db, 'approved') : [];
+const retired = db ? await listEntries(db, 'retired') : [];
+const gaps = db ? await listGaps(db) : [];
+const note = Astro.url.searchParams.get('note');
+const btn = 'min-h-11 rounded px-4 text-sm font-medium';
+const field = 'w-full rounded-lg border border-stone-300 bg-white p-2 text-sm';
+const sections = [
+  { title: 'Proposed', list: proposed, canApprove: true, hint: 'Read each one, edit if needed, then approve. Not used until approved.' },
+  { title: 'Approved', list: approved, canApprove: false, hint: 'In use. Retiring takes effect on the next draft.' },
+];
+---
+<AdminLayout title="WhatsApp knowledge base">
+  <h1 class="text-2xl font-semibold mb-2">WhatsApp knowledge base</h1>
+  <p class="text-stone-500 text-sm mb-1">
+    The reply agent answers only from approved entries here and from the live tour list. Proposed entries are never used.
+    <a href="/admin/whatsapp" class="ml-2 text-brand-800 hover:underline">Back to chats</a>
+  </p>
+  {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
+
+  <form method="POST" class="my-4">
+    <input type="hidden" name="_action" value="build" />
+    <button type="submit" class={`${btn} bg-amber-800 text-white`}>Build from site</button>
+    <span class="ml-2 text-xs text-stone-500">Adds the FAQ, policies, guides and attractions as proposed entries. Run it again after the site changes.</span>
+  </form>
+
+  <h2 class="text-lg font-semibold mt-8 mb-2">Needs an answer ({gaps.length})</h2>
+  {gaps.length === 0 ? (
+    <p class="text-stone-500 text-sm">Nothing yet. Questions the agent could not answer show here, most asked first.</p>
+  ) : (
+    <ul class="space-y-1 text-sm mb-2">
+      {gaps.map((g) => <li><span class="rounded bg-stone-200 px-2 py-0.5 text-xs">{g.count}×</span> {g.question}</li>)}
+    </ul>
+  )}
+
+  <h2 class="text-lg font-semibold mt-8 mb-2">Add an answer</h2>
+  <form method="POST" class="space-y-2 max-w-2xl rounded-xl border border-stone-200 bg-white p-4">
+    <input type="hidden" name="_action" value="add" />
+    <label class="block text-sm" for="new-q">Question a guest might ask</label>
+    <input id="new-q" name="question" required class={field} />
+    <label class="block text-sm" for="new-a">Answer (this goes live as soon as you add it)</label>
+    <textarea id="new-a" name="answer" rows="3" required class={field}></textarea>
+    <button type="submit" class={`${btn} bg-emerald-600 text-white`}>Add and approve</button>
+  </form>
+
+  {sections.map((section) => (
+    <section class="mt-8">
+      <h2 class="text-lg font-semibold mb-1">{section.title} ({section.list.length})</h2>
+      <p class="text-stone-500 text-sm mb-3">{section.hint}</p>
+      <ul class="space-y-3">
+        {section.list.map((e: KbEntry) => (
+          <li class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+            <form method="POST" class="space-y-2">
+              <input type="hidden" name="id" value={e.id} />
+              <p class="text-xs text-stone-400">{e.source} · {e.source_ref}</p>
+              <label class="sr-only" for={`q-${e.id}`}>Question</label>
+              <input id={`q-${e.id}`} name="question" value={e.question} class={`${field} font-semibold`} />
+              <label class="sr-only" for={`a-${e.id}`}>Answer</label>
+              <textarea id={`a-${e.id}`} name="answer" rows="4" class={field}>{e.answer}</textarea>
+              <div class="flex flex-wrap gap-2">
+                {section.canApprove && <button type="submit" name="_action" value="save_approve" class={`${btn} bg-green-700 text-white`}>Approve</button>}
+                <button type="submit" name="_action" value="save" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Save edits</button>
+                <button type="submit" name="_action" value="retire" formnovalidate class={`${btn} border border-stone-300 bg-white text-stone-700`}>Retire</button>
+              </div>
+            </form>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+
+  <details class="mt-8">
+    <summary class="cursor-pointer text-sm text-stone-600">Retired ({retired.length})</summary>
+    <ul class="mt-2 space-y-1 text-sm text-stone-500">
+      {retired.map((e) => <li>{e.question}</li>)}
+    </ul>
+  </details>
+</AdminLayout>
