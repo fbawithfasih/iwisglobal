@@ -475,6 +475,32 @@ export async function sendWhatsappHandoffEmail(env: Record<string, any>, details
   }
 }
 
+// Short alert to the business inbox about automatic WhatsApp replies: the runaway
+// breaker switching them off, or a message marked Wrong in the audit. Plain text
+// content only; best effort like the other alerts.
+export async function sendAutoReplyAlertEmail(env: Record<string, any>, details: { title: string; message: string }): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const from = env.BOOKING_EMAIL_FROM || 'IWIS Global <info@iwisglobal.com>';
+  const to = env.ADMIN_NOTIFICATION_EMAIL || 'info@iwisglobal.com';
+  const url = `${SITE}/admin/whatsapp/auto`;
+  const html = emailHtml(details.title, `
+        <p style="margin:0 0 12px;">${escapeHtml(details.message)}</p>
+        <p style="margin:24px 0 0; text-align:center;"><a href="${url}" style="${EMAIL_BUTTON}">Open automatic reply settings</a></p>`);
+  const text = `${details.message}\n\nOpen automatic reply settings: ${url}`;
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to, subject: `WhatsApp: ${details.title}`, html, text }),
+    });
+    if (!res.ok) console.error('sendAutoReplyAlertEmail: Resend API error', res.status, await res.text());
+  } catch (err) {
+    console.error('sendAutoReplyAlertEmail: request failed', err);
+  }
+}
+
 export interface PasswordResetEmailDetails {
   to: string;
   name: string;

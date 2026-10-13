@@ -17,7 +17,10 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFileSync, readdirSync } from 'node:fs';
 import { storeWebhook } from '../../src/lib/whatsapp';
 import { siteSourceItems, proposeFromItems, approveEntry } from '../../src/lib/waKnowledge';
-import { generateDraft, COMPOSE_MODEL, CLASSIFY_MODEL } from '../../src/lib/waDraft';
+import { generateDraft, catalogueText, COMPOSE_MODEL, CLASSIFY_MODEL } from '../../src/lib/waDraft';
+import { groundingCheck } from '../../src/lib/waAuto';
+import { retrieve } from '../../src/lib/waKnowledge';
+import { listTours } from '../../src/lib/tours';
 
 const root = process.cwd() + '/';
 const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -173,6 +176,7 @@ interface Result {
   critical: boolean;
   reason: string;
   body: string;
+  decision: string;
 }
 
 async function runOne(i: number, c: Question): Promise<Result> {
@@ -187,10 +191,10 @@ async function runOne(i: number, c: Question): Promise<Result> {
   };
   await storeWebhook(db, { messages: [message], statuses: [] });
   await generateDraft({ ANTHROPIC_API_KEY: apiKey }, db, message, NOW);
-  const d = sql.prepare(`SELECT needs_person, reason, body FROM wa_drafts WHERE message_id = ?`).get(message.waMessageId) as
-    | { needs_person: number; reason: string; body: string }
+  const d = sql.prepare(`SELECT needs_person, reason, body, auto_decision FROM wa_drafts WHERE message_id = ?`).get(message.waMessageId) as
+    | { needs_person: number; reason: string; body: string; auto_decision: string }
     | undefined;
-  if (!d) return { index: i, q: c.q, problems: ['no draft saved'], critical: true, reason: '', body: '' };
+  if (!d) return { index: i, q: c.q, problems: ['no draft saved'], critical: true, reason: '', body: '', decision: '' };
 
   const problems: string[] = [];
   let critical = false;
@@ -209,7 +213,7 @@ async function runOne(i: number, c: Question): Promise<Result> {
       critical = true;
     }
   }
-  return { index: i, q: c.q, problems, critical, reason: d.reason, body: d.body };
+  return { index: i, q: c.q, problems, critical, reason: d.reason, body: d.body, decision: d.auto_decision };
 }
 
 console.log(`Models: classify ${CLASSIFY_MODEL}, compose ${COMPOSE_MODEL}`);
@@ -226,7 +230,7 @@ const failed = results.filter((r) => r.problems.length);
 for (const r of failed) {
   console.log(`#${r.index + 1} ${r.critical ? '[CRITICAL] ' : ''}${r.q}`);
   for (const p of r.problems) console.log(`    - ${p}`);
-  if (r.body) console.log(`    draft: ${r.body.replace(/\s+/g, ' ').slice(0, 220)}`);
+  if (r.body) console.log(`    draft: ${r.body.replace(/\s+/g, ' ').slice(0, 600)}`);
 }
 
 const count = (re: RegExp) => results.filter((r) => r.problems.some((p) => re.test(p))).length;
@@ -239,4 +243,32 @@ console.log(`unexpected hand-offs:   ${count(/unexpected hand-off/)}`);
 console.log(`missing facts:          ${count(/^missing/)}`);
 console.log(`generation failures:    ${count(/generation failed/)}`);
 console.log(`drafts flagged for a price not in the sources: ${priceFlags}`);
-process.exit(failed.some((r) => r.critical) ? 1 : 0);
+
+// ---- automatic-reply readiness: the grounding check (src/lib/waAuto.ts)
+// 1. Drafts that passed every other check should be judged good enough to send.
+const goodDrafts = results.filter((r) => !r.problems.length && questions[r.index].person === false && r.decision !== 'blocked:intent_never' && r.body);
+const goodPassed = goodDrafts.filter((r) => r.decision === 'eligible').length;
+const personSlips = results.filter((r) => questions[r.index].person === true && r.decision === 'eligible');
+// 2. Deliberately wrong drafts must be rejected.
+interface WrongDraft { guest: string; draft: string; defect: string }
+const wrongDrafts: WrongDraft[] = JSON.parse(readFileSync(root + 'scripts/wa-eval/wrong-drafts.json', 'utf8'));
+const catalogue = catalogueText(await listTours(db, { status: 'published' }));
+const missed: WrongDraft[] = [];
+for (let i = 0; i < wrongDrafts.length; i += BATCH) {
+  await Promise.all(
+    wrongDrafts.slice(i, i + BATCH).map(async (w) => {
+      const entries = await retrieve(db, w.guest);
+      const sources = `${catalogue}\n${entries.map((e) => `${e.question}\n${e.answer}`).join('\n\n')}`;
+      const g = await groundingCheck(apiKey, { guest: w.guest, draft: w.draft, sources });
+      if (g.ok) missed.push(w);
+    })
+  );
+}
+for (const w of missed) console.log(`GROUNDING MISS (${w.defect}): ${w.draft}`);
+const goodRate = goodDrafts.length ? goodPassed / goodDrafts.length : 0;
+const rejectRate = wrongDrafts.length ? (wrongDrafts.length - missed.length) / wrongDrafts.length : 0;
+console.log('\n---- automatic-reply readiness');
+console.log(`good drafts judged sendable:  ${goodPassed} / ${goodDrafts.length}  (${Math.round(goodRate * 100)}%, want 95% or more)`);
+console.log(`wrong drafts rejected:        ${wrongDrafts.length - missed.length} / ${wrongDrafts.length}  (${Math.round(rejectRate * 100)}%, want 95% or more)`);
+console.log(`needs-a-person drafts marked sendable: ${personSlips.length}   (must be 0)`);
+process.exit(failed.some((r) => r.critical) || rejectRate < 0.95 || personSlips.length > 0 ? 1 : 0);

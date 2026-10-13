@@ -1,0 +1,223 @@
+---
+// Automatic WhatsApp replies (src/lib/waAuto.ts): the master switch, which kinds
+// of message may be sent without a person, the limits, the evidence that shows
+// when each is ready, and the audit list of everything sent automatically.
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { formatDateTimeIst } from '../../../lib/format';
+import type { D1Like } from '../../../lib/db';
+import { sendAutoReplyAlertEmail } from '../../../lib/email';
+import {
+  OFFERABLE_INTENTS,
+  MIN_REVIEWED_TOTAL,
+  MIN_REVIEWED_PER_INTENT,
+  MIN_UNEDITED_RATE,
+  BREAKER_PER_HOUR,
+  getAutoSettings,
+  readiness,
+  turnOnMaster,
+  turnOffMaster,
+  setIntentEnabled,
+  saveLimits,
+  markAudit,
+  listAutoSent,
+  decisionCounts,
+} from '../../../lib/waAuto';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB as D1Like | undefined;
+
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  const action = String(form.get('_action') ?? '');
+  let error = '';
+  let note = '';
+  if (action === 'master_on') {
+    const r = await turnOnMaster(db);
+    if (!r.ok) error = r.error ?? '';
+    else note = 'Automatic replies are on, for the kinds of message you have enabled.';
+  } else if (action === 'master_off') {
+    await turnOffMaster(db);
+    note = 'Automatic replies are off. Nothing will be sent without a person.';
+  } else if (action === 'intent_on' || action === 'intent_off') {
+    const r = await setIntentEnabled(db, String(form.get('intent') ?? ''), action === 'intent_on');
+    if (!r.ok) error = r.error ?? '';
+  } else if (action === 'limits') {
+    const r = await saveLimits(db, {
+      minConfidence: Number(form.get('minConfidence')),
+      perChatHour: Number(form.get('perChatHour')),
+      dailyCap: Number(form.get('dailyCap')),
+      hold: form.get('hold') === 'on',
+    });
+    if (!r.ok) error = r.error ?? '';
+    else note = 'Saved.';
+  } else if (action === 'audit') {
+    const verdict = form.get('verdict') === 'wrong' ? 'wrong' : 'ok';
+    const { intent } = await markAudit(db, Number(form.get('draftId')), verdict);
+    if (verdict === 'wrong' && intent) {
+      note = `Marked wrong. Automatic replies of kind "${intent}" are now off.`;
+      await sendAutoReplyAlertEmail(env, {
+        title: 'An automatic reply was marked wrong',
+        message: `A reply of kind "${intent}" was marked wrong in the audit, so that kind of message has been switched off. Review it before enabling it again.`,
+      });
+    }
+  }
+  const query = new URLSearchParams();
+  if (error) query.set('err', error);
+  if (note) query.set('note', note);
+  return Astro.redirect(`/admin/whatsapp/auto${query.size ? `?${query}` : ''}`);
+}
+
+const settings = db ? await getAutoSettings(db) : null;
+const ready = db ? await readiness(db) : { reviewed: 0, byIntent: {} };
+const held = db ? await decisionCounts(db) : [];
+const sent = db ? await listAutoSent(db) : [];
+const error = Astro.url.searchParams.get('err');
+const note = Astro.url.searchParams.get('note');
+const btn = 'min-h-11 rounded px-4 text-sm font-medium';
+const field = 'rounded-lg border border-stone-300 bg-white p-2 text-sm';
+const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : '–');
+const intentLabel: Record<string, string> = {
+  greeting: 'Greetings',
+  tour_info: 'Tour information',
+  price: 'Prices and quotes',
+  how_to_book: 'How to book',
+  policy: 'Policies (cancellation, payment)',
+  availability: 'Availability checks',
+  booking_status: 'Booking status',
+};
+---
+<AdminLayout title="Automatic WhatsApp replies">
+  <h1 class="text-2xl font-semibold mb-2">Automatic WhatsApp replies</h1>
+  <p class="text-stone-500 text-sm mb-1">
+    By default the agent only drafts and you press Send. Here you can let it send routine kinds of message by itself, one kind at a time.
+    <a href="/admin/whatsapp" class="ml-2 text-brand-800 hover:underline">Back to chats</a>
+  </p>
+  {error && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+  {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
+
+  {settings && (
+    <>
+      <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold">Master switch
+              <span class={`ml-2 rounded px-2 py-0.5 text-xs font-medium ${settings.enabled ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>{settings.enabled ? 'On' : 'Off'}</span>
+            </h2>
+            <p class="text-sm text-stone-500">
+              Reviewed drafts so far: {ready.reviewed} of {MIN_REVIEWED_TOTAL} needed before it can be turned on.
+              A reviewed draft is one you sent or discarded yourself.
+            </p>
+          </div>
+          <form method="POST">
+            {settings.enabled
+              ? <button type="submit" name="_action" value="master_off" class={`${btn} bg-red-700 text-white`}>Turn off now</button>
+              : <button type="submit" name="_action" value="master_on" class={`${btn} bg-green-700 text-white`}>Turn on</button>}
+          </form>
+        </div>
+        <p class="mt-2 text-xs text-stone-500">
+          It also switches itself off if more than {BREAKER_PER_HOUR} automatic messages go out in one hour. Refunds, complaints, booking changes, groups and medical messages are never sent automatically.
+        </p>
+      </section>
+
+      <h2 class="text-lg font-semibold mt-8 mb-1">Kinds of message</h2>
+      <p class="text-stone-500 text-sm mb-3">
+        A kind can be enabled once at least {MIN_REVIEWED_PER_INTENT} of its drafts were reviewed and {Math.round(MIN_UNEDITED_RATE * 100)}% were sent exactly as drafted.
+        "Would send" counts drafts the agent judged good enough to send alone, so you can see the effect before switching anything on.
+      </p>
+      <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white">
+        <table class="w-full text-sm">
+          <thead class="bg-stone-50 text-left text-stone-600">
+            <tr><th class="px-3 py-2">Kind</th><th class="px-3 py-2">Reviewed</th><th class="px-3 py-2">Sent unedited</th><th class="px-3 py-2">Would send</th><th class="px-3 py-2">Sent automatically</th><th class="px-3 py-2"><span class="sr-only">Switch</span></th></tr>
+          </thead>
+          <tbody>
+            {OFFERABLE_INTENTS.map((intent) => {
+              const st = ready.byIntent[intent] ?? { reviewed: 0, unedited: 0, eligible: 0, autoSent: 0 };
+              const on = settings.intents.includes(intent);
+              return (
+                <tr class="border-t border-stone-100">
+                  <td class="px-3 py-2 font-medium">{intentLabel[intent]}</td>
+                  <td class="px-3 py-2">{st.reviewed}</td>
+                  <td class="px-3 py-2">{pct(st.unedited, st.reviewed)}</td>
+                  <td class="px-3 py-2">{st.eligible}</td>
+                  <td class="px-3 py-2">{st.autoSent}</td>
+                  <td class="px-3 py-2">
+                    <form method="POST">
+                      <input type="hidden" name="intent" value={intent} />
+                      {on
+                        ? <button type="submit" name="_action" value="intent_off" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Disable</button>
+                        : <button type="submit" name="_action" value="intent_on" class={`${btn} bg-brand-800 text-white`}>Enable</button>}
+                    </form>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 class="text-lg font-semibold mt-8 mb-2">Limits</h2>
+      <form method="POST" class="max-w-xl space-y-3 rounded-xl border border-stone-200 bg-white p-4 text-sm">
+        <input type="hidden" name="_action" value="limits" />
+        <label class="flex items-center justify-between gap-3">Minimum confidence (0.5 to 0.99)
+          <input name="minConfidence" type="number" step="0.01" min="0.5" max="0.99" value={settings.minConfidence} class={`${field} w-24`} />
+        </label>
+        <label class="flex items-center justify-between gap-3">Automatic messages per chat per hour (1 to 10)
+          <input name="perChatHour" type="number" min="1" max="10" value={settings.perChatHour} class={`${field} w-24`} />
+        </label>
+        <label class="flex items-center justify-between gap-3">Automatic messages per day, in total (1 to 1000)
+          <input name="dailyCap" type="number" min="1" max="1000" value={settings.dailyCap} class={`${field} w-24`} />
+        </label>
+        <label class="flex items-start gap-3">
+          <input name="hold" type="checkbox" checked={settings.hold} class="mt-1" />
+          <span>Send a short "a team member will reply personally" note when a refund, complaint or booking-change message needs a person (at most once every 6 hours per chat). It never answers the question.</span>
+        </label>
+        <button type="submit" class={`${btn} bg-emerald-600 text-white`}>Save</button>
+      </form>
+
+      <h2 class="text-lg font-semibold mt-8 mb-2">Why drafts were or were not eligible</h2>
+      {held.length === 0 ? (
+        <p class="text-sm text-stone-500">No drafts yet.</p>
+      ) : (
+        <ul class="text-sm space-y-1">
+          {held.map((h) => <li><span class="rounded bg-stone-200 px-2 py-0.5 text-xs">{h.n}×</span> {h.decision}</li>)}
+        </ul>
+      )}
+
+      <h2 class="text-lg font-semibold mt-8 mb-1">Audit: sent automatically</h2>
+      <p class="text-stone-500 text-sm mb-3">Read these once a week (Monday suggested). Marking one Wrong turns that kind of message off at once and emails you.</p>
+      {sent.length === 0 ? (
+        <p class="text-sm text-stone-500">Nothing has been sent automatically yet.</p>
+      ) : (
+        <ul class="space-y-3">
+          {sent.map((r) => (
+            <li class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+              <p class="text-xs text-stone-500">{formatDateTimeIst(r.sent_at)} · {intentLabel[r.intent] ?? r.intent} · <a href={`/admin/whatsapp?c=${r.conversation_id}`} class="hover:underline">open chat</a></p>
+              <p class="mt-1"><span class="font-medium">Guest:</span> {r.guest}</p>
+              <p class="mt-1 whitespace-pre-line"><span class="font-medium">Sent:</span> {r.body}</p>
+              <form method="POST" class="mt-2 flex flex-wrap items-center gap-2">
+                <input type="hidden" name="_action" value="audit" />
+                <input type="hidden" name="draftId" value={r.id} />
+                {r.audit === 'ok' && <span class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-800">Checked OK</span>}
+                {r.audit === 'wrong' && <span class="rounded bg-red-100 px-2 py-0.5 text-xs text-red-800">Marked wrong</span>}
+                {!r.audit && (
+                  <>
+                    <button type="submit" name="verdict" value="ok" class={`${btn} border border-stone-300 bg-white text-stone-700`}>OK</button>
+                    <button type="submit" name="verdict" value="wrong" class={`${btn} bg-red-700 text-white`}>Wrong</button>
+                  </>
+                )}
+              </form>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  )}
+</AdminLayout>

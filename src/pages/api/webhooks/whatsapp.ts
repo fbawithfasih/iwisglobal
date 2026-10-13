@@ -1,9 +1,10 @@
 import type { APIRoute } from 'astro';
 import { resolveEnv } from '../../../lib/env';
 import { parseWebhook, storeWebhook, verifySignature, type WaMessage } from '../../../lib/whatsapp';
-import { generateDraft } from '../../../lib/waDraft';
+import { generateDraft, sendDraft } from '../../../lib/waDraft';
 import { routeIncoming, onStaffReply, markHandedOff } from '../../../lib/waInbox';
-import { sendWhatsappHandoffEmail } from '../../../lib/email';
+import { sendWhatsappHandoffEmail, sendAutoReplyAlertEmail } from '../../../lib/email';
+import { getAutoSettings, autoPermission, holdingPermission } from '../../../lib/waAuto';
 import type { D1Like } from '../../../lib/db';
 
 export const prerender = false;
@@ -12,8 +13,9 @@ export const prerender = false;
 // business number, writes a draft reply for each new guest message, and keeps
 // track of who owns the chat (src/lib/waInbox.ts): a reply typed in the
 // WhatsApp Business app hands the chat to staff, and a message that needs a
-// person sends an email alert. It never sends anything to the guest: staff
-// send drafts from /admin/whatsapp.
+// person sends an email alert. Staff send drafts from /admin/whatsapp; the agent
+// sends one itself only when auto-reply is switched on and the draft qualifies
+// (src/lib/waAuto.ts), or, if enabled, a short holding note for a hand-off.
 //
 // Setup (Meta developer app → WhatsApp → Configuration → Webhook):
 //   1. Callback URL https://www.iwisglobal.com/api/webhooks/whatsapp
@@ -38,30 +40,57 @@ export const GET: APIRoute = ({ url, locals }) => {
 };
 
 // One new guest message: apply opt-out and staff-handling rules, draft a reply,
-// and if the draft says a person is needed, move the chat there and alert staff
-// (once, not for every message).
+// then either send it (auto-reply on, intent enabled, draft qualifies) or, if the
+// draft says a person is needed, move the chat there and alert staff (once, not
+// for every message).
 async function handleGuestMessage(env: Record<string, any>, db: D1Like, m: WaMessage): Promise<void> {
   if ((await routeIncoming(db, m)) === 'skip') return;
   await generateDraft(env, db, m);
 
   const draft = await db
-    .prepare(`SELECT needs_person, reason, body FROM wa_drafts WHERE message_id = ?`)
+    .prepare(`SELECT id, intent, needs_person, reason, body, auto_decision FROM wa_drafts WHERE message_id = ?`)
     .bind(m.waMessageId)
-    .first<{ needs_person: number; reason: string; body: string }>();
-  if (!draft?.needs_person) return;
-  if (!(await markHandedOff(db, m.phone, draft.reason || 'handoff'))) return;
+    .first<{ id: number; intent: string; needs_person: number; reason: string; body: string; auto_decision: string }>();
+  if (!draft) return;
+  const settings = await getAutoSettings(db);
 
-  const { results } = await db
-    .prepare(`SELECT direction, body FROM wa_messages WHERE conversation_id = ? ORDER BY sent_at DESC LIMIT 4`)
-    .bind(m.phone)
-    .all<{ direction: string; body: string }>();
-  await sendWhatsappHandoffEmail(env, {
-    name: m.profileName,
-    phone: m.phone,
-    reason: draft.reason || 'handoff',
-    lastMessages: results.reverse(),
-    draft: draft.body,
-  });
+  // A tripped breaker has already switched auto-reply off; tell the owner.
+  const sendAutomatically = async (denial: string | null) => {
+    if (denial === 'breaker') {
+      await sendAutoReplyAlertEmail(env, {
+        title: 'Automatic replies switched off',
+        message: 'More automatic WhatsApp messages went out in the last hour than the safety limit allows, so automatic replies have been switched off. Check the audit list before turning them back on.',
+      });
+    } else if (!denial) {
+      await sendDraft(env, db, draft.id, draft.body, 'auto');
+    }
+  };
+
+  if (!draft.needs_person) {
+    if (draft.auto_decision === 'eligible') {
+      await sendAutomatically(await autoPermission(db, { intent: draft.intent, phone: m.phone, messageSentAt: m.sentAt }, settings));
+    }
+    return;
+  }
+
+  if (await markHandedOff(db, m.phone, draft.reason || 'handoff')) {
+    const { results } = await db
+      .prepare(`SELECT direction, body FROM wa_messages WHERE conversation_id = ? ORDER BY sent_at DESC LIMIT 4`)
+      .bind(m.phone)
+      .all<{ direction: string; body: string }>();
+    await sendWhatsappHandoffEmail(env, {
+      name: m.profileName,
+      phone: m.phone,
+      reason: draft.reason || 'handoff',
+      lastMessages: results.reverse(),
+      draft: draft.body,
+    });
+  }
+
+  // Optional short "a team member will reply" note for money and complaint messages.
+  if (draft.reason === 'handoff') {
+    await sendAutomatically(await holdingPermission(db, { phone: m.phone, body: draft.body }, settings));
+  }
 }
 
 async function processMessages(env: Record<string, any>, db: D1Like, messages: WaMessage[]): Promise<void> {

@@ -888,8 +888,8 @@ export const de: Dictionary = {
       k54: "WhatsApp",
       k55: "Datenschutzerklärung | IWIS Global Agra- & Taj-Mahal-Touren",
       k56: "Wie IWIS Global Ihre Informationen erhebt, nutzt und schützt, wenn Sie eine Tour buchen oder ein Konto erstellen.",
-      k57: "<strong>WhatsApp-Nachrichten:</strong> Wenn Sie unserer WhatsApp-Nummer schreiben, speichern wir Ihre Telefonnummer, den in WhatsApp angezeigten Namen und Ihre Nachrichten. Ein KI-Dienst (Claude von Anthropic) liest die Nachricht, um einen Antwortentwurf vorzubereiten, den unser Team vor dem Versand prüft. Um Fragen zu Ihrer eigenen Buchung zu beantworten, suchen wir sie anhand der Telefonnummer, von der Sie uns schreiben.",
-      k58: "<strong>Meta (WhatsApp)</strong>: übermittelt die Nachrichten, die Sie mit uns auf WhatsApp austauschen. <strong>Anthropic</strong>: liest außerdem die WhatsApp-Nachrichten, die Sie uns senden, um Antwortentwürfe vorzubereiten, die unser Team prüft.",
+      k57: "<strong>WhatsApp-Nachrichten:</strong> Wenn Sie unserer WhatsApp-Nummer schreiben, speichern wir Ihre Telefonnummer, den in WhatsApp angezeigten Namen und Ihre Nachrichten. Ein KI-Dienst (Claude von Anthropic) liest die Nachricht, um eine Antwort vorzubereiten. Routinefragen können automatisch beantwortet werden, stets als Assistent von IWIS Global gekennzeichnet; andere Antworten prüft unser Team vor dem Versand, und eine Person kann jederzeit übernehmen. Um Fragen zu Ihrer eigenen Buchung zu beantworten, suchen wir sie anhand der Telefonnummer, von der Sie uns schreiben.",
+      k58: "<strong>Meta (WhatsApp)</strong>: übermittelt die Nachrichten, die Sie mit uns auf WhatsApp austauschen. <strong>Anthropic</strong>: liest außerdem die WhatsApp-Nachrichten, die Sie uns senden, um Antworten vorzubereiten.",
     },
   help: {
       foundingLine: " Derzeit erhalten unsere ersten {cap} Gäste automatisch {percent} % Rabatt, ohne dass ein Code nötig ist (das Founding-Guest-Angebot).",

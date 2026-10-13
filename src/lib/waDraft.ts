@@ -11,6 +11,7 @@ import { retrieve, SITE_URL, type KbEntry } from './waKnowledge';
 import { sendText, storeMessage, type WaMessage } from './whatsapp';
 import { runTools, type ToolLog, type ToolRequest } from './waTools';
 import { onAdminSend } from './waInbox';
+import { getAutoSettings, qualityDecision } from './waAuto';
 import { todayIst } from './availability';
 
 // Model IDs in one place. The classifier is the same small model YourGuide uses.
@@ -68,6 +69,10 @@ export interface DraftRow {
   tools: string;
   model: string;
   status: string;
+  sent_by: string;
+  edited: number;
+  audit: string;
+  auto_decision: string;
   created_at: string;
 }
 
@@ -264,6 +269,7 @@ interface DraftFields {
   body?: string;
   kbIds?: number[];
   tools?: ToolLog[];
+  autoDecision?: string;
   model?: string;
 }
 
@@ -273,8 +279,8 @@ async function saveDraft(db: D1Like, m: WaMessage, f: DraftFields): Promise<void
   await db
     .prepare(
       `INSERT OR IGNORE INTO wa_drafts
-         (message_id, conversation_id, intent, language, confidence, needs_person, reason, body, kb_ids, tools, model, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)`
+         (message_id, conversation_id, intent, language, confidence, needs_person, reason, body, kb_ids, tools, auto_decision, model, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)`
     )
     .bind(
       m.waMessageId,
@@ -287,6 +293,7 @@ async function saveDraft(db: D1Like, m: WaMessage, f: DraftFields): Promise<void
       f.body ?? '',
       JSON.stringify(f.kbIds ?? []),
       JSON.stringify(f.tools ?? []),
+      f.autoDecision ?? '',
       f.model ?? '',
       now,
       now
@@ -382,7 +389,23 @@ export async function generateDraft(env: Record<string, any>, db: D1Like, m: WaM
     const allowed = `${catalogue}\n${entries.map((e) => e.answer).join('\n')}\n${tool.text}`;
     if (!reason && findUnverifiedPrices(reply, allowed).length) reason = 'price_mismatch';
 
-    await saveDraft(db, m, { intent, language, confidence, needsPerson: reason !== '', reason, body: reply, kbIds, tools: tool.log, model: COMPOSE_MODEL });
+    // Would this be good enough to send without a person? Recorded for every
+    // draft, whatever the auto-reply switches say (src/lib/waAuto.ts).
+    const sources = `${catalogue}\n${entries.map((e) => `${e.question}\n${e.answer}`).join('\n\n')}\n${tool.text}`;
+    const quality = await qualityDecision({
+      apiKey,
+      intent,
+      confidence,
+      needsPerson: reason !== '',
+      reason,
+      body: reply,
+      guestText,
+      sources,
+      minConfidence: (await getAutoSettings(db)).minConfidence,
+    });
+    await recordTokens(db, quality.inputTokens, quality.outputTokens);
+
+    await saveDraft(db, m, { intent, language, confidence, needsPerson: reason !== '', reason, body: reply, kbIds, tools: tool.log, autoDecision: quality.decision, model: COMPOSE_MODEL });
   } catch (err) {
     console.error('whatsapp draft: generation failed', err);
     try {
@@ -404,12 +427,12 @@ export interface SendOutcome {
 // handled, or more than 24 hours after the guest's last message, when WhatsApp
 // allows only approved templates. The draft is claimed first, so a double
 // click sends once.
-export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: number, text: string): Promise<SendOutcome> {
+export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: number, text: string, by: 'staff' | 'auto' = 'staff'): Promise<SendOutcome> {
   const body = text.trim();
   if (!body) return { ok: false, error: 'The message is empty.' };
   if (body.length > MAX_SEND_CHARS) return { ok: false, error: 'The message is too long for WhatsApp.' };
 
-  const draft = await db.prepare(`SELECT conversation_id FROM wa_drafts WHERE id = ?`).bind(draftId).first<{ conversation_id: string }>();
+  const draft = await db.prepare(`SELECT conversation_id, body FROM wa_drafts WHERE id = ?`).bind(draftId).first<{ conversation_id: string; body: string }>();
   if (!draft) return { ok: false, error: 'Draft not found.' };
 
   const last = await db
@@ -441,10 +464,12 @@ export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: n
     sentAt: now(),
   });
   await db
-    .prepare(`UPDATE wa_drafts SET status = 'sent', body = ?, sent_message_id = ?, updated_at = ? WHERE id = ?`)
-    .bind(body, waMessageId, now(), draftId)
+    .prepare(`UPDATE wa_drafts SET status = 'sent', body = ?, sent_message_id = ?, sent_by = ?, edited = ?, updated_at = ? WHERE id = ?`)
+    .bind(body, waMessageId, by, body === draft.body.trim() ? 0 : 1, now(), draftId)
     .run();
-  await onAdminSend(db, draft.conversation_id);
+  // An automatic reply leaves the chat's owner alone; a staff send to a chat that
+  // was waiting for a person means a person has now dealt with it.
+  if (by === 'staff') await onAdminSend(db, draft.conversation_id);
   return { ok: true };
 }
 

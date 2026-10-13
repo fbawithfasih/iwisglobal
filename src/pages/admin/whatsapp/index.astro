@@ -112,6 +112,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
   <p class="text-sm mb-6">
     Automatic replies:
     <span class={`ml-1 rounded px-2 py-0.5 text-xs font-medium ${autoReply === 'on' ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>{autoReply === 'on' ? 'On' : 'Off'}</span>
+    <a href="/admin/whatsapp/auto" class="ml-2 text-brand-800 hover:underline">Settings</a>
     <a href="/admin/whatsapp/knowledge" class="ml-4 text-brand-800 hover:underline">Knowledge base</a>
   </p>
   {error && <p class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
@@ -191,6 +192,11 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
                       Draft · {draft.intent || 'unlabelled'}{draft.language && ` · ${draft.language}`}{draft.body && ` · confidence ${Math.round(draft.confidence * 100)}%`}
                     </p>
                     {draft.reason && <p class="mb-2 rounded bg-amber-100 px-2 py-1 text-xs text-amber-900">{reasonLabel[draft.reason] ?? 'Needs a person'}</p>}
+                    {draft.auto_decision && (
+                      <p class="mb-1 text-xs text-stone-500">
+                        {draft.auto_decision === 'eligible' ? 'Good enough to send without a person (if its kind is enabled).' : `Would not be sent automatically: ${draft.auto_decision.replace('blocked:', '').replaceAll('_', ' ')}.`}
+                      </p>
+                    )}
                     {toolLog(draft).map((t) => (
                       <p class="mb-1 text-xs text-stone-600"><span class="font-medium">Checked {t.name.replace('_', ' ')}:</span> {t.result.split('\n')[0]}</p>
                     ))}
@@ -204,7 +210,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
                 )}
                 {draft && !open && (
                   <p class="mt-1 max-w-xl text-xs text-stone-400">
-                    {draft.status === 'sent' ? 'Draft sent.' : draft.status === 'discarded' ? 'Draft discarded.' : draft.status === 'sending' ? 'Sending…' : 'Draft not shown: someone already replied.'}
+                    {draft.status === 'sent' ? (draft.sent_by === 'auto' ? 'Sent automatically.' : 'Draft sent.') : draft.status === 'discarded' ? 'Draft discarded.' : draft.status === 'sending' ? 'Sending…' : 'Draft not shown: someone already replied.'}
                   </p>
                 )}
               </li>
