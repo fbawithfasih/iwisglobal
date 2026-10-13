@@ -888,6 +888,8 @@ export const es: Dictionary = {
       k54: "WhatsApp",
       k55: "Política de privacidad | Tours de IWIS Global por Agra y el Taj Mahal",
       k56: "Cómo recoge, usa y protege IWIS Global tu información cuando reservas un tour o creas una cuenta.",
+      k57: "<strong>Mensajes de WhatsApp:</strong> si escribe a nuestro número de WhatsApp, guardamos su número de teléfono, el nombre que WhatsApp muestra y sus mensajes. Un servicio de inteligencia artificial (Claude, de Anthropic) lee el mensaje para preparar un borrador de respuesta, que nuestro equipo revisa antes de enviarlo. Para responder sobre su propia reserva, la buscamos por el número de teléfono desde el que nos escribe.",
+      k58: "<strong>Meta (WhatsApp)</strong>: transmite los mensajes que intercambia con nosotros en WhatsApp. <strong>Anthropic</strong>: también lee los mensajes de WhatsApp que nos envía, para preparar borradores de respuesta que nuestro equipo revisa.",
     },
   help: {
       foundingLine: " Ahora mismo, nuestros primeros {cap} clientes obtienen un {percent}% de descuento automáticamente, sin necesidad de código (la oferta Founding Guest).",

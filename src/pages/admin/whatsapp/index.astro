@@ -63,9 +63,19 @@ const reasonLabel: Record<string, string> = {
   price_mismatch: 'Needs a person: the draft quotes a price that is not in the catalogue',
   unsupported: 'Needs a person: not a text message',
   format: 'Needs a person: the draft was not in the expected format, check it carefully',
+  no_booking: 'Needs a person: no booking found under this WhatsApp number',
   cap: 'No draft: daily limit reached',
   no_api_key: 'No draft: the AI key is not set',
   error: 'No draft: something went wrong',
+};
+// The lookups a draft relied on (src/lib/waTools.ts), shown so staff can see them.
+const toolLog = (d: DraftRow): { name: string; result: string }[] => {
+  try {
+    const parsed = JSON.parse(d.tools);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 };
 // A staff reply (from the app or the site) after this guest message makes the draft stale.
 const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' && x.sent_at > m.sent_at);
@@ -122,6 +132,9 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
                       Draft · {draft.intent || 'unlabelled'}{draft.language && ` · ${draft.language}`}{draft.body && ` · confidence ${Math.round(draft.confidence * 100)}%`}
                     </p>
                     {draft.reason && <p class="mb-2 rounded bg-amber-100 px-2 py-1 text-xs text-amber-900">{reasonLabel[draft.reason] ?? 'Needs a person'}</p>}
+                    {toolLog(draft).map((t) => (
+                      <p class="mb-1 text-xs text-stone-600"><span class="font-medium">Checked {t.name.replace('_', ' ')}:</span> {t.result.split('\n')[0]}</p>
+                    ))}
                     <label class="sr-only" for={`draft-${draft.id}`}>Reply to send</label>
                     <textarea id={`draft-${draft.id}`} name="text" rows="4" class="w-full rounded-lg border border-stone-300 bg-white p-2" placeholder="Write a reply">{draft.body}</textarea>
                     <div class="mt-2 flex flex-wrap gap-2">

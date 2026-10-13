@@ -70,6 +70,9 @@ interface BookingWidgetProps {
   // Days into the trip (0 = first day) when the tour visits the Taj Mahal, which
   // is closed on Fridays; see tajDayOffset in lib/availability.ts.
   tajDayOffset?: number;
+  // From a booking link (?date=&travelers=), already validated by the page.
+  initialDate?: string;
+  initialTravelers?: number;
   availabilityLabel?: string;
   // Backlog 1.1 — display only; the server independently decides real
   // eligibility at payment time from a fresh count. 0 or undefined hides
@@ -98,6 +101,8 @@ export default function BookingWidget({
   minDate,
   allowedDates,
   tajDayOffset = 0,
+  initialDate,
+  initialTravelers,
   availabilityLabel,
   foundingGuestSlotsLeft = 0,
   offers = [],
@@ -109,8 +114,8 @@ export default function BookingWidget({
   locale,
 }: BookingWidgetProps) {
   const foundingGuestEligible = foundingGuestSlotsLeft > 0;
-  const [date, setDate] = useState(allowedDates ? (allowedDates[0] ?? '') : minDate);
-  const [travelers, setTravelers] = useState(2);
+  const [date, setDate] = useState(initialDate ?? (allowedDates ? (allowedDates[0] ?? '') : minDate));
+  const [travelers, setTravelers] = useState(initialTravelers ?? 2);
   // Add-ons marked includedByDefault (backlog 0.3, e.g. monument entry)
   // start checked — the customer opts OUT by unchecking, not in by checking.
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>(() =>

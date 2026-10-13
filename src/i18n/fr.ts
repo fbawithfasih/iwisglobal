@@ -888,6 +888,8 @@ export const fr: Dictionary = {
       k54: "WhatsApp",
       k55: "Politique de confidentialité | Circuits IWIS Global à Agra et au Taj Mahal",
       k56: "Comment IWIS Global recueille, utilise et protège vos informations lorsque vous réservez un circuit ou créez un compte.",
+      k57: "<strong>Messages WhatsApp :</strong> si vous écrivez à notre numéro WhatsApp, nous conservons votre numéro de téléphone, le nom affiché par WhatsApp et vos messages. Un service d'intelligence artificielle (Claude, d'Anthropic) lit le message pour préparer un brouillon de réponse, que notre équipe relit avant l'envoi. Pour répondre à propos de votre propre réservation, nous la retrouvons grâce au numéro de téléphone depuis lequel vous nous écrivez.",
+      k58: "<strong>Meta (WhatsApp)</strong> : achemine les messages que vous échangez avec nous sur WhatsApp. <strong>Anthropic</strong> : lit aussi les messages WhatsApp que vous nous envoyez, pour préparer des brouillons de réponse que notre équipe relit.",
     },
   help: {
       foundingLine: " En ce moment, nos {cap} premiers clients bénéficient automatiquement de {percent} % de réduction, sans code (l'offre Founding Guest).",

@@ -889,6 +889,8 @@ export const en = {
       k54: "WhatsApp",
       k55: "Privacy Policy | IWIS Global Agra & Taj Mahal Tours",
       k56: "How IWIS Global collects, uses, and protects your information when you book a tour or create an account.",
+      k57: "<strong>WhatsApp messages:</strong> if you message our WhatsApp number, we store your phone number, the name WhatsApp shows for you, and your messages. An AI service (Anthropic's Claude) reads the message to prepare a draft reply, which our staff check before it is sent. To answer questions about your own booking, we look it up by the phone number you are messaging us from.",
+      k58: "<strong>Meta (WhatsApp)</strong> — carries the messages you exchange with us on WhatsApp. <strong>Anthropic</strong> — also reads the WhatsApp messages you send us, to prepare draft replies that our staff check.",
     },
   help: {
       foundingLine: " Right now, our first {cap} guests get {percent}% off automatically, with no code needed (the Founding Guest offer).",

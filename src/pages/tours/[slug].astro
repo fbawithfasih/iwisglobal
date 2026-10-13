@@ -14,6 +14,7 @@ import { resolveEnv } from '../../lib/env';
 import { pageI18n, fmt, languageName } from '../../i18n/dictionaries';
 import { intlLocale } from '../../lib/i18n';
 import { countBookingsForRequest } from '../../lib/db';
+import { prefillFromQuery } from '../../lib/bookingPrefill';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
 import { getCustomerById } from '../../lib/customers';
 import ShortlistButton from '../../components/ShortlistButton';
@@ -53,6 +54,13 @@ const availability = getAvailability();
 // Multi-day tours reach the Taj Mahal on a later day, which must not be a Friday.
 const tajOffset = tajDayOffset(tour.itinerary);
 const minStart = firstOpenStart(availability.minBookableDate, tajOffset);
+// A booking link (e.g. sent on WhatsApp) can carry ?date=&travelers=; only
+// values the date picker would accept get through.
+const prefill = prefillFromQuery(Astro.url.searchParams, {
+  minDate: minStart,
+  tajOffset,
+  allowedDates: isNightViewingTour(tour.id) ? nightViewingDatesFrom(availability.minBookableDate) : undefined,
+});
 const tp = t.tourPage;
 // Offer wording and date style in the visitor's language.
 const offerText = { ...t.offers, dateTag: intlLocale(locale) };
@@ -535,6 +543,8 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
         minDate={minStart}
         allowedDates={isNightViewingTour(tour.id) ? nightViewingDatesFrom(availability.minBookableDate) : undefined}
         tajDayOffset={tajOffset}
+        initialDate={prefill.date}
+        initialTravelers={prefill.travelers}
         availabilityLabel={minStart === availability.minBookableDate ? availabilityLabel : undefined}
         foundingGuestSlotsLeft={foundingGuestSlotsLeft}
         offers={tourOffers}

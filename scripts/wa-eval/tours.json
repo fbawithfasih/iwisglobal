@@ -118,7 +118,17 @@
     "start_point": "Delhi NCR hotels or airport",
     "amount": 11999,
     "usd_amount": 124,
-    "tiers": []
+    "tiers": [],
+    "itinerary": [
+      {
+        "time": "Day 1 · Pickup",
+        "activity": "Hotel pickup"
+      },
+      {
+        "time": "Day 2 · Taj Mahal",
+        "activity": "Guided visit to the Taj Mahal"
+      }
+    ]
   },
   {
     "id": "AGRA_MATHURA_VRINDAVAN_OVERNIGHT_TOUR",
@@ -138,7 +148,17 @@
     "start_point": "Delhi NCR hotels or airport",
     "amount": 35000,
     "usd_amount": 399,
-    "tiers": []
+    "tiers": [],
+    "itinerary": [
+      {
+        "time": "Day 1 · Pickup",
+        "activity": "Hotel pickup"
+      },
+      {
+        "time": "Day 2 · Taj Mahal",
+        "activity": "Guided visit to the Taj Mahal"
+      }
+    ]
   },
   {
     "id": "GOLDEN_TRIANGLE_4_DAYS",

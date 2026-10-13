@@ -31,6 +31,8 @@ interface Question {
   person: boolean | 'either';
   include?: string[];
   exclude?: string[];
+  // WhatsApp number (digits) the message comes from; matters for booking-status cases.
+  sender?: string;
 }
 interface TourFixture {
   id: string;
@@ -41,13 +43,16 @@ interface TourFixture {
   amount: number;
   usd_amount: number | null;
   tiers: { travelers: number; amount: number }[];
+  itinerary?: { time: string; activity: string }[];
 }
 
-const questions: Question[] = JSON.parse(readFileSync(root + 'scripts/wa-eval/questions.json', 'utf8'));
+// EVAL_ONLY="regex" runs just the questions that match, for quick reruns.
+const only = process.env.EVAL_ONLY ? new RegExp(process.env.EVAL_ONLY, 'i') : null;
+const questions: Question[] = (JSON.parse(readFileSync(root + 'scripts/wa-eval/questions.json', 'utf8')) as Question[]).filter((c) => !only || only.test(c.q));
 const tours: TourFixture[] = JSON.parse(readFileSync(root + 'scripts/wa-eval/tours.json', 'utf8'));
 
 const sql = new DatabaseSync(':memory:');
-const schemas = readdirSync(root).filter((f) => f.startsWith('schema_') && f.endsWith('.sql')).sort();
+const schemas = readdirSync(root).filter((f) => f.startsWith('schema') && f.endsWith('.sql')).sort();
 // Some schema files depend on others; two passes, ignoring statements that already ran.
 for (let pass = 0; pass < 2; pass++) {
   for (const f of schemas) {
@@ -60,18 +65,38 @@ for (let pass = 0; pass < 2; pass++) {
 }
 sql.exec('DELETE FROM tours');
 sql.exec('DELETE FROM tour_pricing_tiers');
+sql.exec('DELETE FROM tour_addons');
 for (const t of tours) {
   sql
     .prepare(
       `INSERT INTO tours (id, slug, title, summary, description, duration_label, start_point, amount, usd_amount, currency, highlights, itinerary, includes, excludes, image, featured, status, created_at, updated_at)
-       VALUES (?, ?, ?, '', '', ?, ?, ?, ?, 'INR', '[]', '[]', '[]', '[]', '', 0, 'published', '2026-01-01', '2026-01-01')`
+       VALUES (?, ?, ?, '', '', ?, ?, ?, ?, 'INR', '[]', ?, '[]', '[]', '', 0, 'published', '2026-01-01', '2026-01-01')`
     )
-    .run(t.id, t.slug, t.title, t.duration_label, t.start_point, t.amount, t.usd_amount);
+        .run(t.id, t.slug, t.title, t.duration_label, t.start_point, t.amount, t.usd_amount, JSON.stringify(t.itinerary ?? []));
   for (const tier of t.tiers) {
     sql
       .prepare(`INSERT INTO tour_pricing_tiers (id, tour_id, travelers, amount, created_at) VALUES (?, ?, ?, ?, '2026-01-01')`)
       .run(`${t.id}-${tier.travelers}`, t.id, tier.travelers, tier.amount);
   }
+}
+
+// Fixed clock so "tomorrow" and "this Saturday" mean the same thing every run:
+// Tuesday 13 October 2026, 10:00 India time.
+const NOW = new Date('2026-10-13T04:30:00Z');
+
+// Bookings for the status, balance and capacity cases. Amounts are minor units.
+const bookingColumns = sql.prepare('PRAGMA table_info(bookings)').all() as { name: string; type: string; notnull: number; dflt_value: unknown; pk: number }[];
+const fixtureBookings: Record<string, string | number>[] = [
+  { id: 'EV1', payment_id: 'ev-pay-1', order_id: 'ev-o-1', tour_id: 'TAJ_MAHAL_SUNRISE_TOUR', travel_date: '2026-11-03', travelers: 2, traveler_name: 'Eval One', traveler_email: 'eval1@example.invalid', traveler_phone: '+91 90000 00001', amount_paid: 1599800, total_amount: 1599800, currency: 'INR', status: 'confirmed', pickup_time: '5:30 AM' },
+  { id: 'EV2', payment_id: 'ev-pay-2', order_id: 'ev-o-2', tour_id: 'TAJ_MAHAL_LUXURY_CAR_TOUR', travel_date: '2026-11-10', travelers: 1, traveler_name: 'Eval Two', traveler_email: 'eval2@example.invalid', traveler_phone: '+91 90000 00002', amount_paid: 874800, total_amount: 3499000, currency: 'INR', status: 'confirmed', pickup_time: '' },
+  { id: 'EV3', payment_id: 'ev-pay-3', order_id: 'ev-o-3', tour_id: 'SAME_DAY_AGRA_DELHI', travel_date: '2026-10-20', travelers: 11, traveler_name: 'Eval Three', traveler_email: 'eval3@example.invalid', traveler_phone: '+44 7000 000000', amount_paid: 100, total_amount: 100, currency: 'INR', status: 'confirmed', pickup_time: '' },
+];
+for (const b of fixtureBookings) {
+  const row: Record<string, string | number> = {};
+  for (const c of bookingColumns) if (c.notnull && c.dflt_value === null && !c.pk) row[c.name] = /INT|REAL/i.test(c.type) ? 0 : 'x';
+  Object.assign(row, b, { created_at: '2026-10-01T00:00:00.000Z' });
+  const names = Object.keys(row);
+  sql.prepare(`INSERT INTO bookings (${names.join(',')}) VALUES (${names.map(() => '?').join(',')})`).run(...Object.values(row));
 }
 
 const db: any = {
@@ -117,8 +142,23 @@ for (const row of entryIds) await approveEntry(db, row.id, 'eval');
 // ---- run
 const bySlug = new Map(tours.map((t) => [t.slug, t]));
 const withCommas = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '[,. \\u00a0\\u202f]?');
+const rateFor = (t: TourFixture, n: number) => {
+  const tiers = [...t.tiers].sort((a, b) => a.travelers - b.travelers);
+  let rate = tiers.length ? tiers[0].amount : t.amount;
+  for (const tier of tiers) if (tier.travelers <= n) rate = tier.amount;
+  return rate;
+};
+// {inr_total:slug:n}, {usd_total:slug:n} and {inr_deposit:slug:n}: what checkout charges for n travellers.
+const expandTotals = (pattern: string) =>
+  pattern.replace(/\{(inr_total|usd_total|inr_deposit):([^:}]+):(\d+)\}/g, (_, kind: string, slug: string, n: string) => {
+    const t = bySlug.get(slug);
+    if (!t) throw new Error(`unknown tour in questions.json: ${slug}`);
+    const total = rateFor(t, Number(n)) * Number(n);
+    if (kind === 'usd_total') return String((t.usd_amount ?? 0) * Number(n));
+    return withCommas(kind === 'inr_deposit' ? Math.ceil(total * 0.25) : total);
+  });
 const expand = (pattern: string) =>
-  pattern.replace(/\{(inr|usd):([^}]+)\}/g, (_, kind: string, slug: string) => {
+  expandTotals(pattern).replace(/\{(inr|usd):([^}]+)\}/g, (_, kind: string, slug: string) => {
     const t = bySlug.get(slug);
     if (!t) throw new Error(`unknown tour in questions.json: ${slug}`);
     // Tiered tours are charged by group size, so any tier's price is a correct rupee answer.
@@ -138,7 +178,7 @@ interface Result {
 async function runOne(i: number, c: Question): Promise<Result> {
   const message = {
     waMessageId: `eval.${i}`,
-    phone: `91000${String(i).padStart(5, '0')}`,
+    phone: c.sender ?? `91000${String(i).padStart(5, '0')}`,
     direction: 'in' as const,
     kind: 'text',
     body: c.q,
@@ -146,7 +186,7 @@ async function runOne(i: number, c: Question): Promise<Result> {
     sentAt: new Date().toISOString(),
   };
   await storeWebhook(db, { messages: [message], statuses: [] });
-  await generateDraft({ ANTHROPIC_API_KEY: apiKey }, db, message);
+  await generateDraft({ ANTHROPIC_API_KEY: apiKey }, db, message, NOW);
   const d = sql.prepare(`SELECT needs_person, reason, body FROM wa_drafts WHERE message_id = ?`).get(message.waMessageId) as
     | { needs_person: number; reason: string; body: string }
     | undefined;
