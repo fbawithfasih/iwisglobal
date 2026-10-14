@@ -10,7 +10,7 @@ import { listTours, type ParsedTour } from './tours';
 import { retrieve, SITE_URL, type KbEntry } from './waKnowledge';
 import { sendText, storeMessage, type WaMessage } from './whatsapp';
 import { runTools, type ToolLog, type ToolRequest } from './waTools';
-import { onAdminSend } from './waInbox';
+import { onAdminSend, markHandedOff } from './waInbox';
 import { getAutoSettings, qualityDecision } from './waAuto';
 import { todayIst } from './availability';
 
@@ -473,6 +473,29 @@ export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: n
   // was waiting for a person means a person has now dealt with it.
   if (by === 'staff') await onAdminSend(db, draft.conversation_id);
   return { ok: true };
+}
+
+// After staff give a chat back: a guest message that arrived while staff had it was
+// skipped (no draft) and nobody answered it. Draft a reply for the latest such
+// message so it is not left hanging. Nothing is sent. A draft that needs a person
+// moves the chat back to "Needs a person"; no email, because staff are in the admin.
+export async function draftWaitingMessage(env: Record<string, any>, db: D1Like, phone: string, now: Date = new Date()): Promise<void> {
+  const chat = await db.prepare(`SELECT state, profile_name FROM wa_conversations WHERE id = ?`).bind(phone).first<{ state: string; profile_name: string | null }>();
+  if (chat?.state !== 'agent') return;
+  const waiting = await db
+    .prepare(
+      `SELECT m.wa_message_id, m.kind, m.body, m.sent_at FROM wa_messages m
+       WHERE m.conversation_id = ? AND m.direction = 'in'
+         AND NOT EXISTS (SELECT 1 FROM wa_drafts d WHERE d.message_id = m.wa_message_id)
+         AND NOT EXISTS (SELECT 1 FROM wa_messages o WHERE o.conversation_id = m.conversation_id AND o.direction != 'in' AND o.sent_at > m.sent_at)
+       ORDER BY m.sent_at DESC LIMIT 1`
+    )
+    .bind(phone)
+    .first<{ wa_message_id: string; kind: string; body: string; sent_at: string }>();
+  if (!waiting) return;
+  await generateDraft(env, db, { waMessageId: waiting.wa_message_id, phone, direction: 'in', kind: waiting.kind, body: waiting.body, profileName: chat.profile_name, sentAt: waiting.sent_at }, now);
+  const draft = await db.prepare(`SELECT needs_person, reason FROM wa_drafts WHERE message_id = ?`).bind(waiting.wa_message_id).first<{ needs_person: number; reason: string }>();
+  if (draft?.needs_person) await markHandedOff(db, phone, draft.reason || 'handoff', now);
 }
 
 export async function discardDraft(db: D1Like, draftId: number): Promise<void> {

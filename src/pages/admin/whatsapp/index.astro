@@ -11,7 +11,7 @@ import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
-import { sendDraft, discardDraft, type DraftRow } from '../../../lib/waDraft';
+import { sendDraft, discardDraft, draftWaitingMessage, type DraftRow } from '../../../lib/waDraft';
 import { listInbox, inboxCounts, takeOver, giveBack, formatDuration, type InboxFilter } from '../../../lib/waInbox';
 import { auditOverdue } from '../../../lib/waLaunch';
 
@@ -39,6 +39,12 @@ if (Astro.request.method === 'POST' && db) {
     await takeOver(db, conversation);
   } else if (form.get('_action') === 'giveback') {
     await giveBack(db, conversation);
+    // Answer what the guest wrote while staff had the chat. Giving back must not fail on this.
+    try {
+      await draftWaitingMessage(env, db, conversation);
+    } catch {
+      error = 'Given back, but the waiting message could not be drafted.';
+    }
   }
   const query = new URLSearchParams({ c: conversation });
   const postedTab = String(form.get('tab') ?? '');
