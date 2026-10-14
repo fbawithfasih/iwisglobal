@@ -184,6 +184,10 @@ export async function runTools(
   } else if (QUOTE_INTENTS.has(intent) && tour) {
     // Price, deposit, booking and tour questions that name a tour: quote when the
     // group size is known, and always offer the link.
+    // A guest who names a date wants to know it is free before being sent to book.
+    if (date && intent !== 'policy') {
+      record('availability', { tour: tour.slug, date, travelers }, await checkAvailability(db, tour, date, travelers, now));
+    }
     if (travelers) record('price_quote', { tour: tour.slug, travelers }, await quotePrice(db, tour, travelers));
     record('booking_link', { tour: tour.slug, date, travelers }, bookingLink(tour, date, travelers));
   }
