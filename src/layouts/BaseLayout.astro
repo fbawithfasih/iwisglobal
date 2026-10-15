@@ -233,12 +233,14 @@ const websiteJsonLd = Astro.url.pathname === '/'
     {!noindex && <script is:inline async src="https://analytics.ahrefs.com/analytics.js" data-key="E2hZqQs3rehWC6n7B5T+Cw"></script>}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Dedicated "IG" icon set: the full logo.png washed out to a blank
-         circle at the 16–48px sizes browsers and Google results use. -->
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192" />
-    <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Icon set made from the IWIS globe mark (logo-globe.png) on a white tile:
+         the full logo with its wordmark is unreadable at the 16–48px sizes
+         browsers and Google results use. The ?v= tag makes browsers re-fetch
+         after a change, since they cache favicons for a long time. -->
+    <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+    <link rel="icon" type="image/png" href="/icon-192.png?v=2" sizes="192x192" />
+    <link rel="icon" type="image/png" href="/favicon-48.png?v=2" sizes="48x48" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
     <meta name="theme-color" content="#6d28d9" />
     <meta name="generator" content={Astro.generator} />
     <style is:global>
