@@ -1,0 +1,229 @@
+---
+// "Customise your Agra tour" settings (src/lib/customTrip.ts, customTripData.ts):
+// the on/off switch, the guide and vehicle rates, the stops and their official
+// ticket fees. Nothing here is visible to guests until the switch is on, and it
+// will not switch on until the rates it needs are set.
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import type { D1Like } from '../../../lib/db';
+import { todayIst } from '../../../lib/availability';
+import { TRAVELLER_CATEGORIES } from '../../../lib/customTrip';
+import { addStop, clearStopFees, enableBlockers, loadRates, saveSettings, saveStop, saveStopFee, saveVehicle, setEnabled } from '../../../lib/customTripData';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB as D1Like | undefined;
+
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  const action = String(form.get('_action') ?? '');
+  const text = (name: string) => String(form.get(name) ?? '');
+  const flag = (name: string) => form.get(name) === 'on';
+  let result: { ok: boolean; error?: string } = { ok: true };
+  let note = '';
+  try {
+    if (action === 'switch_on') {
+      result = await setEnabled(db, true);
+      note = 'Customise your tour is now live for guests.';
+    } else if (action === 'switch_off') {
+      result = await setEnabled(db, false);
+      note = 'Customise your tour is switched off. Guests no longer see it.';
+    } else if (action === 'settings') {
+      result = await saveSettings(db, {
+        guideDayInr: text('guideDayInr'),
+        guideDayUsd: text('guideDayUsd'),
+        maxDays: text('maxDays'),
+        dayMinutes: text('dayMinutes'),
+        usdRate: text('usdRate'),
+      });
+      note = 'Settings saved.';
+    } else if (action === 'vehicle') {
+      result = await saveVehicle(db, text('id'), {
+        seats: text('seats'),
+        agraDayInr: text('agraDayInr'),
+        agraDayUsd: text('agraDayUsd'),
+        delhiReturnInr: text('delhiReturnInr'),
+        delhiReturnUsd: text('delhiReturnUsd'),
+        active: flag('active'),
+      });
+      note = 'Vehicle saved.';
+    } else if (action === 'stop') {
+      result = await saveStop(db, text('id'), {
+        visitMinutes: text('visitMinutes'),
+        travelMinutes: text('travelMinutes'),
+        closedFridays: flag('closedFridays'),
+        nightOnly: flag('nightOnly'),
+        active: flag('active'),
+      });
+      note = 'Stop saved.';
+    } else if (action === 'fee') {
+      result = await saveStopFee(db, text('stopId'), text('category'), { fee: text('fee'), friday: text('friday'), afterTaj: text('afterTaj') }, todayIst());
+      note = 'Fee saved and marked as checked today.';
+    } else if (action === 'clear_fees') {
+      result = await clearStopFees(db, text('stopId'));
+      note = 'Fees cleared. The stop is now free of ticket charges.';
+    } else if (action === 'add_stop') {
+      result = await addStop(db, text('name'), text('attractionSlug'));
+      note = 'Stop added. Add its ticket fees below if it needs a ticket.';
+    }
+  } catch (e) {
+    result = { ok: false, error: e instanceof Error ? e.message : 'Could not save.' };
+  }
+  const query = new URLSearchParams();
+  if (!result.ok) query.set('err', result.error ?? 'Could not save.');
+  else if (note) query.set('note', note);
+  return Astro.redirect(`/admin/custom-trips${query.size ? `?${query}` : ''}`);
+}
+
+const rates = db ? await loadRates(db) : null;
+const blockers = db ? await enableBlockers(db) : [];
+const error = Astro.url.searchParams.get('err');
+const note = Astro.url.searchParams.get('note');
+const btn = 'min-h-11 rounded px-4 text-sm font-medium';
+const field = 'w-full rounded border border-stone-300 bg-white px-2 py-1.5 text-sm';
+const label = 'block text-xs text-stone-500 mb-1';
+const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Indian', saarc: 'SAARC / BIMSTEC' };
+---
+<AdminLayout title="Customise your Agra tour">
+  <h1 class="text-2xl font-semibold mb-2">Customise your Agra tour</h1>
+  <p class="text-stone-500 text-sm mb-1">
+    Rates and stops for the page where guests build their own Agra trip. Guests see nothing until you switch it on below.
+  </p>
+  {error && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+  {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
+
+  {rates && (
+    <>
+      <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold">Switch
+              <span class={`ml-2 rounded px-2 py-0.5 text-xs font-medium ${rates.enabled ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>{rates.enabled ? 'On' : 'Off'}</span>
+            </h2>
+            {blockers.length > 0 && !rates.enabled && (
+              <ul class="mt-1 list-disc pl-5 text-sm text-amber-800">
+                {blockers.map((b) => <li>{b}</li>)}
+              </ul>
+            )}
+            {blockers.length === 0 && !rates.enabled && <p class="text-sm text-stone-500">Everything needed is set. You can switch it on.</p>}
+          </div>
+          <form method="POST">
+            {rates.enabled
+              ? <button type="submit" name="_action" value="switch_off" class={`${btn} bg-red-700 text-white`}>Switch off now</button>
+              : <button type="submit" name="_action" value="switch_on" disabled={blockers.length > 0} class={`${btn} bg-green-700 text-white disabled:opacity-50`}>Switch on</button>}
+          </form>
+        </div>
+      </section>
+
+      <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+        <h2 class="text-lg font-semibold">Guide and limits</h2>
+        <p class="text-sm text-stone-500 mb-3">Whole numbers. A blank dollar rate is the rupee rate converted at the rate below, rounded up.</p>
+        <form method="POST" class="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div><label class={label} for="guideDayInr">Guide per day (₹)</label><input id="guideDayInr" name="guideDayInr" inputmode="numeric" value={rates.guideDay.inr} class={field} /></div>
+          <div><label class={label} for="guideDayUsd">Guide per day ($, optional)</label><input id="guideDayUsd" name="guideDayUsd" inputmode="numeric" value={rates.guideDay.usd ?? ''} class={field} /></div>
+          <div><label class={label} for="maxDays">Most days in a trip</label><input id="maxDays" name="maxDays" inputmode="numeric" value={rates.maxDays} class={field} /></div>
+          <div><label class={label} for="dayMinutes">Most minutes in a day</label><input id="dayMinutes" name="dayMinutes" inputmode="numeric" value={rates.dayMinutes} class={field} /></div>
+          <div><label class={label} for="usdRate">Rupees per dollar</label><input id="usdRate" name="usdRate" inputmode="numeric" value={rates.usdRate} class={field} /></div>
+          <div class="col-span-2 sm:col-span-5"><button type="submit" name="_action" value="settings" class={`${btn} bg-amber-800 text-white`}>Save</button></div>
+        </form>
+      </section>
+
+      <section class="mt-6">
+        <h2 class="text-lg font-semibold mb-1">Vehicles</h2>
+        <p class="text-sm text-stone-500 mb-3">
+          The Agra day rate is for one sightseeing day in Agra. The Delhi round-trip rate is for a trip that starts from Delhi, Gurgaon, Noida or the airport: it replaces the first day's Agra rate. A vehicle only appears to guests when it is switched on.
+        </p>
+        <div class="space-y-3">
+          {rates.vehicles.map((v) => (
+            <form method="POST" class="rounded-xl border border-stone-200 bg-white p-4">
+              <input type="hidden" name="id" value={v.id} />
+              <h3 class="mb-2 font-medium">{v.name}</h3>
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-6">
+                <div><label class={label} for={`seats-${v.id}`}>Seats</label><input id={`seats-${v.id}`} name="seats" inputmode="numeric" value={v.seats} class={field} /></div>
+                <div><label class={label} for={`ai-${v.id}`}>Agra day (₹)</label><input id={`ai-${v.id}`} name="agraDayInr" inputmode="numeric" value={v.agraDay.inr} class={field} /></div>
+                <div><label class={label} for={`au-${v.id}`}>Agra day ($)</label><input id={`au-${v.id}`} name="agraDayUsd" inputmode="numeric" value={v.agraDay.usd ?? ''} class={field} /></div>
+                <div><label class={label} for={`di-${v.id}`}>Delhi round trip (₹)</label><input id={`di-${v.id}`} name="delhiReturnInr" inputmode="numeric" value={v.delhiReturn.inr} class={field} /></div>
+                <div><label class={label} for={`du-${v.id}`}>Delhi round trip ($)</label><input id={`du-${v.id}`} name="delhiReturnUsd" inputmode="numeric" value={v.delhiReturn.usd ?? ''} class={field} /></div>
+                <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="active" checked={v.active} /> Offer to guests</label>
+              </div>
+              <button type="submit" name="_action" value="vehicle" class={`${btn} mt-3 bg-amber-800 text-white`}>Save {v.name}</button>
+            </form>
+          ))}
+        </div>
+      </section>
+
+      <section class="mt-8">
+        <h2 class="text-lg font-semibold mb-1">Stops and ticket fees</h2>
+        <p class="text-sm text-stone-500 mb-3">
+          Fees are the official ASI price per adult, in rupees. Children under 15 are free. "Friday" and "after the Taj" are the lower fees ASI charges on those occasions; leave them blank if there is none.
+          A stop with no fees at all counts as free. A stop with fees for only some traveller types cannot be priced, so fill all three or clear them all.
+        </p>
+        <div class="space-y-4">
+          {rates.stops.map((s) => (
+            <div class="rounded-xl border border-stone-200 bg-white p-4">
+              <form method="POST">
+                <input type="hidden" name="id" value={s.id} />
+                <h3 class="mb-2 font-medium">{s.name}</h3>
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                  <div><label class={label} for={`vm-${s.id}`}>Visit (minutes)</label><input id={`vm-${s.id}`} name="visitMinutes" inputmode="numeric" value={s.visitMinutes} class={field} /></div>
+                  <div><label class={label} for={`tm-${s.id}`}>Drive to it (minutes)</label><input id={`tm-${s.id}`} name="travelMinutes" inputmode="numeric" value={s.travelMinutes} class={field} /></div>
+                  <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="closedFridays" checked={s.closedFridays} /> Closed Fridays</label>
+                  <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="nightOnly" checked={s.nightOnly} /> Full-moon nights only</label>
+                  <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="active" checked={s.active} /> Offer to guests</label>
+                </div>
+                <button type="submit" name="_action" value="stop" class={`${btn} mt-3 bg-amber-800 text-white`}>Save stop</button>
+              </form>
+              <div class="mt-4 overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead class="text-left text-stone-500">
+                    <tr><th class="py-1 pr-3">Traveller type</th><th class="py-1 pr-3">Fee (₹)</th><th class="py-1 pr-3">Friday (₹)</th><th class="py-1 pr-3">After the Taj (₹)</th><th class="py-1 pr-3">Checked</th><th class="py-1"><span class="sr-only">Save</span></th></tr>
+                  </thead>
+                  <tbody>
+                    {TRAVELLER_CATEGORIES.map((c) => {
+                      const f = s.fees[c];
+                      return (
+                        <tr class="border-t border-stone-100">
+                          <td class="py-1 pr-3">{categoryLabel[c]}</td>
+                          <td class="py-1 pr-3"><input form={`fee-${s.id}-${c}`} name="fee" aria-label={`${s.name} fee, ${categoryLabel[c]}`} inputmode="numeric" value={f?.fee ?? ''} class={`${field} w-24`} /></td>
+                          <td class="py-1 pr-3"><input form={`fee-${s.id}-${c}`} name="friday" aria-label={`${s.name} Friday fee, ${categoryLabel[c]}`} inputmode="numeric" value={f?.friday ?? ''} class={`${field} w-24`} /></td>
+                          <td class="py-1 pr-3"><input form={`fee-${s.id}-${c}`} name="afterTaj" aria-label={`${s.name} after-Taj fee, ${categoryLabel[c]}`} inputmode="numeric" value={f?.afterTaj ?? ''} class={`${field} w-24`} /></td>
+                          <td class="py-1 pr-3 text-stone-500">{f?.checkedOn || 'not set'}</td>
+                          <td class="py-1"><button form={`fee-${s.id}-${c}`} type="submit" name="_action" value="fee" class="min-h-11 rounded border border-stone-300 px-3 text-sm">Save</button></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {TRAVELLER_CATEGORIES.map((c) => (
+                  <form method="POST" id={`fee-${s.id}-${c}`}>
+                    <input type="hidden" name="stopId" value={s.id} />
+                    <input type="hidden" name="category" value={c} />
+                  </form>
+                ))}
+                <form method="POST" class="mt-2">
+                  <input type="hidden" name="stopId" value={s.id} />
+                  <button type="submit" name="_action" value="clear_fees" class="min-h-11 rounded px-3 text-sm text-red-700 hover:underline">Clear all fees (make this stop free)</button>
+                </form>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <form method="POST" class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+          <h3 class="mb-2 font-medium">Add a stop</h3>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div><label class={label} for="newStopName">Name</label><input id="newStopName" name="name" required class={field} placeholder="e.g. Akbar's Tomb, Sikandra" /></div>
+            <div><label class={label} for="newStopSlug">Page under /agra (optional)</label><input id="newStopSlug" name="attractionSlug" class={field} placeholder="e.g. akbars-tomb" /></div>
+            <div class="flex items-end"><button type="submit" name="_action" value="add_stop" class={`${btn} bg-amber-800 text-white`}>Add stop</button></div>
+          </div>
+        </form>
+      </section>
+    </>
+  )}
+</AdminLayout>
