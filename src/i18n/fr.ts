@@ -1468,7 +1468,16 @@ export const fr: Dictionary = {
         hotelOwn: "Hôtel : le vôtre",
         hotelListed: "Hôtel : {name}",
         hotelArrange: "Organiser un séjour. Nuits : {nights}, chambres : {rooms}",
-        pay: "Le paiement ouvrira bientôt",
+        contactHeading: "Vos coordonnées",
+        payDeposit: "Payer l'acompte de {amount}",
+        opening: "Ouverture du paiement…",
+        confirming: "Confirmation de votre paiement…",
+        terms: "Votre acompte est remboursé intégralement si nous ne pouvons pas assurer votre voyage. Les autres annulations suivent notre",
+        termsLink: "politique d'annulation et de remboursement",
+        gateway: "Nous n'avons pas pu démarrer le paiement. Réessayez ou écrivez-nous.",
+        failed: "Le paiement n'a pas abouti. Vous n'avez rien payé.",
+        unconfirmed: "Votre paiement {id} a bien été effectué, mais nous n'avons pas pu confirmer votre voyage à l'écran. Écrivez-nous sur WhatsApp avec ce numéro et nous vous le confirmerons.",
+        notLive: "Le paiement n'est pas encore ouvert. Ceci est un aperçu.",
         incomplete: "Terminez les étapes précédentes pour voir votre prix."
       },
       summary: {
@@ -1476,6 +1485,19 @@ export const fr: Dictionary = {
         empty: "Votre prix apparaîtra ici une fois votre voyage complet.",
         total: "Total estimé",
         days: "{n} jours"
+      },
+      thanks: {
+        heading: "Votre voyage à Agra",
+        ref: "Référence",
+        total: "Total du voyage",
+        depositPaid: "Acompte payé",
+        balance: "Solde le jour même",
+        hotel: "Les demandes d'hôtel sont confirmées séparément par notre équipe.",
+        notFound: "Nous n'avons pas trouvé ce voyage.",
+        questions: "Des questions ? Écrivez-nous sur WhatsApp ou répondez à votre e-mail de confirmation.",
+        received: { title: "Acompte reçu", body: "Merci. Nous vérifions que nous pouvons assurer votre voyage et nous vous le confirmerons rapidement. Si nous ne le pouvons pas, vous êtes remboursé intégralement." },
+        confirmed: { title: "Votre voyage est confirmé", body: "Votre guide et votre chauffeur vous contacteront avec les détails de prise en charge avant votre départ." },
+        cancelled: { title: "Nous n'avons pas pu confirmer ce voyage", body: "Votre acompte est remboursé intégralement. Il arrive en général sur votre compte sous 7 à 10 jours ouvrés." }
       },
       stopNames: {
         "taj-mahal": "Taj Mahal",
@@ -1504,5 +1526,21 @@ export const fr: Dictionary = {
         fee_missing: "Le tarif d'entrée de {stop} n'est pas encore configuré. Contactez-nous.",
         bad_hotel: "Terminez votre choix d'hôtel."
       }
+  },
+  customTripEmail: {
+      ref: "Référence",
+      dates: "Dates",
+      vehicle: "Véhicule",
+      guests: "Voyageurs",
+      itinerary: "Itinéraire",
+      deposit: "Acompte payé",
+      total: "Total du voyage",
+      balance: "Solde le jour même",
+      hotel: "Hôtel",
+      view: "Voir votre voyage",
+      questions: "Des questions ? Répondez à cet e-mail ou écrivez-nous sur WhatsApp.",
+      received: { subject: "Nous avons reçu votre acompte pour votre voyage à Agra", title: "Acompte reçu", intro: "Merci, {name}. Nous avons votre acompte et vérifions que nous pouvons assurer votre voyage. Nous vous le confirmerons rapidement. Si nous ne le pouvons pas, vous êtes remboursé intégralement." },
+      confirmed: { subject: "Votre voyage à Agra est confirmé", title: "Votre voyage est confirmé", intro: "Bonne nouvelle, {name} : votre voyage à Agra est confirmé. Votre guide et votre chauffeur vous contacteront avec les détails de prise en charge avant votre départ." },
+      cancelled: { subject: "Nous n'avons pas pu confirmer votre voyage à Agra", title: "Nous n'avons pas pu confirmer votre voyage", intro: "Nous sommes désolés, {name} : nous n'avons pas pu assurer ce voyage. Votre acompte est remboursé intégralement sur votre moyen de paiement d'origine. Il arrive en général sur votre compte sous 7 à 10 jours ouvrés." }
   }
 };

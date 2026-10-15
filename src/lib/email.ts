@@ -15,6 +15,7 @@ import { formatTravelDate, formatMoneyMinor } from './format';
 import { intlLocale, type Locale } from './i18n';
 import { getDictionary } from '../i18n/dictionaries';
 import { fmt } from '../i18n/fmt';
+import type { HotelChoice } from './customTrip';
 
 export interface BookingEmailDetails {
   to: string;
@@ -571,4 +572,123 @@ export async function sendEmailVerificationEmail(env: Record<string, any>, detai
   const text = [X.title, ``, fmt(E.hi, { name: first }), X.intro, details.link, ``, X.note, ``, `IWIS Global · ${SITE}`].join('\n');
 
   return post(env, 'sendEmailVerificationEmail', { from: FROM(env), to: details.to, subject: X.subject, html, text });
+}
+
+// --- Custom Agra trips (src/lib/customTripPayment.ts) -----------------------
+
+export interface CustomTripEmailDetails {
+  tripId: string;
+  startDate: string;
+  endDate: string;
+  days: { date: string; stops: { id: string; name: string }[] }[];
+  vehicleId: string;
+  vehicleName: string;
+  guests: number;
+  currency: string;
+  depositMinor: number;
+  totalMinor: number;
+  hotel: HotelChoice;
+}
+
+export interface CustomTripGuestEmailDetails extends CustomTripEmailDetails {
+  kind: 'received' | 'confirmed' | 'cancelled';
+  to: string;
+  name: string;
+  locale?: Locale;
+}
+
+// The guest's own words for their hotel choice, as on the review step.
+function hotelLine(hotel: HotelChoice, R: ReturnType<typeof getDictionary>['customTour']['review']): string {
+  if (hotel.mode === 'listed') return fmt(R.hotelListed, { name: hotel.name ?? '' });
+  if (hotel.mode === 'arrange') return fmt(R.hotelArrange, { nights: hotel.nights ?? 0, rooms: hotel.rooms ?? 0 });
+  return R.hotelOwn;
+}
+
+// To the guest, in their language: deposit received, then confirmed or
+// cancelled once the team has decided. Best-effort, like every email here.
+export async function sendCustomTripGuestEmail(env: Record<string, any>, d: CustomTripGuestEmailDetails): Promise<boolean> {
+  if (!env.RESEND_API_KEY || !d.to) return false;
+  const locale = d.locale ?? 'en';
+  const dict = getDictionary(locale);
+  const X = dict.customTripEmail;
+  const T = dict.customTour;
+  const K = X[d.kind];
+  const nameText = d.name.trim().split(/\s+/)[0] || dict.emails.there;
+  const when = displayDate(d.startDate, locale);
+  const dates = d.days.length > 1 ? fmt(T.review.dates, { from: when, to: displayDate(d.endDate, locale) }) : when;
+  const stopName = (s: { id: string; name: string }) => (T.stopNames as Record<string, string>)[s.id] ?? s.name;
+  const vehicle = (T.vehicleNames as Record<string, string>)[d.vehicleId] ?? d.vehicleName;
+  const viewUrl = withLang(`${SITE}/customize-your-tour/thanks?trip=${encodeURIComponent(d.tripId)}`, locale);
+  const waUrl = whatsappHref(`Hi! Question about my Agra trip ${d.tripId}. (ref: EMAIL-CUSTOM-TRIP)`);
+
+  const rows: [string, string, string?][] = [
+    [X.ref, d.tripId, 'word-break:break-all;'],
+    [X.dates, dates],
+    [X.vehicle, vehicle],
+    [X.guests, String(d.guests)],
+    [X.deposit, formatAmount(d.depositMinor, d.currency), 'font-weight:600;'],
+    [X.total, formatAmount(d.totalMinor, d.currency)],
+    [X.balance, formatAmount(d.totalMinor - d.depositMinor, d.currency)],
+    [X.hotel, hotelLine(d.hotel, T.review)],
+  ];
+  const itinerary = d.days.map((day) => `${fmt(T.itinerary.day, { n: d.days.indexOf(day) + 1 })} · ${displayDate(day.date, locale)}: ${day.stops.map(stopName).join(' → ')}`);
+  const cell = 'padding:6px 0; vertical-align:top;';
+  const html = emailHtml(K.title, `
+        <p style="margin-top:0;">${escapeHtml(fmt(K.intro, { name: nameText }))}</p>
+        <table style="width:100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; background:#faf9ff; border:1px solid #ede9fe; border-radius:12px;">
+          ${rows
+            .map(
+              ([label, value, style]) =>
+                `<tr><td style="${cell} color:#78716c; padding-left:14px; padding-right:12px;">${escapeHtml(label)}</td><td style="${cell} text-align:right; padding-right:14px; ${style ?? ''}">${escapeHtml(value)}</td></tr>`
+            )
+            .join('')}
+        </table>
+        <p style="margin:0 0 4px; font-weight:600;">${escapeHtml(X.itinerary)}</p>
+        <ul style="margin:0 0 16px; padding-left:20px; font-size:14px;">${itinerary.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>
+        <p style="margin:24px 0; text-align:center;"><a href="${viewUrl}" style="${EMAIL_BUTTON}">${X.view}</a></p>
+        <p style="margin-bottom:8px;">${X.questions}</p>
+        <p style="margin-top:0; line-height:2;">
+          <a href="${waUrl}" style="color:#15803d; font-weight:600;">WhatsApp</a><br />
+          <a href="${PHONE_TEL}" style="color:#6d28d9;">${PHONE_DISPLAY}</a><br />
+          <a href="mailto:${EMAIL}" style="color:#6d28d9;">${EMAIL}</a>
+        </p>`);
+  const text = [K.title, ``, fmt(K.intro, { name: nameText }), ``, ...rows.map(([label, value]) => `${label}: ${value}`), ``, X.itinerary, ...itinerary, ``, `${X.view}: ${viewUrl}`, ``, X.questions, `${PHONE_DISPLAY} · ${EMAIL}`, ``, `IWIS Global · ${SITE}`].join('\n');
+  return post(env, 'sendCustomTripGuestEmail', { from: FROM(env), to: d.to, subject: K.subject, html, text });
+}
+
+export interface CustomTripAdminEmailDetails extends CustomTripEmailDetails {
+  bookingId: string;
+  guestName: string;
+  guestEmail: string;
+  guestPhone: string;
+}
+
+// To the business inbox, in English, when a deposit arrives: what to confirm.
+export async function sendCustomTripAdminEmail(env: Record<string, any>, d: CustomTripAdminEmailDetails): Promise<void> {
+  if (!env.RESEND_API_KEY) return;
+  const to = env.ADMIN_NOTIFICATION_EMAIL || EMAIL;
+  const adminUrl = `${SITE}/admin/bookings/${d.bookingId}`;
+  const dates = d.days.length > 1 ? `${displayDate(d.startDate)} to ${displayDate(d.endDate)}` : displayDate(d.startDate);
+  const rows: [string, string][] = [
+    ['Guest', d.guestName],
+    ['Phone', d.guestPhone],
+    ['Email', d.guestEmail],
+    ['Dates', dates],
+    ['Vehicle', d.vehicleName],
+    ['Guests', String(d.guests)],
+    ['Deposit paid', formatAmount(d.depositMinor, d.currency)],
+    ['Trip total', formatAmount(d.totalMinor, d.currency)],
+    ['Hotel', hotelLine(d.hotel, getDictionary('en').customTour.review)],
+    ['Booking ID', d.bookingId],
+  ];
+  const itinerary = d.days.map((day, i) => `Day ${i + 1} · ${displayDate(day.date)}: ${day.stops.map((s) => s.name).join(' → ')}`);
+  const cell = 'padding:6px 0; vertical-align:top;';
+  const html = emailHtml('Custom Agra trip: needs confirming', `
+        <table style="width:100%; border-collapse: collapse; margin: 0 0 16px; font-size: 14px; background:#faf9ff; border:1px solid #ede9fe; border-radius:12px;">
+          ${rows.map(([label, value]) => `<tr><td style="${cell} color:#78716c; padding-left:14px; padding-right:12px;">${escapeHtml(label)}</td><td style="${cell} text-align:right; padding-right:14px; word-break:break-all;">${escapeHtml(value)}</td></tr>`).join('')}
+        </table>
+        <ul style="margin:0 0 16px; padding-left:20px; font-size:14px;">${itinerary.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>
+        <p style="margin:24px 0 0; text-align:center;"><a href="${adminUrl}" style="${EMAIL_BUTTON}">Open booking</a></p>`);
+  const text = [`Custom Agra trip: needs confirming`, ``, ...rows.map(([l, v]) => `${l}: ${v}`), ``, ...itinerary, ``, `Open booking: ${adminUrl}`].join('\n');
+  await post(env, 'sendCustomTripAdminEmail', { from: FROM(env), to, subject: `Custom Agra trip to confirm: ${d.guestName}, ${dates}`, html, text });
 }

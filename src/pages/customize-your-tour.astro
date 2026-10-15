@@ -1,8 +1,7 @@
 ---
 // "Customise your Agra tour" (src/lib/customTrip.ts). Guests build their own
 // Agra trip and see a live estimate. Hidden from the public until the owner
-// switches it on in /admin/custom-trips AND payment exists (PAYMENT_READY,
-// turned on in milestone 3); a signed-in admin can preview it before then.
+// switches it on in /admin/custom-trips; a signed-in admin can preview it before then.
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -17,15 +16,14 @@ import { isCustomEnabled, loadRates } from '../lib/customTripData';
 import { offeredTemplates } from '../lib/customTripTemplates';
 import type { D1Like } from '../lib/db';
 
-// Flipped to true when the payment step ships (milestone 3).
-const PAYMENT_READY = false;
-
 const env = resolveEnv(Astro.locals);
 const db = env.DB as D1Like | undefined;
 const { locale, t: dict } = pageI18n(Astro);
 const t = dict.customTour;
+const b = dict.booking;
+const contact = { fullName: b.fullName, namePlaceholder: b.namePlaceholder, email: b.email, emailPlaceholder: b.emailPlaceholder, phone: b.phone, errName: b.errName, errEmail: b.errEmail, errPhone: b.errPhone, gatewayLoad: b.gatewayLoad };
 
-const live = db ? (await isCustomEnabled(db)) && PAYMENT_READY : false;
+const live = db ? (await isCustomEnabled(db)) : false;
 const admin = await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET);
 if (!db || (!live && !admin)) {
   return new Response('Not found', { status: 404 });
@@ -44,7 +42,7 @@ const templates = offeredTemplates(rates, new Map(tours.map((x) => [x.slug, x.ti
     <h1 class="font-serif text-3xl font-semibold text-brand-900 md:text-4xl">{t.heading}</h1>
     <p class="mt-3 max-w-3xl text-stone-700">{t.intro}</p>
     <div class="mt-8">
-      <TourCustomizer client:load rates={rates} templates={templates} currency={currency} intlLocale={intlLocale(locale)} t={t} />
+      <TourCustomizer client:load rates={rates} templates={templates} currency={currency} intlLocale={intlLocale(locale)} locale={locale} t={t} contact={contact} />
       <noscript><p class="rounded-xl bg-stone-100 p-4 text-sm text-stone-700">{t.noJs} <a href="/contact" class="font-semibold text-brand-700 underline">{t.noJsLink}</a></p></noscript>
     </div>
   </section>

@@ -33,6 +33,7 @@ import {
   SITE_URL,
 } from '../../../lib/reviews';
 import { todayIst } from '../../../lib/availability';
+import { AWAITING_STATUS, CUSTOM_TOUR_ID, cancelCustomTrip, confirmCustomTrip, getCustomTripByBooking, readStoredTrip } from '../../../lib/customTripPayment';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -103,6 +104,14 @@ if (Astro.request.method === 'POST') {
       return Astro.redirect(`/admin/bookings/${id}?ticket=error&msg=${encodeURIComponent(err?.message ?? 'Upload failed')}`);
     }
     return Astro.redirect(`/admin/bookings/${id}?ticket=${result}`);
+  } else if (action === 'confirm_custom' || action === 'cancel_custom') {
+    // Custom Agra tour: the owner either confirms the trip or cancels it and
+    // refunds the deposit in full (src/lib/customTripPayment.ts).
+    const found = await getCustomTripByBooking(db, id);
+    if (!found) return Astro.redirect(`/admin/bookings/${id}`);
+    const done = action === 'confirm_custom' ? await confirmCustomTrip(env, db, found.id) : await cancelCustomTrip(env, db, found.id);
+    const result = done.ok ? (action === 'confirm_custom' ? 'confirmed' : 'refunded') : 'error';
+    return Astro.redirect(`/admin/bookings/${id}?custom=${result}${done.ok ? '' : `&msg=${encodeURIComponent(done.error)}`}`);
   } else if (action === 'review_email' || action === 'review_whatsapp') {
     const current = await getBookingById(db, id);
     if (!current) return Astro.redirect('/admin');
@@ -133,6 +142,16 @@ const ticketMessages: Record<string, { text: string; ok: boolean }> = {
   error: { text: Astro.url.searchParams.get('msg') ?? 'Something went wrong.', ok: false },
 };
 const fmtTime = formatDateTimeIst;
+const isCustom = booking.tour_id === CUSTOM_TOUR_ID;
+const customTrip = isCustom ? await getCustomTripByBooking(db, id) : null;
+const customStored = customTrip ? readStoredTrip(customTrip) : null;
+const customResult = Astro.url.searchParams.get('custom');
+const customMessages: Record<string, { text: string; ok: boolean }> = {
+  confirmed: { text: 'Trip confirmed. The guest has been emailed.', ok: true },
+  refunded: { text: 'Trip cancelled and the deposit refunded. The guest has been emailed.', ok: true },
+  error: { text: Astro.url.searchParams.get('msg') ?? 'Something went wrong.', ok: false },
+};
+const hotelModes: Record<string, string> = { own: 'Guest has their own hotel', listed: 'Guest picked a listed hotel', arrange: 'Guest wants us to arrange a hotel' };
 const reviewOpen = canBeReviewed(booking, todayIst());
 const review = await getReviewForBooking(db, id);
 const reviewResult = Astro.url.searchParams.get('review');
@@ -164,7 +183,7 @@ const addOnNames = booking.add_on_ids
 ---
 <AdminLayout title={`Booking ${booking.id}`}>
   <a href="/admin" class="text-sm text-stone-500 hover:underline">&larr; Back to bookings</a>
-  <h1 class="text-2xl font-semibold mt-2 mb-6">{booking.traveler_name} — {tour?.title ?? booking.tour_id}</h1>
+  <h1 class="text-2xl font-semibold mt-2 mb-6">{booking.traveler_name} — {isCustom ? 'Custom Agra tour' : tour?.title ?? booking.tour_id}</h1>
 
   <div class="grid md:grid-cols-2 gap-6">
     <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-2 text-sm">
@@ -192,6 +211,7 @@ const addOnNames = booking.add_on_ids
         </div>
       )}
 
+      {!isCustom && (
       <form method="POST" class="pt-4 flex items-center gap-2">
         <input type="hidden" name="_action" value="status" />
         <select name="status" class="min-h-11 rounded border border-stone-300 px-2">
@@ -201,7 +221,65 @@ const addOnNames = booking.add_on_ids
         </select>
         <button type="submit" class={actionBtn}>Update status</button>
       </form>
+      )}
     </div>
+
+    {isCustom && (
+      <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-3 text-sm md:col-span-2">
+        <h2 class="font-semibold mb-2">Custom Agra tour</h2>
+        {customResult && customMessages[customResult] && (
+          <p class={`rounded px-3 py-2 ${customMessages[customResult].ok ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>{customMessages[customResult].text}</p>
+        )}
+        <p>
+          <span class="text-stone-500">Status:</span>{' '}
+          {booking.status === AWAITING_STATUS ? 'Deposit paid — waiting for you to confirm' : booking.status === 'confirmed' ? 'Confirmed' : booking.status === 'cancelled' ? 'Cancelled (deposit refunded)' : booking.status}
+        </p>
+        {customStored ? (
+          <div class="space-y-2">
+            <p><span class="text-stone-500">Dates:</span> {formatTravelDate(customStored.quote.startDate)} to {formatTravelDate(customStored.quote.endDate)}</p>
+            <p><span class="text-stone-500">Vehicle:</span> {customStored.quote.vehicle.name} ({customStored.quote.vehicle.seats} seats)</p>
+            <p>
+              <span class="text-stone-500">Guests:</span> {customStored.quote.travellers.foreign} foreign, {customStored.quote.travellers.indian} Indian,
+              {' '}{customStored.quote.travellers.saarc} SAARC/BIMSTEC, {customStored.quote.travellers.children} children
+            </p>
+            <p>
+              <span class="text-stone-500">Hotel:</span> {hotelModes[customStored.input.hotel.mode] ?? customStored.input.hotel.mode}
+              {customStored.input.hotel.name ? ` — ${customStored.input.hotel.name}` : ''}
+              {customStored.input.hotel.nights ? `, ${customStored.input.hotel.nights} night(s)` : ''}
+              {customStored.input.hotel.rooms ? `, ${customStored.input.hotel.rooms} room(s)` : ''}
+              {customStored.input.hotel.notes ? `. Notes: ${customStored.input.hotel.notes}` : ''}
+              . Quoted and confirmed separately, not charged here.
+            </p>
+            <ol class="list-decimal pl-5 space-y-1">
+              {customStored.quote.days.map((d) => (
+                <li>{formatTravelDate(d.date)}: {d.stops.length ? d.stops.map((st) => st.name).join(', ') : 'no stops'}</li>
+              ))}
+            </ol>
+            <p>
+              <span class="text-stone-500">Price:</span> vehicle {formatMoneyMinor(customStored.quote.vehicleTotal * 100, booking.currency)}, guide {formatMoneyMinor(customStored.quote.guideTotal * 100, booking.currency)},
+              tickets {formatMoneyMinor(customStored.quote.ticketsTotal * 100, booking.currency)}; total {formatMoneyMinor(booking.total_amount, booking.currency)},
+              deposit paid {formatMoneyMinor(booking.amount_paid, booking.currency)}, balance {formatMoneyMinor(booking.total_amount - booking.amount_paid, booking.currency)}.
+            </p>
+          </div>
+        ) : (
+          <p class="text-red-700">The saved trip details could not be read. Check the custom_trips row {customTrip?.id ?? '(not found)'}.</p>
+        )}
+        {customTrip && (customTrip.status === 'deposit_paid' || customTrip.status === 'confirmed') && (
+          <div class="flex flex-wrap gap-2 pt-2">
+            {customTrip.status === 'deposit_paid' && (
+              <form method="POST">
+                <input type="hidden" name="_action" value="confirm_custom" />
+                <button type="submit" class={actionBtn}>Confirm this trip</button>
+              </form>
+            )}
+            <form method="POST" onsubmit="return confirm('Cancel this trip and refund the full deposit to the guest? This cannot be undone.')">
+              <input type="hidden" name="_action" value="cancel_custom" />
+              <button type="submit" class="min-h-11 rounded border border-red-300 bg-white px-4 text-sm text-red-700">Cancel and refund deposit</button>
+            </form>
+          </div>
+        )}
+      </div>
+    )}
 
     <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-3 text-sm">
       <h2 class="font-semibold mb-2">Itinerary / logistics</h2>

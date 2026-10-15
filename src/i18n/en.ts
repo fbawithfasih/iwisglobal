@@ -1469,7 +1469,16 @@ export const en = {
         hotelOwn: "Hotel: your own",
         hotelListed: "Hotel: {name}",
         hotelArrange: "Please arrange a stay. Nights: {nights}, rooms: {rooms}",
-        pay: "Payment opens soon",
+        contactHeading: "Your details",
+        payDeposit: "Pay {amount} deposit",
+        opening: "Opening payment…",
+        confirming: "Confirming your payment…",
+        terms: "Your deposit is refunded in full if we cannot supply your trip. Other cancellations follow our",
+        termsLink: "cancellation and refund policy",
+        gateway: "We could not start the payment. Please try again, or message us.",
+        failed: "The payment did not go through. You have not been charged.",
+        unconfirmed: "Your payment {id} went through, but we could not confirm your trip on screen. Please message us on WhatsApp with this number and we will confirm it for you.",
+        notLive: "Payment is not open yet. This is a preview.",
         incomplete: "Finish the earlier steps to see your price."
       },
       summary: {
@@ -1477,6 +1486,19 @@ export const en = {
         empty: "Your price appears here once your trip is complete.",
         total: "Estimated total",
         days: "{n} days"
+      },
+      thanks: {
+        heading: "Your Agra trip",
+        ref: "Reference",
+        total: "Trip total",
+        depositPaid: "Deposit paid",
+        balance: "Balance on the day",
+        hotel: "Hotel requests are confirmed separately by our team.",
+        notFound: "We could not find that trip.",
+        questions: "Questions? Message us on WhatsApp or reply to your confirmation email.",
+        received: { title: "Deposit received", body: "Thank you. We are checking that we can supply your trip and will confirm it shortly. If we cannot, you are refunded in full." },
+        confirmed: { title: "Your trip is confirmed", body: "Your guide and driver will be in touch with pickup details before you travel." },
+        cancelled: { title: "We could not confirm this trip", body: "Your deposit is being refunded in full. It usually reaches your account within 7 to 10 business days." }
       },
       stopNames: {
         "taj-mahal": "Taj Mahal",
@@ -1505,6 +1527,22 @@ export const en = {
         fee_missing: "The ticket fee for {stop} is not set up yet. Please contact us.",
         bad_hotel: "Please complete your hotel choice."
       }
+  },
+  customTripEmail: {
+      ref: "Reference",
+      dates: "Dates",
+      vehicle: "Vehicle",
+      guests: "Guests",
+      itinerary: "Itinerary",
+      deposit: "Deposit paid",
+      total: "Trip total",
+      balance: "Balance on the day",
+      hotel: "Hotel",
+      view: "View your trip",
+      questions: "Questions? Just reply to this email or message us on WhatsApp.",
+      received: { subject: "We received your deposit for your Agra trip", title: "Deposit received", intro: "Thank you, {name}. We have your deposit and are checking that we can supply your trip. We will confirm it shortly. If we cannot, you are refunded in full." },
+      confirmed: { subject: "Your Agra trip is confirmed", title: "Your trip is confirmed", intro: "Good news, {name}: your Agra trip is confirmed. Your guide and driver will be in touch with pickup details before you travel." },
+      cancelled: { subject: "We could not confirm your Agra trip", title: "We could not confirm your trip", intro: "We are sorry, {name}: we could not supply this trip. Your deposit is being refunded in full to your original payment method. It usually reaches your account within 7 to 10 business days." }
   }
 };
 

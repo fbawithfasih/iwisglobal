@@ -27,6 +27,57 @@ async function hmacSha256Hex(secret: string, message: string): Promise<string> {
     .join('');
 }
 
+// --- Custom Agra trips (src/lib/customTripPayment.ts) -----------------------
+// The same trust model as a tour booking, without the tour catalog: the amount
+// is the deposit the server computed and saved, and the trip id rides in the
+// order's notes so verification reads it back from Razorpay, never from the
+// browser.
+
+export async function createCustomTripOrder(
+  env: Record<string, unknown>,
+  input: { amountMinor: number; currency: 'INR' | 'USD'; tripId: string; receipt: string }
+): Promise<OrderResult> {
+  const { keyId, keySecret } = getCreds(env);
+  if (!keyId || !keySecret) throw new Error('Payment gateway is misconfigured. Please contact support.');
+  const res = await fetch('https://api.razorpay.com/v1/orders', {
+    method: 'POST',
+    headers: { Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      amount: input.amountMinor,
+      currency: input.currency,
+      receipt: input.receipt,
+      notes: { kind: 'custom', customTripId: input.tripId },
+    }),
+  });
+  if (!res.ok) {
+    const err: any = await res.json().catch(() => null);
+    const description = err?.error?.description;
+    const isAuthFailure = res.status === 401 || /authentication failed/i.test(description ?? '');
+    throw new Error(isAuthFailure ? 'Payment gateway is misconfigured. Please contact support.' : description || 'Failed to create order');
+  }
+  const order = await res.json();
+  return { orderId: order.id, amount: order.amount, currency: order.currency, publicKey: keyId };
+}
+
+// The order as Razorpay holds it: the trusted source for its notes and amount.
+export async function fetchRazorpayOrder(env: Record<string, unknown>, orderId: string): Promise<{ amount: number; currency: string; notes: Record<string, string> }> {
+  const { keyId, keySecret } = getCreds(env);
+  if (!keyId || !keySecret) throw new Error('Server configuration error');
+  const res = await fetch(`https://api.razorpay.com/v1/orders/${encodeURIComponent(orderId)}`, {
+    headers: { Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}` },
+  });
+  if (!res.ok) throw new Error('Could not verify order');
+  const order = await res.json();
+  return { amount: Number(order.amount), currency: String(order.currency), notes: order.notes ?? {} };
+}
+
+// True when Razorpay's checkout signature for this order and payment is valid.
+export async function verifyRazorpaySignature(env: Record<string, unknown>, orderId: string, paymentId: string, signature: string): Promise<boolean> {
+  const { keySecret } = getCreds(env);
+  if (!keySecret) throw new Error('Server configuration error');
+  return (await hmacSha256Hex(keySecret, `${orderId}|${paymentId}`)) === signature;
+}
+
 export const razorpayProvider: PaymentProvider = {
   async createOrder(req: BookingRequest, env: Record<string, unknown>): Promise<OrderResult> {
     const item = await getCatalogItem(env.DB as any, req.tourId, { onlyPublished: true, currency: req.currency });

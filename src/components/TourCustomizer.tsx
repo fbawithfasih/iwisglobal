@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { track } from '../lib/analytics';
 import { fmt } from '../i18n/fmt';
+import PhoneInput from './PhoneInput';
 import type { Dictionary } from '../i18n/dictionaries';
 import { getAvailability } from '../lib/availability';
 import { AGRA_HOTELS } from '../lib/agraHotels';
@@ -19,6 +20,7 @@ import {
   type TripErrorCode,
   type TripError,
   type TripInput,
+  validateContact,
 } from '../lib/customTrip';
 
 // "Customise your Agra tour": five steps (trip, itinerary, vehicle, hotel,
@@ -39,7 +41,27 @@ interface Props {
   templates: CustomizerTemplate[];
   currency: Currency;
   intlLocale: string;
+  locale: string;
   t: Dictionary['customTour'];
+  // The name, email and phone labels and messages the booking form already uses.
+  contact: Pick<Dictionary['booking'], 'fullName' | 'namePlaceholder' | 'email' | 'emailPlaceholder' | 'phone' | 'errName' | 'errEmail' | 'errPhone' | 'gatewayLoad'>;
+}
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 }
 
 // Which problems belong to which step, so each step only shows its own.
@@ -61,7 +83,7 @@ const linkButton =
 const smallButton =
   'min-h-11 min-w-11 rounded-lg border border-brand-200 bg-white px-2 text-sm text-brand-800 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-40';
 
-export default function TourCustomizer({ rates, templates, currency, intlLocale, t }: Props) {
+export default function TourCustomizer({ rates, templates, currency, intlLocale, locale, t, contact }: Props) {
   const [step, setStep] = useState(0);
   const [minDate, setMinDate] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -71,6 +93,15 @@ export default function TourCustomizer({ rates, templates, currency, intlLocale,
   const [vehicleId, setVehicleId] = useState('');
   const [hotel, setHotel] = useState<HotelChoice>({ mode: 'own' });
   const [attempted, setAttempted] = useState<Record<number, boolean>>({});
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [paying, setPaying] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [contactTried, setContactTried] = useState(false);
+  // Set when Razorpay took the payment but the booking could not be confirmed on screen.
+  const [unconfirmed, setUnconfirmed] = useState('');
   const headingRef = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
 
@@ -122,6 +153,79 @@ export default function TourCustomizer({ rates, templates, currency, intlLocale,
     if (typeof p.vehicle === 'string') p.vehicle = vehicleName(p.vehicle);
     return fmt((t.errors as Record<string, string>)[e.code] ?? e.message, p);
   };
+
+  const contactErrs = validateContact({ name, email, phone });
+  const contactMessage = { name: contact.errName, email: contact.errEmail, phone: contact.errPhone } as const;
+
+  async function pay() {
+    if (!quote || paying) return;
+    setPayError(null);
+    setContactTried(true);
+    const bad = (['name', 'email', 'phone'] as const).find((f) => contactErrs[f]);
+    if (bad) {
+      const el = document.getElementById(`custom-${bad}`);
+      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el?.focus({ preventScroll: true });
+      return;
+    }
+    setPaying(true);
+    track('custom_tour_checkout', { total: quote.total, deposit: quote.deposit, days: quote.days.length, currency });
+    try {
+      if (!(await loadRazorpayScript())) throw new Error(contact.gatewayLoad);
+      // Only the selections and contact details go to the server, which prices
+      // the trip itself and ignores any figure from this page.
+      const res = await fetch('/api/custom-trip/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trip: input, contact: { name, email, phone }, locale }),
+      });
+      const order = await res.json().catch(() => ({}));
+      if (!res.ok || !order.orderId || !order.publicKey) {
+        throw new Error(res.status === 400 && order.error === 'invalid_trip' ? t.review.incomplete : t.review.gateway);
+      }
+      const rzp = new window.Razorpay({
+        key: order.publicKey,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'IWIS Global',
+        description: t.heading,
+        order_id: order.orderId,
+        image: 'https://www.iwisglobal.com/logo-globe.png',
+        handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+          setPaying(true);
+          setConfirming(true);
+          setPayError(null);
+          try {
+            const verify = await fetch('/api/custom-trip/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(response),
+            });
+            const done = await verify.json().catch(() => ({}));
+            if (!verify.ok || !done.tripId) throw new Error('verify');
+            track('custom_tour_paid', { total: quote.total, deposit: quote.deposit, currency });
+            window.location.href = `/customize-your-tour/thanks?trip=${encodeURIComponent(done.tripId)}`;
+          } catch {
+            setPaying(false);
+            setConfirming(false);
+            setUnconfirmed(response.razorpay_payment_id);
+          }
+        },
+        modal: { ondismiss: () => setPaying(false) },
+        // Razorpay drops a prefilled number that contains spaces or dashes.
+        prefill: { name, email, contact: phone.replace(/[\s().-]/g, '') },
+        theme: { color: '#6d28d9' },
+      });
+      rzp.on('payment.failed', () => {
+        setPayError(t.review.failed);
+        setPaying(false);
+      });
+      rzp.open();
+    } catch (err: any) {
+      setPayError(err?.message || t.review.gateway);
+      setPaying(false);
+    }
+  }
 
   const stepErrors = (s: number) => errors.filter((e) => STEP_CODES[s]?.includes(e.code));
 
@@ -433,7 +537,35 @@ export default function TourCustomizer({ rates, templates, currency, intlLocale,
                   {' · '}{t.hotel.note}
                 </p>
                 <p className="mt-1 text-xs text-stone-500">{t.review.estimateNote}</p>
-                <button type="button" disabled className={`${primaryButton} mt-4`}>{t.review.pay}</button>
+
+                <h3 className="mt-5 font-serif text-lg font-semibold text-brand-900">{t.review.contactHeading}</h3>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="custom-name" className="mb-1 block text-sm font-medium">{contact.fullName}</label>
+                    <input id="custom-name" className={fieldClass} autoComplete="name" placeholder={contact.namePlaceholder} value={name} onChange={(e) => setName(e.target.value)}
+                      aria-invalid={contactTried && !!contactErrs.name} aria-describedby={contactTried && contactErrs.name ? 'custom-name-error' : undefined} />
+                    {contactTried && contactErrs.name && <p id="custom-name-error" className="mt-1 text-xs text-red-600">{contactMessage.name}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="custom-email" className="mb-1 block text-sm font-medium">{contact.email}</label>
+                    <input id="custom-email" type="email" className={fieldClass} autoComplete="email" placeholder={contact.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)}
+                      aria-invalid={contactTried && !!contactErrs.email} aria-describedby={contactTried && contactErrs.email ? 'custom-email-error' : undefined} />
+                    {contactTried && contactErrs.email && <p id="custom-email-error" className="mt-1 text-xs text-red-600">{contactMessage.email}</p>}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="custom-phone" className="mb-1 block text-sm font-medium">{contact.phone}</label>
+                    <PhoneInput id="custom-phone" value={phone} onChange={setPhone} invalid={contactTried && !!contactErrs.phone} describedBy={contactTried && contactErrs.phone ? 'custom-phone-error' : undefined} />
+                    {contactTried && contactErrs.phone && <p id="custom-phone-error" className="mt-1 text-xs text-red-600">{contactMessage.phone}</p>}
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-stone-600">
+                  {t.review.terms} <a href="/cancellation-refund-policy" className="font-semibold text-brand-700 underline">{t.review.termsLink}</a>.
+                </p>
+                {payError && <p className="mt-3 text-sm text-red-700" role="alert">{payError}</p>}
+                {unconfirmed && <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="alert">{fmt(t.review.unconfirmed, { id: unconfirmed })}</p>}
+                <button type="button" onClick={pay} disabled={paying || !!unconfirmed} className={`${primaryButton} mt-4 disabled:opacity-60`}>
+                  {confirming ? t.review.confirming : paying ? t.review.opening : fmt(t.review.payDeposit, { amount: money(quote.deposit) })}
+                </button>
               </div>
             )}
           </div>

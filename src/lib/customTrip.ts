@@ -385,3 +385,29 @@ export function parseTripInput(raw: unknown): TripInput | null {
     currency: r.currency === 'USD' ? 'USD' : 'INR',
   };
 }
+
+// --- Contact details (the same checks the booking form makes) --------------
+
+export interface Contact {
+  name: string;
+  email: string;
+  phone: string; // "+<country code> <number>", as the phone picker produces it
+}
+
+export type ContactErrors = Partial<Record<keyof Contact, true>>;
+
+export function validateContact(c: Contact): ContactErrors {
+  const errors: ContactErrors = {};
+  if (c.name.trim().length < 2 || c.name.length > 100) errors.name = true;
+  if (c.email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(c.email.trim())) errors.email = true;
+  if (!/^\+\d{8,15}$/.test(c.phone.replace(/[\s().-]/g, ''))) errors.phone = true;
+  return errors;
+}
+
+// Cleans the contact block of a posted request, or null if it is not one.
+export function parseContact(raw: unknown): Contact | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const text = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+  return { name: text(r.name, 101), email: text(r.email, 201), phone: text(r.phone, 40) };
+}

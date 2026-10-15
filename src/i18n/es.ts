@@ -1468,7 +1468,16 @@ export const es: Dictionary = {
         hotelOwn: "Hotel: el suyo",
         hotelListed: "Hotel: {name}",
         hotelArrange: "Organizar alojamiento. Noches: {nights}, habitaciones: {rooms}",
-        pay: "El pago estará disponible pronto",
+        contactHeading: "Sus datos",
+        payDeposit: "Pagar el depósito de {amount}",
+        opening: "Abriendo el pago…",
+        confirming: "Confirmando su pago…",
+        terms: "Su depósito se reembolsa íntegramente si no podemos realizar su viaje. Las demás cancelaciones se rigen por nuestra",
+        termsLink: "política de cancelación y reembolso",
+        gateway: "No pudimos iniciar el pago. Inténtelo de nuevo o escríbanos.",
+        failed: "El pago no se completó. No se le ha cobrado nada.",
+        unconfirmed: "Su pago {id} se realizó, pero no pudimos confirmar su viaje en pantalla. Escríbanos por WhatsApp con este número y se lo confirmaremos.",
+        notLive: "El pago aún no está abierto. Esto es una vista previa.",
         incomplete: "Complete los pasos anteriores para ver su precio."
       },
       summary: {
@@ -1476,6 +1485,19 @@ export const es: Dictionary = {
         empty: "Su precio aparecerá aquí cuando complete su viaje.",
         total: "Total estimado",
         days: "{n} días"
+      },
+      thanks: {
+        heading: "Su viaje a Agra",
+        ref: "Referencia",
+        total: "Total del viaje",
+        depositPaid: "Depósito pagado",
+        balance: "Saldo el día del viaje",
+        hotel: "Nuestro equipo confirma por separado las solicitudes de hotel.",
+        notFound: "No encontramos ese viaje.",
+        questions: "¿Preguntas? Escríbanos por WhatsApp o responda a su correo de confirmación.",
+        received: { title: "Depósito recibido", body: "Gracias. Estamos comprobando que podemos realizar su viaje y se lo confirmaremos en breve. Si no podemos, se le reembolsa todo." },
+        confirmed: { title: "Su viaje está confirmado", body: "Su guía y su conductor se pondrán en contacto con usted con los datos de recogida antes de viajar." },
+        cancelled: { title: "No pudimos confirmar este viaje", body: "Su depósito se está reembolsando íntegramente. Suele llegar a su cuenta en 7 a 10 días hábiles." }
       },
       stopNames: {
         "taj-mahal": "Taj Mahal",
@@ -1504,5 +1526,21 @@ export const es: Dictionary = {
         fee_missing: "La tarifa de entrada de {stop} aún no está configurada. Contáctenos.",
         bad_hotel: "Complete su elección de hotel."
       }
+  },
+  customTripEmail: {
+      ref: "Referencia",
+      dates: "Fechas",
+      vehicle: "Vehículo",
+      guests: "Viajeros",
+      itinerary: "Itinerario",
+      deposit: "Depósito pagado",
+      total: "Total del viaje",
+      balance: "Saldo el día del viaje",
+      hotel: "Hotel",
+      view: "Ver su viaje",
+      questions: "¿Preguntas? Responda a este correo o escríbanos por WhatsApp.",
+      received: { subject: "Hemos recibido su depósito para su viaje a Agra", title: "Depósito recibido", intro: "Gracias, {name}. Tenemos su depósito y estamos comprobando que podemos realizar su viaje. Se lo confirmaremos en breve. Si no podemos, se le reembolsa todo." },
+      confirmed: { subject: "Su viaje a Agra está confirmado", title: "Su viaje está confirmado", intro: "Buenas noticias, {name}: su viaje a Agra está confirmado. Su guía y su conductor se pondrán en contacto con usted con los datos de recogida antes de viajar." },
+      cancelled: { subject: "No pudimos confirmar su viaje a Agra", title: "No pudimos confirmar su viaje", intro: "Lo sentimos, {name}: no pudimos realizar este viaje. Su depósito se está reembolsando íntegramente al medio de pago original. Suele llegar a su cuenta en 7 a 10 días hábiles." }
   }
 };

@@ -1468,7 +1468,16 @@ export const de: Dictionary = {
         hotelOwn: "Hotel: Ihr eigenes",
         hotelListed: "Hotel: {name}",
         hotelArrange: "Unterkunft organisieren. Nächte: {nights}, Zimmer: {rooms}",
-        pay: "Die Zahlung öffnet bald",
+        contactHeading: "Ihre Angaben",
+        payDeposit: "Anzahlung von {amount} bezahlen",
+        opening: "Zahlung wird geöffnet…",
+        confirming: "Ihre Zahlung wird bestätigt…",
+        terms: "Ihre Anzahlung wird vollständig erstattet, wenn wir Ihre Reise nicht durchführen können. Andere Stornierungen folgen unserer",
+        termsLink: "Stornierungs- und Erstattungsrichtlinie",
+        gateway: "Wir konnten die Zahlung nicht starten. Bitte versuchen Sie es erneut oder schreiben Sie uns.",
+        failed: "Die Zahlung ist nicht durchgegangen. Es wurde nichts abgebucht.",
+        unconfirmed: "Ihre Zahlung {id} ist durchgegangen, aber wir konnten Ihre Reise auf dem Bildschirm nicht bestätigen. Bitte schreiben Sie uns mit dieser Nummer auf WhatsApp, dann bestätigen wir sie für Sie.",
+        notLive: "Die Zahlung ist noch nicht geöffnet. Dies ist eine Vorschau.",
         incomplete: "Schließen Sie die vorherigen Schritte ab, um Ihren Preis zu sehen."
       },
       summary: {
@@ -1476,6 +1485,19 @@ export const de: Dictionary = {
         empty: "Ihr Preis erscheint hier, sobald Ihre Reise vollständig ist.",
         total: "Geschätzter Gesamtpreis",
         days: "{n} Tage"
+      },
+      thanks: {
+        heading: "Ihre Agra-Reise",
+        ref: "Referenz",
+        total: "Reisepreis",
+        depositPaid: "Anzahlung bezahlt",
+        balance: "Restbetrag am Reisetag",
+        hotel: "Hotelwünsche bestätigt unser Team separat.",
+        notFound: "Wir konnten diese Reise nicht finden.",
+        questions: "Fragen? Schreiben Sie uns auf WhatsApp oder antworten Sie auf Ihre Bestätigungs-E-Mail.",
+        received: { title: "Anzahlung erhalten", body: "Vielen Dank. Wir prüfen, ob wir Ihre Reise durchführen können, und bestätigen sie in Kürze. Falls nicht, erhalten Sie alles zurück." },
+        confirmed: { title: "Ihre Reise ist bestätigt", body: "Ihr Guide und Ihr Fahrer melden sich vor der Reise mit den Abholdetails bei Ihnen." },
+        cancelled: { title: "Wir konnten diese Reise nicht bestätigen", body: "Ihre Anzahlung wird vollständig erstattet. Sie erreicht Ihr Konto in der Regel innerhalb von 7 bis 10 Werktagen." }
       },
       stopNames: {
         "taj-mahal": "Taj Mahal",
@@ -1504,5 +1526,21 @@ export const de: Dictionary = {
         fee_missing: "Der Eintrittspreis für {stop} ist noch nicht eingerichtet. Bitte kontaktieren Sie uns.",
         bad_hotel: "Bitte schließen Sie Ihre Hotelwahl ab."
       }
+  },
+  customTripEmail: {
+      ref: "Referenz",
+      dates: "Daten",
+      vehicle: "Fahrzeug",
+      guests: "Reisende",
+      itinerary: "Route",
+      deposit: "Anzahlung bezahlt",
+      total: "Reisepreis",
+      balance: "Restbetrag am Reisetag",
+      hotel: "Hotel",
+      view: "Ihre Reise ansehen",
+      questions: "Fragen? Antworten Sie einfach auf diese E-Mail oder schreiben Sie uns auf WhatsApp.",
+      received: { subject: "Wir haben Ihre Anzahlung für Ihre Agra-Reise erhalten", title: "Anzahlung erhalten", intro: "Vielen Dank, {name}. Wir haben Ihre Anzahlung und prüfen, ob wir Ihre Reise durchführen können. Wir bestätigen sie in Kürze. Falls nicht, erhalten Sie alles zurück." },
+      confirmed: { subject: "Ihre Agra-Reise ist bestätigt", title: "Ihre Reise ist bestätigt", intro: "Gute Nachrichten, {name}: Ihre Agra-Reise ist bestätigt. Ihr Guide und Ihr Fahrer melden sich vor der Reise mit den Abholdetails bei Ihnen." },
+      cancelled: { subject: "Wir konnten Ihre Agra-Reise nicht bestätigen", title: "Wir konnten Ihre Reise nicht bestätigen", intro: "Es tut uns leid, {name}: Wir konnten diese Reise nicht durchführen. Ihre Anzahlung wird vollständig auf Ihr ursprüngliches Zahlungsmittel erstattet. Sie erreicht Ihr Konto in der Regel innerhalb von 7 bis 10 Werktagen." }
   }
 };

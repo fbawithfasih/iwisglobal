@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
 import { resolveEnv } from '../../../lib/env';
+import { finalizeCustomTrip } from '../../../lib/customTripPayment';
+import { fetchRazorpayOrder } from '../../../lib/payments/razorpay';
 
 export const prerender = false;
 
@@ -70,6 +72,35 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const payment = payload.payload?.payment?.entity;
   if (!payment?.id) return new Response('missing payment entity', { status: 200 });
 
+  // A custom Agra trip's deposit: book the trip here too, in case the guest's
+  // browser closed before it could call /api/custom-trip/verify. Safe to repeat
+  // (src/lib/customTripPayment.ts); a failure asks Razorpay to retry.
+  if (env.DB) {
+    let customTripId: string | undefined = payment.notes?.kind === 'custom' ? payment.notes.customTripId : undefined;
+    if (!customTripId && !payment.notes?.tourId && payment.order_id) {
+      try {
+        const order = await fetchRazorpayOrder(env, payment.order_id);
+        if (order.notes.kind === 'custom') customTripId = order.notes.customTripId;
+      } catch (err) {
+        console.error('razorpay webhook: could not read the order to check its kind', err);
+      }
+    }
+    if (customTripId) {
+      try {
+        await finalizeCustomTrip(env, env.DB, {
+          tripId: customTripId,
+          orderId: payment.order_id,
+          paymentId: payment.id,
+          amountMinor: payment.amount,
+          currency: payment.currency,
+        });
+      } catch (err) {
+        console.error('razorpay webhook: custom trip could not be booked', err);
+        return new Response('retry', { status: 500 });
+      }
+    }
+  }
+
   const db = env.DB;
   if (db) {
     // Idempotency — Razorpay can (and does) redeliver the same event, and
@@ -113,8 +144,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
                   currency: payment.currency,
                   items: [
                     {
-                      item_id: notes.tourId,
-                      item_name: notes.tourId,
+                      item_id: notes.tourId ?? (notes.kind === 'custom' ? 'CUSTOM_AGRA' : undefined),
+                      item_name: notes.tourId ?? (notes.kind === 'custom' ? 'CUSTOM_AGRA' : undefined),
                       quantity: Number(notes.travelers ?? 1),
                     },
                   ],
