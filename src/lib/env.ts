@@ -27,5 +27,9 @@ export function resolveEnv(locals: unknown): Record<string, any> {
     WHATSAPP_APP_SECRET: runtimeEnv.WHATSAPP_APP_SECRET ?? import.meta.env.WHATSAPP_APP_SECRET,
     WHATSAPP_ACCESS_TOKEN: runtimeEnv.WHATSAPP_ACCESS_TOKEN ?? import.meta.env.WHATSAPP_ACCESS_TOKEN,
     WHATSAPP_PHONE_NUMBER_ID: runtimeEnv.WHATSAPP_PHONE_NUMBER_ID ?? import.meta.env.WHATSAPP_PHONE_NUMBER_ID,
+    HOTELBEDS_API_KEY: runtimeEnv.HOTELBEDS_API_KEY ?? import.meta.env.HOTELBEDS_API_KEY,
+    HOTELBEDS_SECRET: runtimeEnv.HOTELBEDS_SECRET ?? import.meta.env.HOTELBEDS_SECRET,
+    HOTELBEDS_BASE_URL: runtimeEnv.HOTELBEDS_BASE_URL ?? import.meta.env.HOTELBEDS_BASE_URL,
+    HOTEL_SYNC_SECRET: runtimeEnv.HOTEL_SYNC_SECRET ?? import.meta.env.HOTEL_SYNC_SECRET,
   };
 }
