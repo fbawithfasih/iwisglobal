@@ -1385,6 +1385,126 @@ export const en = {
           "The most reviewed hotel in our ranking, with 239 rooms.",
           "A rooftop pool and an on-site spa, at one of the lower average rates in the ranking."
       ]
+  },
+  customTour: {
+      meta: {
+        title: "Customise your Agra tour",
+        description: "Build your own Agra trip: choose your days and stops, your vehicle and your hotel, and see the price as you go."
+      },
+      heading: "Customise your Agra tour",
+      intro: "Choose your days and stops, pick a vehicle and a hotel, and see the price as you build. Your private guide, vehicle and the official entry tickets are all included.",
+      previewBanner: "Preview only. Guests cannot see this page yet.",
+      noJs: "This page needs JavaScript to build your trip. Please enable it, or message us on WhatsApp and we will plan it with you.",
+      noJsLink: "Contact us",
+      stepOf: "Step {n} of {total}",
+      steps: { trip: "Trip", itinerary: "Itinerary", vehicle: "Vehicle", hotel: "Hotel", review: "Review" },
+      back: "Back",
+      next: "Next",
+      trip: {
+        heading: "Your trip",
+        startDate: "First day of your trip",
+        startFrom: "Where does your trip start?",
+        startDelhi: "Delhi, Gurgaon, Noida or the airport",
+        startAgra: "I am already in Agra",
+        startHint: "From Delhi we collect you at your hotel or the airport and drive you to Agra.",
+        travellers: "Who is travelling?",
+        foreign: "Foreign visitors",
+        indian: "Indian nationals",
+        saarc: "SAARC or BIMSTEC nationals",
+        children: "Children under 15",
+        childrenHint: "Children under 15 enter the monuments free.",
+        guests: "Guests in total: {n}"
+      },
+      itinerary: {
+        heading: "Your itinerary",
+        hint: "Build each day. Stops are visited in the order shown, and you can move them up or down.",
+        day: "Day {n}",
+        fromTour: "Start this day from a ready-made tour",
+        fromTourNone: "I will pick the stops myself",
+        addStop: "Add a stop",
+        addStopPlaceholder: "Choose a stop",
+        remove: "Remove {stop}",
+        up: "Move {stop} earlier",
+        down: "Move {stop} later",
+        addDay: "Add another day",
+        removeDay: "Remove day {n}",
+        empty: "No stops yet. Choose one below.",
+        closedFridays: "Closed on Fridays",
+        nightOnly: "Full-moon nights only"
+      },
+      vehicle: {
+        heading: "Your vehicle",
+        hint: "Every vehicle is private and air-conditioned, with a driver. The price is for the whole vehicle, not per person.",
+        seats: "Up to {n} guests",
+        perDay: "{price} per day in Agra",
+        delhiExtra: "{price} for the Delhi round trip",
+        tooSmall: "Too small for your group"
+      },
+      vehicleNames: { sedan: "Sedan", suv: "SUV or MUV", tempo: "Tempo Traveller", luxury: "Luxury car (Mercedes or BMW)" },
+      hotel: {
+        heading: "Your hotel",
+        hint: "Your hotel tells your driver where to collect you. If you want us to arrange a stay, our team quotes and confirms it with you after you book.",
+        own: "I have my own hotel or will book one",
+        listed: "I am staying at one of these hotels",
+        arrange: "Please arrange a stay for me",
+        pick: "Hotel",
+        any: "No preference",
+        nights: "Nights",
+        rooms: "Rooms",
+        notes: "Anything we should know (optional)",
+        note: "Hotel stays are not part of the price shown. They are quoted and confirmed separately."
+      },
+      review: {
+        heading: "Review your trip",
+        trip: "Your trip",
+        vehicle: "Vehicle and driver",
+        guide: "Private guide",
+        tickets: "Entry tickets",
+        total: "Estimated total",
+        deposit: "Deposit due when you book",
+        balance: "Balance on the day",
+        ticketsNote: "Entry tickets are included at the official fee for each adult. Children under 15 are free. Fees checked on {date}.",
+        estimateNote: "This is an estimate. Your final price is confirmed when you pay.",
+        dates: "{from} to {to}",
+        hotelOwn: "Hotel: your own",
+        hotelListed: "Hotel: {name}",
+        hotelArrange: "Please arrange a stay. Nights: {nights}, rooms: {rooms}",
+        pay: "Payment opens soon",
+        incomplete: "Finish the earlier steps to see your price."
+      },
+      summary: {
+        heading: "Your trip so far",
+        empty: "Your price appears here once your trip is complete.",
+        total: "Estimated total",
+        days: "{n} days"
+      },
+      stopNames: {
+        "taj-mahal": "Taj Mahal",
+        "agra-fort": "Agra Fort",
+        "itimad-ud-daulah": "Itimad-ud-Daulah (Baby Taj)",
+        "mehtab-bagh": "Mehtab Bagh",
+        "fatehpur-sikri": "Fatehpur Sikri"
+      },
+      errors: {
+        bad_start_date: "Please choose a valid start date.",
+        start_too_soon: "Please choose a later start date.",
+        bad_days: "Add at least one day.",
+        too_many_days: "Trips can be up to {max} days.",
+        bad_travellers: "Add at least one adult traveller.",
+        group_too_large: "For a group this size, please contact us.",
+        unknown_vehicle: "Please choose a vehicle.",
+        vehicle_too_small: "The {vehicle} is too small for your group. Please choose a larger vehicle.",
+        rates_not_set: "Prices for this trip are not set up yet. Please contact us.",
+        day_empty: "Day {day} has no stops. Add one or remove the day.",
+        too_many_stops: "Day {day} has too many stops.",
+        unknown_stop: "Day {day} has a stop that is no longer available.",
+        duplicate_stop: "{stop} is listed twice on day {day}.",
+        closed_friday: "{stop} is closed on Fridays (day {day}). Move it to another day.",
+        night_only: "{stop} is only possible on the full-moon nights (day {day}).",
+        day_too_full: "Day {day} has more than one day can hold. Move a stop to another day.",
+        fee_missing: "The ticket fee for {stop} is not set up yet. Please contact us.",
+        bad_hotel: "Please complete your hotel choice."
+      }
   }
 };
 

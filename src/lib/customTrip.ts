@@ -112,9 +112,10 @@ export type TripErrorCode =
 
 export interface TripError {
   code: TripErrorCode;
-  message: string;
+  message: string; // English, for logs and API callers; the page translates from code + params
   day?: number; // 0-based
   stopId?: string;
+  params?: Record<string, string | number>; // day (1-based), stop, vehicle, seats, max
 }
 
 export interface TicketLine {
@@ -178,7 +179,7 @@ function pick(money: Money, currency: Currency, usdRate: number): number {
   return money.usd !== null && money.usd > 0 ? money.usd : Math.ceil(money.inr / usdRate);
 }
 
-const err = (code: TripErrorCode, message: string, extra: { day?: number; stopId?: string } = {}): TripError => ({ code, message, ...extra });
+const err = (code: TripErrorCode, message: string, extra: { day?: number; stopId?: string; params?: TripError['params'] } = {}): TripError => ({ code, message, ...extra });
 
 const isCount = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0;
 
@@ -195,7 +196,7 @@ export function validateTrip(input: TripInput, rates: CustomRates, now: Date = n
 
   const dayCount = input.days.length;
   if (dayCount < 1) errors.push(err('bad_days', 'Add at least one day.'));
-  if (dayCount > rates.maxDays) errors.push(err('too_many_days', `Trips can be up to ${rates.maxDays} days.`));
+  if (dayCount > rates.maxDays) errors.push(err('too_many_days', `Trips can be up to ${rates.maxDays} days.`, { params: { max: rates.maxDays } }));
 
   const t = input.travellers;
   const counts = [t.foreign, t.indian, t.saarc, t.children];
@@ -211,7 +212,7 @@ export function validateTrip(input: TripInput, rates: CustomRates, now: Date = n
     errors.push(err('unknown_vehicle', 'Please choose a vehicle.'));
   } else {
     if (counts.every(isCount) && travellerTotal(t) > vehicle.seats) {
-      errors.push(err('vehicle_too_small', `The ${vehicle.name} seats ${vehicle.seats}. Please choose a larger vehicle.`));
+      errors.push(err('vehicle_too_small', `The ${vehicle.name} seats ${vehicle.seats}. Please choose a larger vehicle.`, { params: { vehicle: vehicle.id, seats: vehicle.seats } }));
     }
     const needsDelhi = input.start === 'delhi';
     if (vehicle.agraDay.inr <= 0 || (needsDelhi && vehicle.delhiReturn.inr <= 0) || rates.guideDay.inr <= 0) {
@@ -222,11 +223,11 @@ export function validateTrip(input: TripInput, rates: CustomRates, now: Date = n
   const stopById = new Map(rates.stops.map((s) => [s.id, s]));
   input.days.forEach((day, i) => {
     if (day.stopIds.length === 0) {
-      errors.push(err('day_empty', `Day ${i + 1} has no stops. Add one or remove the day.`, { day: i }));
+      errors.push(err('day_empty', `Day ${i + 1} has no stops. Add one or remove the day.`, { day: i, params: { day: i + 1 } }));
       return;
     }
     if (day.stopIds.length > MAX_STOPS_PER_DAY) {
-      errors.push(err('too_many_stops', `Day ${i + 1} has too many stops.`, { day: i }));
+      errors.push(err('too_many_stops', `Day ${i + 1} has too many stops.`, { day: i, params: { day: i + 1 } }));
     }
     const date = isValidDateString(input.startDate) ? addDays(input.startDate, i) : '';
     const seen = new Set<string>();
@@ -234,21 +235,21 @@ export function validateTrip(input: TripInput, rates: CustomRates, now: Date = n
     for (const id of day.stopIds) {
       const stop = stopById.get(id);
       if (!stop || !stop.active) {
-        errors.push(err('unknown_stop', `Day ${i + 1} has a stop that is no longer available.`, { day: i, stopId: id }));
+        errors.push(err('unknown_stop', `Day ${i + 1} has a stop that is no longer available.`, { day: i, stopId: id, params: { day: i + 1 } }));
         continue;
       }
-      if (seen.has(id)) errors.push(err('duplicate_stop', `${stop.name} is listed twice on day ${i + 1}.`, { day: i, stopId: id }));
+      if (seen.has(id)) errors.push(err('duplicate_stop', `${stop.name} is listed twice on day ${i + 1}.`, { day: i, stopId: id, params: { day: i + 1, stop: id } }));
       seen.add(id);
       minutes += stop.visitMinutes + stop.travelMinutes;
       if (date && stop.closedFridays && isFriday(date)) {
-        errors.push(err('closed_friday', `${stop.name} is closed on Fridays. Move it to another day.`, { day: i, stopId: id }));
+        errors.push(err('closed_friday', `${stop.name} is closed on Fridays. Move it to another day.`, { day: i, stopId: id, params: { day: i + 1, stop: id } }));
       }
       if (date && stop.nightOnly && !isNightViewingDate(date)) {
-        errors.push(err('night_only', `${stop.name} is only possible on the full-moon nights.`, { day: i, stopId: id }));
+        errors.push(err('night_only', `${stop.name} is only possible on the full-moon nights.`, { day: i, stopId: id, params: { day: i + 1, stop: id } }));
       }
     }
     if (minutes > rates.dayMinutes) {
-      errors.push(err('day_too_full', `Day ${i + 1} has more than one day can hold. Move a stop to another day.`, { day: i }));
+      errors.push(err('day_too_full', `Day ${i + 1} has more than one day can hold. Move a stop to another day.`, { day: i, params: { day: i + 1 } }));
     }
   });
 
@@ -302,7 +303,7 @@ export function priceTrip(input: TripInput, rates: CustomRates, now: Date = new 
           if (quantity === 0) continue;
           const fee = stop.fees[category];
           if (!fee) {
-            feeErrors.push(err('fee_missing', `The ticket fee for ${stop.name} is not set up yet. Please contact us.`, { day: i, stopId: id }));
+            feeErrors.push(err('fee_missing', `The ticket fee for ${stop.name} is not set up yet. Please contact us.`, { day: i, stopId: id, params: { stop: id } }));
             continue;
           }
           const options = [fee.fee];

@@ -1384,5 +1384,125 @@ export const es: Dictionary = {
           "El hotel con más opiniones de nuestra clasificación, con 239 habitaciones.",
           "Piscina en la azotea y spa en el propio hotel, con una de las tarifas medias más bajas de la clasificación."
       ]
+  },
+  customTour: {
+      meta: {
+        title: "Personalice su tour por Agra",
+        description: "Cree su propio viaje a Agra: elija sus días y paradas, su vehículo y su hotel, y vea el precio mientras lo diseña."
+      },
+      heading: "Personalice su tour por Agra",
+      intro: "Elija sus días y paradas, un vehículo y un hotel, y vea el precio mientras lo diseña. Su guía privado, el vehículo y las entradas oficiales están incluidos.",
+      previewBanner: "Solo vista previa. Los clientes aún no pueden ver esta página.",
+      noJs: "Esta página necesita JavaScript para crear su viaje. Actívelo, o escríbanos por WhatsApp y lo planificamos con usted.",
+      noJsLink: "Contáctenos",
+      stepOf: "Paso {n} de {total}",
+      steps: { trip: "Viaje", itinerary: "Itinerario", vehicle: "Vehículo", hotel: "Hotel", review: "Resumen" },
+      back: "Atrás",
+      next: "Siguiente",
+      trip: {
+        heading: "Su viaje",
+        startDate: "Primer día de su viaje",
+        startFrom: "¿Dónde empieza su viaje?",
+        startDelhi: "Delhi, Gurgaon, Noida o el aeropuerto",
+        startAgra: "Ya estoy en Agra",
+        startHint: "Desde Delhi le recogemos en su hotel o en el aeropuerto y le llevamos a Agra.",
+        travellers: "¿Quién viaja?",
+        foreign: "Visitantes extranjeros",
+        indian: "Ciudadanos indios",
+        saarc: "Ciudadanos de la SAARC o la BIMSTEC",
+        children: "Niños menores de 15 años",
+        childrenHint: "Los niños menores de 15 años entran gratis a los monumentos.",
+        guests: "Viajeros en total: {n}"
+      },
+      itinerary: {
+        heading: "Su itinerario",
+        hint: "Diseñe cada día. Las paradas se visitan en el orden mostrado y puede subirlas o bajarlas.",
+        day: "Día {n}",
+        fromTour: "Empezar este día con un tour ya preparado",
+        fromTourNone: "Elegiré yo las paradas",
+        addStop: "Añadir una parada",
+        addStopPlaceholder: "Elija una parada",
+        remove: "Quitar {stop}",
+        up: "Adelantar {stop}",
+        down: "Retrasar {stop}",
+        addDay: "Añadir otro día",
+        removeDay: "Quitar el día {n}",
+        empty: "Aún no hay paradas. Elija una abajo.",
+        closedFridays: "Cerrado los viernes",
+        nightOnly: "Solo en noches de luna llena"
+      },
+      vehicle: {
+        heading: "Su vehículo",
+        hint: "Todos los vehículos son privados y con aire acondicionado, con conductor. El precio es por vehículo, no por persona.",
+        seats: "Hasta {n} viajeros",
+        perDay: "{price} por día en Agra",
+        delhiExtra: "{price} por el viaje de ida y vuelta desde Delhi",
+        tooSmall: "Demasiado pequeño para su grupo"
+      },
+      vehicleNames: { sedan: "Sedán", suv: "SUV o MUV", tempo: "Tempo Traveller", luxury: "Coche de lujo (Mercedes o BMW)" },
+      hotel: {
+        heading: "Su hotel",
+        hint: "Su hotel indica a su conductor dónde recogerle. Si quiere que organicemos el alojamiento, nuestro equipo se lo presupuesta y confirma después de su reserva.",
+        own: "Tengo mi propio hotel o lo reservaré yo",
+        listed: "Me alojo en uno de estos hoteles",
+        arrange: "Organícenme el alojamiento",
+        pick: "Hotel",
+        any: "Sin preferencia",
+        nights: "Noches",
+        rooms: "Habitaciones",
+        notes: "Algo que debamos saber (opcional)",
+        note: "El alojamiento no forma parte del precio mostrado. Se presupuesta y confirma por separado."
+      },
+      review: {
+        heading: "Revise su viaje",
+        trip: "Su viaje",
+        vehicle: "Vehículo y conductor",
+        guide: "Guía privado",
+        tickets: "Entradas",
+        total: "Total estimado",
+        deposit: "Depósito a pagar al reservar",
+        balance: "Saldo el día del viaje",
+        ticketsNote: "Las entradas están incluidas a la tarifa oficial de cada adulto. Los niños menores de 15 años son gratis. Tarifas comprobadas el {date}.",
+        estimateNote: "Es una estimación. El precio final se confirma al pagar.",
+        dates: "{from} a {to}",
+        hotelOwn: "Hotel: el suyo",
+        hotelListed: "Hotel: {name}",
+        hotelArrange: "Organizar alojamiento. Noches: {nights}, habitaciones: {rooms}",
+        pay: "El pago estará disponible pronto",
+        incomplete: "Complete los pasos anteriores para ver su precio."
+      },
+      summary: {
+        heading: "Su viaje hasta ahora",
+        empty: "Su precio aparecerá aquí cuando complete su viaje.",
+        total: "Total estimado",
+        days: "{n} días"
+      },
+      stopNames: {
+        "taj-mahal": "Taj Mahal",
+        "agra-fort": "Fuerte de Agra",
+        "itimad-ud-daulah": "Itimad-ud-Daulah (Baby Taj)",
+        "mehtab-bagh": "Mehtab Bagh",
+        "fatehpur-sikri": "Fatehpur Sikri"
+      },
+      errors: {
+        bad_start_date: "Elija una fecha de inicio válida.",
+        start_too_soon: "Elija una fecha de inicio posterior.",
+        bad_days: "Añada al menos un día.",
+        too_many_days: "Los viajes pueden durar hasta {max} días.",
+        bad_travellers: "Añada al menos un viajero adulto.",
+        group_too_large: "Para un grupo de este tamaño, contáctenos.",
+        unknown_vehicle: "Elija un vehículo.",
+        vehicle_too_small: "El vehículo {vehicle} es demasiado pequeño para su grupo. Elija uno más grande.",
+        rates_not_set: "Los precios de este viaje aún no están configurados. Contáctenos.",
+        day_empty: "El día {day} no tiene paradas. Añada una o quite el día.",
+        too_many_stops: "El día {day} tiene demasiadas paradas.",
+        unknown_stop: "El día {day} tiene una parada que ya no está disponible.",
+        duplicate_stop: "{stop} aparece dos veces el día {day}.",
+        closed_friday: "{stop} cierra los viernes (día {day}). Pásela a otro día.",
+        night_only: "{stop} solo es posible en las noches de luna llena (día {day}).",
+        day_too_full: "El día {day} tiene más de lo que cabe en un día. Pase una parada a otro día.",
+        fee_missing: "La tarifa de entrada de {stop} aún no está configurada. Contáctenos.",
+        bad_hotel: "Complete su elección de hotel."
+      }
   }
 };
