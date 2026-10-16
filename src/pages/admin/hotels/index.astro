@@ -1,0 +1,159 @@
+---
+// Hotel booking settings (src/lib/hotelData.ts, hotelContent.ts): the on/off switch,
+// markup and exchange rates, hotel filters, and the content refresh from Hotelbeds.
+// Nothing here is visible to guests until the switch is on. Never prints any key.
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import type { D1Like } from '../../../lib/db';
+import { loadHotelSettings, saveHotelSettings, setHotelsEnabled } from '../../../lib/hotelData';
+import { syncHotelContent } from '../../../lib/hotelContent';
+import { checkHotelSettingsForm } from '../../../lib/hotelAdminForm';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const db = env.DB as D1Like | undefined;
+
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  const action = String(form.get('_action') ?? '');
+  const text = (name: string) => String(form.get(name) ?? '');
+  let result: { ok: boolean; error?: string } = { ok: true };
+  let note = '';
+  try {
+    if (action === 'switch_on') {
+      result = await setHotelsEnabled(db, true);
+      note = 'Hotels are now live. The /hotels page is public.';
+    } else if (action === 'switch_off') {
+      result = await setHotelsEnabled(db, false);
+      note = 'Hotels are switched off. Guests no longer see /hotels.';
+    } else if (action === 'save') {
+      const values = { markupPercent: text('markupPercent'), fxEurInr: text('fxEurInr'), fxEurUsd: text('fxEurUsd'), minStars: text('minStars') };
+      const current = await loadHotelSettings(db);
+      const check = checkHotelSettingsForm(values, current.enabled);
+      if (!check.ok) {
+        result = check;
+      } else {
+        result = await saveHotelSettings(db, { ...values, excludedCodes: text('excludedCodes') });
+        note = 'Settings saved.';
+      }
+    } else if (action === 'refresh') {
+      const synced = await syncHotelContent(env as Record<string, any>, db);
+      result = synced;
+      if (synced.ok) note = `Content refreshed: ${synced.count} hotels loaded.`;
+    }
+  } catch (e) {
+    result = { ok: false, error: e instanceof Error ? e.message : 'Could not complete that.' };
+  }
+  const query = new URLSearchParams();
+  if (!result.ok) query.set('err', result.error ?? 'Could not complete that.');
+  else if (note) query.set('note', note);
+  return Astro.redirect(`/admin/hotels${query.size ? `?${query}` : ''}`);
+}
+
+const settings = db ? await loadHotelSettings(db) : null;
+const countRow = db ? await db.prepare(`SELECT COUNT(*) AS n FROM hotel_content`).bind().first<{ n: number }>() : null;
+const hotelCount = countRow?.n ?? 0;
+const sync = db
+  ? await db.prepare(`SELECT last_run, last_count, last_error FROM hotel_sync WHERE id = 1`).bind().first<{ last_run: string | null; last_count: number | null; last_error: string | null }>()
+  : null;
+
+// Presence only; the values themselves are never rendered.
+const keysConfigured = Boolean(env.HOTELBEDS_API_KEY) && Boolean(env.HOTELBEDS_SECRET);
+const apiKeyState = env.HOTELBEDS_API_KEY ? 'configured' : 'missing';
+const secretState = env.HOTELBEDS_SECRET ? 'configured' : 'missing';
+let apiHost = 'api.test.hotelbeds.com';
+try {
+  if (env.HOTELBEDS_BASE_URL) apiHost = new URL(String(env.HOTELBEDS_BASE_URL)).host;
+} catch {
+  apiHost = 'invalid HOTELBEDS_BASE_URL';
+}
+
+const error = Astro.url.searchParams.get('err');
+const note = Astro.url.searchParams.get('note');
+const btn = 'min-h-11 rounded px-4 text-sm font-medium';
+const field = 'w-full min-h-11 rounded border border-stone-300 bg-white px-2 py-1.5 text-sm';
+const label = 'block text-xs text-stone-500 mb-1';
+---
+<AdminLayout title="Hotels">
+  <h1 class="text-2xl font-semibold mb-2">Hotels</h1>
+  <p class="text-stone-500 text-sm mb-1">
+    Settings for the hotel booking page. Guests see nothing until you switch it on below.
+  </p>
+  {error && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+  {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
+
+  {settings && (
+    <>
+      <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold">
+              {settings.enabled ? 'Hotels are live' : 'Hotels are switched off'}
+              <span class={`ml-2 rounded px-2 py-0.5 text-xs font-medium ${settings.enabled ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>{settings.enabled ? 'On' : 'Off'}</span>
+            </h2>
+            <p class="mt-1 text-sm text-amber-800">Switching on makes the /hotels page public to every guest.</p>
+            {!settings.enabled && <p class="text-sm text-stone-500">It will not switch on until markup is above 0, the EUR to INR rate is set and hotel content has been loaded.</p>}
+          </div>
+          <form method="POST">
+            {settings.enabled
+              ? <button type="submit" name="_action" value="switch_off" class={`${btn} bg-red-700 text-white`}>Switch off now</button>
+              : <button type="submit" name="_action" value="switch_on" class={`${btn} bg-green-700 text-white`}>Switch on</button>}
+          </form>
+        </div>
+      </section>
+
+      <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+        <h2 class="text-lg font-semibold mb-2">Summary</h2>
+        <dl class="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+          <div class="flex gap-2"><dt class="text-stone-500">Destination code</dt><dd>{settings.destinationCode}</dd></div>
+          <div class="flex gap-2"><dt class="text-stone-500">Contract currency</dt><dd>{settings.contractCurrency}</dd></div>
+          <div class="flex gap-2"><dt class="text-stone-500">Hotels loaded</dt><dd>{hotelCount}</dd></div>
+          <div class="flex gap-2"><dt class="text-stone-500">Last refresh</dt><dd>{sync?.last_run ?? 'never'}</dd></div>
+          <div class="flex gap-2"><dt class="text-stone-500">Last refresh count</dt><dd>{sync?.last_count ?? 'none'}</dd></div>
+          <div class="flex gap-2"><dt class="text-stone-500">Last refresh error</dt><dd class={sync?.last_error ? 'text-red-700' : ''}>{sync?.last_error || 'none'}</dd></div>
+          <div class="flex gap-2"><dt class="text-stone-500">Hotelbeds API key</dt><dd>{apiKeyState}</dd></div>
+          <div class="flex gap-2"><dt class="text-stone-500">Hotelbeds secret</dt><dd>{secretState}</dd></div>
+          <div class="flex gap-2"><dt class="text-stone-500">Hotelbeds server</dt><dd>{apiHost}</dd></div>
+        </dl>
+      </section>
+
+      <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+        <h2 class="text-lg font-semibold">Hotel content</h2>
+        <p class="text-sm text-stone-500 mb-3">
+          Loads names, photos and facilities from Hotelbeds into the site. It can take several seconds, so wait for the result message after pressing the button.
+          {!keysConfigured && ' The Hotelbeds keys are missing, so this will fail until they are added in Cloudflare.'}
+        </p>
+        <form method="POST">
+          <button type="submit" name="_action" value="refresh" class={`${btn} bg-amber-800 text-white`}>Refresh content</button>
+        </form>
+      </section>
+
+      <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+        <h2 class="text-lg font-semibold">Pricing and filters</h2>
+        <p class="text-sm text-stone-500 mb-3">Numbers only. Markup is added on top of the Hotelbeds price.</p>
+        <form method="POST" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div><label class={label} for="markupPercent">Markup (percent)</label><input id="markupPercent" name="markupPercent" inputmode="decimal" required value={settings.markupPercent} class={field} /></div>
+          <div><label class={label} for="fxEurInr">EUR to INR rate</label><input id="fxEurInr" name="fxEurInr" inputmode="decimal" required value={settings.fxEurInr} class={field} /></div>
+          <div>
+            <label class={label} for="fxEurUsd">EUR to USD rate</label>
+            <input id="fxEurUsd" name="fxEurUsd" inputmode="decimal" required value={settings.fxEurUsd} class={field} aria-describedby="usd-note" />
+            <p id="usd-note" class="mt-1 text-xs text-stone-500">While this is 0, USD guests will see no hotels.</p>
+          </div>
+          <div><label class={label} for="minStars">Minimum stars (0 to 5)</label><input id="minStars" name="minStars" inputmode="numeric" required value={settings.minStars} class={field} /></div>
+          <div class="sm:col-span-2">
+            <label class={label} for="excludedCodes">Excluded hotel codes (comma-separated)</label>
+            <input id="excludedCodes" name="excludedCodes" value={settings.excludedCodes.join(', ')} class={field} />
+          </div>
+          <div class="sm:col-span-2"><button type="submit" name="_action" value="save" class={`${btn} bg-amber-800 text-white`}>Save</button></div>
+        </form>
+      </section>
+    </>
+  )}
+  {!settings && <p class="mt-6 text-sm text-red-700">The database is not available.</p>}
+</AdminLayout>
