@@ -36,7 +36,7 @@
 ## Task 1: Schema, pure pricing and payment-plan rules
 
 **Files:**
-- Create: `schema_offers.sql`, `src/lib/offerPricing.ts`
+- Create: `schema_private_offers.sql`, `src/lib/offerPricing.ts`
 - Test: scratchpad `offer-pricing-test.ts`
 
 **Interfaces:**
@@ -56,11 +56,11 @@
   export function offerState(terms: OfferTerms, paid: PaidPayment[]): OfferState
   ```
 
-- [ ] **Step 1: Write `schema_offers.sql`**
+- [ ] **Step 1: Write `schema_private_offers.sql`**
 
 ```sql
 -- Private offer pages (one secret link per customer). Run once:
---   wrangler d1 execute iwisglobal-bookings --remote --file=schema_offers.sql
+--   wrangler d1 execute iwisglobal-bookings --remote --file=schema_private_offers.sql
 CREATE TABLE IF NOT EXISTS private_offers (
   id TEXT PRIMARY KEY,                       -- 'po_' + 32 hex: the secret in the link
   status TEXT NOT NULL DEFAULT 'open',       -- open | closed
@@ -151,7 +151,7 @@ process.exit(failed ? 1 : 0);
 - [ ] **Step 4: Implement `src/lib/offerPricing.ts`** exactly per the Interfaces block and these rules: `tripTotalMinor` = option total + (lang 'de' ? germanGuideExtraMinor : 0), null for an unknown option; `depositMinor` = `Math.round(total * percent / 100)`; `planPayment` first validates terms (`depositPercent` an integer 1..99, every option total a positive integer, otherwise `bad_terms`), then: if any paid payment exists → a full or balance payment already paid means `already_paid` for modes full, deposit and balance (a balance after a completed balance is `already_paid`); if only a deposit is paid → mode `balance` returns kind balance with the PAID option and language and amount = total − deposit paid, modes full and deposit return `already_paid`; if nothing is paid → mode `balance` is `deposit_first`; modes full and deposit validate option (`bad_option`) and language (`bad_language`, only 'en' or 'de') and compute the amount (full = total, deposit = depositMinor); any other mode is `bad_mode`. `offerState` derives the status from the paid payments (none → unpaid; a deposit only → deposit_paid with balanceMinor = total − paid; a full payment or deposit + balance → paid_in_full, balanceMinor 0); `totalMinor` comes from the first paid payment's option and language. A `planPayment` call must never throw.
 
 - [ ] **Step 5:** Run the test → all `ok`. `npx astro check` → 0 errors.
-- [ ] **Step 6: Commit** `git add schema_offers.sql src/lib/offerPricing.ts && git commit -m "Private offers: schema and payment rules"`
+- [ ] **Step 6: Commit** `git add schema_private_offers.sql src/lib/offerPricing.ts && git commit -m "Private offers: schema and payment rules"`
 
 ---
 
@@ -222,8 +222,8 @@ Island rules: copy `loadRazorpayScript` and the `Window.Razorpay` declaration fr
 ## Task 4: PDF itinerary generator, offer seed script, admin list
 
 **Files:**
-- Create: `scripts/offer-pdf.mjs`, `scripts/offer-seed.mjs`, `src/pages/admin/offers/index.astro`
-- Modify: `src/layouts/AdminLayout.astro` (nav link `Offers`)
+- Create: `scripts/offer-pdf.mjs`, `scripts/offer-seed.mjs`, `src/pages/admin/private-offers/index.astro`
+- Modify: `src/layouts/AdminLayout.astro` (nav link `Private offers`; the existing `Offers` link and `src/pages/admin/offers/` are the coupon admin and must not be touched)
 - Test: run the scripts against a sample JSON in the scratchpad.
 
 **Interfaces:**
@@ -232,12 +232,12 @@ Island rules: copy `loadRazorpayScript` and the `Window.Razorpay` declaration fr
 
 PDF design (A4, portrait, 2 pages max): header band with the IWIS logo, "IWIS Global" and "Private Taj Mahal Sunrise Tour with Agra Fort"; "Prepared for {customerName}" with date, travellers, pickup window and hotel; a clear timeline of the itinerary (time column, title, one-line text); the two options in a two-column table with the all-inclusive prices and the German-guide note ("+ EUR 10 for a German-speaking guide"); what is included / not included; "Payment: pay 100% or a 40% booking amount online at <link> — balance payable on the same page"; cancellation line; contact (WhatsApp +91 63992 26633, info@iwisglobal.com, www.iwisglobal.com). A diagonal light-grey "CONFIDENTIAL" watermark repeated on EVERY page (`position: fixed` centred, `transform: rotate(-35deg)`, large letter-spaced text at about 8% opacity, `z-index` behind the text), and a footer line on every page: "Confidential — prepared for {customerName}. IWIS Global". Use the site's violet (`#6d28d9`) for accents and a serif heading font stack (`'Cormorant Garamond', Georgia, serif`) with a system sans body (embedded fonts are not required). Print CSS: `@page { size: A4; margin: 14mm }`, avoid page breaks inside timeline rows.
 
-Admin list (`/admin/offers`): same auth redirect as the other admin pages; read-only table of offers (created date, customer name, option chosen if any, status from `offerState`, paid and balance amounts) and, per offer, its payments (kind, amount, status, paid time); a "Copy link" button that copies `https://www.iwisglobal.com/offer/<id>` (client-side `navigator.clipboard`, text fallback); amounts formatted with `Intl.NumberFormat('en-IE', {style:'currency', currency})`.
+Admin list (`/admin/private-offers`): same auth redirect as the other admin pages; read-only table of offers (created date, customer name, option chosen if any, status from `offerState`, paid and balance amounts) and, per offer, its payments (kind, amount, status, paid time); a "Copy link" button that copies `https://www.iwisglobal.com/offer/<id>` (client-side `navigator.clipboard`, text fallback); amounts formatted with `Intl.NumberFormat('en-IE', {style:'currency', currency})`.
 
 - [ ] **Step 1:** Implement the two scripts and the admin page + nav link. Keep all customer data out of the repo; the scripts take the JSON path as an argument.
-- [ ] **Step 2:** Create a SAMPLE offer JSON in the scratchpad (fake customer "Test Guest", real itinerary text), run `node scripts/offer-pdf.mjs <sample.json> <sample.pdf>`, then verify the PDF: open it (Read tool on the PDF, pages 1-2) and check the logo, the diagonal CONFIDENTIAL watermark on every page, the timeline, both options with prices, the link, no clipped text and at most 2 pages. Run `node scripts/offer-seed.mjs <sample.json>` and apply the output to an in-memory SQLite copy of `schema_offers.sql` to prove the SQL is valid and round-trips through `getOffer` (a scratchpad test that bundles `offerData.ts`).
+- [ ] **Step 2:** Create a SAMPLE offer JSON in the scratchpad (fake customer "Test Guest", real itinerary text), run `node scripts/offer-pdf.mjs <sample.json> <sample.pdf>`, then verify the PDF: open it (Read tool on the PDF, pages 1-2) and check the logo, the diagonal CONFIDENTIAL watermark on every page, the timeline, both options with prices, the link, no clipped text and at most 2 pages. Run `node scripts/offer-seed.mjs <sample.json>` and apply the output to an in-memory SQLite copy of `schema_private_offers.sql` to prove the SQL is valid and round-trips through `getOffer` (a scratchpad test that bundles `offerData.ts`).
 - [ ] **Step 3:** `npx astro check` → 0 errors; `npm run build` completes.
-- [ ] **Step 4: Commit** `git add scripts/offer-pdf.mjs scripts/offer-seed.mjs src/pages/admin/offers src/layouts/AdminLayout.astro && git commit -m "Private offers: PDF itinerary, seed script and admin list"`
+- [ ] **Step 4: Commit** `git add scripts/offer-pdf.mjs scripts/offer-seed.mjs src/pages/admin/private-offers src/layouts/AdminLayout.astro && git commit -m "Private offers: PDF itinerary, seed script and admin list"`
 
 ---
 
@@ -245,7 +245,7 @@ Admin list (`/admin/offers`): same auth redirect as the other admin pages; read-
 
 1. Final whole-branch review of Tasks 1-4.
 2. Owner yes to push; the site deploys with no offer present (every `/offer/...` is 404).
-3. Owner yes to apply `schema_offers.sql` to production, then to insert the real offer (SQL produced by `offer-seed.mjs` from the local JSON).
+3. Owner yes to apply `schema_private_offers.sql` to production, then to insert the real offer (SQL produced by `offer-seed.mjs` from the local JSON).
 4. Generate the real PDF with the real link; send both link and PDF to the customer on WhatsApp.
 5. Before sending: one small real payment test in EUR by the owner (the offer can be seeded with a test option of EUR 1) to confirm Razorpay accepts EUR; if it refuses EUR orders, switch the offer currency to USD or INR with a new total, and regenerate the PDF.
 
