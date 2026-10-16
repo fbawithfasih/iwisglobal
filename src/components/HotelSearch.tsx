@@ -51,6 +51,22 @@ export default function HotelSearch({ t, intlLocale }: Props) {
   // Read on the client so the server render and first client render match.
   useEffect(() => setMinDate(getAvailability().minBookableDate), []);
 
+  // The custom-tour thanks page links here with the trip's dates and party
+  // (?checkIn=&checkOut=&adults=). Only well-formed values are used; the server
+  // validates the search again either way.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const isDate = (v: string | null): v is string => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`));
+    const inDate = q.get('checkIn');
+    const outDate = q.get('checkOut');
+    if (isDate(inDate) && isDate(outDate) && outDate > inDate) {
+      setCheckIn(inDate);
+      setCheckOut(outDate);
+    }
+    const adults = Number(q.get('adults'));
+    if (Number.isInteger(adults) && adults >= 1 && adults <= MAX_ADULTS_PER_ROOM) setRooms([{ adults, childAges: [] }]);
+  }, []);
+
   // Amounts are shown in the currency the server priced them in.
   const money = (n: number, cur: 'INR' | 'USD') => `${cur === 'USD' ? '$' : '₹'}${n.toLocaleString(cur === 'USD' ? 'en-US' : 'en-IN')}`;
   const longDate = (iso: string) => {
