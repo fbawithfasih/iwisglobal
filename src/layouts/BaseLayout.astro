@@ -38,6 +38,10 @@ interface Props {
   // false on pages with their own WhatsApp button or a short form the
   // floating one would cover (contact, confirmation, sign-in pages…).
   floatingWhatsApp?: boolean;
+  // Private pages whose URL is a secret (private offers): no third-party
+  // analytics, advertising or tracking script, and no cookie banner (it only
+  // exists to load the Meta Pixel and Metricool after consent).
+  noTracking?: boolean;
 }
 
 const {
@@ -51,7 +55,10 @@ const {
   breadcrumbs,
   noindex = false,
   floatingWhatsApp = true,
+  noTracking = false,
 } = Astro.props;
+
+const TRACKING_COMMENTS: string[] = ['<!-- Google consent defaults, before the Google tag loads: analytics and\n         ad cookies stay off until the visitor taps Accept on the cookie\n         banner (CookieConsent.astro), which remembers the choice in the\n         cookie_consent cookie. -->', "<!-- Google tag (gtag.js), loaded after the page has finished loading (and the\n         browser is idle) so its 190 KB of script doesn't compete with the first\n         paint. The calls below queue in dataLayer, and consent updates and\n         events from the page queue behind them, until the tag arrives. -->", "<!-- Ahrefs Web Analytics: cookie-free page-view counts (Ahrefs states it needs no\n         consent), so unlike GA, Meta and Metricool it isn't held back for the cookie\n         banner. Skipped on private pages (login, account, ...), which are noindex. -->"];
 
 // ?lang= / ?currency= are switcher links that set a cookie; the page they
 // render is a duplicate of the bare URL. Google indexed /?lang=es as its own
@@ -189,10 +196,8 @@ const websiteJsonLd = Astro.url.pathname === '/'
 <!doctype html>
 <html lang={locale} class="scroll-smooth">
   <head>
-    <!-- Google consent defaults, before the Google tag loads: analytics and
-         ad cookies stay off until the visitor taps Accept on the cookie
-         banner (CookieConsent.astro), which remembers the choice in the
-         cookie_consent cookie. -->
+    {!noTracking && <Fragment set:html={TRACKING_COMMENTS[0]} />}
+    {!noTracking && (
     <script is:inline>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
@@ -204,10 +209,9 @@ const websiteJsonLd = Astro.url.pathname === '/'
         ad_personalization: consentState,
       });
     </script>
-    <!-- Google tag (gtag.js), loaded after the page has finished loading (and the
-         browser is idle) so its 190 KB of script doesn't compete with the first
-         paint. The calls below queue in dataLayer, and consent updates and
-         events from the page queue behind them, until the tag arrives. -->
+    )}
+    {!noTracking && <Fragment set:html={TRACKING_COMMENTS[1]} />}
+    {!noTracking && (
     <script is:inline>
       gtag('js', new Date());
 
@@ -227,10 +231,9 @@ const websiteJsonLd = Astro.url.pathname === '/'
         else window.addEventListener('load', later, { once: true });
       })();
     </script>
-    <!-- Ahrefs Web Analytics: cookie-free page-view counts (Ahrefs states it needs no
-         consent), so unlike GA, Meta and Metricool it isn't held back for the cookie
-         banner. Skipped on private pages (login, account, ...), which are noindex. -->
-    {!noindex && <script is:inline async src="https://analytics.ahrefs.com/analytics.js" data-key="E2hZqQs3rehWC6n7B5T+Cw"></script>}
+    )}
+    {!noTracking && <Fragment set:html={TRACKING_COMMENTS[2]} />}
+    {!noindex && !noTracking && <script is:inline async src="https://analytics.ahrefs.com/analytics.js" data-key="E2hZqQs3rehWC6n7B5T+Cw"></script>}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Icon set made from the IWIS globe mark (logo-globe.png) on a white tile:
@@ -447,7 +450,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
     )}
 
     <CompareTray client:idle t={t.tray} />
-    <CookieConsent />
+    {!noTracking && <CookieConsent />}
   </body>
 </html>
 
