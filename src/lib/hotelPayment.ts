@@ -113,10 +113,12 @@ export async function handleHotelOrder(
   env: Record<string, any>,
   db: D1Like | undefined,
   raw: unknown,
-  now: Date = new Date()
+  now: Date = new Date(),
+  // A signed-in admin may pay while hotels are switched off, to test before launch.
+  adminPreview = false
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   if (!db) return { status: 503, body: { error: 'unavailable' } };
-  if (!(await isHotelsEnabled(db))) return { status: 403, body: { error: 'not_available' } };
+  if (!adminPreview && !(await isHotelsEnabled(db))) return { status: 403, body: { error: 'not_available' } };
 
   const body = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const bookingId = typeof body.bookingId === 'string' ? body.bookingId : '';

@@ -55,11 +55,13 @@ export async function rateHotel(
   db: D1Like,
   raw: unknown,
   currency: GuestCurrency,
-  now: Date = new Date()
+  now: Date = new Date(),
+  // A signed-in admin may pick a rate while hotels are switched off, to test before launch.
+  adminPreview = false
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const input = parseBody(raw);
   if (!input) return result(400, 'bad_request');
-  if (!(await isHotelsEnabled(db))) return result(403, 'not_available');
+  if (!adminPreview && !(await isHotelsEnabled(db))) return result(403, 'not_available');
 
   const row = await db.prepare('SELECT payload, expires_at FROM hotel_rate_cache WHERE rate_key = ?').bind(input.rateKey).first<{ payload: string; expires_at: string }>();
   if (!row || row.expires_at < now.toISOString()) return result(409, 'sold_out');
