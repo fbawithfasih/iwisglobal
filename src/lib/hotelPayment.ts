@@ -230,9 +230,14 @@ const supplierOf = (inv: any): Supplier => ({ name: str(inv?.company) || str(inv
 const changed = (res: unknown): boolean => (res as any)?.meta?.changes === 1;
 const dayOffset = (d: Date, days: number): string => new Date(d.getTime() + days * 86_400_000).toISOString().slice(0, 10);
 
+// Never throws: an alert problem must not change what happens to the money.
 async function alertOwner(env: Record<string, any>, id: string, paymentId: string, reason: string): Promise<void> {
-  console.error('hotel booking needs attention', id, paymentId, reason);
-  await sendHotelAlertEmail(env, `Hotel booking needs attention: ${id}`, [`Booking: ${id}`, `Payment: ${paymentId}`, `Reason: ${reason}`].join('\n'));
+  try {
+    console.error('hotel booking needs attention', id, paymentId, reason);
+    await sendHotelAlertEmail(env, `Hotel booking needs attention: ${id}`, [`Booking: ${id}`, `Payment: ${paymentId}`, `Reason: ${reason}`].join('\n'));
+  } catch {
+    // sendHotelAlertEmail never throws; this is belt and braces.
+  }
 }
 
 // Voucher emails come in Task 13. Kept isolated and never allowed to throw.
@@ -273,7 +278,7 @@ export function buildHotelBookingRequest(row: Pick<PaidBookingRow, 'id' | 'holde
       }
     }
   }
-  const holder = row.holder_name.trim();
+  const holder = String(row.holder_name ?? '').trim();
   const space = holder.indexOf(' ');
   const name = space > 0 ? holder.slice(0, space) : holder;
   const surname = space > 0 ? holder.slice(space + 1).trim() : '';
@@ -311,7 +316,8 @@ async function reconcile(
 export async function finalizeHotelBooking(
   env: Record<string, any>,
   db: D1Like,
-  paid: { bookingId: string; orderId: string; paymentId: string; amountMinor: number; currency: string }
+  paid: { bookingId: string; orderId: string; paymentId: string; amountMinor: number; currency: string },
+  clock: () => Date = () => new Date()
 ): Promise<HotelFinalizeOutcome> {
   const load = () =>
     db
@@ -323,11 +329,22 @@ export async function finalizeHotelBooking(
   const row = await load();
   if (!row) return 'unknown';
   if (!row.order_id || row.order_id !== paid.orderId || row.currency !== paid.currency || row.sell_total * 100 !== paid.amountMinor) {
-    console.error('hotel payment does not match the saved booking', paid.bookingId, paid.orderId);
+    // Money was captured that does not match this booking: a person decides.
+    await alertOwner(env, paid.bookingId, paid.paymentId, `payment does not match the booking (order ${paid.orderId}); nothing changed, not refunded`);
     return 'mismatch';
   }
 
-  const now = new Date();
+  // A different payment than the one this booking already holds (a second
+  // payment on the same order, or a late one on a settled booking): money with
+  // no booking behind it. Alert; never refund or change state automatically.
+  const strayPayment = async (current: { payment_id: string; status: string } | null): Promise<HotelFinalizeOutcome> => {
+    if (current && current.payment_id && current.payment_id !== paid.paymentId) {
+      await alertOwner(env, row.id, paid.paymentId, `a second payment arrived for this booking (status ${current.status}, booking holds payment ${current.payment_id}); not refunded`);
+    }
+    return 'duplicate';
+  };
+
+  const now = clock();
   const stamp = now.toISOString();
   let retry = false;
   if (row.status === 'quoted') {
@@ -335,7 +352,7 @@ export async function finalizeHotelBooking(
       .prepare(`UPDATE hotel_bookings SET status='paid', payment_id=?, updated_at=? WHERE id=? AND status='quoted'`)
       .bind(paid.paymentId, stamp, row.id)
       .run();
-    if (!changed(claim)) return 'duplicate';
+    if (!changed(claim)) return strayPayment(await db.prepare(`SELECT payment_id, status FROM hotel_bookings WHERE id = ?`).bind(row.id).first<{ payment_id: string; status: string }>());
   } else if (row.status === 'paid' && row.hb_reference === '' && row.payment_id === paid.paymentId) {
     // A request that claimed this booking died before finishing. Take it over
     // once (the updated_at compare stops two retries both winning) and only
@@ -349,7 +366,7 @@ export async function finalizeHotelBooking(
     if (!changed(reclaim)) return 'duplicate';
     retry = true;
   } else {
-    return 'duplicate';
+    return strayPayment(row);
   }
 
   const cfg = hbConfig(env);
@@ -358,7 +375,10 @@ export async function finalizeHotelBooking(
     return 'unresolved';
   }
 
-  // Book (first attempt only).
+  // Book (first attempt only). A 4xx answer is a definite rejection; a
+  // timeout, network error, 5xx or an answer without a reference is ambiguous:
+  // Hotelbeds may still commit the booking after we gave up.
+  let ambiguous = false;
   if (!retry) {
     const req = buildHotelBookingRequest(row);
     if (req) {
@@ -368,20 +388,33 @@ export async function finalizeHotelBooking(
         if (res.status === 200 && typeof reference === 'string' && reference.trim()) {
           return markBooked(env, db, cfg, row, paid.paymentId, reference.trim(), supplierOf(res.json.booking.invoiceCompany));
         }
+        ambiguous = !(res.status >= 400 && res.status <= 499);
         console.error('hotel booking not confirmed by Hotelbeds', row.id, res.status);
       } catch (e) {
+        ambiguous = true;
         console.error('hotel booking call failed', row.id, e instanceof Error ? e.name : 'error');
       }
     } else {
+      // Nothing was sent to Hotelbeds, so nothing can be committed there.
       console.error('hotel booking request could not be built', row.id);
     }
   }
 
-  // Unknown outcome: ask Hotelbeds what it holds before deciding anything.
-  const found = await reconcile(cfg, row, new Date());
+  // Ask Hotelbeds what it holds before deciding anything.
+  const found = await reconcile(cfg, row, clock());
   if (found.kind === 'found') return markBooked(env, db, cfg, row, paid.paymentId, found.reference, found.supplier);
   if (found.kind === 'error') {
     await alertOwner(env, row.id, paid.paymentId, 'could not confirm with Hotelbeds; payment held, not refunded');
+  }
+  if (found.kind === 'error' || ambiguous) {
+    if (ambiguous) {
+      // Keep the money and look again later: restart the 90-second takeover
+      // window from now (only if nobody else has touched the row since our claim).
+      await db
+        .prepare(`UPDATE hotel_bookings SET updated_at=? WHERE id=? AND status='paid' AND hb_reference='' AND updated_at=?`)
+        .bind(clock().toISOString(), row.id, stamp)
+        .run();
+    }
     return 'unresolved';
   }
 
@@ -394,14 +427,20 @@ export async function finalizeHotelBooking(
   try {
     await refundPaymentAmount(env, paid.paymentId, row.sell_total * 100);
   } catch (e) {
-    await db
-      .prepare(`UPDATE hotel_bookings SET status='paid', updated_at=? WHERE id=? AND status='failed'`)
-      .bind(new Date().toISOString(), row.id)
-      .run();
+    // The alert and the status restore are independent: either may fail
+    // without stopping the other, and neither throws out of here.
     await alertOwner(env, row.id, paid.paymentId, `not booked with Hotelbeds and the refund failed: ${e instanceof Error ? e.message : 'unknown error'}`);
+    try {
+      await db
+        .prepare(`UPDATE hotel_bookings SET status='paid', updated_at=? WHERE id=? AND status='failed'`)
+        .bind(clock().toISOString(), row.id)
+        .run();
+    } catch {
+      console.error('hotel booking: could not restore paid after a failed refund', row.id);
+    }
     return 'failed_refund_error';
   }
-  await db.prepare(`UPDATE hotel_bookings SET refunded=?, updated_at=? WHERE id=?`).bind(row.sell_total, new Date().toISOString(), row.id).run();
+  await db.prepare(`UPDATE hotel_bookings SET refunded=?, updated_at=? WHERE id=?`).bind(row.sell_total, clock().toISOString(), row.id).run();
   return 'failed_refunded';
 }
 
@@ -438,6 +477,25 @@ async function markBooked(
   return 'duplicate';
 }
 
+// For the webhook after a 'duplicate': true when the booking is not settled
+// yet, so Razorpay should deliver again. A row still 'paid' with no Hotelbeds
+// reference is being booked or was abandoned (a later delivery takes it over
+// after 90 s); a row 'failed' with nothing refunded lost its refund, so the
+// owner is alerted. Booked, cancelled, or failed-and-refunded rows are settled.
+export async function hotelBookingNeedsRetry(env: Record<string, any>, db: D1Like, bookingId: string): Promise<boolean> {
+  const row = await db
+    .prepare(`SELECT status, hb_reference, refunded, payment_id FROM hotel_bookings WHERE id = ?`)
+    .bind(bookingId)
+    .first<{ status: string; hb_reference: string; refunded: number; payment_id: string }>();
+  if (!row) return false;
+  if (row.status === 'paid' && !row.hb_reference) return true;
+  if (row.status === 'failed' && !(Number(row.refunded) > 0)) {
+    await alertOwner(env, bookingId, String(row.payment_id ?? ''), 'booking marked failed but no refund recorded; check the refund');
+    return true;
+  }
+  return false;
+}
+
 // POST /api/hotels/verify
 export async function handleHotelVerify(
   env: Record<string, any>,
@@ -468,12 +526,13 @@ export async function handleHotelVerify(
     case 'failed_refunded':
       return { status: 409, body: { error: 'not_booked_refunded', bookingId } };
     case 'failed_refund_error':
-    case 'unresolved':
       return { status: 502, body: { error: 'unresolved', bookingId } };
+    case 'unresolved':
+      return { status: 202, body: { pending: true, bookingId } };
     case 'duplicate': {
       const now = await db.prepare(`SELECT status, refunded FROM hotel_bookings WHERE id = ?`).bind(bookingId).first<{ status: string; refunded: number }>();
       if (now?.status === 'booked') return { status: 200, body: { success: true, bookingId } };
-      if (now?.status === 'paid') return { status: 200, body: { success: true, bookingId, pending: true } };
+      if (now?.status === 'paid') return { status: 202, body: { pending: true, bookingId } };
       if (now?.status === 'failed' && now.refunded > 0) return { status: 409, body: { error: 'not_booked_refunded', bookingId } };
       return { status: 409, body: { error: 'not_booked', bookingId } };
     }

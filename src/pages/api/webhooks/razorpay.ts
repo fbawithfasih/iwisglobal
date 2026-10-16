@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { resolveEnv } from '../../../lib/env';
 import { finalizeCustomTrip } from '../../../lib/customTripPayment';
-import { finalizeHotelBooking } from '../../../lib/hotelPayment';
+import { finalizeHotelBooking, hotelBookingNeedsRetry } from '../../../lib/hotelPayment';
 import { fetchRazorpayOrder } from '../../../lib/payments/razorpay';
 
 export const prerender = false;
@@ -120,6 +120,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         // deliver again so it gets reconciled (the owner has been alerted).
         if (outcome === 'failed_refund_error' || outcome === 'unresolved') {
           console.error('razorpay webhook: hotel booking not settled', hotelBookingId, outcome);
+          return new Response('retry', { status: 500 });
+        }
+        // Another request holds the booking: only settle this delivery once the
+        // booking is settled, so a worker that dies mid-booking is retried.
+        if (outcome === 'duplicate' && (await hotelBookingNeedsRetry(env, env.DB, hotelBookingId))) {
           return new Response('retry', { status: 500 });
         }
         if (outcome === 'mismatch' || outcome === 'unknown') console.error('razorpay webhook: hotel payment not applied', hotelBookingId, outcome);

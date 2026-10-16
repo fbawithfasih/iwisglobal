@@ -96,10 +96,13 @@ export async function refundPaymentAmount(env: Record<string, unknown>, paymentI
   if (!keyId || !keySecret) throw new Error('Payment gateway is misconfigured. Please contact support.');
 
   const auth = btoa(`${keyId}:${keySecret}`);
+  // A refund that hangs would leave the booking claimed as failed with no
+  // refund; time out and take the normal refund-failure path instead.
   const res = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}/refund`, {
     method: 'POST',
     headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ amount: amountMinor }),
+    signal: AbortSignal.timeout(30_000),
   });
 
   if (!res.ok) {
