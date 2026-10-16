@@ -50,8 +50,9 @@ const checkIn = process.env.CHECK_IN || addDays(new Date().toISOString().slice(0
 const checkOut = addDays(checkIn, Number(process.env.NIGHTS) || 2);
 const hotelCodes = (process.env.HOTEL_CODES || '').split(',').map((s) => Number(s.trim())).filter((x) => Number.isInteger(x) && x > 0);
 
-async function availability(label: string, rooms: SearchInput['rooms']): Promise<HotelResult[]> {
-  const input: SearchInput = { checkIn, checkOut, rooms };
+async function availability(label: string, rooms: SearchInput['rooms'], offsetDays = 0, nights = Number(process.env.NIGHTS) || 2): Promise<HotelResult[]> {
+  const stayIn = addDays(checkIn, offsetDays);
+  const input: SearchInput = { checkIn: stayIn, checkOut: addDays(stayIn, nights), rooms };
   const body: any = buildAvailabilityBody(input, hotelCodes);
   if (hotelCodes.length === 0) body.hotels = undefined, body.destination = { code: 'AGR' };
   const res = await hbRequest(cfg!, '/hotel-api/1.0/hotels', { body, timeoutMs: 60_000 });
@@ -91,6 +92,23 @@ async function book(label: string, rateKey: string, party: { adults: number; chi
 const pick = (hotels: HotelResult[], want?: RateOption['rateType']): RateOption | null =>
   hotels.flatMap((h) => h.rates).find((r) => !want || r.rateType === want) ?? null;
 
+// The test inventory is thin, so a scenario that finds nothing in one window tries
+// other dates (and 1 or 3 nights) before giving up. Every attempt is logged.
+const WINDOWS: [number, number][] = [[0, 2], [0, 1], [7, 2], [14, 3], [30, 2], [45, 1], [60, 2], [90, 2], [120, 3]];
+async function findStay(label: string, rooms: SearchInput['rooms'], accept: (hotels: HotelResult[]) => boolean): Promise<HotelResult[]> {
+  let last: HotelResult[] = [];
+  for (let i = 0; i < WINDOWS.length; i++) {
+    const [offset, nights] = WINDOWS[i];
+    last = await availability(`${label}-try${i + 1}`, rooms, offset, nights);
+    const rates = last.reduce((n, h) => n + h.rates.length, 0);
+    console.log(`    try ${i + 1}: +${offset} days, ${nights} night(s): ${last.length} hotels, ${rates} rates`);
+    if (accept(last)) return last;
+  }
+  return last;
+}
+const hasRates = (h: HotelResult[]) => h.some((x) => x.rates.length > 0);
+const hasRecheck = (h: HotelResult[]) => h.some((x) => x.rates.some((r) => r.rateType === 'RECHECK'));
+
 async function main() {
   console.log(`Stay ${checkIn} to ${checkOut} on ${cfg!.baseUrl}. Logs: ${dir}`);
 
@@ -105,13 +123,13 @@ async function main() {
   }
 
   console.log('B. Two rooms, different occupancies (search only)');
-  const b = await availability('B', [{ adults: 2, childAges: [] }, { adults: 1, childAges: [6] }]);
+  const b = await findStay('B', [{ adults: 2, childAges: [] }, { adults: 1, childAges: [6] }], hasRates);
   const rb = pick(b, 'RECHECK');
   if (rb) await checkRate('B', rb.rateKey);
-  note(`B: ${b.length} hotels returned. Our checkout cannot book rooms with different occupancies yet (see the pack).`);
+  note(`B: ${b.length} hotels returned with ${b.reduce((n, h) => n + h.rates.length, 0)} rates. Our checkout cannot book rooms with different occupancies yet (see the pack).`);
 
   console.log('C. Children with ages');
-  const c = await availability('C', [{ adults: 2, childAges: [5, 9] }]);
+  const c = await findStay('C', [{ adults: 2, childAges: [5, 9] }], hasRates);
   const rc = pick(c, 'BOOKABLE') ?? pick(c);
   if (!rc) note('C: no rates returned');
   else {
@@ -120,7 +138,11 @@ async function main() {
   }
 
   console.log('D. A RECHECK rate');
-  const rd = pick([...a, ...c, ...b], 'RECHECK');
+  let rd = pick([...a, ...c, ...b], 'RECHECK');
+  if (!rd) {
+    const d = await findStay('D', [{ adults: 2, childAges: [] }], hasRecheck);
+    rd = pick(d, 'RECHECK');
+  }
   if (!rd) note('D: no RECHECK rate came back in these searches; widen the dates or HOTEL_CODES and run again');
   else {
     const checked = await checkRate('D', rd.rateKey);
