@@ -250,10 +250,10 @@ async function sendHotelEmails(env: Record<string, any>, db: D1Like, bookingId: 
   try {
     const row = await db
       .prepare(
-        `SELECT id, status, currency, hotel_code, net_cost, sell_total, hb_reference, holder_name, email, phone, guests_json, selected_json, search_json, supplier_json FROM hotel_bookings WHERE id = ?`
+        `SELECT id, status, currency, hotel_code, net_cost, sell_total, hb_reference, holder_name, email, phone, locale, guests_json, selected_json, search_json, supplier_json FROM hotel_bookings WHERE id = ?`
       )
       .bind(bookingId)
-      .first<HotelBookingRow & { currency: string; hotel_code: number; net_cost: number; sell_total: number; email: string; phone: string }>();
+      .first<HotelBookingRow & { currency: string; hotel_code: number; net_cost: number; sell_total: number; email: string; phone: string; locale: string }>();
     if (!row) return;
     const content = (await getHotelContent(db, [row.hotel_code])).get(row.hotel_code) ?? null;
     const voucher = buildVoucher(row, content);
@@ -265,7 +265,7 @@ async function sendHotelEmails(env: Record<string, any>, db: D1Like, bookingId: 
     const rate = row.currency === 'USD' ? settings.fxEurUsd : settings.fxEurInr;
     const margin = settings.contractCurrency === 'EUR' && rate > 0 ? formatMoneyMinor(Math.round(row.sell_total - row.net_cost * rate) * 100, row.currency) : null;
     await Promise.all([
-      sendHotelVoucherEmail(env, { to: row.email, name: row.holder_name, voucher, voucherUrl: `https://www.iwisglobal.com/hotels/voucher?booking=${encodeURIComponent(row.id)}` }),
+      sendHotelVoucherEmail(env, { to: row.email, name: row.holder_name, locale: asLocale(row.locale), voucher, voucherUrl: `https://www.iwisglobal.com/hotels/voucher?booking=${encodeURIComponent(row.id)}` }),
       sendHotelAdminEmail(env, {
         voucher,
         bookingId: row.id,
@@ -585,6 +585,7 @@ interface CancelRow {
   hb_reference: string;
   holder_name: string;
   email: string;
+  locale: string;
   selected_json: string;
   refunded: number;
 }
@@ -618,7 +619,7 @@ export async function cancelHotelBookingAndRefund(
   now: Date = new Date()
 ): Promise<{ ok: true; refunded: number; fee: number } | { ok: false; error: string }> {
   const row = await db
-    .prepare(`SELECT id, status, currency, net_cost, sell_total, payment_id, hb_reference, holder_name, email, selected_json, refunded FROM hotel_bookings WHERE id = ?`)
+    .prepare(`SELECT id, status, currency, net_cost, sell_total, payment_id, hb_reference, holder_name, email, locale, selected_json, refunded FROM hotel_bookings WHERE id = ?`)
     .bind(bookingId)
     .first<CancelRow>();
   if (!row) return { ok: false, error: 'Booking not found.' };
@@ -679,6 +680,7 @@ export async function cancelHotelBookingAndRefund(
     await sendHotelCancellationEmail(env, {
       to: row.email,
       name: row.holder_name,
+      locale: asLocale(row.locale),
       hotelName: hotelName || 'your hotel',
       reference: row.hb_reference,
       refund: refund > 0 ? formatMoneyMinor(refund * 100, row.currency) : '',
