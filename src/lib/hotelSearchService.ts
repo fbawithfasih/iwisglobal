@@ -16,6 +16,7 @@ export interface ShownRate {
   roomName: string;
   boardName: string;
   price: number;
+  perNight: number;
   currency: GuestCurrency;
   freeCancellationUntil: string | null;
   promotions: string[];
@@ -31,11 +32,15 @@ export interface ShownHotel {
   image: string | null;
   facilities: string[];
   from: number;
+  currency: GuestCurrency;
   rates: ShownRate[];
 }
 
 export const RATE_CACHE_MINUTES = 30;
 const MAX_FACILITIES = 5;
+// D1 allows at most 100 bound parameters per query; 3 per row.
+const CACHE_ROWS_PER_STATEMENT = 30;
+const nightsBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
 
 const unavailable = (status: number) => ({ status, body: { error: 'unavailable' } as Record<string, unknown> });
 
@@ -67,6 +72,7 @@ export async function searchHotels(
     return unavailable(502);
   }
 
+  const nights = nightsBetween(input.checkIn, input.checkOut);
   const settings = await loadHotelSettings(db);
   const content = await getHotelContent(db, results.map((r) => r.code));
   const expiresAt = new Date(now.getTime() + RATE_CACHE_MINUTES * 60_000).toISOString();
@@ -88,6 +94,7 @@ export async function searchHotels(
         roomName: rate.roomName,
         boardName: rate.boardName,
         price,
+        perNight: Math.ceil(price / nights),
         currency,
         freeCancellationUntil: freeUntil,
         promotions: rate.promotions,
@@ -119,18 +126,20 @@ export async function searchHotels(
       image: info.images[0] ? imageUrl(info.images[0].path) : null,
       facilities: info.facilities.filter((f) => !f.paid).map((f) => f.name).slice(0, MAX_FACILITIES),
       from: rates[0].price,
+      currency,
       rates,
     });
   }
   hotels.sort((a, b) => a.from - b.from);
 
   await db.prepare('DELETE FROM hotel_rate_cache WHERE expires_at < ?').bind(now.toISOString()).run();
-  for (const row of cacheRows) {
+  for (let i = 0; i < cacheRows.length; i += CACHE_ROWS_PER_STATEMENT) {
+    const chunk = cacheRows.slice(i, i + CACHE_ROWS_PER_STATEMENT);
     await db
-      .prepare('INSERT OR REPLACE INTO hotel_rate_cache (rate_key, payload, expires_at) VALUES (?, ?, ?)')
-      .bind(row.rateKey, row.payload, expiresAt)
+      .prepare(`INSERT OR REPLACE INTO hotel_rate_cache (rate_key, payload, expires_at) VALUES ${chunk.map(() => '(?,?,?)').join(',')}`)
+      .bind(...chunk.flatMap((row) => [row.rateKey, row.payload, expiresAt]))
       .run();
   }
 
-  return { status: 200, body: { hotels, searchId: crypto.randomUUID() } };
+  return { status: 200, body: { hotels, searchId: crypto.randomUUID(), nights } };
 }

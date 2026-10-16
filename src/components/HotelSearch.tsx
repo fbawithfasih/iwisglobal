@@ -31,12 +31,14 @@ const labelClass = 'mb-1 block text-sm font-medium text-stone-800';
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
-export default function HotelSearch({ t, currency, intlLocale, onSelect }: Props) {
+export default function HotelSearch({ t, intlLocale, onSelect }: Props) {
   const [minDate, setMinDate] = useState('');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [rooms, setRooms] = useState<RoomState[]>([{ adults: 2, childAges: [] }]);
   const [hotels, setHotels] = useState<ShownHotel[] | null>(null);
+  // Nights of the search that produced `hotels`, as the server counted them.
+  const [nights, setNights] = useState(1);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const ageRefs = useRef<Record<string, HTMLSelectElement | null>>({});
@@ -44,13 +46,12 @@ export default function HotelSearch({ t, currency, intlLocale, onSelect }: Props
   // Read on the client so the server render and first client render match.
   useEffect(() => setMinDate(getAvailability().minBookableDate), []);
 
-  const symbol = currency === 'USD' ? '$' : '₹';
-  const money = (n: number) => `${symbol}${n.toLocaleString(currency === 'USD' ? 'en-US' : 'en-IN')}`;
+  // Amounts are shown in the currency the server priced them in.
+  const money = (n: number, cur: 'INR' | 'USD') => `${cur === 'USD' ? '$' : '₹'}${n.toLocaleString(cur === 'USD' ? 'en-US' : 'en-IN')}`;
   const longDate = (iso: string) => {
     const d = new Date(iso);
     return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(intlLocale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
   };
-  const nights = checkIn && checkOut ? Math.max(1, Math.round((Date.parse(`${checkOut}T00:00:00Z`) - Date.parse(`${checkIn}T00:00:00Z`)) / 86_400_000)) : 1;
 
   const updateRoom = (i: number, fn: (r: RoomState) => RoomState) => setRooms((rs) => rs.map((r, j) => (j === i ? fn(r) : r)));
   const errorText = (code: string, params?: Record<string, string | number>) => {
@@ -81,6 +82,7 @@ export default function HotelSearch({ t, currency, intlLocale, onSelect }: Props
       const data = await res.json().catch(() => null);
       if (res.ok && Array.isArray(data?.hotels)) {
         setHotels(data.hotels);
+        setNights(Number(data.nights) || 1);
       } else if (data?.error === 'invalid_search' && Array.isArray(data.errors)) {
         setHotels(null);
         setErrors(data.errors.map((er: { code: string; params?: Record<string, string | number> }) => errorText(er.code, er.params)));
@@ -191,9 +193,9 @@ export default function HotelSearch({ t, currency, intlLocale, onSelect }: Props
                       </div>
                       <p className="text-right">
                         <span className="block text-xs text-stone-600">{t.results.from}</span>
-                        <span className="block font-serif text-2xl font-semibold text-brand-900">{money(h.from)}</span>
+                        <span className="block font-serif text-2xl font-semibold text-brand-900">{money(h.from, h.currency)}</span>
                         <span className="block text-xs text-stone-600">{t.results.total}</span>
-                        {nights > 1 && <span className="block text-xs text-stone-600">{money(Math.ceil(h.from / nights))} {t.results.perNight}</span>}
+                        <span className="block text-xs text-stone-600">{money(h.rates[0].perNight, h.rates[0].currency)} {t.results.perNight}</span>
                       </p>
                     </div>
                     {h.facilities.length > 0 && (
@@ -211,7 +213,8 @@ export default function HotelSearch({ t, currency, intlLocale, onSelect }: Props
                             {r.promotions.map((p) => <p key={p} className="text-brand-700">{t.results.promotion}: {p}</p>)}
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="font-serif text-lg font-semibold text-brand-900">{money(r.price)}</span>
+                            <span className="font-serif text-lg font-semibold text-brand-900">{money(r.price, r.currency)}</span>
+                            {nights > 1 && <span className="text-xs text-stone-600">{money(r.perNight, r.currency)} {t.results.perNight}</span>}
                             <button type="button" className={primaryButton} onClick={() => onSelect?.(h, r)}>{t.results.select}</button>
                           </div>
                         </li>
