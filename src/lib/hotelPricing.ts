@@ -28,9 +28,16 @@ export interface CancellationPolicy {
 }
 
 export function cancellationFeeNet(policies: CancellationPolicy[], at: Date): number {
+  const now = at.getTime();
+  if (Number.isNaN(now)) throw new RangeError('cancellationFeeNet: invalid date');
+  // An unreadable `from` counts as already in force, so it never lets a fee through unnoticed.
+  const due = (p: CancellationPolicy) => {
+    const t = Date.parse(p.from);
+    return Number.isNaN(t) ? -Infinity : t;
+  };
   let fee = 0;
-  const sorted = [...policies].sort((a, b) => Date.parse(a.from) - Date.parse(b.from));
-  for (const p of sorted) if (Date.parse(p.from) <= at.getTime()) fee = Math.max(fee, p.amount);
+  const sorted = [...policies].sort((a, b) => due(a) - due(b) || 0);
+  for (const p of sorted) if (due(p) <= now) fee = Math.max(fee, p.amount);
   return fee;
 }
 
