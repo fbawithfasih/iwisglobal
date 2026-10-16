@@ -35,6 +35,7 @@ interface OfferView {
   chosen?: string;
   paid?: string;
   balance?: string;
+  paidCount: number;
   payments: PaymentView[];
 }
 
@@ -84,10 +85,11 @@ if (db) {
           chosen: opt ? `${opt.label}, ${state.guideLanguage === 'de' ? 'German' : 'English'} guide` : '',
           paid: state.status === 'unpaid' ? '' : fmt(state.paidMinor),
           balance: state.status === 'unpaid' ? '' : fmt(state.balanceMinor),
+          paidCount: payments.filter((p) => p.status === 'paid').length,
           payments,
         });
       } catch {
-        offers.push({ id, ok: false, payments: [] });
+        offers.push({ id, ok: false, paidCount: 0, payments: [] });
       }
     }
   } catch {
@@ -118,7 +120,7 @@ const td = 'px-3 py-2 align-top text-sm';
               <thead>
                 <tr>
                   <th class={th}>Created</th><th class={th}>Customer</th><th class={th}>Status</th>
-                  <th class={th}>Option</th><th class={th}>Paid</th><th class={th}>Balance</th><th class={th}>Payments</th><th class={th}></th>
+                  <th class={th}>Option</th><th class={th}>Paid</th><th class={th}>Balance</th><th class={th}>Payments received</th><th class={th}></th>
                 </tr>
               </thead>
               <tbody>
@@ -129,7 +131,7 @@ const td = 'px-3 py-2 align-top text-sm';
                   <td class={td}>{o.chosen || '-'}</td>
                   <td class={td}>{o.paid || '-'}</td>
                   <td class={td}>{o.balance || '-'}</td>
-                  <td class={td}>{o.payments.length}</td>
+                  <td class={td}>{o.paidCount}</td>
                   <td class={td}>
                     <button type="button" data-copy-link={`https://www.iwisglobal.com/offer/${o.id}`} class="min-h-11 rounded border border-stone-300 bg-white px-3 text-sm">Copy link</button>
                   </td>

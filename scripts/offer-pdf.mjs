@@ -3,7 +3,7 @@
 // text) using headless Google Chrome on macOS.
 //
 // Usage:
-//   node scripts/offer-pdf.mjs <offer.json> <out.pdf> [--logo <path.png|.jpg>]
+//   node scripts/offer-pdf.mjs <offer.json> <out.pdf> [--logo <path.png|.jpg>] [--keep-html]
 //
 // Example (sharper than the default 250 px public/logo.png when printed):
 //   node scripts/offer-pdf.mjs offer.json offer.pdf --logo path/to/iwis-logo-hires.jpg
@@ -11,13 +11,15 @@
 // Workflow: run scripts/offer-seed.mjs <offer.json> --id-only, put the printed
 // id into the JSON `id` field and at the end of `link`
 // (https://www.iwisglobal.com/offer/<id>), then run this script so the PDF
-// carries the real link. An HTML file with the same basename is written next
-// to the PDF (it may be deleted). Keep the JSON and PDF out of the repository:
+// carries the real link. The intermediate HTML is written to the system temp
+// folder and deleted afterwards (it contains the customer's name); pass
+// --keep-html to keep it (its path is printed). Keep the JSON and PDF out of the repository:
 // they hold customer data.
 
-import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, statSync, mkdtempSync, rmSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
-import { dirname, basename, extname, resolve, join } from 'node:path';
+import { dirname, extname, resolve, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -66,13 +68,15 @@ const esc = (s) =>
 const args = process.argv.slice(2);
 const pos = [];
 let logoPath = null;
+let keepHtml = false;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--logo') {
     logoPath = args[++i];
     if (!logoPath) fail('--logo needs a file path');
-  } else pos.push(args[i]);
+  } else if (args[i] === '--keep-html') keepHtml = true;
+  else pos.push(args[i]);
 }
-if (pos.length !== 2) fail('usage: node scripts/offer-pdf.mjs <offer.json> <out.pdf> [--logo <path>]');
+if (pos.length !== 2) fail('usage: node scripts/offer-pdf.mjs <offer.json> <out.pdf> [--logo <path>] [--keep-html]');
 const jsonFile = resolve(pos[0]);
 const outPdf = resolve(pos[1]);
 if (extname(outPdf).toLowerCase() !== '.pdf') fail('the output file must end in .pdf');
@@ -132,18 +136,22 @@ const extraNote = offer.germanGuideExtraMinor > 0 ? ` A German-speaking guide ad
 const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>${esc(c.title)} - ${esc(offer.customerName)}</title>
 <style>
-  @page { size: A4; margin: 12mm 14mm 20mm 14mm; }
+  @page { size: A4; margin: 0; }
+  /* Chrome repeats thead/tfoot on every printed page, so these spacers keep every page's content clear of the top edge and of the footer. */
+  table.frame { width: 100%; border-collapse: collapse; }
+  table.frame td { padding: 0 14mm; vertical-align: top; }
+  .sp-top { height: 12mm; } .sp-bot { height: 26mm; }
   * { box-sizing: border-box; }
   html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body { margin: 0; font-family: -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 9.2pt; line-height: 1.38; color: #1f1a2e; }
   h1, h2, h3.serif, .brand { font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif; }
   .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg); z-index: -1; pointer-events: none;
     font-family: Helvetica, Arial, sans-serif; font-weight: 700; font-size: 64pt; letter-spacing: 8pt; color: #000; opacity: 0.08; white-space: nowrap; }
-  .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 7.8pt; color: #6b6480; border-top: 0.5pt solid #ddd6fe; padding-top: 2mm; background: #fff; }
+  .footer { position: fixed; bottom: 9mm; left: 14mm; right: 14mm; text-align: center; font-size: 7.8pt; color: #6b6480; border-top: 0.5pt solid #ddd6fe; padding-top: 2mm; background: transparent; }
   header { display: flex; align-items: center; gap: 6mm; padding-bottom: 4mm; border-bottom: 1.2mm solid #6d28d9; }
   header img { width: 25mm; height: 25mm; object-fit: contain; display: block; }
   .brand { font-size: 12pt; letter-spacing: 2pt; text-transform: uppercase; color: #6d28d9; font-weight: 700; }
-  h1 { margin: 1mm 0 1.5mm; font-size: 19pt; line-height: 1.08; color: #2e1065; font-weight: 700; }
+  h1 { text-wrap: balance; margin: 1mm 0 1.5mm; font-size: 19pt; line-height: 1.08; color: #2e1065; font-weight: 700; }
   .prepared { font-size: 10pt; color: #4c4366; }
   .prepared b { color: #2e1065; }
   .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm 6mm; margin: 3mm 0 1mm; padding: 2.5mm 4mm; background: #f5f3ff; border-left: 1.2mm solid #6d28d9; border-radius: 1mm; }
@@ -178,6 +186,7 @@ const html = `<!doctype html>
 <body>
 <div class="watermark">CONFIDENTIAL</div>
 <div class="footer">Confidential — prepared for ${esc(offer.customerName)}. IWIS Global — www.iwisglobal.com</div>
+<table class="frame"><thead><tr><td><div class="sp-top"></div></td></tr></thead><tfoot><tr><td><div class="sp-bot"></div></td></tr></tfoot><tbody><tr><td>
 <header>
   <img src="${logoUri}" alt="IWIS Global">
   <div>
@@ -219,21 +228,30 @@ ${offer.options.map(optionCard).join('\n')}
 <div class="contact">
   <b>Questions?</b> WhatsApp ${esc(c.contactWhatsapp)} &nbsp;|&nbsp; info@iwisglobal.com &nbsp;|&nbsp; www.iwisglobal.com
 </div>
+</td></tr></tbody></table>
 </body></html>
 `;
 
-const htmlFile = join(dirname(outPdf), `${basename(outPdf, extname(outPdf))}.html`);
-writeFileSync(htmlFile, html);
-
+const htmlFile = join(tmpdir(), `offer-pdf-${process.pid}-${Date.now()}.html`);
+let renderError = null;
+const profileDir = mkdtempSync(join(tmpdir(), 'offer-pdf-chrome-'));
 try {
+  writeFileSync(htmlFile, html);
   execFileSync(
     CHROME,
-    ['--headless=new', '--disable-gpu', '--no-pdf-header-footer', `--print-to-pdf=${outPdf}`, pathToFileURL(htmlFile).href],
+    ['--headless=new', '--disable-gpu', '--no-pdf-header-footer', `--user-data-dir=${profileDir}`, `--print-to-pdf=${outPdf}`, pathToFileURL(htmlFile).href],
     { stdio: ['ignore', 'ignore', 'ignore'], timeout: 90000 }
   );
 } catch (e) {
-  fail(`Chrome failed to render the PDF: ${e.message}`);
+  renderError = e;
+} finally {
+  rmSync(profileDir, { recursive: true, force: true });
+  if (!keepHtml) {
+    try { unlinkSync(htmlFile); } catch {}
+  }
 }
+if (renderError) fail(`Chrome failed to render the PDF: ${renderError.message}`);
+if (keepHtml) process.stdout.write(`HTML kept at ${htmlFile}\n`);
 
 if (!existsSync(outPdf) || statSync(outPdf).size < 10 * 1024) fail('the PDF was not created or is suspiciously small');
 const pages = (readFileSync(outPdf, 'latin1').match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
