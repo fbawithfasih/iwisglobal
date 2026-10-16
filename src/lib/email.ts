@@ -712,49 +712,55 @@ export async function sendHotelAlertEmail(env: Record<string, any>, subject: str
 // --- Hotel booking (src/lib/hotelPayment.ts) ------------------------------
 // English until the hotel pages are translated (plan Task 16).
 
-const hotelDate = (iso: string) => {
+const hotelDate = (iso: string, locale: Locale = 'en') => {
   const d = new Date(`${iso}T00:00:00Z`);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(locale === 'en' ? 'en-IN' : intlLocale(locale), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 };
 
-const voucherRows = (v: Voucher): [string, string][] => [
-  ['Hotel', v.hotelName],
-  ['Address', v.address],
-  ...(v.phone ? ([['Hotel phone', v.phone]] as [string, string][]) : []),
-  ['Check-in', hotelDate(v.checkIn)],
-  ['Check-out', hotelDate(v.checkOut)],
-  ['Booking holder', v.holder],
-  ['Hotelbeds reference', v.reference],
-  ['Our reference', v.ourReference],
+const voucherRows = (v: Voucher, L: ReturnType<typeof getDictionary>['hotelEmail']['voucher'], locale: Locale = 'en'): [string, string][] => [
+  [L.hotel, v.hotelName],
+  [L.address, v.address],
+  ...(v.phone ? ([[L.phone, v.phone]] as [string, string][]) : []),
+  [L.checkIn, hotelDate(v.checkIn, locale)],
+  [L.checkOut, hotelDate(v.checkOut, locale)],
+  [L.holder, v.holder],
+  [L.reference, v.reference],
+  [L.ourReference, v.ourReference],
 ];
 
-// To the guest once the hotel is confirmed: a summary and the link to the
-// printable voucher. No price, like the voucher. Best effort: never throws.
-export async function sendHotelVoucherEmail(env: Record<string, any>, d: { to: string; name: string; voucher: Voucher; voucherUrl: string }): Promise<boolean> {
+// To the guest once the hotel is confirmed, in their language: a summary and the
+// link to the printable voucher. No price, like the voucher. The "Payable
+// through" line is the supplier's own wording and stays as Hotelbeds gives it.
+// Best effort: never throws.
+export async function sendHotelVoucherEmail(env: Record<string, any>, d: { to: string; name: string; voucher: Voucher; voucherUrl: string; locale?: Locale }): Promise<boolean> {
   try {
     if (!env.RESEND_API_KEY || !d.to) return false;
+    const locale = d.locale ?? 'en';
+    const dict = getDictionary(locale);
+    const L = dict.hotelEmail.voucher;
     const v = d.voucher;
-    const first = d.name.trim().split(/\s+/)[0] || 'there';
-    const rows = voucherRows(v);
-    const roomLines = v.rooms.map((r, i) => `${v.rooms.length > 1 ? `Room ${i + 1}: ` : ''}${r.roomName}, ${r.boardName}. Guests: ${r.guests.map((g) => (g.age !== undefined ? `${g.name} (age ${g.age})` : g.name)).join(', ')}`);
+    const first = d.name.trim().split(/\s+/)[0] || dict.emails.there;
+    const rows = voucherRows(v, L, locale);
+    const roomLines = v.rooms.map((r, i) => `${v.rooms.length > 1 ? `${fmt(L.room, { n: i + 1 })}: ` : ''}${r.roomName}, ${r.boardName}. ${L.guests}: ${r.guests.map((g) => (g.age !== undefined ? `${g.name} (${fmt(L.age, { age: g.age })})` : g.name)).join(', ')}`);
     const cell = 'padding:6px 0; vertical-align:top;';
-    const html = emailHtml('Your hotel booking is confirmed', `
-        <p style="margin-top:0;">${escapeHtml(`Hi ${first}, your hotel is booked. Show the voucher below at check-in.`)}</p>
+    const intro = fmt(L.intro, { name: first });
+    const html = emailHtml(escapeHtml(L.title), `
+        <p style="margin-top:0;">${escapeHtml(intro)}</p>
         <table style="width:100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; background:#faf9ff; border:1px solid #ede9fe; border-radius:12px;">
           ${rows.map(([l, val]) => `<tr><td style="${cell} color:#78716c; padding-left:14px; padding-right:12px;">${escapeHtml(l)}</td><td style="${cell} text-align:right; padding-right:14px;">${escapeHtml(val)}</td></tr>`).join('')}
         </table>
         <ul style="margin:0 0 16px; padding-left:20px; font-size:14px;">${roomLines.map((l) => `<li>${escapeHtml(l)}</li>`).join('')}</ul>
-        ${v.rateComments.length > 0 ? `<p style="margin:0 0 4px; font-weight:600;">Important information from the hotel</p><ul style="margin:0 0 16px; padding-left:20px; font-size:14px;">${v.rateComments.map((c) => `<li style="white-space:pre-line;">${escapeHtml(c)}</li>`).join('')}</ul>` : ''}
-        <p style="margin:24px 0; text-align:center;"><a href="${d.voucherUrl}" style="${EMAIL_BUTTON}">Open your voucher</a></p>
+        ${v.rateComments.length > 0 ? `<p style="margin:0 0 4px; font-weight:600;">${escapeHtml(L.important)}</p><ul style="margin:0 0 16px; padding-left:20px; font-size:14px;">${v.rateComments.map((c) => `<li style="white-space:pre-line;">${escapeHtml(c)}</li>`).join('')}</ul>` : ''}
+        <p style="margin:24px 0; text-align:center;"><a href="${withLang(d.voucherUrl, locale)}" style="${EMAIL_BUTTON}">${escapeHtml(L.open)}</a></p>
         ${v.payableLine ? `<p style="${EMAIL_NOTE}">${escapeHtml(v.payableLine)}</p>` : ''}
-        <p style="margin-bottom:8px;">Questions? We are here.</p>
+        <p style="margin-bottom:8px;">${escapeHtml(L.questions)}</p>
         <p style="margin-top:0; line-height:2;">
           <a href="${whatsappHref(`Hi! Question about my hotel booking ${v.ourReference}. (ref: EMAIL-HOTEL-VOUCHER)`)}" style="color:#15803d; font-weight:600;">WhatsApp</a><br />
           <a href="${PHONE_TEL}" style="color:#6d28d9;">${PHONE_DISPLAY}</a><br />
           <a href="mailto:${EMAIL}" style="color:#6d28d9;">${EMAIL}</a>
         </p>`);
-    const text = ['Your hotel booking is confirmed', '', `Hi ${first}, your hotel is booked. Show the voucher at check-in.`, '', ...rows.map(([l, val]) => `${l}: ${val}`), '', ...roomLines, '', ...(v.rateComments.length > 0 ? ['Important information from the hotel', ...v.rateComments, ''] : []), `Voucher: ${d.voucherUrl}`, '', ...(v.payableLine ? [v.payableLine, ''] : []), `${PHONE_DISPLAY} · ${EMAIL}`, '', `IWIS Global · ${SITE}`].join('\n');
-    return await post(env, 'sendHotelVoucherEmail', { from: FROM(env), to: d.to, subject: `Your hotel booking is confirmed: ${v.hotelName}`, html, text });
+    const text = [L.title, '', intro, '', ...rows.map(([l, val]) => `${l}: ${val}`), '', ...roomLines, '', ...(v.rateComments.length > 0 ? [L.important, ...v.rateComments, ''] : []), `${L.open}: ${withLang(d.voucherUrl, locale)}`, '', ...(v.payableLine ? [v.payableLine, ''] : []), `${PHONE_DISPLAY} · ${EMAIL}`, '', `IWIS Global · ${SITE}`].join('\n');
+    return await post(env, 'sendHotelVoucherEmail', { from: FROM(env), to: d.to, subject: fmt(L.subject, { hotel: v.hotelName }), html, text });
   } catch (err) {
     console.error('sendHotelVoucherEmail: failed', err instanceof Error ? err.message : 'error');
     return false;
@@ -780,7 +786,7 @@ export async function sendHotelAdminEmail(env: Record<string, any>, d: HotelAdmi
     const v = d.voucher;
     const to = env.ADMIN_NOTIFICATION_EMAIL || EMAIL;
     const rows: [string, string][] = [
-      ...voucherRows(v),
+      ...voucherRows(v, getDictionary('en').hotelEmail.voucher),
       ['Guest email', d.guestEmail],
       ['Guest phone', d.guestPhone],
       ['Guests', v.rooms.map((r) => r.guests.map((g) => g.name).join(', ')).join(' | ')],
@@ -811,27 +817,33 @@ export interface HotelCancellationEmailDetails {
   reference: string;
   refund: string; // formatted, e.g. "₹4,950"; "" when nothing is refunded
   fee: string; // formatted cancellation fee kept; "" when none
+  locale?: Locale;
 }
 
-// To the guest after their hotel booking is cancelled. Best effort: never throws.
+// To the guest after their hotel booking is cancelled, in their language.
+// Best effort: never throws.
 export async function sendHotelCancellationEmail(env: Record<string, any>, d: HotelCancellationEmailDetails): Promise<boolean> {
   try {
     if (!env.RESEND_API_KEY || !d.to) return false;
-    const first = d.name.trim().split(/\s+/)[0] || 'there';
+    const locale = d.locale ?? 'en';
+    const dict = getDictionary(locale);
+    const C = dict.hotelEmail.cancelled;
+    const V = dict.hotelEmail.voucher;
+    const first = d.name.trim().split(/\s+/)[0] || dict.emails.there;
     const lines = [
-      `Hi ${first}, your booking at ${d.hotelName} (reference ${d.reference}) has been cancelled.`,
-      d.refund ? `We are refunding ${d.refund} to your original payment method. It usually reaches you in 5 to 7 working days.` : 'No refund is due under the hotel\'s cancellation terms.',
-      ...(d.fee ? [`Cancellation fee kept under the hotel's terms: ${d.fee}.`] : []),
+      fmt(C.intro, { name: first, hotel: d.hotelName, reference: d.reference }),
+      d.refund ? fmt(C.refund, { refund: d.refund }) : C.noRefund,
+      ...(d.fee ? [fmt(C.fee, { fee: d.fee })] : []),
     ];
-    const html = emailHtml('Your hotel booking is cancelled', `
+    const html = emailHtml(escapeHtml(C.title), `
         ${lines.map((l) => `<p style="margin:0 0 12px;">${escapeHtml(l)}</p>`).join('')}
-        <p style="margin-bottom:8px;">Questions? We are here.</p>
+        <p style="margin-bottom:8px;">${escapeHtml(V.questions)}</p>
         <p style="margin-top:0; line-height:2;">
           <a href="${whatsappHref(`Hi! Question about my cancelled hotel booking ${d.reference}. (ref: EMAIL-HOTEL-CANCEL)`)}" style="color:#15803d; font-weight:600;">WhatsApp</a><br />
           <a href="mailto:${EMAIL}" style="color:#6d28d9;">${EMAIL}</a>
         </p>`);
-    const text = ['Your hotel booking is cancelled', '', ...lines, '', `${PHONE_DISPLAY} · ${EMAIL}`, '', `IWIS Global · ${SITE}`].join('\n');
-    return await post(env, 'sendHotelCancellationEmail', { from: FROM(env), to: d.to, subject: `Your hotel booking is cancelled: ${d.hotelName}`, html, text });
+    const text = [C.title, '', ...lines, '', `${PHONE_DISPLAY} · ${EMAIL}`, '', `IWIS Global · ${SITE}`].join('\n');
+    return await post(env, 'sendHotelCancellationEmail', { from: FROM(env), to: d.to, subject: fmt(C.subject, { hotel: d.hotelName }), html, text });
   } catch (err) {
     console.error('sendHotelCancellationEmail: failed', err instanceof Error ? err.message : 'error');
     return false;

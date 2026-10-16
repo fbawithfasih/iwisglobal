@@ -1656,6 +1656,35 @@ export const en = {
       pending: "Your payment was received and we are confirming your room with the hotel. Please check back in a few minutes; we will also email you the voucher.",
       notFound: "We could not find this voucher. Please check the link in your email, or contact us on WhatsApp."
     }
+  },
+  hotelEmail: {
+    voucher: {
+      subject: "Your hotel booking is confirmed: {hotel}",
+      title: "Your hotel booking is confirmed",
+      intro: "Hi {name}, your hotel is booked. Show the voucher below at check-in.",
+      hotel: "Hotel",
+      address: "Address",
+      phone: "Hotel phone",
+      checkIn: "Check-in",
+      checkOut: "Check-out",
+      holder: "Booking holder",
+      reference: "Hotelbeds reference",
+      ourReference: "Our reference",
+      room: "Room {n}",
+      guests: "Guests",
+      age: "age {age}",
+      important: "Important information from the hotel",
+      open: "Open your voucher",
+      questions: "Questions? We are here."
+    },
+    cancelled: {
+      subject: "Your hotel booking is cancelled: {hotel}",
+      title: "Your hotel booking is cancelled",
+      intro: "Hi {name}, your booking at {hotel} (reference {reference}) has been cancelled.",
+      refund: "We are refunding {refund} to your original payment method. It usually reaches you in 5 to 7 working days.",
+      noRefund: "No refund is due under the hotel's cancellation terms.",
+      fee: "Cancellation fee kept under the hotel's terms: {fee}."
+    }
   }
 };
 
