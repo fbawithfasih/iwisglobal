@@ -34,6 +34,7 @@ All under the admin sign-in.
 1. Open **Chats**. The page opens on **Needs a person** when there are any. Reply to those first. The amber text means a guest has waited over 30 minutes; red means less than 2 hours of WhatsApp's 24-hour free-reply window are left.
 2. For a draft: read it, edit if needed, press **Send**. If it is wrong or unneeded, press **Discard**. Both count as "reviewed".
 3. If you reply from the WhatsApp Business app instead, the chat moves to **Staff handling** by itself and the agent stops drafting for it. Press **Give back to agent** when you are done, or it returns on its own after 12 hours.
+4. If the Business app on the phone is not available, answer from the admin: open the chat and use **Write your own reply** under the messages. It works inside the 24-hour reply window, moves the chat to **Staff handling**, and works for voice notes and images too (the guest message shows as [voice] or [image]; reply asking them to type).
 4. An email arrives when a chat first needs a person. It does not repeat more than once every 2 hours per chat.
 
 ## Every Monday (20 minutes)

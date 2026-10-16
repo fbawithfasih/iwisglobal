@@ -10,7 +10,7 @@ import { listTours, type ParsedTour } from './tours';
 import { retrieve, SITE_URL, type KbEntry } from './waKnowledge';
 import { sendText, storeMessage, type WaMessage } from './whatsapp';
 import { runTools, type ToolLog, type ToolRequest } from './waTools';
-import { onAdminSend, markHandedOff } from './waInbox';
+import { onAdminSend, markHandedOff, takeOver } from './waInbox';
 import { getAutoSettings, qualityDecision } from './waAuto';
 import { todayIst } from './availability';
 
@@ -23,6 +23,7 @@ const WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_GUEST_CHARS = 1000;
 const HISTORY_MESSAGES = 6;
 const MAX_SEND_CHARS = 4096;
+const WINDOW_CLOSED_ERROR = 'The guest last wrote more than 24 hours ago, so WhatsApp only allows approved message templates now. Wait for the guest to write again, or reach them by email or phone.';
 
 export const INTENTS = [
   'tour_info',
@@ -440,7 +441,7 @@ export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: n
     .bind(draft.conversation_id)
     .first<{ at: string | null }>();
   if (!last?.at || Date.now() - Date.parse(last.at) > WINDOW_MS) {
-    return { ok: false, error: 'The guest last wrote more than 24 hours ago, so WhatsApp only allows approved templates now. Reply from the WhatsApp Business app instead.' };
+    return { ok: false, error: WINDOW_CLOSED_ERROR };
   }
 
   const now = () => new Date().toISOString();
@@ -472,6 +473,42 @@ export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: n
   // An automatic reply leaves the chat's owner alone; a staff send to a chat that
   // was waiting for a person means a person has now dealt with it.
   if (by === 'staff') await onAdminSend(db, draft.conversation_id);
+  return { ok: true };
+}
+
+// A reply staff typed themselves in the admin, with no draft behind it. This is how
+// a "Needs a person" or "Staff handling" chat is answered now that the phone app is
+// not connected to the number. Same 24-hour rule as sendDraft. The chat becomes
+// staff-handled, so the agent stops drafting until it is given back.
+export async function sendStaffMessage(env: Record<string, any>, db: D1Like, phone: string, text: string): Promise<SendOutcome> {
+  const body = text.trim();
+  if (!body) return { ok: false, error: 'The message is empty.' };
+  if (body.length > MAX_SEND_CHARS) return { ok: false, error: 'The message is too long for WhatsApp.' };
+
+  const chat = await db.prepare(`SELECT state FROM wa_conversations WHERE id = ?`).bind(phone).first<{ state: string }>();
+  if (!chat) return { ok: false, error: 'Chat not found.' };
+  if (chat.state === 'opted_out') return { ok: false, error: 'The guest asked us to stop, so nothing can be sent.' };
+
+  const last = await db
+    .prepare(`SELECT MAX(sent_at) AS at FROM wa_messages WHERE conversation_id = ? AND direction = 'in'`)
+    .bind(phone)
+    .first<{ at: string | null }>();
+  if (!last?.at || Date.now() - Date.parse(last.at) > WINDOW_MS) return { ok: false, error: WINDOW_CLOSED_ERROR };
+
+  const sent = await sendText(env, phone, body);
+  if (!sent.ok) return { ok: false, error: `WhatsApp refused the message: ${sent.error ?? 'unknown error'}` };
+
+  await storeMessage(db, {
+    waMessageId: sent.waMessageId ?? `local-${crypto.randomUUID()}`,
+    phone,
+    direction: 'out',
+    kind: 'text',
+    body,
+    profileName: null,
+    sentAt: new Date().toISOString(),
+  });
+  // Any open draft for this chat is now stale; takeOver also pauses new drafts.
+  await takeOver(db, phone);
   return { ok: true };
 }
 
