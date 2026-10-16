@@ -13,6 +13,7 @@ import { intlLocale } from '../lib/i18n';
 import { isAdminAuthenticated } from '../lib/requireAdmin';
 import { listTours } from '../lib/tours';
 import { isCustomEnabled, loadRates } from '../lib/customTripData';
+import { isHotelsEnabled } from '../lib/hotelData';
 import { offeredTemplates } from '../lib/customTripTemplates';
 import type { D1Like } from '../lib/db';
 
@@ -29,6 +30,7 @@ if (!db || (!live && !admin)) {
   return new Response('Not found', { status: 404 });
 }
 
+const hotelsEnabled = await isHotelsEnabled(db);
 const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('currency')?.value);
 const rates = await loadRates(db);
 const tours = await listTours(db, { status: 'published' }, locale);
@@ -42,7 +44,7 @@ const templates = offeredTemplates(rates, new Map(tours.map((x) => [x.slug, x.ti
     <h1 class="font-serif text-3xl font-semibold text-brand-900 md:text-4xl">{t.heading}</h1>
     <p class="mt-3 max-w-3xl text-stone-700">{t.intro}</p>
     <div class="mt-8">
-      <TourCustomizer client:load rates={rates} templates={templates} currency={currency} intlLocale={intlLocale(locale)} locale={locale} t={t} contact={contact} />
+      <TourCustomizer client:load rates={rates} templates={templates} currency={currency} intlLocale={intlLocale(locale)} locale={locale} t={t} contact={contact} hotelsEnabled={hotelsEnabled} />
       <noscript><p class="rounded-xl bg-stone-100 p-4 text-sm text-stone-700">{t.noJs} <a href="/contact" class="font-semibold text-brand-700 underline">{t.noJsLink}</a></p></noscript>
     </div>
   </section>

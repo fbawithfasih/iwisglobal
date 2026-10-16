@@ -43,6 +43,8 @@ interface Props {
   intlLocale: string;
   locale: string;
   t: Dictionary['customTour'];
+  // True when the owner has switched hotel booking on (src/lib/hotelData.ts).
+  hotelsEnabled?: boolean;
   // The name, email and phone labels and messages the booking form already uses.
   contact: Pick<Dictionary['booking'], 'fullName' | 'namePlaceholder' | 'email' | 'emailPlaceholder' | 'phone' | 'errName' | 'errEmail' | 'errPhone' | 'gatewayLoad'>;
 }
@@ -83,7 +85,7 @@ const linkButton =
 const smallButton =
   'min-h-11 min-w-11 rounded-lg border border-brand-200 bg-white px-2 text-sm text-brand-800 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 disabled:opacity-40';
 
-export default function TourCustomizer({ rates, templates, currency, intlLocale, locale, t, contact }: Props) {
+export default function TourCustomizer({ rates, templates, currency, intlLocale, locale, t, contact, hotelsEnabled }: Props) {
   const [step, setStep] = useState(0);
   const [minDate, setMinDate] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -92,6 +94,9 @@ export default function TourCustomizer({ rates, templates, currency, intlLocale,
   const [days, setDays] = useState<{ stopIds: string[] }[]>([{ stopIds: [] }]);
   const [vehicleId, setVehicleId] = useState('');
   const [hotel, setHotel] = useState<HotelChoice>({ mode: 'own' });
+  // UI only: "book a hotel for these nights". The server still sees `own`; the
+  // thanks page offers the hotel search after the deposit is paid.
+  const [wantsHotel, setWantsHotel] = useState(false);
   const [attempted, setAttempted] = useState<Record<number, boolean>>({});
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -204,7 +209,7 @@ export default function TourCustomizer({ rates, templates, currency, intlLocale,
             const done = await verify.json().catch(() => ({}));
             if (!verify.ok || !done.tripId) throw new Error('verify');
             track('custom_tour_paid', { total: quote.total, deposit: quote.deposit, currency });
-            window.location.href = `/customize-your-tour/thanks?trip=${encodeURIComponent(done.tripId)}`;
+            window.location.href = `/customize-your-tour/thanks?trip=${encodeURIComponent(done.tripId)}${wantsHotel ? '&book=1' : ''}`;
           } catch {
             setPaying(false);
             setConfirming(false);
@@ -458,11 +463,18 @@ export default function TourCustomizer({ rates, templates, currency, intlLocale,
               <legend className="sr-only">{t.hotel.heading}</legend>
               {(['own', 'listed', 'arrange'] as const).map((mode) => (
                 <label key={mode} className="flex min-h-11 items-center gap-3 text-sm text-stone-800">
-                  <input type="radio" name="ct-hotel" checked={hotel.mode === mode} onChange={() => setHotel(mode === 'arrange' ? { mode, nights: 1, rooms: 1 } : { mode })} className="h-5 w-5 accent-brand-700" />
+                  <input type="radio" name="ct-hotel" checked={!wantsHotel && hotel.mode === mode} onChange={() => { setWantsHotel(false); setHotel(mode === 'arrange' ? { mode, nights: 1, rooms: 1 } : { mode }); }} className="h-5 w-5 accent-brand-700" />
                   {t.hotel[mode]}
                 </label>
               ))}
+              {hotelsEnabled && (
+                <label className="flex min-h-11 items-center gap-3 text-sm text-stone-800">
+                  <input type="radio" name="ct-hotel" checked={wantsHotel} onChange={() => { setWantsHotel(true); setHotel({ mode: 'own' }); }} className="h-5 w-5 accent-brand-700" />
+                  {t.hotel.book}
+                </label>
+              )}
             </fieldset>
+            {wantsHotel && <p className="mt-3 rounded-xl bg-brand-50 p-3 text-sm text-stone-800">{t.hotel.bookNote}</p>}
             {hotel.mode !== 'own' && (
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div className="sm:col-span-2">
@@ -531,7 +543,7 @@ export default function TourCustomizer({ rates, templates, currency, intlLocale,
                 </dl>
                 <p className="mt-3 text-xs text-stone-500">{fmt(t.review.ticketsNote, { date: longDate(quote.ticketFeesCheckedOn) })}</p>
                 <p className="mt-1 text-xs text-stone-500">
-                  {hotel.mode === 'own' && t.review.hotelOwn}
+                  {hotel.mode === 'own' && (wantsHotel ? t.review.hotelBook : t.review.hotelOwn)}
                   {hotel.mode === 'listed' && fmt(t.review.hotelListed, { name: hotel.name ?? '' })}
                   {hotel.mode === 'arrange' && fmt(t.review.hotelArrange, { nights: hotel.nights ?? 0, rooms: hotel.rooms ?? 0 })}
                   {' · '}{t.hotel.note}
