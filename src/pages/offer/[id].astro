@@ -1,0 +1,195 @@
+---
+// A private offer: one guest's tour proposal and the form to pay for it
+// (src/lib/offerData.ts). The link is the only way in, so the page is never
+// indexed and never cached. Every field of the offer is shown as plain text.
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import OfferCheckout from '../../components/OfferCheckout';
+import { resolveEnv } from '../../lib/env';
+import { getOffer, listPaid } from '../../lib/offerData';
+import type { OfferRow } from '../../lib/offerData';
+import { offerState, tripTotalMinor } from '../../lib/offerPricing';
+import type { OfferState } from '../../lib/offerPricing';
+import type { D1Like } from '../../lib/db';
+
+const env = resolveEnv(Astro.locals);
+const db = env.DB as D1Like | undefined;
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+
+let offer: OfferRow | null = null;
+let state: OfferState | null = null;
+let unavailable = false;
+if (db) {
+  try {
+    offer = await getOffer(db, String(Astro.params.id ?? ''));
+    if (offer) state = offerState(offer.terms, await listPaid(db, offer.id));
+  } catch {
+    // A database error or an unreadable paid payment: say so plainly, never a stack trace.
+    unavailable = true;
+  }
+}
+if (unavailable) {
+  return new Response('This page is temporarily unavailable. Please try again in a few minutes.', {
+    status: 503,
+    headers: { 'Cache-Control': 'no-store', 'Content-Type': 'text/plain; charset=utf-8' },
+  });
+}
+if (!offer || !state) {
+  return new Response('Not found', { status: 404 });
+}
+
+const c = offer.content;
+const money = (minor: number) =>
+  new Intl.NumberFormat('en-IE', {
+    style: 'currency',
+    currency: offer!.currency,
+    minimumFractionDigits: minor % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(minor / 100);
+const whatsapp = c.contactWhatsapp.replace(/\D/g, '');
+const extra = offer.terms.germanGuideExtraMinor;
+---
+<BaseLayout
+  title="Your private Taj Mahal sunrise tour — IWIS Global"
+  description="Your private tour offer from IWIS Global."
+  noindex
+  floatingWhatsApp={false}
+>
+  <div class="offer-page relative">
+    <div class="offer-watermark" aria-hidden="true">CONFIDENTIAL</div>
+    <div class="mx-auto max-w-3xl px-4 py-8 min-[300px]:px-5 md:py-12">
+
+      <header class="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <img src="/logo.png" alt="IWIS Global" width="64" height="64" class="h-14 w-auto" />
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-brand-700">Prepared for</p>
+          <h1 class="font-serif text-2xl font-semibold text-brand-900 [overflow-wrap:anywhere] md:text-3xl">{offer.customerName}</h1>
+          <p class="text-sm text-stone-700 [overflow-wrap:anywhere]">{c.dateLabel} &middot; {c.travellers} {c.travellers === 1 ? 'traveller' : 'travellers'}</p>
+        </div>
+      </header>
+
+      <section aria-labelledby="offer-summary-title" class="mt-6 rounded-3xl border border-brand-100 bg-white p-4 shadow-sm shadow-brand-900/5 min-[300px]:p-6">
+        <h2 id="offer-summary-title" class="font-serif text-xl font-semibold text-brand-900 [overflow-wrap:anywhere] md:text-2xl">{c.title}</h2>
+        <p class="mt-2 whitespace-pre-line text-stone-700 [overflow-wrap:anywhere]">{c.summary}</p>
+        <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+          <div><dt class="font-semibold text-stone-900">Date</dt><dd class="text-stone-700 [overflow-wrap:anywhere]">{c.dateLabel}</dd></div>
+          <div><dt class="font-semibold text-stone-900">Pickup</dt><dd class="text-stone-700 [overflow-wrap:anywhere]">{c.pickup}</dd></div>
+          <div class="sm:col-span-2"><dt class="font-semibold text-stone-900">Hotel</dt><dd class="text-stone-700 [overflow-wrap:anywhere]">{c.hotel}</dd></div>
+        </dl>
+        <button type="button" id="offer-print" class="no-print mt-4 min-h-11 rounded-full border border-brand-300 bg-white px-5 text-sm font-semibold text-brand-800 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
+          Download itinerary (PDF)
+        </button>
+      </section>
+
+      {c.itinerary.length > 0 && (
+        <section aria-labelledby="offer-itinerary-title" class="mt-8">
+          <h2 id="offer-itinerary-title" class="font-serif text-xl font-semibold text-brand-900 md:text-2xl">Your itinerary</h2>
+          <ol class="mt-4 border-l-2 border-brand-200 pl-4">
+            {c.itinerary.map((stop) => (
+              <li class="relative pb-5 last:pb-0">
+                <span class="absolute -left-[1.4rem] top-1.5 h-3 w-3 rounded-full border-2 border-brand-500 bg-white" aria-hidden="true"></span>
+                <p class="text-sm font-semibold text-brand-700 [overflow-wrap:anywhere]">{stop.time}</p>
+                <p class="font-semibold text-stone-900 [overflow-wrap:anywhere]">{stop.title}</p>
+                {stop.text && <p class="mt-0.5 whitespace-pre-line text-sm text-stone-700 [overflow-wrap:anywhere]">{stop.text}</p>}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      <!-- Printed copy only: both options and their English prices. -->
+      <section class="print-only mt-8" aria-label="Options and prices">
+        <h2 class="font-serif text-xl font-semibold text-brand-900">Options and prices</h2>
+        <ul class="mt-3 grid gap-2">
+          {offer.terms.options.map((o) => (
+            <li class="rounded-xl border border-brand-100 p-3">
+              <p class="font-semibold text-stone-900">{o.label} <span class="font-normal text-stone-700">({o.vehicle})</span></p>
+              <p class="font-serif text-xl font-semibold text-brand-900">{money(tripTotalMinor(offer!.terms, o.id, 'en') ?? 0)}{extra > 0 && <span class="ml-2 text-sm font-normal text-stone-700">+ {money(extra)} with a German-speaking guide</span>}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <div class="mt-8">
+        <OfferCheckout
+          client:load
+          offerId={offer.id}
+          title={c.title}
+          terms={offer.terms}
+          state={state}
+          whatsapp={whatsapp}
+          prefill={{ name: offer.customerName, email: offer.customerEmail, phone: offer.customerPhone }}
+        />
+        <noscript><p class="no-print mt-4 rounded-xl bg-stone-100 p-4 text-sm text-stone-700">Please turn on JavaScript to pay online, or message us on WhatsApp and we will help you.</p></noscript>
+      </div>
+
+      <section class="mt-8 grid gap-6 sm:grid-cols-2" aria-label="What is included">
+        <div>
+          <h2 class="font-serif text-xl font-semibold text-brand-900">Included</h2>
+          <ul class="mt-2 grid gap-1.5 text-sm text-stone-700">
+            {c.includes.map((item) => <li class="flex gap-2"><span aria-hidden="true" class="text-emerald-600">&#10003;</span><span class="[overflow-wrap:anywhere]">{item}</span></li>)}
+          </ul>
+        </div>
+        <div>
+          <h2 class="font-serif text-xl font-semibold text-brand-900">Not included</h2>
+          <ul class="mt-2 grid gap-1.5 text-sm text-stone-700">
+            {c.excludes.map((item) => <li class="flex gap-2"><span aria-hidden="true" class="text-stone-400">&ndash;</span><span class="[overflow-wrap:anywhere]">{item}</span></li>)}
+          </ul>
+        </div>
+      </section>
+
+      <section class="mt-8 rounded-2xl bg-brand-50/60 p-4 text-sm text-stone-700">
+        <p class="[overflow-wrap:anywhere]"><strong class="text-stone-900">Cancellation:</strong> {c.cancellation} <a href="/cancellation-refund-policy" class="no-print font-semibold text-brand-700 underline">Read the full policy</a></p>
+        <p class="mt-3">
+          <strong class="text-stone-900">Questions?</strong> Message us on WhatsApp:
+          <a href={`https://wa.me/${whatsapp}`} class="font-semibold text-brand-700 underline [overflow-wrap:anywhere]">{c.contactWhatsapp}</a>
+          <span class="print-inline"> &middot; iwisglobal.com</span>
+        </p>
+      </section>
+
+      <p class="print-only mt-8 border-t border-stone-300 pt-3 text-xs text-stone-600">Confidential &mdash; prepared for {offer.customerName}. IWIS Global</p>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  document.getElementById('offer-print')?.addEventListener('click', () => window.print());
+</script>
+
+<style is:global>
+  .offer-watermark { display: none; }
+  .print-only, .print-inline { display: none; }
+
+  @page { margin: 14mm; }
+
+  @media print {
+    html, body { background: #fff !important; }
+    body * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    /* Only the offer itself is printed: hide the site header, footer, nav,
+       cookie banner, floating buttons and anything else the layout adds. */
+    body > :not(.offer-page) { display: none !important; }
+    .no-print { display: none !important; }
+    .print-only { display: block !important; }
+    .print-inline { display: inline !important; }
+    .offer-page section, .offer-page li { break-inside: avoid; }
+    /* Let the watermark show through the white cards. */
+    .offer-page section { background: transparent !important; box-shadow: none !important; }
+    .offer-watermark {
+      display: block;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      z-index: 0;
+      transform: translate(-50%, -50%) rotate(-35deg);
+      font-size: 5rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      white-space: nowrap;
+      color: #000;
+      opacity: 0.08;
+      pointer-events: none;
+    }
+    .offer-page > :not(.offer-watermark) { position: relative; z-index: 1; }
+  }
+</style>
