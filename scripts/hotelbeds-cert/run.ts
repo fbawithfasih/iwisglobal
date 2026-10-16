@@ -13,7 +13,8 @@
 //   export HOTELBEDS_API_KEY=... HOTELBEDS_SECRET=...        # the TEST key
 //   sh scripts/hotelbeds-cert/run.sh
 // Optional: HOTEL_CODES=1234,5678 (Agra hotel codes; without it the search uses
-// the destination code AGR), CHECK_IN=2026-12-10, NIGHTS=2.
+// the destination code, AGR by default), DESTINATION=PMI (another destination; the test
+// inventory is thin in Agra, so scenarios C and D may need one), CHECK_IN=2026-12-10, NIGHTS=2.
 //
 // Safety: it refuses to run unless the server is api.test.hotelbeds.com, it never
 // writes the key or secret to the logs, and it cancels what it books even when a
@@ -79,7 +80,7 @@ async function availability(label: string, rooms: SearchInput['rooms'], offsetDa
   const stayIn = addDays(checkIn, offsetDays);
   const input: SearchInput = { checkIn: stayIn, checkOut: addDays(stayIn, nights), rooms };
   const body: any = buildAvailabilityBody(input, hotelCodes);
-  if (hotelCodes.length === 0) body.hotels = undefined, body.destination = { code: 'AGR' };
+  if (hotelCodes.length === 0) body.hotels = undefined, body.destination = { code: process.env.DESTINATION || 'AGR' };
   const res = await call(() => hbRequest(cfg!, '/hotel-api/1.0/hotels', { body, timeoutMs: 60_000 }));
   log(`availability-${label}`, body, res);
   return parseAvailability(res.json);
@@ -120,10 +121,10 @@ const pick = (hotels: HotelResult[], want?: RateOption['rateType']): RateOption 
 // The test inventory is thin, so a scenario that finds nothing in one window tries
 // other dates (and 1 or 3 nights) before giving up. Every attempt is logged.
 const WINDOWS: [number, number][] = [[0, 2], [0, 1], [7, 2], [14, 3], [30, 2], [45, 1], [60, 2], [90, 2], [120, 3]];
-async function findStay(label: string, rooms: SearchInput['rooms'], accept: (hotels: HotelResult[]) => boolean): Promise<HotelResult[]> {
+async function findStay(label: string, rooms: SearchInput['rooms'], accept: (hotels: HotelResult[]) => boolean, windows: [number, number][] = WINDOWS): Promise<HotelResult[]> {
   let last: HotelResult[] = [];
-  for (let i = 0; i < WINDOWS.length; i++) {
-    const [offset, nights] = WINDOWS[i];
+  for (let i = 0; i < windows.length; i++) {
+    const [offset, nights] = windows[i];
     last = await availability(`${label}-try${i + 1}`, rooms, offset, nights);
     const rates = last.reduce((n, h) => n + h.rates.length, 0);
     console.log(`    try ${i + 1}: +${offset} days, ${nights} night(s): ${last.length} hotels, ${rates} rates`);
@@ -158,12 +159,26 @@ async function main() {
   note(`B: ${b.length} hotels returned with ${b.reduce((n, h) => n + h.rates.length, 0)} rates. Our checkout cannot book rooms with different occupancies yet (see the pack).`);
 
   console.log('C. Children with ages');
-  const c = await findStay('C', [{ adults: 2, childAges: [5, 9] }], hasRates);
+  // The test inventory rarely has a room for 2 adults and 2 children, so smaller families are tried too.
+  const FAMILIES: { adults: number; childAges: number[] }[] = [
+    { adults: 2, childAges: [5, 9] },
+    { adults: 2, childAges: [7] },
+    { adults: 1, childAges: [7] },
+  ];
+  const FAMILY_WINDOWS: [number, number][] = [[0, 2], [14, 3], [30, 2], [60, 2]];
+  let c: HotelResult[] = [];
+  let family = FAMILIES[0];
+  for (const f of FAMILIES) {
+    console.log(`  family: ${f.adults} adult(s), children aged ${f.childAges.join(', ')}`);
+    c = await findStay(`C-${f.adults}a${f.childAges.length}c`, [f], hasRates, f === FAMILIES[0] ? WINDOWS : FAMILY_WINDOWS);
+    family = f;
+    if (hasRates(c) || rateLimited) break;
+  }
   const rc = pick(c, 'BOOKABLE') ?? pick(c);
-  if (!rc) note('C: no rates returned');
+  if (!rc) note('C: no rates returned for any family size');
   else {
     const key = rc.rateType === 'RECHECK' ? ((await checkRate('C', rc.rateKey))?.rateKey ?? rc.rateKey) : rc.rateKey;
-    await book('C', key, { adults: 2, childAges: [5, 9] });
+    await book('C', key, family);
   }
 
   console.log('D. A RECHECK rate');
