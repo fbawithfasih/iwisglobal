@@ -77,6 +77,7 @@ export async function rateHotel(
   let net = Number(cached.net);
   let cancellation = parsePolicies(cached.cancellation);
   let rateComments: string[] = [];
+  let bookRateKey = input.rateKey;
   let rateType: string = cached.rateType === 'RECHECK' ? 'RECHECK' : 'BOOKABLE';
 
   const cfg: HbConfig | null = hbConfig(env);
@@ -86,6 +87,8 @@ export async function rateHotel(
     let rate: any;
     try {
       const res = await hbRequest(cfg, '/hotel-api/1.0/checkrates', { body: { rooms: [{ rateKey: input.rateKey }] } });
+      // Outages and credential faults are not "sold out"; other 4xx are.
+      if (res.status === 401 || res.status === 403 || res.status === 429 || res.status >= 500) return result(502, 'unavailable');
       if (res.status !== 200) return result(409, 'sold_out');
       rate = res.json?.hotel?.rooms?.[0]?.rates?.[0];
     } catch {
@@ -94,6 +97,8 @@ export async function rateHotel(
     const newNet = Number(rate?.net);
     if (!rate || !Number.isFinite(newNet) || newNet < 0) return result(409, 'sold_out');
     net = newNet;
+    // The key to book with is the one CheckRate returns, when it returns one.
+    if (typeof rate.rateKey === 'string' && rate.rateKey) bookRateKey = rate.rateKey;
     cancellation = parsePolicies(rate.cancellationPolicies);
     rateType = rate.rateType === 'RECHECK' ? 'RECHECK' : 'BOOKABLE';
     const inline = rate.rateComments;
@@ -124,7 +129,7 @@ export async function rateHotel(
   const boardName = String(cached.boardName ?? '');
   const bookingId = 'hb_' + crypto.randomUUID();
   const stamp = now.toISOString();
-  const selected = { rateKey: input.rateKey, cancellation, boardName, roomName, hotelName, rateCommentsId, rateComments, rateType };
+  const selected = { rateKey: input.rateKey, bookRateKey, cancellation, boardName, roomName, hotelName, rateCommentsId, rateComments, rateType };
   await db
     .prepare(
       `INSERT INTO hotel_bookings (id, status, currency, hotel_code, search_json, selected_json, net_cost, sell_total, custom_trip_id, created_at, updated_at)
