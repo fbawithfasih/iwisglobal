@@ -11,3 +11,6 @@ dist/
 /offer*.pdf
 /offer*.html
 /offers-private/
+
+# Hotelbeds certification run output (scripts/hotelbeds-cert)
+hotelbeds-cert-logs/
