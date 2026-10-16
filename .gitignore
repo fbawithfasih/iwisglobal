@@ -5,3 +5,9 @@ dist/
 .env.local
 .wrangler/
 .DS_Store
+
+# Private offer files hold customer data
+/offer*.json
+/offer*.pdf
+/offer*.html
+/offers-private/

@@ -3,7 +3,7 @@
 // text) using headless Google Chrome on macOS.
 //
 // Usage:
-//   node scripts/offer-pdf.mjs <offer.json> <out.pdf> [--logo <path.png|.jpg>] [--keep-html]
+//   node scripts/offer-pdf.mjs <offer.json> <out.pdf> [--logo <path.png|.jpg>] [--keep-html] [--allow-placeholder]
 //
 // Example (sharper than the default 250 px public/logo.png when printed):
 //   node scripts/offer-pdf.mjs offer.json offer.pdf --logo path/to/iwis-logo-hires.jpg
@@ -13,7 +13,9 @@
 // (https://www.iwisglobal.com/offer/<id>), then run this script so the PDF
 // carries the real link. The intermediate HTML is written to the system temp
 // folder and deleted afterwards (it contains the customer's name); pass
-// --keep-html to keep it (its path is printed). Keep the JSON and PDF out of the repository:
+// --keep-html to keep it (its path is printed). The id must not be the all-zero
+// placeholder and `link` must end with /offer/<id>; --allow-placeholder skips
+// the placeholder check for sample runs only. Keep the JSON and PDF out of the repository:
 // they hold customer data.
 
 import { readFileSync, writeFileSync, existsSync, statSync, mkdtempSync, rmSync, unlinkSync } from 'node:fs';
@@ -33,13 +35,20 @@ const isStr = (v) => typeof v === 'string';
 const isInt = (v) => typeof v === 'number' && Number.isInteger(v);
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 
-function validate(o) {
+const PLACEHOLDER_ID = 'po_00000000000000000000000000000000';
+
+function validate(o, allowPlaceholder) {
   if (!isObj(o)) fail('the JSON must be an object');
   if (!isStr(o.customerName) || !o.customerName.trim()) fail('customerName must be a non-empty string');
   if (!CURRENCIES.includes(o.currency)) fail(`currency must be one of ${CURRENCIES.join(', ')}`);
   if (!isInt(o.depositPercent) || o.depositPercent < 1 || o.depositPercent > 99) fail('depositPercent must be an integer from 1 to 99');
   if (!isInt(o.germanGuideExtraMinor) || o.germanGuideExtraMinor < 0) fail('germanGuideExtraMinor must be an integer of 0 or more');
+  if (!isStr(o.id) || !/^po_[0-9a-f]{32}$/.test(o.id)) fail('id must look like po_ followed by 32 lowercase hex characters');
+  if (o.id === PLACEHOLDER_ID && !allowPlaceholder) {
+    fail('the offer id is still the placeholder: run `node scripts/offer-seed.mjs <json> --id-only`, put the id in both `id` and `link` (pass --allow-placeholder only for sample runs)');
+  }
   if (!isStr(o.link) || !/^https:\/\/\S+$/.test(o.link)) fail('link must be an https URL');
+  if (!o.link.endsWith(`/offer/${o.id}`)) fail(`link must end with /offer/${o.id} (the offer id in the JSON)`);
   if (!Array.isArray(o.options) || o.options.length === 0) fail('options must be a non-empty array');
   o.options.forEach((p, i) => {
     if (!isObj(p)) fail(`options[${i}] must be an object`);
@@ -69,14 +78,16 @@ const args = process.argv.slice(2);
 const pos = [];
 let logoPath = null;
 let keepHtml = false;
+let allowPlaceholder = false;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--logo') {
     logoPath = args[++i];
     if (!logoPath) fail('--logo needs a file path');
   } else if (args[i] === '--keep-html') keepHtml = true;
+  else if (args[i] === '--allow-placeholder') allowPlaceholder = true;
   else pos.push(args[i]);
 }
-if (pos.length !== 2) fail('usage: node scripts/offer-pdf.mjs <offer.json> <out.pdf> [--logo <path>] [--keep-html]');
+if (pos.length !== 2) fail('usage: node scripts/offer-pdf.mjs <offer.json> <out.pdf> [--logo <path>] [--keep-html] [--allow-placeholder]');
 const jsonFile = resolve(pos[0]);
 const outPdf = resolve(pos[1]);
 if (extname(outPdf).toLowerCase() !== '.pdf') fail('the output file must end in .pdf');
@@ -87,7 +98,7 @@ try {
 } catch (e) {
   fail(`cannot read ${jsonFile}: ${e.message}`);
 }
-validate(offer);
+validate(offer, allowPlaceholder);
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const logoFile = logoPath ? resolve(logoPath) : join(repoRoot, 'public', 'logo.png');

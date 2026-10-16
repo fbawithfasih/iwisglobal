@@ -4,11 +4,11 @@ import type { Locale } from './lib/i18n';
 
 // D1 read replication (turned on 30 Sep 2026): replicas only serve reads
 // made through a session. Public pages may read from the nearest replica;
-// admin, account, sign-in (and password reset), booking and API routes stay on the primary so a
+// admin, account, sign-in (and password reset), booking, private offer pages (/offer/<id>) and API routes (which already covers /api/offer/*) stay on the primary so a
 // save or payment is never followed by a stale read. After any write (a
 // non-GET request), the session's bookmark goes into a short-lived cookie so
 // that visitor's next pages read at least that fresh ("read your writes").
-const PRIMARY_PATHS = /^\/(admin|account|auth|login|signup|forgot-password|reset-password|verify-email|booking|api)(\/|$)/;
+const PRIMARY_PATHS = /^\/(admin|account|auth|login|signup|forgot-password|reset-password|verify-email|booking|offer|api)(\/|$)/;
 const BOOKMARK_COOKIE = 'd1_bookmark';
 
 type Session = { getBookmark(): string | null };

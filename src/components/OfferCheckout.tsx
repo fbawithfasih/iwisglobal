@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PhoneInput from './PhoneInput';
 import { validateContact } from '../lib/customTrip';
 import { depositMinor, tripTotalMinor } from '../lib/offerPricing';
@@ -57,6 +57,9 @@ export default function OfferCheckout({ offerId, title, terms, state, whatsapp, 
   const [confirming, setConfirming] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [contactTried, setContactTried] = useState(false);
+  // Fields the server rejected (it answers { error: 'bad_contact', fields: ['email'] }).
+  const [serverBad, setServerBad] = useState<string[]>([]);
+  useEffect(() => { setServerBad((prev) => (prev.length ? [] : prev)); }, [name, email, phone]);
   // Set when Razorpay took the payment but we could not confirm it on screen.
   const [unconfirmed, setUnconfirmed] = useState('');
   const confirmingRef = useRef(false);
@@ -77,7 +80,8 @@ export default function OfferCheckout({ offerId, title, terms, state, whatsapp, 
   const balance = total - deposit;
   const paidOption = terms.options.find((o) => o.id === state.optionId);
 
-  const contactErrs = validateContact({ name, email, phone });
+  const contactErrs: Partial<Record<'name' | 'email' | 'phone', string | boolean>> = { ...validateContact({ name, email, phone }) };
+  for (const f of ['name', 'email', 'phone'] as const) if (serverBad.includes(f)) contactErrs[f] = contactErrs[f] || true;
   const contactMessage = { name: NAME_ERROR, email: EMAIL_ERROR, phone: PHONE_ERROR } as const;
   const whatsappHref = `https://wa.me/${whatsapp}`;
 
@@ -117,7 +121,9 @@ export default function OfferCheckout({ offerId, title, terms, state, whatsapp, 
         if (res.status === 404) throw new Error('This offer is no longer available. Please message us on WhatsApp.');
         if (res.status === 400 && order.error === 'bad_contact') {
           setContactTried(true);
-          const field = (['name', 'email', 'phone'] as const).find((f) => order.fields?.[f]);
+          const bad: string[] = Array.isArray(order.fields) ? order.fields : [];
+          setServerBad(bad);
+          const field = (['name', 'email', 'phone'] as const).find((f) => bad.includes(f));
           if (field) focusField(field);
           throw new Error('Please check your contact details.');
         }
