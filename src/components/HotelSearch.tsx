@@ -17,9 +17,10 @@ interface Props {
   currency: 'INR' | 'USD';
   intlLocale: string;
   locale: string;
-  // Task 12: wire this to the booking page. Until then the button does nothing.
-  onSelect?: (hotel: ShownHotel, rate: ShownRate) => void;
 }
+
+// What the checkout page reads back from sessionStorage (see HotelCheckout).
+export interface StoredSearch { checkIn: string; checkOut: string; rooms: { adults: number; childAges: number[] }[] }
 
 const fieldClass =
   'min-h-11 w-full rounded-xl border border-brand-200 bg-white px-3 text-base text-stone-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600';
@@ -31,7 +32,7 @@ const labelClass = 'mb-1 block text-sm font-medium text-stone-800';
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
-export default function HotelSearch({ t, intlLocale, onSelect }: Props) {
+export default function HotelSearch({ t, intlLocale }: Props) {
   const [minDate, setMinDate] = useState('');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -41,6 +42,10 @@ export default function HotelSearch({ t, intlLocale, onSelect }: Props) {
   const [nights, setNights] = useState(1);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  // The search that produced `hotels`, and the rate whose price is being checked.
+  const [searched, setSearched] = useState<StoredSearch | null>(null);
+  const [selecting, setSelecting] = useState('');
+  const [selectError, setSelectError] = useState('');
   const ageRefs = useRef<Record<string, HTMLSelectElement | null>>({});
 
   // Read on the client so the server render and first client render match.
@@ -83,6 +88,7 @@ export default function HotelSearch({ t, intlLocale, onSelect }: Props) {
       if (res.ok && Array.isArray(data?.hotels)) {
         setHotels(data.hotels);
         setNights(Number(data.nights) || 1);
+        setSearched({ checkIn, checkOut, rooms: rooms.map((r) => ({ adults: r.adults, childAges: r.childAges as number[] })) });
       } else if (data?.error === 'invalid_search' && Array.isArray(data.errors)) {
         setHotels(null);
         setErrors(data.errors.map((er: { code: string; params?: Record<string, string | number> }) => errorText(er.code, er.params)));
@@ -96,6 +102,37 @@ export default function HotelSearch({ t, intlLocale, onSelect }: Props) {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Ask the server to re-check and price the chosen rate, then go to the
+  // booking page. Nothing from here is trusted for the price.
+  async function select(r: ShownRate) {
+    if (selecting || !searched) return;
+    setSelectError('');
+    setSelecting(r.rateKey);
+    try {
+      const trip = new URLSearchParams(window.location.search).get('trip') ?? undefined;
+      const res = await fetch('/api/hotels/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rateKey: r.rateKey, shownPrice: r.price, trip }),
+      });
+      const data = await res.json().catch(() => null);
+      const id = data?.quote?.bookingId;
+      if (res.ok && typeof id === 'string') {
+        try {
+          sessionStorage.setItem(`hotel-quote:${id}`, JSON.stringify({ quote: data.quote, search: searched }));
+        } catch {
+          // The booking page shows its "expired" message if this is blocked.
+        }
+        window.location.href = `/hotels/book?b=${encodeURIComponent(id)}`;
+        return;
+      }
+      setSelectError(data?.error === 'sold_out' ? t.errors.sold_out : data?.error === 'unavailable' ? t.errors.unavailable : t.errors.select_failed);
+    } catch {
+      setSelectError(t.errors.select_failed);
+    }
+    setSelecting('');
   }
 
   return (
@@ -170,6 +207,7 @@ export default function HotelSearch({ t, intlLocale, onSelect }: Props) {
       </form>
 
       <div aria-live="polite">
+        {selectError && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">{selectError}</p>}
         {hotels && hotels.length === 0 && <p className="rounded-xl bg-stone-100 p-4 text-sm text-stone-700">{t.results.none}</p>}
         {hotels && hotels.length > 0 && (
           <ul className="grid gap-6">
@@ -215,7 +253,7 @@ export default function HotelSearch({ t, intlLocale, onSelect }: Props) {
                           <div className="flex items-center gap-3">
                             <span className="font-serif text-lg font-semibold text-brand-900">{money(r.price, r.currency)}</span>
                             {nights > 1 && <span className="text-xs text-stone-600">{money(r.perNight, r.currency)} {t.results.perNight}</span>}
-                            <button type="button" className={primaryButton} onClick={() => onSelect?.(h, r)}>{t.results.select}</button>
+                            <button type="button" className={primaryButton} disabled={!!selecting} onClick={() => select(r)}>{t.results.select}</button>
                           </div>
                         </li>
                       ))}

@@ -1,0 +1,39 @@
+---
+// "Review and pay" for a quoted hotel room. The quote itself lives in the
+// guest's browser (sessionStorage) and on the server (hotel_bookings); the page
+// is hidden like /hotels until the owner switches hotels on.
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import HotelCheckout from '../../components/HotelCheckout';
+import { resolveEnv } from '../../lib/env';
+import { pageI18n } from '../../i18n/dictionaries';
+import { intlLocale } from '../../lib/i18n';
+import { isAdminAuthenticated } from '../../lib/requireAdmin';
+import { isHotelsEnabled } from '../../lib/hotelData';
+import type { D1Like } from '../../lib/db';
+
+const env = resolveEnv(Astro.locals);
+const db = env.DB as D1Like | undefined;
+const { locale, t: dict } = pageI18n(Astro);
+const t = dict.hotelBooking;
+
+const live = db ? (await isHotelsEnabled(db)) : false;
+const admin = await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET);
+if (!db || (!live && !admin)) {
+  return new Response('Not found', { status: 404 });
+}
+
+const bookingId = (Astro.url.searchParams.get('b') ?? '').slice(0, 100);
+---
+<BaseLayout title={t.checkout.heading} description={t.meta.description} noindex={true} floatingWhatsApp={false}>
+  <section class="mx-auto max-w-3xl px-4 py-10 min-[300px]:px-6 md:py-14">
+    {!live && (
+      <p class="mb-5 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">{t.previewBanner}</p>
+    )}
+    <h1 class="font-serif text-3xl font-semibold text-brand-900 md:text-4xl">{t.checkout.heading}</h1>
+    <div class="mt-8">
+      <HotelCheckout client:load t={t.checkout} bookingId={bookingId} intlLocale={intlLocale(locale)} locale={locale} />
+    </div>
+  </section>
+</BaseLayout>
