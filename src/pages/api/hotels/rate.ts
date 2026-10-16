@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { resolveEnv } from '../../../lib/env';
 import { resolveCurrency } from '../../../lib/currency';
 import { rateHotel } from '../../../lib/hotelQuote';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 
 export const prerender = false;
 
@@ -17,7 +18,8 @@ export const POST: APIRoute = async ({ request, locals, url, cookies }) => {
   try {
     const env = resolveEnv(locals);
     const currency = resolveCurrency(url.searchParams, cookies.get('currency')?.value);
-    const result = await rateHotel(env, env.DB, body, currency);
+    const admin = await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET);
+    const result = await rateHotel(env, env.DB, body, currency, new Date(), admin);
     return new Response(JSON.stringify(result.body), { status: result.status, headers: { 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('hotel rate error:', error);

@@ -50,13 +50,15 @@ export async function searchHotels(
   raw: unknown,
   currency: GuestCurrency,
   today: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  // A signed-in admin may search while hotels are switched off, to test before launch.
+  adminPreview = false
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const input = parseSearchInput(raw);
   if (!input) return { status: 400, body: { error: 'bad_request' } };
   const errors = validateSearch(input, today);
   if (errors.length) return { status: 400, body: { error: 'invalid_search', errors } };
-  if (!(await isHotelsEnabled(db))) return { status: 403, body: { error: 'not_available' } };
+  if (!adminPreview && !(await isHotelsEnabled(db))) return { status: 403, body: { error: 'not_available' } };
 
   const cfg = hbConfig(env);
   if (!cfg) return unavailable(503);

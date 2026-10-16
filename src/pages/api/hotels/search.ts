@@ -3,6 +3,7 @@ import { resolveEnv } from '../../../lib/env';
 import { resolveCurrency } from '../../../lib/currency';
 import { todayIst } from '../../../lib/availability';
 import { searchHotels } from '../../../lib/hotelSearchService';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 
 export const prerender = false;
 
@@ -19,7 +20,8 @@ export const POST: APIRoute = async ({ request, locals, url, cookies }) => {
   try {
     const env = resolveEnv(locals);
     const currency = resolveCurrency(url.searchParams, cookies.get('currency')?.value);
-    const result = await searchHotels(env, env.DB, body, currency, todayIst());
+    const admin = await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET);
+    const result = await searchHotels(env, env.DB, body, currency, todayIst(), new Date(), admin);
     return new Response(JSON.stringify(result.body), { status: result.status, headers: { 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('hotel search error:', error);
