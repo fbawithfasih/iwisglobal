@@ -32,6 +32,31 @@ if (new URL(cfg.baseUrl).host !== 'api.test.hotelbeds.com') {
   process.exit(1);
 }
 
+// Hotelbeds rate-limits the test key (HTTP 429). Every call is spaced out, and a 429 is
+// waited out and retried a few times before the scenario gives up.
+const GAP_MS = Number(process.env.CERT_GAP_MS ?? 1500);
+const BACKOFF_MS = Number(process.env.CERT_BACKOFF_MS ?? 15000);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+let lastCall = 0;
+let rateLimited = false;
+async function call<T extends { status: number }>(fn: () => Promise<T>, attempts = 4): Promise<T> {
+  let res!: T;
+  for (let i = 0; i < attempts; i++) {
+    const wait = lastCall + GAP_MS - Date.now();
+    if (wait > 0) await sleep(wait);
+    res = await fn();
+    lastCall = Date.now();
+    if (res.status !== 429) {
+      rateLimited = false;
+      return res;
+    }
+    rateLimited = true;
+    console.log(`    HTTP 429 (too many requests): waiting ${Math.round((BACKOFF_MS * (i + 1)) / 1000)}s before trying again`);
+    await sleep(BACKOFF_MS * (i + 1));
+  }
+  return res;
+}
+
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const dir = `hotelbeds-cert-logs/${stamp}`;
 mkdirSync(dir, { recursive: true });
@@ -55,14 +80,14 @@ async function availability(label: string, rooms: SearchInput['rooms'], offsetDa
   const input: SearchInput = { checkIn: stayIn, checkOut: addDays(stayIn, nights), rooms };
   const body: any = buildAvailabilityBody(input, hotelCodes);
   if (hotelCodes.length === 0) body.hotels = undefined, body.destination = { code: 'AGR' };
-  const res = await hbRequest(cfg!, '/hotel-api/1.0/hotels', { body, timeoutMs: 60_000 });
+  const res = await call(() => hbRequest(cfg!, '/hotel-api/1.0/hotels', { body, timeoutMs: 60_000 }));
   log(`availability-${label}`, body, res);
   return parseAvailability(res.json);
 }
 
 async function checkRate(label: string, rateKey: string): Promise<{ rateKey: string; net: number } | null> {
   const body = { rooms: [{ rateKey }] };
-  const res = await hbRequest(cfg!, '/hotel-api/1.0/checkrates', { body });
+  const res = await call(() => hbRequest(cfg!, '/hotel-api/1.0/checkrates', { body }));
   log(`checkrate-${label}`, body, res);
   const rate = res.json?.hotel?.rooms?.[0]?.rates?.[0];
   return res.status === 200 && rate?.rateKey ? { rateKey: rate.rateKey, net: Number(rate.net) } : null;
@@ -75,12 +100,12 @@ async function book(label: string, rateKey: string, party: { adults: number; chi
     ...party.childAges.map((age, i) => ({ roomId: 1, type: 'CH' as const, name: 'Test', surname: `Child${i + 1}`, age })),
   ];
   const request = { clientReference: `CERT${label}${Date.now().toString(36)}`.slice(0, 20), holder: { name: 'Test', surname: 'Holder' }, rooms: [{ rateKey, paxes }] };
-  const res = await bookHotel(cfg!, request);
+  const res = await call(() => bookHotel(cfg!, request));
   log(`booking-${label}`, request, res);
   const reference = res.json?.booking?.reference;
   if (res.status === 200 && typeof reference === 'string') {
     booked.push({ label, reference });
-    const detail = await getHotelBooking(cfg!, reference);
+    const detail = await call(() => getHotelBooking(cfg!, reference));
     log(`booking-detail-${label}`, { reference }, detail);
     const supplier = res.json.booking.invoiceCompany;
     note(`${label}: booked ${reference}; supplier on the booking response: ${supplier?.company ?? supplier?.name ?? 'MISSING'} / VAT ${supplier?.registrationNumber ?? 'MISSING'}`);
@@ -103,6 +128,10 @@ async function findStay(label: string, rooms: SearchInput['rooms'], accept: (hot
     const rates = last.reduce((n, h) => n + h.rates.length, 0);
     console.log(`    try ${i + 1}: +${offset} days, ${nights} night(s): ${last.length} hotels, ${rates} rates`);
     if (accept(last)) return last;
+    if (rateLimited) {
+      note(`${label}: Hotelbeds is still rate-limiting (HTTP 429) after waiting. Stopping this scenario; wait a few minutes (or until tomorrow if the test quota is used up) and run again.`);
+      break;
+    }
   }
   return last;
 }
@@ -159,7 +188,7 @@ async function main() {
 async function cancelAll() {
   console.log('F. Cancellation');
   for (const b of booked) {
-    const res = await cancelHotelBooking(cfg!, b.reference);
+    const res = await call(() => cancelHotelBooking(cfg!, b.reference), 8);
     log(`cancel-${b.label}`, { reference: b.reference }, res);
     note(`${b.label}: cancel ${b.reference} -> HTTP ${res.status}${res.status === 200 ? '' : ' (CANCEL BY HAND in the Hotelbeds test back office)'}`);
   }
