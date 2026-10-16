@@ -27,6 +27,14 @@ const isHotels = path.startsWith('/admin/hotels');
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
+    <!-- Lets the admin be added to an iPhone/Android Home Screen and open full screen. -->
+    <link rel="manifest" href="/admin.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="IWIS Admin" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#4c1d95" />
     <title>{title} — IWIS Global Admin</title>
     <style is:global>
       @tailwind base;
