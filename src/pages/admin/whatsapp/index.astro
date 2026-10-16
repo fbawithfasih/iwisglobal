@@ -11,8 +11,8 @@ import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
-import { sendDraft, discardDraft, draftWaitingMessage, type DraftRow } from '../../../lib/waDraft';
-import { listInbox, inboxCounts, takeOver, giveBack, formatDuration, type InboxFilter } from '../../../lib/waInbox';
+import { sendDraft, sendStaffMessage, discardDraft, draftWaitingMessage, type DraftRow } from '../../../lib/waDraft';
+import { listInbox, inboxCounts, takeOver, giveBack, formatDuration, WINDOW_MS, type InboxFilter } from '../../../lib/waInbox';
 import { auditOverdue } from '../../../lib/waLaunch';
 
 const env = resolveEnv(Astro.locals);
@@ -32,6 +32,9 @@ if (Astro.request.method === 'POST' && db) {
   let error = '';
   if (form.get('_action') === 'send') {
     const result = await sendDraft(env, db, draftId, String(form.get('text') ?? ''));
+    if (!result.ok) error = result.error ?? 'Could not send.';
+  } else if (form.get('_action') === 'reply') {
+    const result = await sendStaffMessage(env, db, conversation, String(form.get('text') ?? ''));
     if (!result.ok) error = result.error ?? 'Could not send.';
   } else if (form.get('_action') === 'discard') {
     await discardDraft(db, draftId);
@@ -71,6 +74,8 @@ const drafts = new Map<string, DraftRow>(
     ? (await db.prepare(`SELECT * FROM wa_drafts WHERE conversation_id = ? ORDER BY id ASC`).bind(selectedId).all<DraftRow>()).results.map((d) => [d.message_id, d])
     : []
 );
+const lastGuestAt = messages.filter((m) => m.direction === 'in').map((m) => m.sent_at).sort().pop();
+const selectedWindowLeft = lastGuestAt ? WINDOW_MS - (Date.now() - Date.parse(lastGuestAt)) : 0;
 const autoReply = db
   ? (await db.prepare(`SELECT value FROM wa_settings WHERE key = 'auto_reply'`).bind().first<{ value: string }>())?.value ?? 'off'
   : 'off';
@@ -232,6 +237,24 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
             );
           })}
         </ul>
+        {selected && selected.state !== 'opted_out' && (
+          <form method="POST" class="mt-4 max-w-xl rounded-xl border border-stone-200 bg-white p-3 text-sm">
+            <input type="hidden" name="c" value={selectedId} />
+            <input type="hidden" name="tab" value={tab} />
+            <label class="mb-1 block text-xs font-medium text-stone-600" for="staff-reply">Write your own reply</label>
+            {selectedWindowLeft <= 0 ? (
+              <p class="rounded bg-amber-50 p-2 text-xs text-amber-900">
+                The guest last wrote more than 24 hours ago, so WhatsApp does not allow a free-text reply. Wait for them to write again, or reach them by email or phone.
+              </p>
+            ) : (
+              <>
+                <textarea id="staff-reply" name="text" rows="3" maxlength="4096" required class="w-full rounded-lg border border-stone-300 bg-white p-2" placeholder="Type a message to send on WhatsApp"></textarea>
+                <p class="mt-1 text-xs text-stone-500">Reply window: {formatDuration(selectedWindowLeft)} left. Sending marks this chat as staff handling, so the agent stops drafting until you give it back.</p>
+                <button type="submit" name="_action" value="reply" class="mt-2 min-h-11 rounded bg-emerald-600 px-4 text-sm font-medium text-white">Send reply</button>
+              </>
+            )}
+          </form>
+        )}
       </section>
     </div>
   )}
