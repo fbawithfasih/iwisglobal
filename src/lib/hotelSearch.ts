@@ -18,6 +18,20 @@ export const MIN_LEAD_DAYS = 1;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const nights = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
 
+// A real calendar date: right shape, and it survives a round trip (rejects 2026-02-30, 2026-13-01, ...).
+const isRealDate = (d: string): boolean => {
+  if (!DATE.test(d)) return false;
+  const t = Date.parse(`${d}T00:00:00Z`);
+  return !Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === d;
+};
+
+// A count from a posted value: a JS integer, or a 1-2 digit string. Anything else is NaN.
+const toCount = (v: unknown): number => {
+  if (typeof v === 'number') return Number.isInteger(v) ? v : NaN;
+  if (typeof v === 'string' && /^\d{1,2}$/.test(v)) return Number(v);
+  return NaN;
+};
+
 // Cleans a posted search; null when it is not shaped like one (including a
 // child with no usable age: ages are mandatory).
 export function parseSearchInput(raw: unknown): SearchInput | null {
@@ -28,9 +42,9 @@ export function parseSearchInput(raw: unknown): SearchInput | null {
   for (const item of r.rooms.slice(0, 20)) {
     if (!item || typeof item !== 'object') return null;
     const room = item as Record<string, unknown>;
-    const adults = Number(room.adults);
+    const adults = toCount(room.adults);
     const ages = Array.isArray(room.childAges) ? room.childAges : [];
-    const childAges = ages.map((a) => (a === null || a === '' || a === undefined ? NaN : Number(a)));
+    const childAges = ages.map(toCount);
     if (!Number.isInteger(adults) || childAges.some((a) => !Number.isInteger(a))) return null;
     rooms.push({ adults, childAges });
   }
@@ -39,11 +53,12 @@ export function parseSearchInput(raw: unknown): SearchInput | null {
 
 export function validateSearch(input: SearchInput, today: string): SearchError[] {
   const errors: SearchError[] = [];
-  if (!DATE.test(input.checkIn) || !DATE.test(input.checkOut) || nights(input.checkIn, input.checkOut) < 1) {
+  const n = isRealDate(input.checkIn) && isRealDate(input.checkOut) ? nights(input.checkIn, input.checkOut) : NaN;
+  if (!(n >= 1)) {
     errors.push({ code: 'bad_dates' });
   } else {
     if (input.checkIn < addDays(today, MIN_LEAD_DAYS)) errors.push({ code: 'too_soon' });
-    if (nights(input.checkIn, input.checkOut) > MAX_NIGHTS) errors.push({ code: 'too_long', params: { max: MAX_NIGHTS } });
+    if (n > MAX_NIGHTS) errors.push({ code: 'too_long', params: { max: MAX_NIGHTS } });
   }
   if (input.rooms.length < 1 || input.rooms.length > MAX_ROOMS) errors.push({ code: 'bad_rooms', params: { max: MAX_ROOMS } });
   for (const room of input.rooms) {
