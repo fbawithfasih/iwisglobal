@@ -82,7 +82,7 @@ const isHotels = path.startsWith('/admin/hotels');
   </head>
   <body class="text-stone-900 min-h-screen">
     <!-- Wraps onto two lines on phones instead of widening every admin page. -->
-    <nav class="bg-gradient-to-r from-brand-950 via-brand-900 to-brand-800 px-6 py-3 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-violet-100 shadow-md shadow-brand-950/20">
+    <nav id="admin-nav" class="max-md:flex-nowrap max-md:overflow-x-auto max-md:whitespace-nowrap max-md:[&>*]:shrink-0 bg-gradient-to-r from-brand-950 via-brand-900 to-brand-800 px-6 py-3 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-violet-100 shadow-md shadow-brand-950/20">
       <a href="/admin" class="mr-2 rounded-full bg-white px-3 py-1 font-semibold text-brand-900">IWIS Admin</a>
       <a href="/admin" aria-current={isBookings ? 'page' : undefined} class={navLinkClass(isBookings)}>Bookings</a>
       <a href="/admin/tours" aria-current={isTours ? 'page' : undefined} class={navLinkClass(isTours)}>Tours</a>
@@ -103,6 +103,10 @@ const isHotels = path.startsWith('/admin/hotels');
     <main class="max-w-6xl mx-auto px-6 py-8">
       <slot />
     </main>
+    <script>
+      // On phones the menu is one scrolling row; show the current page in it.
+      document.querySelector('#admin-nav [aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+    </script>
     <script>
       // Admin text boxes grow to fit their content (never below their rows=
       // height), so long itineraries/add-ons aren't a scroll-inside-a-scroll
