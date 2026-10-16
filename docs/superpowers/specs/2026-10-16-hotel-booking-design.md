@@ -88,6 +88,6 @@ New code only, following existing patterns (D1Like, `resolveEnv`, dictionary i18
 ## Open items for the owner
 - Hotelbeds account/contract details: supplier VAT line for vouchers comes from the API; confirm GST treatment of the markup with your accountant.
 - Whether to exclude any hotels or categories (minimum stars, hostels).
-- Currency: confirm Hotelbeds contract currency once the test key is checked.
+- Currency: confirmed on the test key (2026-10-16): Hotelbeds quotes in EUR; the Agra destination code is `AGR` (141 hotels in content). The test environment returned availability for only 1 of those hotels on a sample date, so test inventory is thin; re-check the live currency and inventory once live keys exist.
 - Cancellation terms shown to guests for hotel bookings, and who bears Hotelbeds fees on late cancellations (default: the guest, per the hotel's policy).
 - Whether guests can cancel from an account page in the first version or only by contacting you (default: contact you; admin cancels).
