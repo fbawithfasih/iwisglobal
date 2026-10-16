@@ -111,6 +111,7 @@ export async function searchHotels(
           currency: r.currency,
           cancellation: rate.cancellation,
           rateType: rate.rateType,
+          rateCommentsId: rate.rateCommentsId,
           search: input,
         }),
       });
