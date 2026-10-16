@@ -55,7 +55,7 @@ export HOTEL_CODES=1234,5678   # optional: Agra hotel codes, as listed in /admin
 sh scripts/hotelbeds-cert/run.sh
 ```
 
-Optional: `CHECK_IN=2026-12-10` and `NIGHTS=2` (default: 30 days ahead, 2 nights).
+Optional: `CHECK_IN=2026-12-10` and `NIGHTS=2` (default: 30 days ahead, 2 nights), and `DESTINATION=PMI` to search another destination (the test inventory in Agra is thin: scenarios C and D may need one). `SCENARIOS=C,D` runs only those scenarios, so reruns do not use up the test key's allowance (when Hotelbeds answers 403 the script stops searching, cancels what it booked and says so; run again the next day). The script paces its calls and waits out Hotelbeds rate limits (HTTP 429); scenario B and C retry other dates, and C tries smaller families (2 adults and 2 children, then 2 adults and 1 child, then 1 adult and 1 child).
 
 | Scenario | What the script does | What to look for in the logs |
 | --- | --- | --- |
