@@ -697,13 +697,137 @@ export async function sendCustomTripAdminEmail(env: Record<string, any>, d: Cust
 // booking could not be confirmed with Hotelbeds, or a refund failed). Callers
 // pass the booking id, the payment id and a reason only, never guest details.
 // Best effort: never throws.
-export async function sendHotelAlertEmail(env: Record<string, any>, subject: string, body: string): Promise<void> {
+export async function sendHotelAlertEmail(env: Record<string, any>, subject: string, body: string, title = 'Hotel booking needs attention'): Promise<void> {
   try {
     if (!env.RESEND_API_KEY) return;
     const to = env.ADMIN_NOTIFICATION_EMAIL || EMAIL;
-    const html = emailHtml('Hotel booking needs attention', `<pre style="white-space:pre-wrap; font-size:14px; margin:0;">${escapeHtml(body)}</pre>`);
+    const html = emailHtml(escapeHtml(title), `<pre style="white-space:pre-wrap; font-size:14px; margin:0;">${escapeHtml(body)}</pre>`);
     await post(env, 'sendHotelAlertEmail', { from: FROM(env), to, subject, html, text: body });
   } catch (err) {
-    console.error('sendHotelAlertEmail: failed', err);
+    console.error('sendHotelAlertEmail: failed', err instanceof Error ? err.message : 'error');
+  }
+}
+
+// --- Private offers (src/lib/offerPayment.ts) ------------------------------
+// English only. Money as "€174.00" (en-IE), the same format as the offer page.
+
+export interface OfferPaymentEmailDetails {
+  offerId: string;
+  offerPaymentId: string;
+  title: string;
+  dateLabel: string;
+  pickup: string;
+  kind: 'full' | 'deposit' | 'balance';
+  depositPercent: number;
+  amountMinor: number;
+  currency: string;
+  totalMinor: number;
+  balanceMinor: number; // still to pay after this payment (0 when paid in full)
+  optionLabel: string;
+  vehicle: string;
+  guideLanguage: 'en' | 'de';
+  payerName: string;
+  payerEmail: string;
+  payerPhone: string;
+  paymentId: string;
+}
+
+const OFFER_WHATSAPP_DISPLAY = '+91 63992 26633';
+const OFFER_WHATSAPP_HREF = 'https://wa.me/916399226633';
+
+export function formatOfferMoney(minor: number, currency: string): string {
+  return new Intl.NumberFormat('en-IE', { style: 'currency', currency }).format(minor / 100);
+}
+
+export function offerKindLabel(kind: 'full' | 'deposit' | 'balance', depositPercent: number): string {
+  return kind === 'full' ? 'full payment' : kind === 'deposit' ? `booking amount (${depositPercent}%)` : 'balance';
+}
+
+const offerGuideLabel = (lang: 'en' | 'de') => (lang === 'de' ? 'German' : 'English');
+
+function offerTable(rows: [string, string][]): string {
+  const cell = 'padding:6px 0; vertical-align:top;';
+  return `
+        <table style="width:100%; border-collapse: collapse; margin: 0 0 16px; font-size: 14px; background:#faf9ff; border:1px solid #ede9fe; border-radius:12px;">
+          ${rows.map(([label, value]) => `<tr><td style="${cell} color:#78716c; padding-left:14px; padding-right:12px;">${escapeHtml(label)}</td><td style="${cell} text-align:right; padding-right:14px; word-break:break-word;${label === 'Amount paid' ? ' font-weight:600;' : ''}">${escapeHtml(value)}</td></tr>`).join('')}
+        </table>`;
+}
+
+// The guest's receipt, to the payer's email. Never throws.
+export async function sendOfferReceiptEmail(env: Record<string, any>, d: OfferPaymentEmailDetails): Promise<boolean> {
+  try {
+    if (!env.RESEND_API_KEY || !d.payerEmail) return false;
+    const money = (m: number) => formatOfferMoney(m, d.currency);
+    const offerUrl = `${SITE}/offer/${d.offerId}`;
+    const rows: [string, string][] = [
+      ['Amount paid', money(d.amountMinor)],
+      ['Payment', offerKindLabel(d.kind, d.depositPercent)],
+      ['Vehicle', `${d.optionLabel} (${d.vehicle})`],
+      ['Guide', offerGuideLabel(d.guideLanguage)],
+      ['Date', d.dateLabel],
+      ['Pickup', d.pickup],
+      ['Trip total', money(d.totalMinor)],
+      ...(d.kind === 'deposit' ? ([['Balance remaining', money(d.balanceMinor)]] as [string, string][]) : []),
+    ];
+    const intro = d.kind === 'deposit'
+      ? `Thank you, we have received your booking amount for ${d.title}. The balance of ${money(d.balanceMinor)} can be paid on your offer page before the tour.`
+      : `Thank you, we have received your payment for ${d.title}. Your tour is paid in full.`;
+    const html = emailHtml('Payment received', `
+        <p style="margin:0 0 16px;">Dear ${escapeHtml(d.payerName || 'guest')},</p>
+        <p style="margin:0 0 16px;">${escapeHtml(intro)}</p>
+        ${offerTable(rows)}
+        <p style="margin:24px 0; text-align:center;"><a href="${offerUrl}" style="${EMAIL_BUTTON}">View your offer</a></p>
+        <p style="${EMAIL_NOTE}">Questions? WhatsApp <a href="${OFFER_WHATSAPP_HREF}" style="color:#6d28d9;">${OFFER_WHATSAPP_DISPLAY}</a> or email <a href="mailto:${EMAIL}" style="color:#6d28d9;">${EMAIL}</a>.</p>`);
+    const text = [
+      'Payment received',
+      '',
+      `Dear ${d.payerName || 'guest'},`,
+      '',
+      intro,
+      '',
+      ...rows.map(([l, v]) => `${l}: ${v}`),
+      '',
+      `Your offer: ${offerUrl}`,
+      '',
+      `Questions? WhatsApp ${OFFER_WHATSAPP_DISPLAY} or email ${EMAIL}`,
+      '',
+      `IWIS Global · ${SITE}`,
+    ].join('\n');
+    return await post(env, 'sendOfferReceiptEmail', { from: FROM(env), to: d.payerEmail, subject: `Payment received: ${d.title}`, html, text });
+  } catch (err) {
+    console.error('sendOfferReceiptEmail: failed', err instanceof Error ? err.message : 'error');
+    return false;
+  }
+}
+
+// "Payment received" to the business inbox. Carries the payer's details: this
+// is the business notification. Never throws.
+export async function sendOfferAdminEmail(env: Record<string, any>, d: OfferPaymentEmailDetails & { customerName: string }): Promise<void> {
+  try {
+    if (!env.RESEND_API_KEY) return;
+    const to = env.ADMIN_NOTIFICATION_EMAIL || EMAIL;
+    const money = (m: number) => formatOfferMoney(m, d.currency);
+    const rows: [string, string][] = [
+      ['Offer', d.offerId],
+      ['Customer', d.customerName],
+      ['Payer', d.payerName || '(not given)'],
+      ['Email', d.payerEmail || '(not given)'],
+      ['Phone', d.payerPhone || '(not given)'],
+      ['Payment', offerKindLabel(d.kind, d.depositPercent)],
+      ['Amount paid', `${money(d.amountMinor)} (${d.currency})`],
+      ['Option', `${d.optionLabel} (${d.vehicle})`],
+      ['Guide', offerGuideLabel(d.guideLanguage)],
+      ['Date', d.dateLabel],
+      ['Trip total', money(d.totalMinor)],
+      ['Balance remaining', money(d.balanceMinor)],
+      ['Offer payment', d.offerPaymentId],
+      ['Razorpay payment', d.paymentId],
+    ];
+    const html = emailHtml('Private offer: payment received', `${offerTable(rows)}
+        <p style="margin:24px 0 0; text-align:center;"><a href="${SITE}/offer/${d.offerId}" style="${EMAIL_BUTTON}">Open the offer page</a></p>`);
+    const text = ['Private offer: payment received', '', ...rows.map(([l, v]) => `${l}: ${v}`), '', `Offer page: ${SITE}/offer/${d.offerId}`].join('\n');
+    await post(env, 'sendOfferAdminEmail', { from: FROM(env), to, subject: `Offer payment received: ${d.customerName}, ${money(d.amountMinor)} ${offerKindLabel(d.kind, d.depositPercent)}`, html, text });
+  } catch (err) {
+    console.error('sendOfferAdminEmail: failed', err instanceof Error ? err.message : 'error');
   }
 }
