@@ -13,6 +13,11 @@ import type { ShownHotel, ShownRate } from '../lib/hotelSearchService';
 interface RoomState { adults: number; childAges: (number | '')[] }
 
 interface Props {
+  // The admin test page (src/pages/admin/hotels/preview.astro) points these at
+  // /admin/..., the only place the admin sign-in cookie is sent.
+  searchUrl?: string;
+  rateUrl?: string;
+  bookPath?: string;
   t: Dictionary['hotelBooking'];
   currency: 'INR' | 'USD';
   intlLocale: string;
@@ -32,7 +37,7 @@ const labelClass = 'mb-1 block text-sm font-medium text-stone-800';
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
-export default function HotelSearch({ t, intlLocale }: Props) {
+export default function HotelSearch({ t, intlLocale, searchUrl = '/api/hotels/search', rateUrl = '/api/hotels/rate', bookPath = '/hotels/book' }: Props) {
   const [minDate, setMinDate] = useState('');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -95,7 +100,7 @@ export default function HotelSearch({ t, intlLocale }: Props) {
     setErrors([]);
     setLoading(true);
     try {
-      const res = await fetch('/api/hotels/search', {
+      const res = await fetch(searchUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ checkIn, checkOut, rooms }),
@@ -128,7 +133,7 @@ export default function HotelSearch({ t, intlLocale }: Props) {
     setSelecting(r.rateKey);
     try {
       const trip = new URLSearchParams(window.location.search).get('trip') ?? undefined;
-      const res = await fetch('/api/hotels/rate', {
+      const res = await fetch(rateUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rateKey: r.rateKey, shownPrice: r.price, trip }),
@@ -141,7 +146,7 @@ export default function HotelSearch({ t, intlLocale }: Props) {
         } catch {
           // The booking page shows its "expired" message if this is blocked.
         }
-        window.location.href = `/hotels/book?b=${encodeURIComponent(id)}`;
+        window.location.href = `${bookPath}?b=${encodeURIComponent(id)}`;
         return;
       }
       setSelectError(data?.error === 'sold_out' ? t.errors.sold_out : data?.error === 'unavailable' ? t.errors.unavailable : t.errors.select_failed);

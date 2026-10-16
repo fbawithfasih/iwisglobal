@@ -26,6 +26,9 @@ interface StoredQuote {
 }
 
 interface Props {
+  // The admin test page points these at /admin/... (see HotelSearch).
+  orderUrl?: string;
+  searchPath?: string;
   t: Dictionary['hotelBooking']['checkout'];
   bookingId: string;
   intlLocale: string;
@@ -62,7 +65,7 @@ const card = 'rounded-3xl border border-brand-100 bg-white p-4 shadow-sm shadow-
 
 type Name = { first: string; last: string };
 
-export default function HotelCheckout({ t, bookingId, intlLocale, locale }: Props) {
+export default function HotelCheckout({ t, bookingId, intlLocale, locale, orderUrl = '/api/hotels/order', searchPath = '/hotels' }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [data, setData] = useState<{ quote: StoredQuote; search: StoredSearch } | null>(null);
   // names[room][guest]: adults first, then children, as the server expects.
@@ -98,7 +101,7 @@ export default function HotelCheckout({ t, bookingId, intlLocale, locale }: Prop
   if (!loaded) return null;
 
   const searchLink = (
-    <a href="/hotels" className="font-semibold text-brand-700 underline underline-offset-2">{t.searchAgain}</a>
+    <a href={searchPath} className="font-semibold text-brand-700 underline underline-offset-2">{t.searchAgain}</a>
   );
 
   if (!data || expired) {
@@ -167,7 +170,7 @@ export default function HotelCheckout({ t, bookingId, intlLocale, locale }: Prop
     setPaying(true);
     try {
       if (!(await loadRazorpayScript())) throw new Error(t.gatewayLoad);
-      const res = await fetch('/api/hotels/order', {
+      const res = await fetch(orderUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
