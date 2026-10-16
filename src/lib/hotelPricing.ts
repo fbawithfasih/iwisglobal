@@ -44,7 +44,13 @@ export function cancellationFeeNet(policies: CancellationPolicy[], at: Date): nu
 // The guest bears the fee in proportion to the price they paid, so the markup
 // is refunded in step with the hotel's share.
 export function guestRefund(sellTotal: number, netCost: number, policies: CancellationPolicy[], at: Date): number {
-  if (!(netCost > 0)) return 0;
-  const ratio = Math.min(1, cancellationFeeNet(policies, at) / netCost);
+  return refundForFee(sellTotal, netCost, cancellationFeeNet(policies, at));
+}
+
+// The same maths for a fee already known (net currency), for example one that
+// Hotelbeds itself reports on a cancellation.
+export function refundForFee(sellTotal: number, netCost: number, feeNet: number): number {
+  if (!(netCost > 0) || !(feeNet >= 0)) return 0;
+  const ratio = Math.min(1, feeNet / netCost);
   return Math.max(0, sellTotal - Math.ceil(sellTotal * ratio));
 }

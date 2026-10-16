@@ -11,6 +11,8 @@ import type { D1Like } from '../../../lib/db';
 import { loadHotelSettings, saveHotelSettings, setHotelsEnabled } from '../../../lib/hotelData';
 import { syncHotelContent } from '../../../lib/hotelContent';
 import { checkHotelSettingsForm } from '../../../lib/hotelAdminForm';
+import { cancelHotelBookingAndRefund, previewHotelRefund, STUCK_PAID_MS } from '../../../lib/hotelPayment';
+import { formatDateTimeIst, formatMoneyMinor } from '../../../lib/format';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -46,6 +48,10 @@ if (Astro.request.method === 'POST' && db) {
       const synced = await syncHotelContent(env as Record<string, any>, db);
       result = synced;
       if (synced.ok) note = `Content refreshed: ${synced.count} hotels loaded.`;
+    } else if (action === 'cancel_booking') {
+      const cancelled = await cancelHotelBookingAndRefund(env as Record<string, any>, db, text('bookingId'));
+      result = cancelled.ok ? { ok: true } : { ok: false, error: cancelled.error };
+      if (cancelled.ok) note = `Booking cancelled. Refunded ${cancelled.refunded}, fee kept ${cancelled.fee}.`;
     }
   } catch (e) {
     result = { ok: false, error: e instanceof Error ? e.message : 'Could not complete that.' };
@@ -62,6 +68,30 @@ const hotelCount = countRow?.n ?? 0;
 const sync = db
   ? await db.prepare(`SELECT last_run, last_count, last_error FROM hotel_sync WHERE id = 1`).bind().first<{ last_run: string | null; last_count: number | null; last_error: string | null }>()
   : null;
+
+// Bookings that got past checkout, newest first. Quotes nobody paid are left out.
+interface BookingListRow {
+  id: string; status: string; currency: string; net_cost: number; sell_total: number; refunded: number;
+  holder_name: string; email: string; hb_reference: string; search_json: string; selected_json: string; created_at: string; updated_at: string;
+}
+const bookings = db
+  ? (await db
+      .prepare(`SELECT id, status, currency, net_cost, sell_total, refunded, holder_name, email, hb_reference, search_json, selected_json, created_at, updated_at FROM hotel_bookings WHERE status != 'quoted' ORDER BY created_at DESC LIMIT 50`)
+      .bind()
+      .all<BookingListRow>()).results
+  : [];
+const nowMs = Date.now();
+const money = (n: number, cur: string) => formatMoneyMinor(n * 100, cur);
+const bookingView = (b: BookingListRow) => {
+  let hotel = '';
+  let dates = '';
+  try { hotel = JSON.parse(b.selected_json).hotelName ?? ''; } catch { /* shown blank */ }
+  try { const s = JSON.parse(b.search_json); dates = `${s.checkIn} to ${s.checkOut}`; } catch { /* shown blank */ }
+  const stuck = b.status === 'paid' && nowMs - new Date(b.updated_at).getTime() > STUCK_PAID_MS;
+  const preview = b.status === 'booked' ? previewHotelRefund(b, new Date()) : null;
+  const refundDue = b.status === 'failed' && b.refunded === 0;
+  return { hotel, dates, stuck, preview, refundDue, flagged: stuck || b.status === 'failed' };
+};
 
 // Presence only; the values themselves are never rendered.
 const keysConfigured = Boolean(env.HOTELBEDS_API_KEY) && Boolean(env.HOTELBEDS_SECRET);
@@ -121,6 +151,44 @@ const label = 'block text-xs text-stone-500 mb-1';
           <div class="flex gap-2"><dt class="text-stone-500">Hotelbeds secret</dt><dd>{secretState}</dd></div>
           <div class="flex gap-2"><dt class="text-stone-500">Hotelbeds server</dt><dd>{apiHost}</dd></div>
         </dl>
+      </section>
+
+      <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+        <h2 class="text-lg font-semibold mb-2">Hotel bookings</h2>
+        {bookings.length === 0 && <p class="text-sm text-stone-500">No hotel bookings yet.</p>}
+        {bookings.length > 0 && (
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr class="text-left text-xs text-stone-500"><th class="py-1 pr-3">Status</th><th class="pr-3">Hotel</th><th class="pr-3">Dates</th><th class="pr-3">Guest</th><th class="pr-3 text-right">Sell total</th><th class="pr-3 text-right">Refunded</th><th></th></tr></thead>
+              <tbody>
+                {bookings.map((b) => {
+                  const v = bookingView(b);
+                  return (
+                    <tr class={`border-t border-stone-100 align-top ${v.flagged ? 'bg-red-50' : ''}`}>
+                      <td class="py-2 pr-3"><span class={`rounded px-2 py-0.5 text-xs font-medium ${b.status === 'booked' ? 'bg-green-100 text-green-800' : b.status === 'cancelled' ? 'bg-stone-200 text-stone-700' : 'bg-red-100 text-red-800'}`}>{v.stuck ? 'paid, stuck' : b.status}</span></td>
+                      <td class="pr-3">{v.hotel}<p class="text-xs text-stone-500">{b.hb_reference || 'no Hotelbeds reference'}</p></td>
+                      <td class="pr-3 whitespace-nowrap">{v.dates}<p class="text-xs text-stone-500">{formatDateTimeIst(b.created_at)}</p></td>
+                      <td class="pr-3">{b.holder_name}<p class="text-xs text-stone-500">{b.email}</p></td>
+                      <td class="pr-3 text-right whitespace-nowrap">{money(b.sell_total, b.currency)}</td>
+                      <td class="pr-3 text-right whitespace-nowrap">{money(b.refunded, b.currency)}</td>
+                      <td class="py-2">
+                        {b.status === 'booked' && v.preview && (
+                          <form method="POST" onsubmit={`return confirm(${JSON.stringify(`Cancel this booking now? The guest will be refunded ${money(v.preview.refund, b.currency)} and ${money(v.preview.fee, b.currency)} is kept as the cancellation fee. This cannot be undone.`)})`}>
+                            <input type="hidden" name="bookingId" value={b.id} />
+                            <button type="submit" name="_action" value="cancel_booking" class={`${btn} bg-red-700 text-white`}>Cancel and refund</button>
+                          </form>
+                        )}
+                        {v.stuck && <p class="max-w-xs text-xs text-red-700">Paid but not confirmed with Hotelbeds. Check Razorpay and Hotelbeds before doing anything; do not refund until you know.</p>}
+                        {b.status === 'failed' && <p class="max-w-xs text-xs text-red-700">{v.refundDue ? 'Not booked. No refund recorded: check Razorpay.' : 'Not booked and refunded.'}</p>}
+                        {b.status === 'cancelled' && b.refunded === 0 && <p class="max-w-xs text-xs text-stone-600">Cancelled with nothing refunded. If a refund was due, check Razorpay.</p>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
