@@ -35,7 +35,8 @@ export function planPayment(
     if (
       typeof dp !== 'number' || !Number.isInteger(dp) || dp < 1 || dp > 99 ||
       !Array.isArray(terms.options) ||
-      !terms.options.every((o) => o && isPosInt(o.totalMinor))
+      !terms.options.every((o) => o && isPosInt(o.totalMinor)) ||
+      !Number.isInteger(terms.germanGuideExtraMinor) || terms.germanGuideExtraMinor < 0
     ) return fail('bad_terms');
 
     const payments = Array.isArray(paid) ? paid : [];
@@ -67,7 +68,7 @@ export function planPayment(
     const total = tripTotalMinor(terms, optionId, lang);
     if (total === null) return fail('bad_option');
     const amountMinor = mode === 'full' ? total : depositMinor(total, dp);
-    if (amountMinor <= 0) return fail('bad_terms');
+    if (!Number.isInteger(total) || !Number.isInteger(amountMinor) || amountMinor <= 0) return fail('bad_terms');
     return { ok: true, kind: mode, optionId, guideLanguage: lang, amountMinor, totalMinor: total };
   } catch {
     return fail('bad_terms');
