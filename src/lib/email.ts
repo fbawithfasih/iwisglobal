@@ -16,6 +16,7 @@ import { intlLocale, type Locale } from './i18n';
 import { getDictionary } from '../i18n/dictionaries';
 import { fmt } from '../i18n/fmt';
 import type { HotelChoice } from './customTrip';
+import type { Voucher } from './hotelVoucher';
 
 export interface BookingEmailDetails {
   to: string;
@@ -705,6 +706,101 @@ export async function sendHotelAlertEmail(env: Record<string, any>, subject: str
     await post(env, 'sendHotelAlertEmail', { from: FROM(env), to, subject, html, text: body });
   } catch (err) {
     console.error('sendHotelAlertEmail: failed', err instanceof Error ? err.message : 'error');
+  }
+}
+
+// --- Hotel booking (src/lib/hotelPayment.ts) ------------------------------
+// English until the hotel pages are translated (plan Task 16).
+
+const hotelDate = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+};
+
+const voucherRows = (v: Voucher): [string, string][] => [
+  ['Hotel', v.hotelName],
+  ['Address', v.address],
+  ...(v.phone ? ([['Hotel phone', v.phone]] as [string, string][]) : []),
+  ['Check-in', hotelDate(v.checkIn)],
+  ['Check-out', hotelDate(v.checkOut)],
+  ['Booking holder', v.holder],
+  ['Hotelbeds reference', v.reference],
+  ['Our reference', v.ourReference],
+];
+
+// To the guest once the hotel is confirmed: a summary and the link to the
+// printable voucher. No price, like the voucher. Best effort: never throws.
+export async function sendHotelVoucherEmail(env: Record<string, any>, d: { to: string; name: string; voucher: Voucher; voucherUrl: string }): Promise<boolean> {
+  try {
+    if (!env.RESEND_API_KEY || !d.to) return false;
+    const v = d.voucher;
+    const first = d.name.trim().split(/\s+/)[0] || 'there';
+    const rows = voucherRows(v);
+    const roomLines = v.rooms.map((r, i) => `${v.rooms.length > 1 ? `Room ${i + 1}: ` : ''}${r.roomName}, ${r.boardName}. Guests: ${r.guests.map((g) => (g.age !== undefined ? `${g.name} (age ${g.age})` : g.name)).join(', ')}`);
+    const cell = 'padding:6px 0; vertical-align:top;';
+    const html = emailHtml('Your hotel booking is confirmed', `
+        <p style="margin-top:0;">${escapeHtml(`Hi ${first}, your hotel is booked. Show the voucher below at check-in.`)}</p>
+        <table style="width:100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; background:#faf9ff; border:1px solid #ede9fe; border-radius:12px;">
+          ${rows.map(([l, val]) => `<tr><td style="${cell} color:#78716c; padding-left:14px; padding-right:12px;">${escapeHtml(l)}</td><td style="${cell} text-align:right; padding-right:14px;">${escapeHtml(val)}</td></tr>`).join('')}
+        </table>
+        <ul style="margin:0 0 16px; padding-left:20px; font-size:14px;">${roomLines.map((l) => `<li>${escapeHtml(l)}</li>`).join('')}</ul>
+        ${v.rateComments.length > 0 ? `<p style="margin:0 0 4px; font-weight:600;">Important information from the hotel</p><ul style="margin:0 0 16px; padding-left:20px; font-size:14px;">${v.rateComments.map((c) => `<li style="white-space:pre-line;">${escapeHtml(c)}</li>`).join('')}</ul>` : ''}
+        <p style="margin:24px 0; text-align:center;"><a href="${d.voucherUrl}" style="${EMAIL_BUTTON}">Open your voucher</a></p>
+        ${v.payableLine ? `<p style="${EMAIL_NOTE}">${escapeHtml(v.payableLine)}</p>` : ''}
+        <p style="margin-bottom:8px;">Questions? We are here.</p>
+        <p style="margin-top:0; line-height:2;">
+          <a href="${whatsappHref(`Hi! Question about my hotel booking ${v.ourReference}. (ref: EMAIL-HOTEL-VOUCHER)`)}" style="color:#15803d; font-weight:600;">WhatsApp</a><br />
+          <a href="${PHONE_TEL}" style="color:#6d28d9;">${PHONE_DISPLAY}</a><br />
+          <a href="mailto:${EMAIL}" style="color:#6d28d9;">${EMAIL}</a>
+        </p>`);
+    const text = ['Your hotel booking is confirmed', '', `Hi ${first}, your hotel is booked. Show the voucher at check-in.`, '', ...rows.map(([l, val]) => `${l}: ${val}`), '', ...roomLines, '', ...(v.rateComments.length > 0 ? ['Important information from the hotel', ...v.rateComments, ''] : []), `Voucher: ${d.voucherUrl}`, '', ...(v.payableLine ? [v.payableLine, ''] : []), `${PHONE_DISPLAY} · ${EMAIL}`, '', `IWIS Global · ${SITE}`].join('\n');
+    return await post(env, 'sendHotelVoucherEmail', { from: FROM(env), to: d.to, subject: `Your hotel booking is confirmed: ${v.hotelName}`, html, text });
+  } catch (err) {
+    console.error('sendHotelVoucherEmail: failed', err instanceof Error ? err.message : 'error');
+    return false;
+  }
+}
+
+export interface HotelAdminEmailDetails {
+  voucher: Voucher;
+  bookingId: string;
+  guestEmail: string;
+  guestPhone: string;
+  paymentId: string;
+  guestPaid: string; // e.g. "₹12,345", already formatted
+  netCost: string; // e.g. "EUR 123.45", contract currency
+  margin: string | null; // guest paid minus net converted at the settings rate, before gateway fees
+}
+
+// To the business inbox on every confirmed booking: the details and the money.
+// Best effort: never throws.
+export async function sendHotelAdminEmail(env: Record<string, any>, d: HotelAdminEmailDetails): Promise<boolean> {
+  try {
+    if (!env.RESEND_API_KEY) return false;
+    const v = d.voucher;
+    const to = env.ADMIN_NOTIFICATION_EMAIL || EMAIL;
+    const rows: [string, string][] = [
+      ...voucherRows(v),
+      ['Guest email', d.guestEmail],
+      ['Guest phone', d.guestPhone],
+      ['Guests', v.rooms.map((r) => r.guests.map((g) => g.name).join(', ')).join(' | ')],
+      ['Guest paid', d.guestPaid],
+      ['Hotelbeds net', d.netCost],
+      ...(d.margin ? ([['Margin (approx.)', d.margin]] as [string, string][]) : []),
+      ['Payment', d.paymentId],
+      ['Booking ID', d.bookingId],
+    ];
+    const cell = 'padding:6px 0; vertical-align:top;';
+    const html = emailHtml('Hotel booking confirmed', `
+        <table style="width:100%; border-collapse: collapse; margin: 0 0 16px; font-size: 14px; background:#faf9ff; border:1px solid #ede9fe; border-radius:12px;">
+          ${rows.map(([l, val]) => `<tr><td style="${cell} color:#78716c; padding-left:14px; padding-right:12px;">${escapeHtml(l)}</td><td style="${cell} text-align:right; padding-right:14px; word-break:break-all;">${escapeHtml(val)}</td></tr>`).join('')}
+        </table>
+        ${v.payableLine ? '' : `<p style="${EMAIL_NOTE}">Hotelbeds did not send the supplier details, so the voucher has no "Payable through" line. Check it before the guest travels.</p>`}`);
+    const text = ['Hotel booking confirmed', '', ...rows.map(([l, val]) => `${l}: ${val}`), ...(v.payableLine ? [] : ['', 'Hotelbeds did not send the supplier details, so the voucher has no "Payable through" line.'])].join('\n');
+    return await post(env, 'sendHotelAdminEmail', { from: FROM(env), to, subject: `Hotel booked: ${v.hotelName}, ${hotelDate(v.checkIn)}`, html, text });
+  } catch (err) {
+    console.error('sendHotelAdminEmail: failed', err instanceof Error ? err.message : 'error');
+    return false;
   }
 }
 

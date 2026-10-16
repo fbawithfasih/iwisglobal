@@ -16,12 +16,15 @@
 // asks Hotelbeds to book, and a booking is only ever posted once per id.
 
 import type { D1Like } from './db';
-import { isHotelsEnabled } from './hotelData';
+import { isHotelsEnabled, loadHotelSettings } from './hotelData';
+import { getHotelContent } from './hotelContent';
+import { buildVoucher, type HotelBookingRow } from './hotelVoucher';
+import { formatMoneyMinor } from './format';
 import type { SearchInput } from './hotelSearch';
 import { validateContact } from './customTrip';
 import { createHotelOrder, fetchRazorpayOrder, refundPaymentAmount, verifyRazorpaySignature } from './payments/razorpay';
 import { bookHotel, cancelHotelBooking, hbConfig, listHotelBookingsByReference, type HbBookingRequest, type HbConfig } from './hotelbeds';
-import { sendHotelAlertEmail } from './email';
+import { sendHotelAlertEmail, sendHotelAdminEmail, sendHotelVoucherEmail } from './email';
 import type { Locale } from './i18n';
 
 export interface GuestRoom { names: { first: string; last: string; age?: number; type: 'AD' | 'CH' }[] }
@@ -240,12 +243,41 @@ async function alertOwner(env: Record<string, any>, id: string, paymentId: strin
   }
 }
 
-// Voucher emails come in Task 13. Kept isolated and never allowed to throw.
-async function sendHotelEmails(_env: Record<string, any>, row: { id: string }): Promise<void> {
+// The voucher email to the guest and the booking details to the owner. Kept
+// isolated: an email problem is logged and must never touch a confirmed booking.
+async function sendHotelEmails(env: Record<string, any>, db: D1Like, bookingId: string, paymentId: string): Promise<void> {
   try {
-    console.info('hotel booking confirmed', row.id);
-  } catch {
-    // Never let an email problem touch a confirmed booking.
+    const row = await db
+      .prepare(
+        `SELECT id, status, currency, hotel_code, net_cost, sell_total, hb_reference, holder_name, email, phone, guests_json, selected_json, search_json, supplier_json FROM hotel_bookings WHERE id = ?`
+      )
+      .bind(bookingId)
+      .first<HotelBookingRow & { currency: string; hotel_code: number; net_cost: number; sell_total: number; email: string; phone: string }>();
+    if (!row) return;
+    const content = (await getHotelContent(db, [row.hotel_code])).get(row.hotel_code) ?? null;
+    const voucher = buildVoucher(row, content);
+    if (!voucher) {
+      await alertOwner(env, row.id, paymentId, 'booked, but the voucher could not be built from the stored data');
+      return;
+    }
+    const settings = await loadHotelSettings(db);
+    const rate = row.currency === 'USD' ? settings.fxEurUsd : settings.fxEurInr;
+    const margin = settings.contractCurrency === 'EUR' && rate > 0 ? formatMoneyMinor(Math.round(row.sell_total - row.net_cost * rate) * 100, row.currency) : null;
+    await Promise.all([
+      sendHotelVoucherEmail(env, { to: row.email, name: row.holder_name, voucher, voucherUrl: `https://www.iwisglobal.com/hotels/voucher?booking=${encodeURIComponent(row.id)}` }),
+      sendHotelAdminEmail(env, {
+        voucher,
+        bookingId: row.id,
+        guestEmail: row.email,
+        guestPhone: row.phone,
+        paymentId,
+        guestPaid: formatMoneyMinor(row.sell_total * 100, row.currency),
+        netCost: `${settings.contractCurrency} ${row.net_cost.toFixed(2)}`,
+        margin,
+      }),
+    ]);
+  } catch (e) {
+    console.error('hotel booking emails failed', bookingId, e instanceof Error ? e.message : 'error');
   }
 }
 
@@ -458,7 +490,7 @@ async function markBooked(
     .bind(reference, JSON.stringify(supplier), new Date().toISOString(), row.id)
     .run();
   if (changed(res)) {
-    await sendHotelEmails(env, row);
+    await sendHotelEmails(env, db, row.id, paymentId);
     return 'booked';
   }
   // The row moved on while Hotelbeds answered. If another caller already

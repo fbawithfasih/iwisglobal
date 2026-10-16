@@ -1630,6 +1630,25 @@ export const en = {
       failed: "The payment did not go through. You have not been charged.",
       unsupportedParty: "Different room sizes in one booking are not supported yet. Please book each room type separately.",
       terms: "By paying you agree to the hotel's rules shown above and to our cancellation and refund policy."
+    },
+    voucher: {
+      title: "Hotel voucher",
+      eyebrow: "Hotel booking voucher",
+      address: "Address",
+      destination: "Destination",
+      phone: "Hotel phone",
+      checkIn: "Check-in",
+      checkOut: "Check-out",
+      holder: "Booking holder",
+      reference: "Hotelbeds reference",
+      ourReference: "Our reference",
+      rooms: "Rooms and guests",
+      roomN: "Room {n}",
+      age: "age {age}",
+      rateComments: "Important information from the hotel",
+      print: "Print voucher",
+      pending: "Your payment was received and we are confirming your room with the hotel. Please check back in a few minutes; we will also email you the voucher.",
+      notFound: "We could not find this voucher. Please check the link in your email, or contact us on WhatsApp."
     }
   }
 };

@@ -1,0 +1,111 @@
+---
+// The printable voucher for a confirmed hotel booking, opened from the email or
+// the end of checkout. The id in the link (hb_<uuid>) is the only key, so it is
+// never indexed. Unlike /hotels, this does not depend on the hotels switch: a
+// guest who has booked keeps their voucher even if the owner switches hotels off.
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { resolveEnv } from '../../lib/env';
+import { pageI18n } from '../../i18n/dictionaries';
+import { intlLocale } from '../../lib/i18n';
+import { getHotelContent } from '../../lib/hotelContent';
+import { buildVoucher, type HotelBookingRow } from '../../lib/hotelVoucher';
+import type { D1Like } from '../../lib/db';
+
+const env = resolveEnv(Astro.locals);
+const db = env.DB as D1Like | undefined;
+const { locale, t: dict } = pageI18n(Astro);
+const t = dict.hotelBooking.voucher;
+
+const id = (Astro.url.searchParams.get('booking') ?? '').slice(0, 100);
+let voucher = null;
+let pending = false;
+if (db && /^hb_[0-9a-f-]{36}$/.test(id)) {
+  const row = await db
+    .prepare(`SELECT id, status, hotel_code, hb_reference, holder_name, guests_json, selected_json, search_json, supplier_json FROM hotel_bookings WHERE id = ?`)
+    .bind(id)
+    .first<HotelBookingRow & { hotel_code: number }>();
+  if (row) {
+    const content = (await getHotelContent(db, [row.hotel_code])).get(row.hotel_code) ?? null;
+    voucher = buildVoucher(row, content);
+    // Paid but not confirmed yet: tell the guest to wait rather than "not found".
+    pending = !voucher && row.status === 'paid';
+  }
+}
+if (!voucher && !pending) Astro.response.status = 404;
+
+const fmtDate = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(intlLocale(locale), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+};
+---
+<BaseLayout title={t.title} description={t.title} noindex={true} floatingWhatsApp={false}>
+  <style is:global>
+    @media print {
+      header, footer, nav, .no-print { display: none !important; }
+      body { background: #fff !important; }
+      .voucher { border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+    }
+  </style>
+  <section class="mx-auto max-w-3xl px-4 py-10 min-[300px]:px-6 md:py-14">
+    {voucher ? (
+      <article class="voucher rounded-3xl border border-brand-100 bg-white p-5 shadow-sm shadow-brand-900/5 min-[300px]:p-8" aria-labelledby="voucher-heading">
+        <p class="text-sm font-semibold uppercase tracking-wide text-brand-700">{t.eyebrow}</p>
+        <h1 id="voucher-heading" class="mt-1 font-serif text-3xl font-semibold text-brand-900">{voucher.hotelName}</h1>
+        {voucher.category && <p class="mt-1 text-stone-700">{voucher.category}</p>}
+
+        <dl class="mt-6 grid gap-4 text-sm sm:grid-cols-2">
+          <div><dt class="font-medium text-stone-800">{t.address}</dt><dd class="text-stone-700">{voucher.address}</dd></div>
+          {voucher.destination && <div><dt class="font-medium text-stone-800">{t.destination}</dt><dd class="text-stone-700">{voucher.destination}</dd></div>}
+          {voucher.phone && <div><dt class="font-medium text-stone-800">{t.phone}</dt><dd class="text-stone-700">{voucher.phone}</dd></div>}
+          <div><dt class="font-medium text-stone-800">{t.checkIn}</dt><dd class="text-stone-700">{fmtDate(voucher.checkIn)}</dd></div>
+          <div><dt class="font-medium text-stone-800">{t.checkOut}</dt><dd class="text-stone-700">{fmtDate(voucher.checkOut)}</dd></div>
+          <div><dt class="font-medium text-stone-800">{t.holder}</dt><dd class="text-stone-700">{voucher.holder}</dd></div>
+          <div><dt class="font-medium text-stone-800">{t.reference}</dt><dd class="font-mono text-stone-900">{voucher.reference}</dd></div>
+          <div><dt class="font-medium text-stone-800">{t.ourReference}</dt><dd class="font-mono text-stone-900">{voucher.ourReference}</dd></div>
+        </dl>
+
+        <h2 class="mt-8 font-serif text-xl font-semibold text-brand-900">{t.rooms}</h2>
+        <div class="mt-3 grid gap-4">
+          {voucher.rooms.map((room, i) => (
+            <div class="rounded-2xl border border-brand-100 p-4 text-sm">
+              {voucher.rooms.length > 1 && <p class="font-semibold text-brand-900">{t.roomN.replace('{n}', String(i + 1))}</p>}
+              <p class="font-semibold text-stone-900">{room.roomName}</p>
+              <p class="text-stone-700">{room.boardName}</p>
+              <ul class="mt-2 list-disc pl-5 text-stone-800">
+                {room.guests.map((g) => <li>{g.name}{g.age !== undefined && ` (${t.age.replace('{age}', String(g.age))})`}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        {voucher.rateComments.length > 0 && (
+          <>
+            <h2 class="mt-8 font-serif text-xl font-semibold text-brand-900">{t.rateComments}</h2>
+            <ul class="mt-3 grid gap-2 text-sm text-stone-800">
+              {voucher.rateComments.map((c) => <li class="whitespace-pre-line">{c}</li>)}
+            </ul>
+          </>
+        )}
+
+        {voucher.payableLine && <p class="mt-8 border-t border-brand-100 pt-4 text-sm text-stone-700">{voucher.payableLine}</p>}
+
+        <p class="no-print mt-8">
+          <button type="button" onclick="window.print()" class="min-h-11 rounded-full bg-brand-700 px-6 text-sm font-semibold text-white transition hover:bg-brand-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">{t.print}</button>
+        </p>
+      </article>
+    ) : pending ? (
+      <div class="rounded-3xl border border-brand-100 bg-white p-6" role="status">
+        <h1 class="font-serif text-2xl font-semibold text-brand-900">{t.title}</h1>
+        <p class="mt-3 text-stone-700">{t.pending}</p>
+      </div>
+    ) : (
+      <div class="rounded-3xl border border-brand-100 bg-white p-6" role="alert">
+        <h1 class="font-serif text-2xl font-semibold text-brand-900">{t.title}</h1>
+        <p class="mt-3 text-stone-700">{t.notFound}</p>
+        <p class="mt-3"><a href="/hotels" class="font-semibold text-brand-700 underline underline-offset-2">{dict.hotelBooking.heading}</a></p>
+      </div>
+    )}
+  </section>
+</BaseLayout>
