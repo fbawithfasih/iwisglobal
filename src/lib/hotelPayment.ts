@@ -20,11 +20,12 @@ import { isHotelsEnabled, loadHotelSettings } from './hotelData';
 import { getHotelContent } from './hotelContent';
 import { buildVoucher, type HotelBookingRow } from './hotelVoucher';
 import { formatMoneyMinor } from './format';
+import { cancellationFeeNet, refundForFee, type CancellationPolicy } from './hotelPricing';
 import type { SearchInput } from './hotelSearch';
 import { validateContact } from './customTrip';
 import { createHotelOrder, fetchRazorpayOrder, refundPaymentAmount, verifyRazorpaySignature } from './payments/razorpay';
 import { bookHotel, cancelHotelBooking, hbConfig, listHotelBookingsByReference, type HbBookingRequest, type HbConfig } from './hotelbeds';
-import { sendHotelAlertEmail, sendHotelAdminEmail, sendHotelVoucherEmail } from './email';
+import { sendHotelAlertEmail, sendHotelAdminEmail, sendHotelCancellationEmail, sendHotelVoucherEmail } from './email';
 import type { Locale } from './i18n';
 
 export interface GuestRoom { names: { first: string; last: string; age?: number; type: 'AD' | 'CH' }[] }
@@ -569,4 +570,128 @@ export async function handleHotelVerify(
       return { status: 409, body: { error: 'not_booked', bookingId } };
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Cancellation: Hotelbeds first, then the refund the hotel's terms allow.
+
+interface CancelRow {
+  id: string;
+  status: string;
+  currency: string;
+  net_cost: number;
+  sell_total: number;
+  payment_id: string;
+  hb_reference: string;
+  holder_name: string;
+  email: string;
+  selected_json: string;
+  refunded: number;
+}
+
+const cancellationOf = (selectedJson: string): { policies: CancellationPolicy[]; hotelName: string } => {
+  try {
+    const sel = JSON.parse(selectedJson);
+    return { policies: Array.isArray(sel?.cancellation) ? sel.cancellation : [], hotelName: typeof sel?.hotelName === 'string' ? sel.hotelName : '' };
+  } catch {
+    // An unreadable policy is treated as a 100% fee, so nothing is over-refunded.
+    return { policies: [{ amount: Number.MAX_SAFE_INTEGER, from: '1970-01-01T00:00:00Z' }], hotelName: '' };
+  }
+};
+
+// What cancelling at `now` refunds, in the guest's currency. The admin screen
+// shows this before the click; the cancel itself uses the same maths (and the
+// larger of this and any fee Hotelbeds reports).
+export function previewHotelRefund(
+  row: Pick<CancelRow, 'net_cost' | 'sell_total' | 'selected_json'>,
+  now: Date
+): { refund: number; fee: number } {
+  const { policies } = cancellationOf(row.selected_json);
+  const refund = Math.min(row.sell_total, refundForFee(row.sell_total, row.net_cost, cancellationFeeNet(policies, now)));
+  return { refund, fee: row.sell_total - refund };
+}
+
+export async function cancelHotelBookingAndRefund(
+  env: Record<string, any>,
+  db: D1Like,
+  bookingId: string,
+  now: Date = new Date()
+): Promise<{ ok: true; refunded: number; fee: number } | { ok: false; error: string }> {
+  const row = await db
+    .prepare(`SELECT id, status, currency, net_cost, sell_total, payment_id, hb_reference, holder_name, email, selected_json, refunded FROM hotel_bookings WHERE id = ?`)
+    .bind(bookingId)
+    .first<CancelRow>();
+  if (!row) return { ok: false, error: 'Booking not found.' };
+  // A second click or a retry: already done, nothing more to send anywhere.
+  if (row.status === 'cancelled') return { ok: true, refunded: row.refunded, fee: row.sell_total - row.refunded };
+  if (row.status !== 'booked' || !row.hb_reference) return { ok: false, error: 'Only a confirmed booking can be cancelled.' };
+  const cfg = hbConfig(env);
+  if (!cfg) return { ok: false, error: 'Hotelbeds is not configured.' };
+
+  // Claim first so two clicks can never cancel or refund twice.
+  const claim = await db
+    .prepare(`UPDATE hotel_bookings SET status='cancelled', updated_at=? WHERE id=? AND status='booked'`)
+    .bind(now.toISOString(), row.id)
+    .run();
+  if (!changed(claim)) return { ok: false, error: 'This booking changed while you were cancelling it. Please reload.' };
+  const restore = () =>
+    db
+      .prepare(`UPDATE hotel_bookings SET status='booked', updated_at=? WHERE id=? AND status='cancelled'`)
+      .bind(new Date().toISOString(), row.id)
+      .run()
+      .catch(() => console.error('hotel cancel: could not restore booked', row.id));
+
+  const { policies, hotelName } = cancellationOf(row.selected_json);
+  let feeNet = cancellationFeeNet(policies, now);
+  let res: { status: number; json: any };
+  try {
+    res = await cancelHotelBooking(cfg, row.hb_reference);
+  } catch {
+    await restore();
+    return { ok: false, error: 'Hotelbeds did not answer, so nothing was cancelled. Try again.' };
+  }
+  if (res.status !== 200) {
+    await restore();
+    return { ok: false, error: `Hotelbeds refused the cancellation (status ${res.status}), so nothing was cancelled.` };
+  }
+
+  // Hotelbeds states what it charged. The guest never gets back more than the
+  // owner can recover, so the larger of the two fees wins.
+  const reported = Number(res.json?.booking?.hotel?.cancellationAmount);
+  if (Number.isFinite(reported) && reported >= 0 && reported !== feeNet) {
+    console.error('hotel cancel: fee differs', row.id, 'computed', feeNet, 'hotelbeds', reported);
+    feeNet = Math.max(feeNet, reported);
+  }
+  const refund = Math.min(row.sell_total, refundForFee(row.sell_total, row.net_cost, feeNet));
+  const fee = row.sell_total - refund;
+
+  if (refund > 0) {
+    try {
+      await refundPaymentAmount(env, row.payment_id, refund * 100);
+    } catch (e) {
+      await alertOwner(env, row.id, row.payment_id, `cancelled with Hotelbeds but the refund of ${formatMoneyMinor(refund * 100, row.currency)} failed (${e instanceof Error ? e.message : 'unknown error'}); refund it by hand in Razorpay`);
+      return { ok: false, error: `Cancelled with Hotelbeds, but the refund of ${formatMoneyMinor(refund * 100, row.currency)} failed. Refund it by hand in Razorpay.` };
+    }
+  }
+  await db.prepare(`UPDATE hotel_bookings SET refunded=?, updated_at=? WHERE id=?`).bind(refund, new Date().toISOString(), row.id).run();
+
+  try {
+    await sendHotelCancellationEmail(env, {
+      to: row.email,
+      name: row.holder_name,
+      hotelName: hotelName || 'your hotel',
+      reference: row.hb_reference,
+      refund: refund > 0 ? formatMoneyMinor(refund * 100, row.currency) : '',
+      fee: fee > 0 ? formatMoneyMinor(fee * 100, row.currency) : '',
+    });
+    await sendHotelAlertEmail(
+      env,
+      `Hotel booking cancelled: ${row.id}`,
+      [`Booking: ${row.id}`, `Hotel: ${hotelName}`, `Hotelbeds reference: ${row.hb_reference}`, `Refunded: ${formatMoneyMinor(refund * 100, row.currency)}`, `Fee kept: ${formatMoneyMinor(fee * 100, row.currency)}`].join('\n'),
+      'Hotel booking cancelled'
+    );
+  } catch {
+    // Emails never undo a cancellation.
+  }
+  return { ok: true, refunded: refund, fee };
 }

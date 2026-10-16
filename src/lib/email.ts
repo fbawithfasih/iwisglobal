@@ -804,6 +804,40 @@ export async function sendHotelAdminEmail(env: Record<string, any>, d: HotelAdmi
   }
 }
 
+export interface HotelCancellationEmailDetails {
+  to: string;
+  name: string;
+  hotelName: string;
+  reference: string;
+  refund: string; // formatted, e.g. "₹4,950"; "" when nothing is refunded
+  fee: string; // formatted cancellation fee kept; "" when none
+}
+
+// To the guest after their hotel booking is cancelled. Best effort: never throws.
+export async function sendHotelCancellationEmail(env: Record<string, any>, d: HotelCancellationEmailDetails): Promise<boolean> {
+  try {
+    if (!env.RESEND_API_KEY || !d.to) return false;
+    const first = d.name.trim().split(/\s+/)[0] || 'there';
+    const lines = [
+      `Hi ${first}, your booking at ${d.hotelName} (reference ${d.reference}) has been cancelled.`,
+      d.refund ? `We are refunding ${d.refund} to your original payment method. It usually reaches you in 5 to 7 working days.` : 'No refund is due under the hotel\'s cancellation terms.',
+      ...(d.fee ? [`Cancellation fee kept under the hotel's terms: ${d.fee}.`] : []),
+    ];
+    const html = emailHtml('Your hotel booking is cancelled', `
+        ${lines.map((l) => `<p style="margin:0 0 12px;">${escapeHtml(l)}</p>`).join('')}
+        <p style="margin-bottom:8px;">Questions? We are here.</p>
+        <p style="margin-top:0; line-height:2;">
+          <a href="${whatsappHref(`Hi! Question about my cancelled hotel booking ${d.reference}. (ref: EMAIL-HOTEL-CANCEL)`)}" style="color:#15803d; font-weight:600;">WhatsApp</a><br />
+          <a href="mailto:${EMAIL}" style="color:#6d28d9;">${EMAIL}</a>
+        </p>`);
+    const text = ['Your hotel booking is cancelled', '', ...lines, '', `${PHONE_DISPLAY} · ${EMAIL}`, '', `IWIS Global · ${SITE}`].join('\n');
+    return await post(env, 'sendHotelCancellationEmail', { from: FROM(env), to: d.to, subject: `Your hotel booking is cancelled: ${d.hotelName}`, html, text });
+  } catch (err) {
+    console.error('sendHotelCancellationEmail: failed', err instanceof Error ? err.message : 'error');
+    return false;
+  }
+}
+
 // --- Private offers (src/lib/offerPayment.ts) ------------------------------
 // English only. Money as "€174.00" (en-IE), the same format as the offer page.
 
