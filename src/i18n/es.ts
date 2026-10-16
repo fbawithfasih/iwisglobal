@@ -1,5 +1,5 @@
 // Spanish UI strings. Machine translations, not reviewed by a native speaker.
-import type { Dictionary } from './en';
+import { en, type Dictionary } from './en';
 
 export const es: Dictionary = {
   nav: { tours: 'Tours', blog: 'Blog', help: 'Ayuda', signIn: 'Iniciar sesión', myBookings: 'Mis reservas', signOut: 'Cerrar sesión' },
@@ -1542,5 +1542,7 @@ export const es: Dictionary = {
       received: { subject: "Hemos recibido su depósito para su viaje a Agra", title: "Depósito recibido", intro: "Gracias, {name}. Tenemos su depósito y estamos comprobando que podemos realizar su viaje. Se lo confirmaremos en breve. Si no podemos, se le reembolsa todo." },
       confirmed: { subject: "Su viaje a Agra está confirmado", title: "Su viaje está confirmado", intro: "Buenas noticias, {name}: su viaje a Agra está confirmado. Su guía y su conductor se pondrán en contacto con usted con los datos de recogida antes de viajar." },
       cancelled: { subject: "No pudimos confirmar su viaje a Agra", title: "No pudimos confirmar su viaje", intro: "Lo sentimos, {name}: no pudimos realizar este viaje. Su depósito se está reembolsando íntegramente al medio de pago original. Suele llegar a su cuenta en 7 a 10 días hábiles." }
-  }
+  },
+  // English until the translation task; same text as en.
+  hotelBooking: en.hotelBooking
 };

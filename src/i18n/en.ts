@@ -1543,6 +1543,50 @@ export const en = {
       received: { subject: "We received your deposit for your Agra trip", title: "Deposit received", intro: "Thank you, {name}. We have your deposit and are checking that we can supply your trip. We will confirm it shortly. If we cannot, you are refunded in full." },
       confirmed: { subject: "Your Agra trip is confirmed", title: "Your trip is confirmed", intro: "Good news, {name}: your Agra trip is confirmed. Your guide and driver will be in touch with pickup details before you travel." },
       cancelled: { subject: "We could not confirm your Agra trip", title: "We could not confirm your trip", intro: "We are sorry, {name}: we could not supply this trip. Your deposit is being refunded in full to your original payment method. It usually reaches your account within 7 to 10 business days." }
+  },
+  hotelBooking: {
+    meta: {
+      title: "Hotels in Agra",
+      description: "Search and book hotels in Agra for your dates. Prices include everything we charge, and the cancellation terms are shown before you choose."
+    },
+    heading: "Hotels in Agra",
+    intro: "Choose your dates and who is travelling, and see the rooms available with the price and cancellation terms for each.",
+    previewBanner: "Preview only: hotel booking is switched off, so only you can see this page.",
+    labels: {
+      checkIn: "Check-in",
+      checkOut: "Check-out",
+      rooms: "Rooms",
+      room: "Room {n}",
+      adults: "Adults",
+      children: "Children",
+      childAge: "Age of child {n}",
+      addChild: "Add a child",
+      addRoom: "Add a room",
+      removeRoom: "Remove room {n}",
+      search: "Search hotels",
+      searching: "Searching..."
+    },
+    results: {
+      none: "No hotels are available for these dates. Please try other dates.",
+      from: "From",
+      perNight: "per night",
+      total: "total for your stay",
+      freeCancel: "Free cancellation until {date}",
+      nonRefundable: "Non-refundable",
+      select: "Select",
+      facilities: "Facilities",
+      promotion: "Offer"
+    },
+    errors: {
+      unavailable: "Hotel search is not available right now. Please try again in a few minutes.",
+      bad_dates: "Please choose a check-out date after your check-in date.",
+      too_soon: "Check-in must be at least tomorrow.",
+      too_long: "You can book up to {max} nights at a time.",
+      bad_rooms: "Please choose between 1 and {max} rooms.",
+      bad_adults: "Each room needs between 1 and {max} adults.",
+      bad_children: "Each room can have up to {max} children.",
+      bad_age: "Please choose the age of every child."
+    }
   }
 };
 

@@ -1,5 +1,5 @@
 // German UI strings. Machine translations, not reviewed by a native speaker.
-import type { Dictionary } from './en';
+import { en, type Dictionary } from './en';
 
 export const de: Dictionary = {
   nav: { tours: 'Touren', blog: 'Blog', help: 'Hilfe', signIn: 'Anmelden', myBookings: 'Meine Buchungen', signOut: 'Abmelden' },
@@ -1542,5 +1542,7 @@ export const de: Dictionary = {
       received: { subject: "Wir haben Ihre Anzahlung für Ihre Agra-Reise erhalten", title: "Anzahlung erhalten", intro: "Vielen Dank, {name}. Wir haben Ihre Anzahlung und prüfen, ob wir Ihre Reise durchführen können. Wir bestätigen sie in Kürze. Falls nicht, erhalten Sie alles zurück." },
       confirmed: { subject: "Ihre Agra-Reise ist bestätigt", title: "Ihre Reise ist bestätigt", intro: "Gute Nachrichten, {name}: Ihre Agra-Reise ist bestätigt. Ihr Guide und Ihr Fahrer melden sich vor der Reise mit den Abholdetails bei Ihnen." },
       cancelled: { subject: "Wir konnten Ihre Agra-Reise nicht bestätigen", title: "Wir konnten Ihre Reise nicht bestätigen", intro: "Es tut uns leid, {name}: Wir konnten diese Reise nicht durchführen. Ihre Anzahlung wird vollständig auf Ihr ursprüngliches Zahlungsmittel erstattet. Sie erreicht Ihr Konto in der Regel innerhalb von 7 bis 10 Werktagen." }
-  }
+  },
+  // English until the translation task; same text as en.
+  hotelBooking: en.hotelBooking
 };
