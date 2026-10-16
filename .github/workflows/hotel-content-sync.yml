@@ -1,0 +1,16 @@
+name: Hotel content sync
+
+# Hotelbeds requires cached content to be refreshed at least weekly. This calls
+# the protected sync endpoint. Needs the HOTEL_SYNC_SECRET GitHub secret, set to
+# the same value as the HOTEL_SYNC_SECRET variable in Cloudflare.
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refresh hotel content
+        run: curl -fsS -X POST -H "Authorization: Bearer ${{ secrets.HOTEL_SYNC_SECRET }}" https://www.iwisglobal.com/api/hotels/sync
