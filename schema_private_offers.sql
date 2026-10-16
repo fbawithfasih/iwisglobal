@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS offer_payments (
   payer_name TEXT NOT NULL DEFAULT '',
   payer_email TEXT NOT NULL DEFAULT '',
   payer_phone TEXT NOT NULL DEFAULT '',
+  receipt_sent_at TEXT NOT NULL DEFAULT '', -- '' | 'pending:<iso>' (a sender holds it) | <iso> (owner email sent)
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

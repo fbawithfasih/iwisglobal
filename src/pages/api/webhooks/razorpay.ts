@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { resolveEnv } from '../../../lib/env';
 import { finalizeCustomTrip } from '../../../lib/customTripPayment';
 import { finalizeHotelBooking, hotelBookingNeedsRetry } from '../../../lib/hotelPayment';
-import { finalizeOfferPayment } from '../../../lib/offerPayment';
+import { ensureOfferEmails, finalizeOfferPayment } from '../../../lib/offerPayment';
 import { fetchRazorpayOrder } from '../../../lib/payments/razorpay';
 
 export const prerender = false;
@@ -93,7 +93,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         if (order.notes.kind === 'hotel') hotelBookingId = order.notes.hotelBookingId;
         if (order.notes.kind === 'offer') offerPaymentId = order.notes.offerPaymentId;
       } catch (err) {
-        console.error('razorpay webhook: could not read the order to check its kind', err);
+        console.error('razorpay webhook: could not read the order to check its kind', payment.order_id, err instanceof Error ? err.message : 'error');
+        // The payment carries no notes at all, so nothing says what it paid
+        // for: ask Razorpay to deliver again rather than ack a payment that
+        // may be recorded nowhere.
+        if (!orderNotes.kind && !orderNotes.tourId) return new Response('retry', { status: 500 });
       }
     }
     if (customTripId) {
@@ -149,6 +153,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
           currency: payment.currency,
         });
         if (outcome !== 'paid' && outcome !== 'duplicate') console.error('razorpay webhook: offer payment not applied', offerPaymentId, outcome);
+        // A redelivery completes emails lost by a request that stopped after
+        // recording the payment. Never throws.
+        if (outcome === 'duplicate') await ensureOfferEmails(env, env.DB, offerPaymentId);
       } catch (err) {
         console.error('razorpay webhook: offer payment could not be finalised', offerPaymentId, err instanceof Error ? err.message : 'error');
         return new Response('retry', { status: 500 });

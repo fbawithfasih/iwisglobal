@@ -228,45 +228,88 @@ export async function finalizeOfferPayment(
     console.error('private offer: could not check for a double payment', row.id, e instanceof Error ? e.message : 'error');
   }
 
-  await sendOfferEmails(env, db, row, paid.paymentId);
+  await ensureOfferEmails(env, db, row.id);
   return 'paid';
 }
 
-// The guest's receipt and the owner's "payment received". Never throws.
-async function sendOfferEmails(env: Record<string, any>, db: D1Like, row: PaymentRow, paymentId: string): Promise<void> {
+// A sender holding the email claim longer than this is taken to have died.
+export const OFFER_EMAIL_CLAIM_MS = 5 * 60 * 1000;
+
+// Sends the owner's "payment received" and the guest's receipt for a PAID
+// payment row, exactly once, and completes a send that was lost (a worker
+// stopped after the claim, or the owner email failed). Called after the claim
+// and again on every 'duplicate' of a paid row (the browser's verify or a
+// webhook redelivery). receipt_sent_at: '' = not sent, 'pending:<iso>' = a
+// sender holds it (taken over after 5 minutes), <iso> = owner email sent.
+// Never throws; logs ids and error names only.
+export async function ensureOfferEmails(env: Record<string, any>, db: D1Like, paymentRowOrId: string | { id: string }): Promise<void> {
+  const id = typeof paymentRowOrId === 'string' ? paymentRowOrId : paymentRowOrId?.id;
+  let held = false;
   try {
-    const offer = await readOffer(db, row.offer_id);
-    const option = offer?.terms.options.find((o) => o.id === row.option_id);
-    if (!offer || !option) {
-      await alertOwner(env, row.id, [`Offer: ${row.offer_id}`, `Offer payment: ${row.id}`, `Razorpay payment: ${paymentId}`, 'Reason: payment recorded, but the offer is unreadable; no receipt sent']);
-      return;
-    }
-    const kind = row.kind as PaymentKind;
-    const details = {
-      offerId: offer.id,
-      offerPaymentId: row.id,
-      title: offer.content.title,
-      dateLabel: offer.content.dateLabel,
-      pickup: offer.content.pickup,
-      kind,
-      depositPercent: offer.terms.depositPercent,
-      amountMinor: row.amount_minor,
-      currency: row.currency,
-      totalMinor: row.total_minor,
-      balanceMinor: kind === 'deposit' ? Math.max(0, row.total_minor - row.amount_minor) : 0,
-      optionLabel: option.label,
-      vehicle: option.vehicle,
-      guideLanguage: row.guide_language as GuideLanguage,
-      payerName: row.payer_name,
-      payerEmail: row.payer_email,
-      payerPhone: row.payer_phone,
-      paymentId,
-    };
-    await sendOfferReceiptEmail(env, details);
-    await sendOfferAdminEmail(env, { ...details, customerName: offer.customerName });
+    if (typeof id !== 'string' || !id) return;
+    const now = new Date();
+    const claim = await db
+      .prepare(
+        `UPDATE offer_payments SET receipt_sent_at = ? WHERE id = ? AND status = 'paid' AND (receipt_sent_at = '' OR (receipt_sent_at LIKE 'pending:%' AND receipt_sent_at < ?))`
+      )
+      .bind(`pending:${now.toISOString()}`, id, `pending:${new Date(now.getTime() - OFFER_EMAIL_CLAIM_MS).toISOString()}`)
+      .run();
+    if (!changed(claim)) return;
+    held = true;
+    const row = await db.prepare(`SELECT * FROM offer_payments WHERE id = ?`).bind(id).first<PaymentRow>();
+    const ownerSent = row ? await sendOfferEmails(env, db, row) : false;
+    await db
+      .prepare(`UPDATE offer_payments SET receipt_sent_at = ? WHERE id = ?`)
+      .bind(ownerSent ? new Date().toISOString() : '', id)
+      .run();
+    held = false;
   } catch (e) {
-    console.error('private offer: emails failed', row.id, e instanceof Error ? e.message : 'error');
+    console.error('private offer: payment emails failed', String(id), e instanceof Error ? e.name : 'error');
+    if (held) {
+      // Let a later delivery try again rather than leave the claim to expire.
+      try {
+        await db.prepare(`UPDATE offer_payments SET receipt_sent_at = '' WHERE id = ? AND receipt_sent_at LIKE 'pending:%'`).bind(id).run();
+      } catch {
+        // The 5-minute takeover covers this.
+      }
+    }
   }
+}
+
+// The owner's "payment received" and the guest's receipt (only when there is
+// a payer email). True when the owner email was accepted.
+async function sendOfferEmails(env: Record<string, any>, db: D1Like, row: PaymentRow): Promise<boolean> {
+  const paymentId = row.payment_id;
+  const offer = await readOffer(db, row.offer_id);
+  const option = offer?.terms.options.find((o) => o.id === row.option_id);
+  if (!offer || !option) {
+    await alertOwner(env, row.id, [`Offer: ${row.offer_id}`, `Offer payment: ${row.id}`, `Razorpay payment: ${paymentId}`, 'Reason: payment recorded, but the offer is unreadable; no receipt sent']);
+    return false;
+  }
+  const kind = row.kind as PaymentKind;
+  const details = {
+    offerId: offer.id,
+    offerPaymentId: row.id,
+    title: offer.content.title,
+    dateLabel: offer.content.dateLabel,
+    pickup: offer.content.pickup,
+    kind,
+    depositPercent: offer.terms.depositPercent,
+    amountMinor: row.amount_minor,
+    currency: row.currency,
+    totalMinor: row.total_minor,
+    balanceMinor: kind === 'deposit' ? Math.max(0, row.total_minor - row.amount_minor) : 0,
+    optionLabel: option.label,
+    vehicle: option.vehicle,
+    guideLanguage: row.guide_language as GuideLanguage,
+    payerName: row.payer_name,
+    payerEmail: row.payer_email,
+    payerPhone: row.payer_phone,
+    paymentId,
+  };
+  const ownerSent = await sendOfferAdminEmail(env, { ...details, customerName: offer.customerName });
+  if (row.payer_email) await sendOfferReceiptEmail(env, details);
+  return ownerSent;
 }
 
 // POST /api/offer/verify
@@ -288,7 +331,11 @@ export async function handleOfferVerify(env: Record<string, any>, db: D1Like | u
   const outcome = await finalizeOfferPayment(env, db, { offerPaymentId, orderId, paymentId, amountMinor: order.amount, currency: order.currency });
   switch (outcome) {
     case 'paid':
+      return { status: 200, body: { success: true, offerPaymentId } };
     case 'duplicate':
+      // Completes the emails if the request that recorded the payment stopped
+      // before sending them. Never throws.
+      await ensureOfferEmails(env, db, offerPaymentId);
       return { status: 200, body: { success: true, offerPaymentId } };
     case 'unknown':
       return { status: 404, body: { error: 'not_found' } };

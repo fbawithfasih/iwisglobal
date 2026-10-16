@@ -801,10 +801,10 @@ export async function sendOfferReceiptEmail(env: Record<string, any>, d: OfferPa
 }
 
 // "Payment received" to the business inbox. Carries the payer's details: this
-// is the business notification. Never throws.
-export async function sendOfferAdminEmail(env: Record<string, any>, d: OfferPaymentEmailDetails & { customerName: string }): Promise<void> {
+// is the business notification. True when Resend accepted it. Never throws.
+export async function sendOfferAdminEmail(env: Record<string, any>, d: OfferPaymentEmailDetails & { customerName: string }): Promise<boolean> {
   try {
-    if (!env.RESEND_API_KEY) return;
+    if (!env.RESEND_API_KEY) return false;
     const to = env.ADMIN_NOTIFICATION_EMAIL || EMAIL;
     const money = (m: number) => formatOfferMoney(m, d.currency);
     const rows: [string, string][] = [
@@ -826,8 +826,9 @@ export async function sendOfferAdminEmail(env: Record<string, any>, d: OfferPaym
     const html = emailHtml('Private offer: payment received', `${offerTable(rows)}
         <p style="margin:24px 0 0; text-align:center;"><a href="${SITE}/offer/${d.offerId}" style="${EMAIL_BUTTON}">Open the offer page</a></p>`);
     const text = ['Private offer: payment received', '', ...rows.map(([l, v]) => `${l}: ${v}`), '', `Offer page: ${SITE}/offer/${d.offerId}`].join('\n');
-    await post(env, 'sendOfferAdminEmail', { from: FROM(env), to, subject: `Offer payment received: ${d.customerName}, ${money(d.amountMinor)} ${offerKindLabel(d.kind, d.depositPercent)}`, html, text });
+    return await post(env, 'sendOfferAdminEmail', { from: FROM(env), to, subject: `Offer payment received: ${d.customerName}, ${money(d.amountMinor)} ${offerKindLabel(d.kind, d.depositPercent)}`, html, text });
   } catch (err) {
     console.error('sendOfferAdminEmail: failed', err instanceof Error ? err.message : 'error');
+    return false;
   }
 }
