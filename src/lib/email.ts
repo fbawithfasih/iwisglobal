@@ -692,3 +692,18 @@ export async function sendCustomTripAdminEmail(env: Record<string, any>, d: Cust
   const text = [`Custom Agra trip: needs confirming`, ``, ...rows.map(([l, v]) => `${l}: ${v}`), ``, ...itinerary, ``, `Open booking: ${adminUrl}`].join('\n');
   await post(env, 'sendCustomTripAdminEmail', { from: FROM(env), to, subject: `Custom Agra trip to confirm: ${d.guestName}, ${dates}`, html, text });
 }
+
+// An alert to the business inbox when a paid hotel booking needs a person (the
+// booking could not be confirmed with Hotelbeds, or a refund failed). Callers
+// pass the booking id, the payment id and a reason only, never guest details.
+// Best effort: never throws.
+export async function sendHotelAlertEmail(env: Record<string, any>, subject: string, body: string): Promise<void> {
+  try {
+    if (!env.RESEND_API_KEY) return;
+    const to = env.ADMIN_NOTIFICATION_EMAIL || EMAIL;
+    const html = emailHtml('Hotel booking needs attention', `<pre style="white-space:pre-wrap; font-size:14px; margin:0;">${escapeHtml(body)}</pre>`);
+    await post(env, 'sendHotelAlertEmail', { from: FROM(env), to, subject, html, text: body });
+  } catch (err) {
+    console.error('sendHotelAlertEmail: failed', err);
+  }
+}

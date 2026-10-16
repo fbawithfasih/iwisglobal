@@ -90,3 +90,40 @@ export async function fetchRateComments(
     return null;
   }
 }
+
+// --- Booking API (developer.hotelbeds.com/documentation/hotels/booking-api/api-reference/)
+// Each returns the raw { status, json } and lets hbRequest's timeout or network
+// error propagate: the caller decides what an unknown outcome means.
+
+export interface HbBookingRequest {
+  clientReference: string;
+  holder: { name: string; surname: string };
+  rooms: { rateKey: string; paxes: { roomId: number; type: 'AD' | 'CH'; name: string; surname: string; age?: number }[] }[];
+  remark?: string;
+}
+
+// Booking confirmation: POST /hotel-api/1.0/bookings. The documented guidance
+// is to wait at least 60 seconds for this call, so it gets 70.
+export async function bookHotel(cfg: HbConfig, req: HbBookingRequest): Promise<{ status: number; json: any }> {
+  return hbRequest(cfg, '/hotel-api/1.0/bookings', { method: 'POST', body: req, timeoutMs: 70_000 });
+}
+
+// Booking detail: GET /hotel-api/1.0/bookings/{reference}.
+export async function getHotelBooking(cfg: HbConfig, reference: string): Promise<{ status: number; json: any }> {
+  return hbRequest(cfg, `/hotel-api/1.0/bookings/${encodeURIComponent(reference)}`, { method: 'GET', timeoutMs: 15_000 });
+}
+
+// Booking list filtered by our clientReference, over bookings CREATED between
+// two dates (YYYY-MM-DD), every status. Query parameters as documented for the
+// bookingList operation: start, end (required dates), filterType
+// (CHECKIN|CREATION), status (ALL|CONFIRMED|CANCELLED), from and to (required,
+// the result range) and clientReference. Answer: json.bookings.bookings[].
+export async function listHotelBookingsByReference(cfg: HbConfig, clientReference: string, from: string, to: string): Promise<{ status: number; json: any }> {
+  const query = new URLSearchParams({ start: from, end: to, filterType: 'CREATION', status: 'ALL', clientReference, from: '1', to: '100' });
+  return hbRequest(cfg, `/hotel-api/1.0/bookings?${query.toString()}`, { method: 'GET', timeoutMs: 15_000 });
+}
+
+// Booking cancellation: DELETE /hotel-api/1.0/bookings/{reference}?cancellationFlag=CANCELLATION.
+export async function cancelHotelBooking(cfg: HbConfig, reference: string): Promise<{ status: number; json: any }> {
+  return hbRequest(cfg, `/hotel-api/1.0/bookings/${encodeURIComponent(reference)}?cancellationFlag=CANCELLATION`, { method: 'DELETE', timeoutMs: 30_000 });
+}

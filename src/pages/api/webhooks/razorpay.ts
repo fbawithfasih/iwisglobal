@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { resolveEnv } from '../../../lib/env';
 import { finalizeCustomTrip } from '../../../lib/customTripPayment';
+import { finalizeHotelBooking } from '../../../lib/hotelPayment';
 import { fetchRazorpayOrder } from '../../../lib/payments/razorpay';
 
 export const prerender = false;
@@ -72,15 +73,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const payment = payload.payload?.payment?.entity;
   if (!payment?.id) return new Response('missing payment entity', { status: 200 });
 
-  // A custom Agra trip's deposit: book the trip here too, in case the guest's
-  // browser closed before it could call /api/custom-trip/verify. Safe to repeat
-  // (src/lib/customTripPayment.ts); a failure asks Razorpay to retry.
+  // A custom Agra trip's deposit or a hotel booking: finish it here too, in
+  // case the guest's browser closed before it could call the verify endpoint.
+  // Both are safe to repeat (src/lib/customTripPayment.ts,
+  // src/lib/hotelPayment.ts); a failure asks Razorpay to retry.
+  // The order's notes say which kind of payment this is; when the payment
+  // carries none, read them from Razorpay's own record of the order.
+  let orderNotes: Record<string, string> = payment.notes ?? {};
   if (env.DB) {
-    let customTripId: string | undefined = payment.notes?.kind === 'custom' ? payment.notes.customTripId : undefined;
-    if (!customTripId && !payment.notes?.tourId && payment.order_id) {
+    let customTripId: string | undefined = orderNotes.kind === 'custom' ? orderNotes.customTripId : undefined;
+    let hotelBookingId: string | undefined = orderNotes.kind === 'hotel' ? orderNotes.hotelBookingId : undefined;
+    if (!customTripId && !hotelBookingId && !orderNotes.tourId && payment.order_id) {
       try {
         const order = await fetchRazorpayOrder(env, payment.order_id);
+        orderNotes = order.notes;
         if (order.notes.kind === 'custom') customTripId = order.notes.customTripId;
+        if (order.notes.kind === 'hotel') hotelBookingId = order.notes.hotelBookingId;
       } catch (err) {
         console.error('razorpay webhook: could not read the order to check its kind', err);
       }
@@ -96,6 +104,27 @@ export const POST: APIRoute = async ({ request, locals }) => {
         });
       } catch (err) {
         console.error('razorpay webhook: custom trip could not be booked', err);
+        return new Response('retry', { status: 500 });
+      }
+    }
+    if (hotelBookingId) {
+      try {
+        const outcome = await finalizeHotelBooking(env, env.DB, {
+          bookingId: hotelBookingId,
+          orderId: payment.order_id,
+          paymentId: payment.id,
+          amountMinor: payment.amount,
+          currency: payment.currency,
+        });
+        // Money is held and the booking is not settled yet: ask Razorpay to
+        // deliver again so it gets reconciled (the owner has been alerted).
+        if (outcome === 'failed_refund_error' || outcome === 'unresolved') {
+          console.error('razorpay webhook: hotel booking not settled', hotelBookingId, outcome);
+          return new Response('retry', { status: 500 });
+        }
+        if (outcome === 'mismatch' || outcome === 'unknown') console.error('razorpay webhook: hotel payment not applied', hotelBookingId, outcome);
+      } catch (err) {
+        console.error('razorpay webhook: hotel booking could not be finalised', hotelBookingId, err instanceof Error ? err.message : 'error');
         return new Response('retry', { status: 500 });
       }
     }
@@ -127,6 +156,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // cookie — still records the purchase, just not tied to their earlier
     // on-site browsing.
     const clientId = notes.gaClientId || crypto.randomUUID();
+    const kind = notes.kind ?? orderNotes.kind;
+    const kindItem = kind === 'custom' ? 'CUSTOM_AGRA' : kind === 'hotel' ? 'HOTEL' : undefined;
 
     try {
       await fetch(
@@ -144,8 +175,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
                   currency: payment.currency,
                   items: [
                     {
-                      item_id: notes.tourId ?? (notes.kind === 'custom' ? 'CUSTOM_AGRA' : undefined),
-                      item_name: notes.tourId ?? (notes.kind === 'custom' ? 'CUSTOM_AGRA' : undefined),
+                      item_id: notes.tourId ?? kindItem,
+                      item_name: notes.tourId ?? kindItem,
                       quantity: Number(notes.travelers ?? 1),
                     },
                   ],
