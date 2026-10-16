@@ -62,6 +62,8 @@ const waitingForPerson = counts.handed_off ?? 0;
 const tabParam = Astro.url.searchParams.get('tab');
 const tab: InboxFilter = tabParam === 'attention' || tabParam === 'staff' || tabParam === 'all' ? tabParam : waitingForPerson > 0 ? 'attention' : 'all';
 const conversations = db ? await listInbox(db, tab) : [];
+// On a phone the list and the open chat are separate screens; ?c= opens the chat.
+const chatOpen = Astro.url.searchParams.has('c');
 const selectedId = Astro.url.searchParams.get('c') ?? conversations[0]?.id ?? '';
 const selected = db && selectedId
   ? await db.prepare(`SELECT id, profile_name, state, handoff_reason FROM wa_conversations WHERE id = ?`).bind(selectedId).first<Chat>()
@@ -153,7 +155,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
     <p class="text-stone-500">{tab === 'all' ? 'No messages yet. Once the webhook is connected in Meta, chats appear here.' : 'Nothing here right now.'}</p>
   ) : (
     <div class="grid gap-6 md:grid-cols-[18rem_1fr]">
-      <ul class="space-y-2" aria-label="Conversations">
+      <ul class={`space-y-2 ${chatOpen ? 'max-md:hidden' : ''}`} aria-label="Conversations">
         {conversations.map((c) => (
           <li>
             <a
@@ -165,7 +167,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
                 <span class="font-semibold">{who(c)}</span>
                 <span class={`rounded px-2 py-0.5 text-xs ${stateLabel[c.state]?.style ?? ''}`}>{stateLabel[c.state]?.text ?? c.state}</span>
               </span>
-              <span class="block text-stone-500">+{c.id}</span>
+              {who(c) !== `+${c.id}` && <span class="block text-stone-500">+{c.id}</span>}
               {c.waiting && <span class={`block text-xs font-medium ${toneStyle[c.tone]}`}>Waiting {formatDuration(c.waitingMs)}</span>}
               {c.windowLeftMs !== null && (
                 <span class={`block text-xs ${c.waiting && c.windowLeftMs < 2 * 3600000 ? 'text-red-700' : 'text-stone-400'}`}>
@@ -177,7 +179,8 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
         ))}
       </ul>
 
-      <section aria-label="Messages">
+      <section aria-label="Messages" class={chatOpen ? '' : 'max-md:hidden'}>
+        <a href={`/admin/whatsapp?tab=${tab}`} class="mb-3 inline-flex min-h-11 items-center text-sm font-medium text-brand-800 md:hidden">← All chats</a>
         {selected && (
           <div class="mb-3 flex flex-wrap items-center gap-3">
             <h2 class="text-lg font-semibold">{who(selected)}</h2>
