@@ -93,7 +93,9 @@ Content: hotel content is stored in our database and refreshed weekly. Hotels mi
 
 Rooms with different occupancies can be searched, but our checkout currently books one room type per booking. [Keep or remove this sentence after you decide point 1 above.]
 
-Attached: the request and response logs for these scenarios on the test key: one room with 2 adults; two rooms with different occupancies (search only); children with ages; a RECHECK rate; a BOOKABLE rate; and cancellation. Demo: https://www.iwisglobal.com/hotels [add once the switch is on, or a temporary admin login].
+RECHECK rate: in our test searches (Agra over several dates, and about 1,400 rates in Palma on one date) every rate returned was BOOKABLE, so we could not run the CheckRate scenario against a real RECHECK rate. Could you give us a test hotel code and dates that return a RECHECK rate, so we can complete that scenario? Our CheckRate call itself answers correctly on the BOOKABLE rates we tried it on, and the booking uses the rate key CheckRate returns.
+
+Attached: the request and response logs for these scenarios on the test key: one room with 2 adults; two rooms with different occupancies (search only); children with ages; a BOOKABLE rate; and cancellation. [Add the RECHECK logs once Hotelbeds names a hotel for it.] Demo: https://www.iwisglobal.com/hotels [add once the switch is on, or a temporary admin login].
 
 Please let us know what else you need.
 
