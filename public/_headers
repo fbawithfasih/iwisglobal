@@ -13,3 +13,7 @@
 # Country flag images for the phone field: they never change.
 /flags/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The admin service worker must always be fetched fresh so updates reach the phone.
+/admin/sw.js
+  Cache-Control: no-cache
