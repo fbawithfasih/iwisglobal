@@ -182,3 +182,20 @@ export function formatDuration(ms: number): string {
   const m = minutes % 60;
   return m ? `${h} h ${m} min` : `${h} h`;
 }
+
+// A short fingerprint of everything the inbox shows: new or removed messages, new or
+// changed drafts, and chat states. The admin page polls it (src/pages/admin/api/whatsapp/poll.ts)
+// and reloads when it changes, so a guest's message appears without a manual refresh.
+export async function inboxSignature(db: D1Like): Promise<string> {
+  const row = await db
+    .prepare(
+      `SELECT
+         (SELECT COUNT(*) FROM wa_messages) AS messages,
+         (SELECT COALESCE(MAX(last_message_at), '') FROM wa_conversations) AS lastMessage,
+         (SELECT COUNT(*) || ':' || COALESCE(MAX(updated_at), '') FROM wa_drafts) AS drafts,
+         (SELECT COALESCE(group_concat(id || state, ','), '') FROM (SELECT id, state FROM wa_conversations ORDER BY id)) AS states`
+    )
+    .bind()
+    .first<{ messages: number; lastMessage: string; drafts: string; states: string }>();
+  return row ? `${row.messages}|${row.lastMessage}|${row.drafts}|${row.states}` : '';
+}

@@ -45,7 +45,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 let lastCall = 0;
 let rateLimited = false;
 let quotaHit = false;
-async function call<T extends { status: number }>(fn: () => Promise<T>, attempts = 4): Promise<T> {
+async function call<T extends { status: number; json?: any }>(fn: () => Promise<T>, attempts = 4): Promise<T> {
   let res!: T;
   for (let i = 0; i < attempts; i++) {
     const wait = lastCall + GAP_MS - Date.now();

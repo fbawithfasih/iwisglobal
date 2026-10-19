@@ -12,7 +12,7 @@ import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
 import { sendDraft, sendStaffMessage, discardDraft, draftWaitingMessage, type DraftRow } from '../../../lib/waDraft';
-import { listInbox, inboxCounts, takeOver, giveBack, formatDuration, WINDOW_MS, type InboxFilter } from '../../../lib/waInbox';
+import { listInbox, inboxCounts, inboxSignature, takeOver, giveBack, formatDuration, WINDOW_MS, type InboxFilter } from '../../../lib/waInbox';
 import { auditOverdue } from '../../../lib/waLaunch';
 
 const env = resolveEnv(Astro.locals);
@@ -56,6 +56,7 @@ if (Astro.request.method === 'POST' && db) {
   return Astro.redirect(`/admin/whatsapp?${query}`);
 }
 
+const signature = db ? await inboxSignature(db) : '';
 const counts = db ? await inboxCounts(db) : {};
 const overdue = db ? await auditOverdue(db) : 0;
 const waitingForPerson = counts.handed_off ?? 0;
@@ -148,6 +149,9 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
   )}
   {error && <p class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
 
+  <div id="live" data-sig={signature} class="hidden mb-4 rounded-xl bg-violet-50 p-3 text-sm text-violet-900" role="status">
+    New messages arrived. <a href="" class="font-semibold underline">Show them</a>
+  </div>
   <nav class="mb-4 flex flex-wrap gap-2" aria-label="Chat filters">
     {tabs.map((t) => (
       <a
@@ -332,5 +336,32 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
         refresh(null);
       };
     })().catch(() => show('Alerts are not available here.', []));
+  }
+</script>
+
+<script>
+  // Live updates: check every few seconds whether anything changed and reload when it did.
+  // A reply being typed is never thrown away: then a banner offers the refresh instead.
+  const live = document.getElementById('live');
+  if (live) {
+    let known = live.dataset.sig || '';
+    const typing = () => Array.from(document.querySelectorAll('main textarea')).some((t) => (t as HTMLTextAreaElement).value.trim() !== '');
+    const check = async () => {
+      if (document.hidden || !known) return;
+      try {
+        const res = await fetch('/admin/api/whatsapp/poll', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { sig } = await res.json();
+        if (!sig || sig === known) return;
+        if (typing()) {
+          live.classList.remove('hidden');
+        } else {
+          known = sig;
+          location.reload();
+        }
+      } catch {}
+    };
+    setInterval(check, 5000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
   }
 </script>
