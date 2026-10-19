@@ -54,7 +54,7 @@ async function call<T extends { status: number }>(fn: () => Promise<T>, attempts
     lastCall = Date.now();
     if (res.status === 403 && !quotaHit) {
       quotaHit = true;
-      console.log(`    HTTP 403 from Hotelbeds: ${JSON.stringify(res.json?.error ?? res.json ?? '').slice(0, 200)}. The test key is refusing further calls (usually its daily allowance). Stopping the searches; anything booked is still cancelled.`);
+      console.log(`    HTTP 403 from Hotelbeds: ${JSON.stringify(res.json?.error ?? res.json ?? '').slice(0, 200)}. The test key is refusing calls: either its daily allowance is used up, or HOTELBEDS_API_KEY / HOTELBEDS_SECRET are wrong or still placeholders (echo \"${#HOTELBEDS_API_KEY}\" should print the key's real length). Stopping the searches; anything booked is still cancelled.`);
     }
     if (res.status !== 429) {
       rateLimited = false;
@@ -140,7 +140,7 @@ async function findStay(label: string, rooms: SearchInput['rooms'], accept: (hot
     console.log(`    try ${i + 1}: +${offset} days, ${nights} night(s): ${last.length} hotels, ${rates} rates`);
     if (accept(last)) return last;
     if (quotaHit) {
-      note(`${label}: Hotelbeds answered 403, so the test key's allowance is probably used up. Stopping this scenario; run again tomorrow with SCENARIOS=${label.charAt(0)}.`);
+      note(`${label}: Hotelbeds answered 403, so the test key's allowance is used up or the key/secret are wrong. Stopping this scenario; run again tomorrow with SCENARIOS=${label.charAt(0)}.`);
       break;
     }
     if (rateLimited) {
