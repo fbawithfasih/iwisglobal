@@ -55,7 +55,7 @@ export HOTEL_CODES=1234,5678   # optional: Agra hotel codes, as listed in /admin
 sh scripts/hotelbeds-cert/run.sh
 ```
 
-Optional: `CHECK_IN=2026-12-10` and `NIGHTS=2` (default: 30 days ahead, 2 nights).
+Optional: `CHECK_IN=2026-12-10` and `NIGHTS=2` (default: 30 days ahead, 2 nights), and `DESTINATION=PMI` to search another destination (the test inventory in Agra is thin: scenarios C and D may need one). `SCENARIOS=C,D` runs only those scenarios, so reruns do not use up the test key's allowance (when Hotelbeds answers 403 the script stops searching, cancels what it booked and says so; run again the next day). The script paces its calls and waits out Hotelbeds rate limits (HTTP 429); scenario B and C retry other dates, and C tries smaller families (2 adults and 2 children, then 2 adults and 1 child, then 1 adult and 1 child).
 
 | Scenario | What the script does | What to look for in the logs |
 | --- | --- | --- |
@@ -93,7 +93,9 @@ Content: hotel content is stored in our database and refreshed weekly. Hotels mi
 
 Rooms with different occupancies can be searched, but our checkout currently books one room type per booking. [Keep or remove this sentence after you decide point 1 above.]
 
-Attached: the request and response logs for these scenarios on the test key: one room with 2 adults; two rooms with different occupancies (search only); children with ages; a RECHECK rate; a BOOKABLE rate; and cancellation. Demo: https://www.iwisglobal.com/hotels [add once the switch is on, or a temporary admin login].
+RECHECK rate: in our test searches (Agra over several dates, and about 1,400 rates in Palma on one date) every rate returned was BOOKABLE, so we could not run the CheckRate scenario against a real RECHECK rate. Could you give us a test hotel code and dates that return a RECHECK rate, so we can complete that scenario? Our CheckRate call itself answers correctly on the BOOKABLE rates we tried it on, and the booking uses the rate key CheckRate returns.
+
+Attached: the request and response logs for these scenarios on the test key: one room with 2 adults; two rooms with different occupancies (search only); children with ages; a BOOKABLE rate; and cancellation. [Add the RECHECK logs once Hotelbeds names a hotel for it.] Demo: https://www.iwisglobal.com/hotels [add once the switch is on, or a temporary admin login].
 
 Please let us know what else you need.
 
