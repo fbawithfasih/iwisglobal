@@ -3,7 +3,8 @@ import { resolveEnv } from '../../../lib/env';
 import { parseWebhook, storeWebhook, verifySignature, type WaMessage } from '../../../lib/whatsapp';
 import { generateDraft, sendDraft } from '../../../lib/waDraft';
 import { routeIncoming, onStaffReply, markHandedOff } from '../../../lib/waInbox';
-import { sendWhatsappHandoffEmail, sendAutoReplyAlertEmail } from '../../../lib/email';
+import { sendWhatsappHandoffEmail, sendAutoReplyAlertEmail, HANDOFF_REASON_TEXT } from '../../../lib/email';
+import { sendAdminPush } from '../../../lib/webPush';
 import { getAutoSettings, autoPermission, holdingPermission } from '../../../lib/waAuto';
 import type { D1Like } from '../../../lib/db';
 import { maybePurge } from '../../../lib/waLearning';
@@ -85,6 +86,13 @@ async function handleGuestMessage(env: Record<string, any>, db: D1Like, m: WaMes
       reason: draft.reason || 'handoff',
       lastMessages: results.reverse(),
       draft: draft.body,
+    });
+    // Also buzz the owner's phone. Names and the reason only, never the guest's message.
+    await sendAdminPush(env, db, {
+      title: 'WhatsApp: a guest needs a person',
+      body: `${m.profileName || `+${m.phone}`}: ${HANDOFF_REASON_TEXT[draft.reason || 'handoff'] ?? 'needs a person'}`,
+      url: `/admin/whatsapp?tab=attention&c=${m.phone}`,
+      tag: `wa-${m.phone}`,
     });
   }
 

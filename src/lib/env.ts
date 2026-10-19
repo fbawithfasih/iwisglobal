@@ -30,6 +30,8 @@ export function resolveEnv(locals: unknown): Record<string, any> {
     HOTELBEDS_API_KEY: runtimeEnv.HOTELBEDS_API_KEY ?? import.meta.env.HOTELBEDS_API_KEY,
     HOTELBEDS_SECRET: runtimeEnv.HOTELBEDS_SECRET ?? import.meta.env.HOTELBEDS_SECRET,
     HOTELBEDS_BASE_URL: runtimeEnv.HOTELBEDS_BASE_URL ?? import.meta.env.HOTELBEDS_BASE_URL,
+    VAPID_PUBLIC_KEY: runtimeEnv.VAPID_PUBLIC_KEY ?? import.meta.env.VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY: runtimeEnv.VAPID_PRIVATE_KEY ?? import.meta.env.VAPID_PRIVATE_KEY,
     HOTEL_SYNC_SECRET: runtimeEnv.HOTEL_SYNC_SECRET ?? import.meta.env.HOTEL_SYNC_SECRET,
   };
 }

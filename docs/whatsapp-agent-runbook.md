@@ -114,3 +114,14 @@ DELETE FROM wa_conversations WHERE id = '919876543210';
 ## Where things are (for the developer)
 
 Webhook `src/pages/api/webhooks/whatsapp.ts`; drafts `src/lib/waDraft.ts`; lookups `waTools.ts`; knowledge `waKnowledge.ts`; learning `waLearning.ts`; chat states `waInbox.ts`; automatic replies `waAuto.ts`; launch checks `waLaunch.ts`; evaluation `scripts/wa-eval/`; database changes `schema_whatsapp*.sql` (apply to D1 before deploying the code that uses them). The plans are in `.claude/plans/` and the requirements in `.claude/prds/whatsapp-reply-agent.prd.md`.
+
+## Phone alerts (Web Push)
+
+A "needs a person" chat buzzes the owner's phone as well as sending the email. Setup, once:
+
+1. Apply `schema_admin_push.sql` to production (`wrangler d1 execute iwisglobal-bookings --remote --file=schema_admin_push.sql`).
+2. On your own computer run `node scripts/vapid-keys.mjs`. It prints `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`. Set both as Cloudflare Pages secrets (Production). Do not paste them into chat or the repository.
+3. Redeploy (secrets only apply to a new deployment).
+4. On the iPhone, open the Home Screen app, go to WhatsApp, press **Turn on alerts**, allow notifications, then **Send test alert**.
+
+The alert shows the guest's name and the reason only, never the message text. Tapping it opens that chat. A phone that stops accepting alerts is removed automatically; press **Turn on alerts** again to re-add it. Changing the VAPID keys later means every device must turn alerts off and on again.

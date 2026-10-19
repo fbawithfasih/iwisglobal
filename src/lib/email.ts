@@ -413,7 +413,7 @@ export interface WhatsappHandoffEmailDetails {
   draft: string;
 }
 
-const HANDOFF_REASON_TEXT: Record<string, string> = {
+export const HANDOFF_REASON_TEXT: Record<string, string> = {
   handoff: 'a refund, complaint, booking change or similar',
   no_knowledge: 'there is no approved answer for the question',
   price_mismatch: 'the draft quoted a price that is not in the catalogue',

@@ -131,6 +131,15 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
     <a href="/admin/whatsapp/launch" class="ml-2 text-brand-800 hover:underline">Launch readiness</a>
     <a href="/admin/whatsapp/knowledge" class="ml-4 text-brand-800 hover:underline">Knowledge base</a>
   </p>
+  <div id="push-box" class="mb-6 max-w-xl rounded-xl border border-stone-200 bg-white p-3 text-sm" data-key={env.VAPID_PUBLIC_KEY ?? ''}>
+    <p class="font-medium text-stone-800">Phone alerts</p>
+    <p id="push-status" class="mt-1 text-stone-600">Checking…</p>
+    <div class="mt-2 flex flex-wrap gap-2">
+      <button type="button" id="push-on" class="hidden min-h-11 rounded bg-brand-800 px-4 text-sm font-medium text-white">Turn on alerts</button>
+      <button type="button" id="push-test" class="hidden min-h-11 rounded border border-stone-300 bg-white px-4 text-sm font-medium text-stone-700">Send test alert</button>
+      <button type="button" id="push-off" class="hidden min-h-11 rounded border border-stone-300 bg-white px-4 text-sm font-medium text-stone-700">Turn off</button>
+    </div>
+  </div>
   {overdue > 0 && (
     <p class="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">
       {overdue} automatic message{overdue === 1 ? ' is' : 's are'} more than a week old and not yet audited.
@@ -262,3 +271,66 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
     </div>
   )}
 </AdminLayout>
+
+<script>
+  // Phone alerts: register the service worker, ask permission, save this device's subscription.
+  const box = document.getElementById('push-box');
+  if (box) {
+    const status = document.getElementById('push-status')!;
+    const on = document.getElementById('push-on')!;
+    const test = document.getElementById('push-test')!;
+    const off = document.getElementById('push-off')!;
+    const key = box.dataset.key || '';
+    const toBytes = (b64: string) => {
+      const bin = atob((b64 + '='.repeat((4 - (b64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
+      return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    };
+    const post = (url: string, method: string, body?: unknown) =>
+      fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    const show = (text: string, buttons: HTMLElement[]) => {
+      status.textContent = text;
+      [on, test, off].forEach((b) => b.classList.toggle('hidden', !buttons.includes(b)));
+    };
+    const standalone = (navigator as any).standalone === true || matchMedia('(display-mode: standalone)').matches;
+    const isIos = /iphone|ipad/i.test(navigator.userAgent);
+
+    (async () => {
+      if (!key) return show('Not set up yet: the push keys are missing in Cloudflare.', []);
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return show(isIos && !standalone ? 'On iPhone, first add this page to your Home Screen (Share, then Add to Home Screen) and open it from there.' : 'This browser cannot receive alerts.', []);
+      }
+      const reg = await navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' });
+      const existing = await reg.pushManager.getSubscription();
+      const refresh = (sub: PushSubscription | null) =>
+        sub ? show('Alerts are on for this device. You get one when a guest needs a person.', [test, off]) : show('Alerts are off on this device.', [on]);
+      refresh(existing);
+
+      on.onclick = async () => {
+        try {
+          if ((await Notification.requestPermission()) !== 'granted') return show('Permission was not given. Allow notifications for this app in your phone settings, then try again.', [on]);
+          const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toBytes(key) });
+          const res = await post('/admin/api/push/subscribe', 'POST', sub.toJSON());
+          if (!res.ok) throw new Error('save failed');
+          refresh(sub);
+        } catch {
+          show('Could not turn alerts on. Try again.', [on]);
+        }
+      };
+      test.onclick = async () => {
+        test.setAttribute('disabled', '');
+        const res = await post('/admin/api/push/test', 'POST');
+        const data = await res.json().catch(() => ({}));
+        test.removeAttribute('disabled');
+        status.textContent = res.ok ? (data.sent > 0 ? 'Test alert sent. It should appear on your phone in a few seconds.' : 'The server could not deliver it. Turn alerts off and on again.') : data.error || 'Could not send the test.';
+      };
+      off.onclick = async () => {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await post('/admin/api/push/subscribe', 'DELETE', { endpoint: sub.endpoint });
+          await sub.unsubscribe();
+        }
+        refresh(null);
+      };
+    })().catch(() => show('Alerts are not available here.', []));
+  }
+</script>
