@@ -201,7 +201,10 @@ async function main() {
   const rc = pick(c, 'BOOKABLE') ?? pick(c);
   if (!rc) note('C: no rates returned for any family size');
   else {
-    const key = rc.rateType === 'RECHECK' ? ((await checkRate('C', rc.rateKey))?.rateKey ?? rc.rateKey) : rc.rateKey;
+    // CheckRate first even for a BOOKABLE rate: only scenario E must skip it, and the test
+    // supplier's price can drift after the availability search (booking then answers 500
+    // "Price has changed").
+    const key = (await checkRate('C', rc.rateKey))?.rateKey ?? rc.rateKey;
     await book('C', key, family);
   }
   }
