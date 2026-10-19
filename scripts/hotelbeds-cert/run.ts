@@ -104,7 +104,7 @@ async function checkRate(label: string, rateKey: string): Promise<{ rateKey: str
 }
 
 const booked: { label: string; reference: string }[] = [];
-async function book(label: string, rateKey: string, party: { adults: number; childAges: number[] }) {
+async function book(label: string, rateKey: string, party: { adults: number; childAges: number[] }): Promise<{ ok: boolean; message: string }> {
   const paxes = [
     ...Array.from({ length: party.adults }, (_, i) => ({ roomId: 1, type: 'AD' as const, name: 'Test', surname: `Adult${i + 1}` })),
     ...party.childAges.map((age, i) => ({ roomId: 1, type: 'CH' as const, name: 'Test', surname: `Child${i + 1}`, age })),
@@ -119,9 +119,11 @@ async function book(label: string, rateKey: string, party: { adults: number; chi
     log(`booking-detail-${label}`, { reference }, detail);
     const supplier = res.json.booking.invoiceCompany;
     note(`${label}: booked ${reference}; supplier on the booking response: ${supplier?.company ?? supplier?.name ?? 'MISSING'} / VAT ${supplier?.registrationNumber ?? 'MISSING'}`);
-  } else {
-    note(`${label}: booking FAILED (HTTP ${res.status}); see the log`);
+    return { ok: true, message: '' };
   }
+  const message = String(res.json?.error?.message ?? '');
+  note(`${label}: booking FAILED (HTTP ${res.status}${message ? `: ${message.slice(0, 120)}` : ''}); see the log`);
+  return { ok: false, message };
 }
 
 const pick = (hotels: HotelResult[], want?: RateOption['rateType']): RateOption | null =>
@@ -132,6 +134,9 @@ const pick = (hotels: HotelResult[], want?: RateOption['rateType']): RateOption 
 const WINDOWS: [number, number][] = [[0, 2], [0, 1], [7, 2], [14, 3], [30, 2], [45, 1], [60, 2], [90, 2], [120, 3]];
 async function findStay(label: string, rooms: SearchInput['rooms'], accept: (hotels: HotelResult[]) => boolean, windows: [number, number][] = WINDOWS): Promise<HotelResult[]> {
   let last: HotelResult[] = [];
+  // Every search counts against the test key's daily allowance, so only a few windows are tried
+  // by default. MAX_TRIES=9 searches them all.
+  windows = windows.slice(0, Number(process.env.MAX_TRIES) || 4);
   for (let i = 0; i < windows.length; i++) {
     if (quotaHit) break;
     const [offset, nights] = windows[i];
@@ -198,14 +203,17 @@ async function main() {
     family = f;
     if (hasRates(c) || rateLimited) break;
   }
-  const rc = pick(c, 'BOOKABLE') ?? pick(c);
-  if (!rc) note('C: no rates returned for any family size');
-  else {
+  // Candidates: one rate per hotel first (a hotel whose test price keeps moving would fail again),
+  // then the rest. Up to 3 are tried; only a "Price has changed" refusal moves on to the next.
+  const perHotel = c.flatMap((h) => (h.rates[0] ? [h.rates[0]] : []));
+  const candidates = [...perHotel, ...c.flatMap((h) => h.rates.slice(1))].slice(0, 3);
+  if (candidates.length === 0) note('C: no rates returned for any family size');
+  for (let i = 0; i < candidates.length; i++) {
     // CheckRate first even for a BOOKABLE rate: only scenario E must skip it, and the test
-    // supplier's price can drift after the availability search (booking then answers 500
-    // "Price has changed").
-    const key = (await checkRate('C', rc.rateKey))?.rateKey ?? rc.rateKey;
-    await book('C', key, family);
+    // supplier's price can drift after the availability search.
+    const key = (await checkRate(i === 0 ? 'C' : `C-retry${i + 1}`, candidates[i].rateKey))?.rateKey ?? candidates[i].rateKey;
+    const result = await book(i === 0 ? 'C' : `C-retry${i + 1}`, key, family);
+    if (result.ok || !/price has changed/i.test(result.message)) break;
   }
   }
 
