@@ -271,6 +271,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
             )}
           </form>
         )}
+        <div id="chat-end" aria-hidden="true"></div>
       </section>
     </div>
   )}
@@ -357,11 +358,30 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
           live.classList.remove('hidden');
         } else {
           known = sig;
+          // Keep the reader's place: stay put if they scrolled up, follow the chat if they were at the bottom.
+          const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 80;
+          try { sessionStorage.setItem('waScroll', JSON.stringify({ y: window.scrollY, atBottom })); } catch {}
           location.reload();
         }
       } catch {}
     };
     setInterval(check, 5000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  }
+</script>
+
+<script>
+  // Open a chat at its newest message (and the reply box), like a chat app, instead of at the top:
+  // after Send, after switching chats, and after a live refresh while reading the bottom.
+  // A live refresh while the reader was higher up restores that position instead.
+  const end = document.getElementById('chat-end');
+  if (end && new URLSearchParams(location.search).has('c')) {
+    let saved: { y: number; atBottom: boolean } | null = null;
+    try {
+      saved = JSON.parse(sessionStorage.getItem('waScroll') || 'null');
+      sessionStorage.removeItem('waScroll');
+    } catch {}
+    if (saved && !saved.atBottom) window.scrollTo(0, saved.y);
+    else end.scrollIntoView({ block: 'end' });
   }
 </script>
