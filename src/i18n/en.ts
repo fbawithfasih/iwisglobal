@@ -1581,7 +1581,10 @@ export const en = {
       nonRefundable: "Non-refundable",
       select: "Select",
       facilities: "Facilities",
-      promotion: "Offer"
+      promotion: "Offer",
+      details: "Hotel details",
+      allFacilities: "All facilities",
+      extraFee: "extra fee"
     },
     errors: {
       unavailable: "Hotel search is not available right now. Please try again in a few minutes.",

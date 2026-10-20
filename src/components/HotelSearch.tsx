@@ -260,6 +260,27 @@ export default function HotelSearch({ t, intlLocale, searchUrl = '/api/hotels/se
                     {h.facilities.length > 0 && (
                       <p className="mt-3 text-sm text-stone-700"><span className="font-medium">{t.results.facilities}:</span> {h.facilities.slice(0, 5).join(', ')}</p>
                     )}
+                    {(h.description || h.images.length > 1 || h.facilityList.length > 0) && (
+                      <details className="mt-3 rounded-xl border border-brand-100 bg-brand-50/40 p-3 text-sm text-stone-700">
+                        <summary className="cursor-pointer font-medium text-brand-800">{t.results.details}</summary>
+                        {h.description && <p className="mt-3 whitespace-pre-line">{h.description}</p>}
+                        {h.images.length > 1 && (
+                          <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            {h.images.map((src) => (
+                              <li key={src}><img src={src} alt="" loading="lazy" className="h-24 w-full rounded-lg object-cover" /></li>
+                            ))}
+                          </ul>
+                        )}
+                        {h.facilityList.length > 0 && (
+                          <div className="mt-3">
+                            <p className="font-medium">{t.results.allFacilities}</p>
+                            <ul className="mt-1 grid gap-x-4 gap-y-1 sm:grid-cols-2">
+                              {h.facilityList.map((f) => <li key={f.name}>{f.name}{f.paid && <span className="text-stone-500"> ({t.results.extraFee})</span>}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                      </details>
+                    )}
                     <ul className="mt-4 grid gap-3">
                       {h.rates.map((r) => (
                         <li key={r.rateKey} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-brand-50/60 p-3">
