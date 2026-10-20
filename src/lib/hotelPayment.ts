@@ -33,6 +33,15 @@ export interface HotelContact { holderFirst: string; holderLast: string; email: 
 
 export const QUOTE_LIFETIME_MS = 30 * 60 * 1000;
 
+// An admin "book without payment" on the Hotelbeds TEST server (handleHotelOrder, testBooking)
+// stores ids with this prefix. No money moved, so no Razorpay refund is ever attempted for them.
+export const TEST_PAYMENT_PREFIX = 'admintest_';
+export const isTestPayment = (paymentId: string | null | undefined) => typeof paymentId === 'string' && paymentId.startsWith(TEST_PAYMENT_PREFIX);
+const refundPayment = async (env: Record<string, any>, paymentId: string, amountMinor: number) => {
+  if (isTestPayment(paymentId)) return;
+  await refundPaymentAmount(env, paymentId, amountMinor);
+};
+
 const NAME_RE = /^[\p{L}\p{M}][\p{L}\p{M}' .-]{0,59}$/u;
 const LOCALES: Locale[] = ['en', 'es', 'fr', 'de'];
 const asLocale = (v: unknown): Locale => (LOCALES.includes(v as Locale) ? (v as Locale) : 'en');
@@ -115,9 +124,16 @@ export async function handleHotelOrder(
   raw: unknown,
   now: Date = new Date(),
   // A signed-in admin may pay while hotels are switched off, to test before launch.
-  adminPreview = false
+  adminPreview = false,
+  // Admin only, Hotelbeds TEST server only: book without any payment (nothing is charged or refunded).
+  testBooking = false
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   if (!db) return { status: 503, body: { error: 'unavailable' } };
+  if (testBooking) {
+    // Without a payment this would be a free booking, so it must never reach the live Hotelbeds server.
+    const cfg = hbConfig(env);
+    if (!adminPreview || !cfg || new URL(cfg.baseUrl).host !== 'api.test.hotelbeds.com') return { status: 403, body: { error: 'live_server' } };
+  }
   if (!adminPreview && !(await isHotelsEnabled(db))) return { status: 403, body: { error: 'not_available' } };
 
   const body = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -152,6 +168,17 @@ export async function handleHotelOrder(
   const locale = asLocale(body.locale);
   const stamp = now.toISOString();
   const amount = row.sell_total * 100;
+
+  if (testBooking) {
+    const orderId = row.order_id || `${TEST_PAYMENT_PREFIX}order_${row.id}`;
+    const saved = await db
+      .prepare(`UPDATE hotel_bookings SET order_id=?, holder_name=?, email=?, phone=?, guests_json=?, locale=?, updated_at=? WHERE id=? AND status='quoted' AND (order_id='' OR order_id=?)`)
+      .bind(orderId, holderName, contact.email, contact.phone, guestsJson, locale, stamp, row.id, orderId)
+      .run();
+    if ((saved as any)?.meta?.changes !== 1) return { status: 409, body: { error: 'not_quoted' } };
+    const outcome = await finalizeHotelBooking(env, db, { bookingId: row.id, orderId, paymentId: `${TEST_PAYMENT_PREFIX}pay_${row.id}`, amountMinor: amount, currency: row.currency });
+    return { status: 200, body: { success: outcome === 'booked', outcome, bookingId: row.id } };
+  }
 
   // The guest is paying again after closing the Razorpay window: keep the
   // order, refresh the details.
@@ -460,7 +487,7 @@ export async function finalizeHotelBooking(
     .run();
   if (!changed(fail)) return 'duplicate';
   try {
-    await refundPaymentAmount(env, paid.paymentId, row.sell_total * 100);
+    await refundPayment(env, paid.paymentId, row.sell_total * 100);
   } catch (e) {
     // The alert and the status restore are independent: either may fail
     // without stopping the other, and neither throws out of here.
@@ -670,7 +697,7 @@ export async function cancelHotelBookingAndRefund(
 
   if (refund > 0) {
     try {
-      await refundPaymentAmount(env, row.payment_id, refund * 100);
+      await refundPayment(env, row.payment_id, refund * 100);
     } catch (e) {
       await alertOwner(env, row.id, row.payment_id, `cancelled with Hotelbeds but the refund of ${formatMoneyMinor(refund * 100, row.currency)} failed (${e instanceof Error ? e.message : 'unknown error'}); refund it by hand in Razorpay`);
       return { ok: false, error: `Cancelled with Hotelbeds, but the refund of ${formatMoneyMinor(refund * 100, row.currency)} failed. Refund it by hand in Razorpay.` };

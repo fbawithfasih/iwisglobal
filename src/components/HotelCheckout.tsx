@@ -28,6 +28,8 @@ interface StoredQuote {
 interface Props {
   // The admin test page points these at /admin/... (see HotelSearch).
   orderUrl?: string;
+  // Admin test page only: a second button that books on the Hotelbeds TEST server without any payment.
+  testBookUrl?: string;
   searchPath?: string;
   t: Dictionary['hotelBooking']['checkout'];
   bookingId: string;
@@ -65,7 +67,7 @@ const card = 'rounded-3xl border border-brand-100 bg-white p-4 shadow-sm shadow-
 
 type Name = { first: string; last: string };
 
-export default function HotelCheckout({ t, bookingId, intlLocale, locale, orderUrl = '/api/hotels/order', searchPath = '/hotels' }: Props) {
+export default function HotelCheckout({ t, bookingId, intlLocale, locale, orderUrl = '/api/hotels/order', searchPath = '/hotels', testBookUrl }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [data, setData] = useState<{ quote: StoredQuote; search: StoredSearch } | null>(null);
   // names[room][guest]: adults first, then children, as the server expects.
@@ -152,6 +154,43 @@ export default function HotelCheckout({ t, bookingId, intlLocale, locale, orderU
 
   const setName = (room: number, guest: number, key: keyof Name, value: string) =>
     setNames((all) => all.map((r, i) => (i === room ? r.map((n, j) => (j === guest ? { ...n, [key]: value } : n)) : r)));
+
+  async function testBook() {
+    if (!testBookUrl || payingRef.current || blocked) return;
+    setPayError('');
+    setTried(true);
+    if (hasErrors) return;
+    payingRef.current = true;
+    setPaying(true);
+    try {
+      const res = await fetch(testBookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: quote.bookingId,
+          rooms: names.map((room) => ({ names: room.map((n) => ({ first: n.first.trim(), last: n.last.trim() })) })),
+          contact: { holderFirst: holderFirst.trim(), holderLast: holderLast.trim(), email: email.trim(), phone },
+          locale,
+        }),
+      });
+      const done = await res.json().catch(() => ({}));
+      if (res.ok && done.success) {
+        window.location.href = `/hotels/voucher?booking=${encodeURIComponent(quote.bookingId)}`;
+        return;
+      }
+      if (done.error === 'live_server') throw new Error('Refused: Hotelbeds is not on the TEST server, so a booking without payment is not allowed.');
+      if (res.status === 409 && done.error === 'not_quoted') {
+        setExpired(true);
+        return;
+      }
+      throw new Error(done.outcome ? `Hotelbeds did not confirm the test booking (${done.outcome}). Check /admin/hotels.` : 'The test booking failed.');
+    } catch (err: any) {
+      setPayError(err?.message || 'The test booking failed.');
+    } finally {
+      payingRef.current = false;
+      setPaying(false);
+    }
+  }
 
   async function pay() {
     if (payingRef.current || blocked) return;
@@ -364,6 +403,14 @@ export default function HotelCheckout({ t, bookingId, intlLocale, locale, orderU
         <button type="button" onClick={pay} disabled={paying || !!unconfirmed || blocked} className={primaryButton}>
           {confirming ? t.confirming : paying ? t.opening : fmt(t.pay, { amount: money(quote.price) })}
         </button>
+        {testBookUrl && (
+          <div className="mt-4 rounded-xl border border-dashed border-amber-400 bg-amber-50 p-3">
+            <p className="mb-2 text-sm text-amber-900">Admin test only: books on the Hotelbeds test server and charges nothing. The voucher and emails are real; cancel it from /admin/hotels.</p>
+            <button type="button" onClick={testBook} disabled={paying || !!unconfirmed || blocked} className="min-h-11 rounded-full border border-amber-600 bg-white px-6 text-sm font-semibold text-amber-900 disabled:opacity-50">
+              Book without payment (test)
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
