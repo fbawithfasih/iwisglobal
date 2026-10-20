@@ -127,7 +127,8 @@ export async function searchHotels(
       categoryName: info.categoryName || r.categoryName,
       address: info.address,
       image: info.images[0] ? imageUrl(info.images[0].path) : null,
-      facilities: info.facilities.filter((f) => !f.paid).map((f) => f.name).slice(0, MAX_FACILITIES),
+      // Hotelbeds always returns the "mandatory" facilities with indYesOrNo; false means the hotel does not have it.
+      facilities: info.facilities.filter((f) => !f.paid && f.yesOrNo !== false).map((f) => f.name).slice(0, MAX_FACILITIES),
       from: rates[0].price,
       currency,
       rates,
