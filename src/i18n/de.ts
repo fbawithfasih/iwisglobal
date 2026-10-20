@@ -1581,7 +1581,10 @@ export const de: Dictionary = {
       nonRefundable: "Nicht erstattbar",
       select: "Auswählen",
       facilities: "Ausstattung",
-      promotion: "Angebot"
+      promotion: "Angebot",
+      details: "Hoteldetails",
+      allFacilities: "Alle Ausstattungsmerkmale",
+      extraFee: "gegen Gebühr"
     },
     errors: {
       unavailable: "Die Hotelsuche ist derzeit nicht verfügbar. Bitte versuchen Sie es in einigen Minuten erneut.",

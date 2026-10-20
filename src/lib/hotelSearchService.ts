@@ -30,6 +30,10 @@ export interface ShownHotel {
   categoryName: string;
   address: string;
   image: string | null;
+  // Details shown when the guest opens "Hotel details" (all from the stored Hotelbeds content).
+  description: string;
+  images: string[];
+  facilityList: { name: string; paid: boolean }[];
   facilities: string[];
   from: number;
   currency: GuestCurrency;
@@ -38,6 +42,29 @@ export interface ShownHotel {
 
 export const RATE_CACHE_MINUTES = 30;
 const MAX_FACILITIES = 5;
+const MAX_DESCRIPTION = 900;
+const MAX_IMAGES = 8;
+const MAX_FACILITY_LIST = 30;
+
+// Cuts a long description at a word boundary so the search answer stays small.
+function shorten(text: string, max: number): string {
+  const t = text.replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  return cut.slice(0, Math.max(cut.lastIndexOf(' '), 0) || max).trimEnd() + '…';
+}
+
+// Every facility the hotel really has: Hotelbeds marks an absent mandatory one with indYesOrNo false.
+function facilityList(facilities: { name: string; paid: boolean; yesOrNo?: boolean }[]): { name: string; paid: boolean }[] {
+  const seen = new Set<string>();
+  const out: { name: string; paid: boolean }[] = [];
+  for (const f of facilities) {
+    if (f.yesOrNo === false || !f.name || seen.has(f.name)) continue;
+    seen.add(f.name);
+    out.push({ name: f.name, paid: f.paid });
+  }
+  return out.sort((a, b) => Number(a.paid) - Number(b.paid)).slice(0, MAX_FACILITY_LIST);
+}
 // D1 allows at most 100 bound parameters per query; 3 per row.
 const CACHE_ROWS_PER_STATEMENT = 30;
 const nightsBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
@@ -127,8 +154,10 @@ export async function searchHotels(
       categoryName: info.categoryName || r.categoryName,
       address: info.address,
       image: info.images[0] ? imageUrl(info.images[0].path) : null,
-      // Hotelbeds always returns the "mandatory" facilities with indYesOrNo; false means the hotel does not have it.
-      facilities: info.facilities.filter((f) => !f.paid && f.yesOrNo !== false).map((f) => f.name).slice(0, MAX_FACILITIES),
+      description: shorten(info.description ?? '', MAX_DESCRIPTION),
+      images: info.images.slice(0, MAX_IMAGES).map((i) => imageUrl(i.path)),
+      facilityList: facilityList(info.facilities),
+      facilities: facilityList(info.facilities).filter((f) => !f.paid).map((f) => f.name).slice(0, MAX_FACILITIES),
       from: rates[0].price,
       currency,
       rates,

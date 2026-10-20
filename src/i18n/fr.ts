@@ -1581,7 +1581,10 @@ export const fr: Dictionary = {
       nonRefundable: "Non remboursable",
       select: "Choisir",
       facilities: "Équipements",
-      promotion: "Offre"
+      promotion: "Offre",
+      details: "Détails de l'hôtel",
+      allFacilities: "Tous les équipements",
+      extraFee: "payant"
     },
     errors: {
       unavailable: "La recherche d'hôtels n'est pas disponible pour le moment. Réessayez dans quelques minutes.",
