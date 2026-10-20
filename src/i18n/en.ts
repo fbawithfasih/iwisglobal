@@ -1584,7 +1584,10 @@ export const en = {
       promotion: "Offer",
       details: "Hotel details",
       allFacilities: "All facilities",
-      extraFee: "extra fee"
+      extraFee: "extra fee",
+      closePhoto: "Close photo",
+      previousPhoto: "Previous photo",
+      nextPhoto: "Next photo"
     },
     errors: {
       unavailable: "Hotel search is not available right now. Please try again in a few minutes.",

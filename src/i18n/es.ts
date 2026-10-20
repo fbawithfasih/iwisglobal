@@ -1584,7 +1584,10 @@ export const es: Dictionary = {
       promotion: "Oferta",
       details: "Detalles del hotel",
       allFacilities: "Todos los servicios",
-      extraFee: "con coste adicional"
+      extraFee: "con coste adicional",
+      closePhoto: "Cerrar foto",
+      previousPhoto: "Foto anterior",
+      nextPhoto: "Foto siguiente"
     },
     errors: {
       unavailable: "La búsqueda de hoteles no está disponible en este momento. Inténtelo de nuevo en unos minutos.",

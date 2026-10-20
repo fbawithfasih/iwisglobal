@@ -52,6 +52,25 @@ export default function HotelSearch({ t, intlLocale, searchUrl = '/api/hotels/se
   const [selecting, setSelecting] = useState('');
   const [selectError, setSelectError] = useState('');
   const ageRefs = useRef<Record<string, HTMLSelectElement | null>>({});
+  // The photo being viewed full size: the hotel's photos and which one is open.
+  const [zoom, setZoom] = useState<{ images: string[]; index: number } | null>(null);
+
+  // Keyboard for the full-size photo: Escape closes, the arrow keys move between photos.
+  useEffect(() => {
+    if (!zoom) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setZoom(null);
+      else if (e.key === 'ArrowRight') setZoom((z) => (z ? { ...z, index: (z.index + 1) % z.images.length } : z));
+      else if (e.key === 'ArrowLeft') setZoom((z) => (z ? { ...z, index: (z.index - 1 + z.images.length) % z.images.length } : z));
+    };
+    window.addEventListener('keydown', onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, [zoom]);
 
   // Read on the client so the server render and first client render match.
   useEffect(() => setMinDate(getAvailability().minBookableDate), []);
@@ -236,7 +255,9 @@ export default function HotelSearch({ t, intlLocale, searchUrl = '/api/hotels/se
               <li key={h.code} className="overflow-hidden rounded-3xl border border-brand-100 bg-white shadow-sm shadow-brand-900/5">
                 <div className="grid md:grid-cols-[16rem_1fr]">
                   {h.image ? (
-                    <img src={h.image} alt="" loading="lazy" className="h-48 w-full object-cover md:h-full" />
+                    <button type="button" onClick={() => setZoom({ images: h.images.length ? h.images : [h.image!], index: 0 })} aria-label={`${h.name}: ${t.results.details}`} className="block h-48 w-full cursor-zoom-in md:h-full">
+                      <img src={h.image} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    </button>
                   ) : (
                     <div className="h-48 w-full bg-brand-50 md:h-full" aria-hidden="true" />
                   )}
@@ -266,8 +287,12 @@ export default function HotelSearch({ t, intlLocale, searchUrl = '/api/hotels/se
                         {h.description && <p className="mt-3 whitespace-pre-line">{h.description}</p>}
                         {h.images.length > 1 && (
                           <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            {h.images.map((src) => (
-                              <li key={src}><img src={src} alt="" loading="lazy" className="h-24 w-full rounded-lg object-cover" /></li>
+                            {h.images.map((src, i) => (
+                              <li key={src}>
+                                <button type="button" onClick={() => setZoom({ images: h.images, index: i })} aria-label={`${h.name} ${i + 1}/${h.images.length}`} className="block w-full cursor-zoom-in">
+                                  <img src={src} alt="" loading="lazy" className="h-24 w-full rounded-lg object-cover" />
+                                </button>
+                              </li>
                             ))}
                           </ul>
                         )}
@@ -307,6 +332,19 @@ export default function HotelSearch({ t, intlLocale, searchUrl = '/api/hotels/se
           </ul>
         )}
       </div>
+      {zoom && (
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3" onClick={() => setZoom(null)}>
+          <img src={zoom.images[zoom.index]} alt="" className="max-h-[88vh] max-w-full object-contain" onClick={(e) => e.stopPropagation()} />
+          <button type="button" autoFocus onClick={() => setZoom(null)} aria-label={t.results.closePhoto} className="absolute right-3 top-3 min-h-11 min-w-11 rounded-full bg-white/90 text-xl font-semibold text-stone-900">✕</button>
+          {zoom.images.length > 1 && (
+            <>
+              <button type="button" onClick={(e) => { e.stopPropagation(); setZoom({ ...zoom, index: (zoom.index - 1 + zoom.images.length) % zoom.images.length }); }} aria-label={t.results.previousPhoto} className="absolute left-3 top-1/2 min-h-11 min-w-11 -translate-y-1/2 rounded-full bg-white/90 text-xl font-semibold text-stone-900">‹</button>
+              <button type="button" onClick={(e) => { e.stopPropagation(); setZoom({ ...zoom, index: (zoom.index + 1) % zoom.images.length }); }} aria-label={t.results.nextPhoto} className="absolute right-3 top-1/2 min-h-11 min-w-11 -translate-y-1/2 rounded-full bg-white/90 text-xl font-semibold text-stone-900">›</button>
+              <p className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs text-white">{zoom.index + 1} / {zoom.images.length}</p>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
