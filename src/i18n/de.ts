@@ -1584,7 +1584,10 @@ export const de: Dictionary = {
       promotion: "Angebot",
       details: "Hoteldetails",
       allFacilities: "Alle Ausstattungsmerkmale",
-      extraFee: "gegen Gebühr"
+      extraFee: "gegen Gebühr",
+      closePhoto: "Foto schließen",
+      previousPhoto: "Vorheriges Foto",
+      nextPhoto: "Nächstes Foto"
     },
     errors: {
       unavailable: "Die Hotelsuche ist derzeit nicht verfügbar. Bitte versuchen Sie es in einigen Minuten erneut.",

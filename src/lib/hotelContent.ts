@@ -29,7 +29,12 @@ const PAGE_SIZE = 100;
 const text = (v: any): string => (typeof v?.content === 'string' ? v.content : '');
 const numOrNull = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
-export function parseContentHotel(h: any): HotelContent | null {
+// The hotels list gives each facility as codes only (facilityCode and facilityGroupCode); the words
+// come from the Content API "types/facilities" list, keyed here as "<group>:<code>".
+export type FacilityNames = Map<string, string>;
+const facilityKey = (group: unknown, code: unknown) => `${Number(group) || 0}:${Number(code) || 0}`;
+
+export function parseContentHotel(h: any, names?: FacilityNames): HotelContent | null {
   const code = Number(h?.code);
   const name = text(h?.name).trim();
   if (!Number.isInteger(code) || code <= 0 || !name) return null;
@@ -45,18 +50,19 @@ export function parseContentHotel(h: any): HotelContent | null {
     .filter((i: any) => typeof i?.path === 'string' && i.path)
     .map((i: any) => ({ path: i.path as string, type: String(i.imageTypeCode ?? '') }));
 
-  const facilities = (Array.isArray(h.facilities) ? h.facilities : [])
-    .filter((f: any) => text(f?.description))
-    .map((f: any) => {
-      const item: HotelContent['facilities'][number] = {
-        code: Number(f.facilityCode) || 0,
-        group: Number(f.facilityGroupCode) || 0,
-        name: text(f.description),
-        paid: f.indFee === true,
-      };
-      if (typeof f.indYesOrNo === 'boolean') item.yesOrNo = f.indYesOrNo;
-      return item;
-    });
+  const facilities: HotelContent['facilities'] = [];
+  for (const f of Array.isArray(h.facilities) ? h.facilities : []) {
+    const group = Number(f?.facilityGroupCode) || 0;
+    const code = Number(f?.facilityCode) || 0;
+    const name = text(f?.description) || names?.get(facilityKey(group, code)) || '';
+    if (!name) continue;
+    // Mandatory facilities carry indYesOrNo, the others indLogic: false means the hotel does not have it.
+    const present = typeof f.indYesOrNo === 'boolean' ? f.indYesOrNo : typeof f.indLogic === 'boolean' ? f.indLogic : undefined;
+    if (present === false) continue;
+    const item: HotelContent['facilities'][number] = { code, group, name, paid: f.indFee === true };
+    if (present !== undefined) item.yesOrNo = present;
+    facilities.push(item);
+  }
 
   return {
     code,
@@ -74,6 +80,31 @@ export function parseContentHotel(h: any): HotelContent | null {
     images,
     facilities,
   };
+}
+
+// Facility words for the whole catalogue, paged 1000 at a time. Null when the lookup fails, so a sync
+// never overwrites stored facilities with empty ones.
+export async function fetchFacilityNames(cfg: ReturnType<typeof hbConfig> & {}): Promise<FacilityNames | null> {
+  const names: FacilityNames = new Map();
+  let from = 1;
+  for (let page = 0; page < 20; page++) {
+    let res: { status: number; json: any };
+    try {
+      res = await hbRequest(cfg, `/hotel-content-api/1.0/types/facilities?fields=all&language=ENG&useSecondaryLanguage=false&from=${from}&to=${from + 999}`, { timeoutMs: 60_000 });
+    } catch {
+      return null;
+    }
+    if (res.status !== 200 || !Array.isArray(res.json?.facilities)) return null;
+    for (const f of res.json.facilities) {
+      const name = text(f?.description);
+      if (name) names.set(facilityKey(f?.facilityGroupCode, f?.code ?? f?.facilityCode), name);
+    }
+    const to = Number(res.json.to);
+    const total = Number(res.json.total);
+    if (!Number.isFinite(to) || !Number.isFinite(total) || to >= total || to < from) break;
+    from = to + 1;
+  }
+  return names.size > 0 ? names : null;
 }
 
 async function recordFailure(db: D1Like, error: string): Promise<{ ok: false; error: string }> {
@@ -114,6 +145,9 @@ export async function syncHotelContent(
   let count = 0;
   let from = 1;
 
+  const names = await fetchFacilityNames(cfg);
+  if (!names) return recordFailure(db, 'Could not read the facility names from the Content API, so nothing was changed.');
+
   // Rows are only ever inserted or updated, never removed, so a failed run
   // leaves the previous content in place.
   for (;;) {
@@ -132,7 +166,7 @@ export async function syncHotelContent(
     }
 
     for (const raw of res.json.hotels) {
-      const h = parseContentHotel(raw);
+      const h = parseContentHotel(raw, names);
       if (!h) continue;
       await upsert(db, h, now);
       count++;
