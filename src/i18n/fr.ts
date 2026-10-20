@@ -1587,7 +1587,8 @@ export const fr: Dictionary = {
       extraFee: "payant",
       closePhoto: "Fermer la photo",
       previousPhoto: "Photo précédente",
-      nextPhoto: "Photo suivante"
+      nextPhoto: "Photo suivante",
+      paymentMethods: "Moyens de paiement acceptés"
     },
     errors: {
       unavailable: "La recherche d'hôtels n'est pas disponible pour le moment. Réessayez dans quelques minutes.",
