@@ -166,6 +166,7 @@ async function main() {
   let a: HotelResult[] = [];
   let b: HotelResult[] = [];
   let c: HotelResult[] = [];
+  let usedByA = '';
 
   if (run('A')) {
   console.log('A. One room, 2 adults');
@@ -173,6 +174,7 @@ async function main() {
   const ra = pick(a, 'BOOKABLE') ?? pick(a);
   if (!ra) note('A: no rates returned');
   else {
+    usedByA = ra.rateKey;
     let key = ra.rateKey;
     if (ra.rateType === 'RECHECK') key = (await checkRate('A', key))?.rateKey ?? key;
     await book('A', key, { adults: 2, childAges: [] });
@@ -234,11 +236,21 @@ async function main() {
 
   if (run('E')) {
   console.log('E. A BOOKABLE rate (no CheckRate call)');
-  let pool = [...a, ...c];
+  // Same party as A (2 adults, no children), but not the rate A just booked: its room may be sold out
+  // ("Insufficient allotment"). One rate per hotel first, other hotels than A's first; up to 3 tries.
+  let pool = a;
   if (pool.length === 0) pool = await availability('E', [{ adults: 2, childAges: [] }]);
-  const re = pick(pool, 'BOOKABLE');
-  if (!re) note('E: no BOOKABLE rate came back in these searches');
-  else await book('E', re.rateKey, { adults: re.adults || 2, childAges: [] });
+  const hotelOfA = pool.find((h) => h.rates.some((r) => r.rateKey === usedByA))?.code;
+  const bookable = pool
+    .filter((h) => h.code !== hotelOfA)
+    .concat(pool.filter((h) => h.code === hotelOfA))
+    .flatMap((h) => h.rates.filter((r) => r.rateType === 'BOOKABLE' && r.rateKey !== usedByA && r.adults === 2 && r.children === 0).sort((x, y) => y.allotment - x.allotment).slice(0, 1));
+  const candidates = bookable.slice(0, 3);
+  if (candidates.length === 0) note('E: no BOOKABLE rate for 2 adults came back in these searches');
+  for (let i = 0; i < candidates.length; i++) {
+    const result = await book(i === 0 ? 'E' : `E-retry${i + 1}`, candidates[i].rateKey, { adults: 2, childAges: [] });
+    if (result.ok || !/allotment|price has changed/i.test(result.message)) break;
+  }
   }
 }
 
