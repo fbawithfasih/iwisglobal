@@ -1587,7 +1587,8 @@ export const en = {
       extraFee: "extra fee",
       closePhoto: "Close photo",
       previousPhoto: "Previous photo",
-      nextPhoto: "Next photo"
+      nextPhoto: "Next photo",
+      paymentMethods: "Payment methods accepted"
     },
     errors: {
       unavailable: "Hotel search is not available right now. Please try again in a few minutes.",

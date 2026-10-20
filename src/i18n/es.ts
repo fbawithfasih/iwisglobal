@@ -1587,7 +1587,8 @@ export const es: Dictionary = {
       extraFee: "con coste adicional",
       closePhoto: "Cerrar foto",
       previousPhoto: "Foto anterior",
-      nextPhoto: "Foto siguiente"
+      nextPhoto: "Foto siguiente",
+      paymentMethods: "Formas de pago aceptadas"
     },
     errors: {
       unavailable: "La búsqueda de hoteles no está disponible en este momento. Inténtelo de nuevo en unos minutos.",
