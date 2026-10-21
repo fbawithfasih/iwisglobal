@@ -3,6 +3,7 @@ import { resolveEnv } from '../../../lib/env';
 import { finalizeCustomTrip } from '../../../lib/customTripPayment';
 import { finalizeHotelBooking, hotelBookingNeedsRetry } from '../../../lib/hotelPayment';
 import { ensureOfferEmails, finalizeOfferPayment } from '../../../lib/offerPayment';
+import { finalizeBalancePayment } from '../../../lib/balancePayment';
 import { fetchRazorpayOrder } from '../../../lib/payments/razorpay';
 
 export const prerender = false;
@@ -85,13 +86,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
     let customTripId: string | undefined = orderNotes.kind === 'custom' ? orderNotes.customTripId : undefined;
     let hotelBookingId: string | undefined = orderNotes.kind === 'hotel' ? orderNotes.hotelBookingId : undefined;
     let offerPaymentId: string | undefined = orderNotes.kind === 'offer' ? orderNotes.offerPaymentId : undefined;
-    if (!customTripId && !hotelBookingId && !offerPaymentId && !orderNotes.tourId && payment.order_id) {
+    let balanceLinkId: string | undefined = orderNotes.kind === 'balance' ? orderNotes.balanceLinkId : undefined;
+    if (!customTripId && !hotelBookingId && !offerPaymentId && !balanceLinkId && !orderNotes.tourId && payment.order_id) {
       try {
         const order = await fetchRazorpayOrder(env, payment.order_id);
         orderNotes = order.notes;
         if (order.notes.kind === 'custom') customTripId = order.notes.customTripId;
         if (order.notes.kind === 'hotel') hotelBookingId = order.notes.hotelBookingId;
         if (order.notes.kind === 'offer') offerPaymentId = order.notes.offerPaymentId;
+        if (order.notes.kind === 'balance') balanceLinkId = order.notes.balanceLinkId;
       } catch (err) {
         console.error('razorpay webhook: could not read the order to check its kind', payment.order_id, err instanceof Error ? err.message : 'error');
         // The payment carries no notes at all, so nothing says what it paid
@@ -161,6 +164,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
         return new Response('retry', { status: 500 });
       }
     }
+    // The balance of a tour booking (src/lib/balancePayment.ts): same rules as an offer payment.
+    if (balanceLinkId) {
+      try {
+        const outcome = await finalizeBalancePayment(env, env.DB, {
+          linkId: balanceLinkId,
+          orderId: payment.order_id,
+          paymentId: payment.id,
+          amountMinor: payment.amount,
+          currency: payment.currency,
+        });
+        if (outcome !== 'paid' && outcome !== 'duplicate') console.error('razorpay webhook: balance payment not applied', outcome);
+      } catch (err) {
+        console.error('razorpay webhook: balance payment could not be finalised', err instanceof Error ? err.message : 'error');
+        return new Response('retry', { status: 500 });
+      }
+    }
   }
 
   const db = env.DB;
@@ -190,7 +209,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // on-site browsing.
     const clientId = notes.gaClientId || crypto.randomUUID();
     const kind = notes.kind ?? orderNotes.kind;
-    const kindItem = kind === 'custom' ? 'CUSTOM_AGRA' : kind === 'hotel' ? 'HOTEL' : kind === 'offer' ? 'OFFER' : undefined;
+    const kindItem = kind === 'custom' ? 'CUSTOM_AGRA' : kind === 'hotel' ? 'HOTEL' : kind === 'offer' ? 'OFFER' : kind === 'balance' ? 'BALANCE' : undefined;
 
     try {
       await fetch(

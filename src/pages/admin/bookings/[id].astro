@@ -33,6 +33,8 @@ import {
   SITE_URL,
 } from '../../../lib/reviews';
 import { todayIst } from '../../../lib/availability';
+import { balanceLinkUrl, balanceOwed, createBalanceLink, openBalanceLinkFor, paidBalanceLinkFor } from '../../../lib/balancePayment';
+import { sendBalanceLinkEmail } from '../../../lib/email';
 import { AWAITING_STATUS, CUSTOM_TOUR_ID, cancelCustomTrip, confirmCustomTrip, getCustomTripByBooking, readStoredTrip } from '../../../lib/customTripPayment';
 
 const env = resolveEnv(Astro.locals);
@@ -112,6 +114,34 @@ if (Astro.request.method === 'POST') {
     const done = action === 'confirm_custom' ? await confirmCustomTrip(env, db, found.id) : await cancelCustomTrip(env, db, found.id);
     const result = done.ok ? (action === 'confirm_custom' ? 'confirmed' : 'refunded') : 'error';
     return Astro.redirect(`/admin/bookings/${id}?custom=${result}${done.ok ? '' : `&msg=${encodeURIComponent(done.error)}`}`);
+  } else if (action === 'balance_link' || action === 'balance_email' || action === 'balance_whatsapp') {
+    // Pay-the-balance link (src/lib/balancePayment.ts): make or reuse the private
+    // link, then show it, email it, or open WhatsApp with it.
+    const made = await createBalanceLink(db, id);
+    if (!made.ok) return Astro.redirect(`/admin/bookings/${id}?balance=error&msg=${encodeURIComponent(made.error)}`);
+    const url = balanceLinkUrl(made.token);
+    const b = made.booking;
+    if (action === 'balance_email') {
+      if (!b.traveler_email) return Astro.redirect(`/admin/bookings/${id}?balance=no_email`);
+      const bTour = await getTourById(db, b.tour_id);
+      const sent = await sendBalanceLinkEmail(env, {
+        to: b.traveler_email,
+        name: b.traveler_name,
+        tourTitle: bTour?.title ?? 'tour',
+        travelDate: b.travel_date,
+        amountMinor: made.amountMinor,
+        currency: made.currency,
+        url,
+      });
+      return Astro.redirect(`/admin/bookings/${id}?balance=${sent ? 'emailed' : 'email_failed'}`);
+    }
+    if (action === 'balance_whatsapp') {
+      const first = b.traveler_name.trim().split(/\s+/)[0] || 'there';
+      const wa = waHref(b.traveler_phone, `Hi ${first}, here is your secure link to pay the balance of ${formatMoneyMinor(made.amountMinor, made.currency)} for your tour on ${formatTravelDate(b.travel_date)}: ${url}`);
+      if (!wa) return Astro.redirect(`/admin/bookings/${id}?balance=error&msg=${encodeURIComponent('This booking has no phone number.')}`);
+      return Astro.redirect(wa, 303);
+    }
+    return Astro.redirect(`/admin/bookings/${id}?balance=link`);
   } else if (action === 'review_email' || action === 'review_whatsapp') {
     const current = await getBookingById(db, id);
     if (!current) return Astro.redirect('/admin');
@@ -149,6 +179,17 @@ const customResult = Astro.url.searchParams.get('custom');
 const customMessages: Record<string, { text: string; ok: boolean }> = {
   confirmed: { text: 'Trip confirmed. The guest has been emailed.', ok: true },
   refunded: { text: 'Trip cancelled and the deposit refunded. The guest has been emailed.', ok: true },
+  error: { text: Astro.url.searchParams.get('msg') ?? 'Something went wrong.', ok: false },
+};
+const owed = balanceOwed(booking);
+const openLink = owed > 0 ? await openBalanceLinkFor(db, id) : null;
+const paidLink = await paidBalanceLinkFor(db, id);
+const balanceResult = Astro.url.searchParams.get('balance');
+const balanceMessages: Record<string, { text: string; ok: boolean }> = {
+  link: { text: 'Balance link ready. Copy it below, or email or WhatsApp it.', ok: true },
+  emailed: { text: 'Balance link emailed to the guest.', ok: true },
+  email_failed: { text: 'The email did not send (check RESEND_API_KEY). Copy the link or use WhatsApp.', ok: false },
+  no_email: { text: 'This booking has no email address. Use WhatsApp or copy the link.', ok: false },
   error: { text: Astro.url.searchParams.get('msg') ?? 'Something went wrong.', ok: false },
 };
 const hotelModes: Record<string, string> = { own: 'Guest has their own hotel', listed: 'Guest picked a listed hotel', arrange: 'Guest wants us to arrange a hotel' };
@@ -198,7 +239,7 @@ const addOnNames = booking.add_on_ids
         <p><span class="text-stone-500">Discount:</span> {booking.discount_label}, −{formatMoneyMinor(booking.discount_amount, booking.currency)}</p>
       ) : null}
       {booking.payment_type === 'deposit' && (
-        <p><span class="text-stone-500">Balance due on pickup:</span> {formatMoneyMinor(booking.total_amount - booking.amount_paid, booking.currency)}</p>
+        <p><span class="text-stone-500">Balance due:</span> {formatMoneyMinor(booking.total_amount - booking.amount_paid, booking.currency)}</p>
       )}
       <p><span class="text-stone-500">Source:</span> {booking.source}</p>
       <p><span class="text-stone-500">Payment ID:</span> {booking.payment_id}</p>
@@ -223,6 +264,34 @@ const addOnNames = booking.add_on_ids
       </form>
       )}
     </div>
+
+    {(owed > 0 || paidLink) && (
+      <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-3 text-sm">
+        <h2 class="font-semibold mb-2">Balance payment</h2>
+        {balanceResult && balanceMessages[balanceResult] && (
+          <p class={`rounded px-3 py-2 ${balanceMessages[balanceResult].ok ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>{balanceMessages[balanceResult].text}</p>
+        )}
+        {owed > 0 ? (
+          <>
+            <p><span class="text-stone-500">Still to pay:</span> <strong>{formatMoneyMinor(owed, booking.currency)}</strong></p>
+            <p class="text-stone-600">Send the guest a private link to pay this online. When they pay, this booking updates to fully paid by itself.</p>
+            {openLink && (
+              <label class="block">
+                <span class="text-stone-500">Guest's payment link</span>
+                <input type="text" readonly value={balanceLinkUrl(openLink.id)} onclick="this.select()" class="mt-1 w-full rounded border border-stone-300 px-2 py-2 text-xs" />
+              </label>
+            )}
+            <div class="flex flex-wrap gap-2 pt-1">
+              <form method="POST"><input type="hidden" name="_action" value="balance_link" /><button type="submit" class={actionBtn}>{openLink ? 'Show link' : 'Create link'}</button></form>
+              <form method="POST"><input type="hidden" name="_action" value="balance_email" /><button type="submit" class={contactBtn}>Email link</button></form>
+              <form method="POST"><input type="hidden" name="_action" value="balance_whatsapp" /><button type="submit" class={contactBtn}>WhatsApp link</button></form>
+            </div>
+          </>
+        ) : (
+          <p class="text-green-800">Balance of {formatMoneyMinor(paidLink?.amount_minor ?? 0, paidLink?.currency ?? booking.currency)} paid online. This booking is paid in full.</p>
+        )}
+      </div>
+    )}
 
     {isCustom && (
       <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-3 text-sm md:col-span-2">
