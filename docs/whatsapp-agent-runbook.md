@@ -125,3 +125,13 @@ A "needs a person" chat buzzes the owner's phone as well as sending the email. S
 4. On the iPhone, open the Home Screen app, go to WhatsApp, press **Turn on alerts**, allow notifications, then **Send test alert**.
 
 The alert shows the guest's name and the reason only, never the message text. Tapping it opens that chat. A phone that stops accepting alerts is removed automatically; press **Turn on alerts** again to re-add it. Changing the VAPID keys later means every device must turn alerts off and on again.
+
+## Templates for chats outside the 24-hour window
+
+WhatsApp only lets the business send an approved template to a guest who last wrote more than 24 hours ago. Chats in that state show a template form instead of the reply box (`/admin/whatsapp`).
+
+- The wording lives in `src/lib/waTemplates.ts`: `iwis_followup` (follow up on an enquiry) and `iwis_booking_update` (an update about a booking), each in English (`en`) and German (`de`), with one parameter `{{1}}` for the guest's first name.
+- Each template must exist in Meta (WhatsApp Manager, Message templates) under exactly that name, language and body, and be **approved**, before it can be sent. Until then WhatsApp refuses the send and the page says which template is missing.
+- Meta decides the category (utility or marketing) and may reclassify; marketing templates cost more per message. Every template message is billed by WhatsApp.
+- One template per guest per 24 hours; never to a guest who opted out. Sending one moves the chat to Staff handling. When the guest replies, the 24-hour window reopens and the normal reply box returns.
+- To add a language or a new template, add it to `WA_TEMPLATES` and submit the same text in Meta.

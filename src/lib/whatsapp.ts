@@ -194,3 +194,34 @@ export async function sendText(env: Record<string, any>, to: string, body: strin
     return { ok: false, error: 'network error' };
   }
 }
+
+// Sends an approved message template (the only message allowed to a guest outside the 24-hour
+// window). `name` and `language` must match a template approved in Meta; `bodyParams` fill {{1}}, {{2}}...
+// Never throws: a failed send comes back as { ok: false }.
+export async function sendTemplate(env: Record<string, any>, to: string, name: string, language: string, bodyParams: string[]): Promise<SendResult> {
+  const token = env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = env.WHATSAPP_PHONE_NUMBER_ID;
+  if (!token || !phoneNumberId) return { ok: false, error: 'WhatsApp is not configured' };
+  try {
+    const res = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${encodeURIComponent(phoneNumberId)}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: normalisePhone(to),
+        type: 'template',
+        template: {
+          name,
+          language: { code: language },
+          ...(bodyParams.length ? { components: [{ type: 'body', parameters: bodyParams.map((text) => ({ type: 'text', text })) }] } : {}),
+        },
+      }),
+    });
+    const data: any = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: String(data?.error?.message ?? `HTTP ${res.status}`) + (data?.error?.code ? ` (code ${data.error.code})` : '') };
+    return { ok: true, waMessageId: data?.messages?.[0]?.id };
+  } catch (err) {
+    console.error('whatsapp: template send failed', err);
+    return { ok: false, error: 'network error' };
+  }
+}
