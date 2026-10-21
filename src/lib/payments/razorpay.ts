@@ -121,6 +121,36 @@ export async function createOfferOrder(
   return { orderId: order.id, amount: order.amount, currency: order.currency, publicKey: keyId };
 }
 
+// --- Balance of a tour booking (src/lib/balancePayment.ts) -----------------
+// Same trust model: the amount is the balance the server stored on the link and
+// re-checked against the booking, and the link id rides in the order's notes.
+
+export async function createBalanceOrder(
+  env: Record<string, unknown>,
+  input: { amountMinor: number; currency: 'INR' | 'USD'; linkId: string; receipt: string }
+): Promise<OrderResult> {
+  const { keyId, keySecret } = getCreds(env);
+  if (!keyId || !keySecret) throw new Error('Payment gateway is misconfigured. Please contact support.');
+  const res = await fetch('https://api.razorpay.com/v1/orders', {
+    method: 'POST',
+    headers: { Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      amount: input.amountMinor,
+      currency: input.currency,
+      receipt: input.receipt,
+      notes: { kind: 'balance', balanceLinkId: input.linkId },
+    }),
+  });
+  if (!res.ok) {
+    const err: any = await res.json().catch(() => null);
+    const description = err?.error?.description;
+    const isAuthFailure = res.status === 401 || /authentication failed/i.test(description ?? '');
+    throw new Error(isAuthFailure ? 'Payment gateway is misconfigured. Please contact support.' : description || 'Failed to create order');
+  }
+  const order = await res.json();
+  return { orderId: order.id, amount: order.amount, currency: order.currency, publicKey: keyId };
+}
+
 // Refunds part or all of a payment; the amount is in minor units (paise/cents).
 export async function refundPaymentAmount(env: Record<string, unknown>, paymentId: string, amountMinor: number): Promise<void> {
   if (!Number.isInteger(amountMinor) || amountMinor <= 0) throw new Error('Invalid refund amount');

@@ -974,3 +974,71 @@ export async function sendOfferAdminEmail(env: Record<string, any>, d: OfferPaym
     return false;
   }
 }
+
+// --- Balance of a tour booking (src/lib/balancePayment.ts) -----------------
+// English for now; the pay page is English too.
+
+// The link to pay the rest of the tour price online. Never throws.
+export async function sendBalanceLinkEmail(
+  env: Record<string, any>,
+  d: { to: string; name: string; tourTitle: string; travelDate: string; amountMinor: number; currency: string; url: string }
+): Promise<boolean> {
+  try {
+    if (!env.RESEND_API_KEY || !d.to) return false;
+    const amount = formatAmount(d.amountMinor, d.currency);
+    const when = displayDate(d.travelDate);
+    const html = emailHtml('Pay your balance', `
+        <p style="margin:0 0 16px;">Dear ${escapeHtml(d.name || 'guest')},</p>
+        <p style="margin:0 0 16px;">The balance for your ${escapeHtml(d.tourTitle)} on ${escapeHtml(when)} is <strong>${escapeHtml(amount)}</strong>. You can pay it online now, or in person on the day as before.</p>
+        <p style="margin:24px 0; text-align:center;"><a href="${d.url}" style="${EMAIL_BUTTON}">Pay ${escapeHtml(amount)}</a></p>
+        <p style="${EMAIL_NOTE}">Questions? Email <a href="mailto:${EMAIL}" style="color:#6d28d9;">${EMAIL}</a>.</p>`);
+    const text = [
+      'Pay your balance',
+      '',
+      `Dear ${d.name || 'guest'},`,
+      '',
+      `The balance for your ${d.tourTitle} on ${when} is ${amount}. You can pay it online now, or in person on the day as before.`,
+      '',
+      `Pay here: ${d.url}`,
+      '',
+      `Questions? Email ${EMAIL}`,
+      '',
+      `IWIS Global · ${SITE}`,
+    ].join('\n');
+    return await post(env, 'sendBalanceLinkEmail', { from: FROM(env), to: d.to, subject: `Pay the balance for your ${d.tourTitle}`, html, text });
+  } catch (err) {
+    console.error('sendBalanceLinkEmail: failed', err instanceof Error ? err.message : 'error');
+    return false;
+  }
+}
+
+// The guest's receipt once the balance is paid. Never throws.
+export async function sendBalanceReceiptEmail(
+  env: Record<string, any>,
+  d: { to: string; name: string; tourTitle: string; amountMinor: number; currency: string; paymentId: string }
+): Promise<boolean> {
+  try {
+    if (!env.RESEND_API_KEY || !d.to) return false;
+    const amount = formatAmount(d.amountMinor, d.currency);
+    const html = emailHtml('Balance received', `
+        <p style="margin:0 0 16px;">Dear ${escapeHtml(d.name || 'guest')},</p>
+        <p style="margin:0 0 16px;">Thank you, we have received your balance of <strong>${escapeHtml(amount)}</strong> for ${escapeHtml(d.tourTitle)}. Your tour is now paid in full, there is nothing to pay on the day.</p>
+        <p style="${EMAIL_NOTE}">Payment reference: ${escapeHtml(d.paymentId)}<br>Questions? Email <a href="mailto:${EMAIL}" style="color:#6d28d9;">${EMAIL}</a>.</p>`);
+    const text = [
+      'Balance received',
+      '',
+      `Dear ${d.name || 'guest'},`,
+      '',
+      `Thank you, we have received your balance of ${amount} for ${d.tourTitle}. Your tour is now paid in full, there is nothing to pay on the day.`,
+      '',
+      `Payment reference: ${d.paymentId}`,
+      `Questions? Email ${EMAIL}`,
+      '',
+      `IWIS Global · ${SITE}`,
+    ].join('\n');
+    return await post(env, 'sendBalanceReceiptEmail', { from: FROM(env), to: d.to, subject: `Balance received: ${d.tourTitle}`, html, text });
+  } catch (err) {
+    console.error('sendBalanceReceiptEmail: failed', err instanceof Error ? err.message : 'error');
+    return false;
+  }
+}
