@@ -16,7 +16,8 @@ import {
   markReviewRequested,
 } from '../../../lib/crm';
 import { getTourById, localizeTour } from '../../../lib/tours';
-import { emailLocale } from '../../../lib/i18n';
+import { emailLocale, intlLocale } from '../../../lib/i18n';
+import { fmt, getDictionary } from '../../../i18n/dictionaries';
 import { formatTravelDate, formatMoneyMinor, formatDateTimeIst } from '../../../lib/format';
 import { telHref, waHref } from '../../../lib/contact';
 import { computeTicketsToBuy, ASI_BOOKING_URL } from '../../../lib/entryTickets';
@@ -119,15 +120,19 @@ if (Astro.request.method === 'POST') {
     // link, then show it, email it, or open WhatsApp with it.
     const made = await createBalanceLink(db, id);
     if (!made.ok) return Astro.redirect(`/admin/bookings/${id}?balance=error&msg=${encodeURIComponent(made.error)}`);
-    const url = balanceLinkUrl(made.token);
     const b = made.booking;
+    // The guest's language: the link opens the pay page in it and the message is written in it.
+    const bLocale = emailLocale(b.locale);
+    const url = balanceLinkUrl(made.token, bLocale);
     if (action === 'balance_email') {
       if (!b.traveler_email) return Astro.redirect(`/admin/bookings/${id}?balance=no_email`);
-      const bTour = await getTourById(db, b.tour_id);
+      const found = await getTourById(db, b.tour_id);
+      const bTour = found ? await localizeTour(db, found, bLocale) : null;
       const sent = await sendBalanceLinkEmail(env, {
+        locale: bLocale,
         to: b.traveler_email,
         name: b.traveler_name,
-        tourTitle: bTour?.title ?? 'tour',
+        tourTitle: bTour?.title ?? getDictionary(bLocale).balance.fallbackTour,
         travelDate: b.travel_date,
         amountMinor: made.amountMinor,
         currency: made.currency,
@@ -137,7 +142,15 @@ if (Astro.request.method === 'POST') {
     }
     if (action === 'balance_whatsapp') {
       const first = b.traveler_name.trim().split(/\s+/)[0] || 'there';
-      const wa = waHref(b.traveler_phone, `Hi ${first}, here is your secure link to pay the balance of ${formatMoneyMinor(made.amountMinor, made.currency)} for your tour on ${formatTravelDate(b.travel_date)}: ${url}`);
+      const wa = waHref(
+        b.traveler_phone,
+        fmt(getDictionary(bLocale).balance.waMessage, {
+          name: first,
+          amount: formatMoneyMinor(made.amountMinor, made.currency),
+          date: formatTravelDate(b.travel_date, intlLocale(bLocale)),
+          url,
+        })
+      );
       if (!wa) return Astro.redirect(`/admin/bookings/${id}?balance=error&msg=${encodeURIComponent('This booking has no phone number.')}`);
       return Astro.redirect(wa, 303);
     }
@@ -278,7 +291,7 @@ const addOnNames = booking.add_on_ids
             {openLink && (
               <label class="block">
                 <span class="text-stone-500">Guest's payment link</span>
-                <input type="text" readonly value={balanceLinkUrl(openLink.id)} onclick="this.select()" class="mt-1 w-full rounded border border-stone-300 px-2 py-2 text-xs" />
+                <input type="text" readonly value={balanceLinkUrl(openLink.id, emailLocale(booking.locale))} onclick="this.select()" class="mt-1 w-full rounded border border-stone-300 px-2 py-2 text-xs" />
               </label>
             )}
             <div class="flex flex-wrap gap-2 pt-1">
