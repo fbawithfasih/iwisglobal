@@ -618,7 +618,7 @@ interface MergeSnapshot {
   tags: { tag: string; created_at: string }[];
 }
 
-const pluckIds = <T extends { id: number | string }>(rows: T[]) => rows.map((r) => r.id);
+const pluckIds = <I extends number | string>(rows: { id: I }[]): I[] => rows.map((r) => r.id);
 
 // Joins two people into one. Everything the dropped person owns moves to the kept one; the
 // dropped row stays, pointing at the survivor. The merge log lets undoMerge reverse it.
