@@ -21,10 +21,13 @@ import { getBookingById, type BookingRow } from './crm';
 import { createBalanceOrder, fetchRazorpayOrder, verifyRazorpaySignature } from './payments/razorpay';
 import { sendBalanceReceiptEmail, sendHotelAlertEmail } from './email';
 import { formatMoneyMinor } from './format';
-import { getTourById } from './tours';
+import { getTourById, localizeTour } from './tours';
+import { emailLocale, type Locale } from './i18n';
+import { getDictionary } from '../i18n/dictionaries';
 
 export const SITE_URL = 'https://www.iwisglobal.com';
-export const balanceLinkUrl = (token: string): string => `${SITE_URL}/pay/${token}`;
+// ?lang= makes the page open in the guest's language, like the rest of the site.
+export const balanceLinkUrl = (token: string, locale: Locale = 'en'): string => `${SITE_URL}/pay/${token}${locale === 'en' ? '' : `?lang=${locale}`}`;
 
 export interface BalanceLink {
   id: string;
@@ -247,11 +250,14 @@ export async function finalizeBalancePayment(
   try {
     if (booking) {
       // The title is only for the email; a failed lookup must not stop it.
-      const tour = await getTourById(db, booking.tour_id).catch(() => null);
+      const locale = emailLocale(booking.locale);
+      const found = await getTourById(db, booking.tour_id).catch(() => null);
+      const tour = found ? await localizeTour(db, found, locale).catch(() => found) : null;
       await sendBalanceReceiptEmail(env, {
+        locale,
         to: booking.traveler_email,
         name: booking.traveler_name,
-        tourTitle: tour?.title ?? 'your tour',
+        tourTitle: tour?.title ?? getDictionary(locale).balance.fallbackTour,
         amountMinor: paid.amountMinor,
         currency: paid.currency,
         paymentId: paid.paymentId,
