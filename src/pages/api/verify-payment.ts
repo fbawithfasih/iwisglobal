@@ -3,6 +3,7 @@ import { razorpayProvider } from '../../lib/payments/razorpay';
 import { computeTotal, computeDepositAmount, applyFoundingGuestDiscount } from '../../lib/catalog';
 import { getCatalogItem } from '../../lib/tours';
 import { FOUNDING_GUEST_OFFER_ID } from '../../lib/offers';
+import { trackLeadEvent } from '../../lib/contacts';
 import { insertVerifiedBooking, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
@@ -119,6 +120,18 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       // Best-effort — only on the first insert, never on a retried/duplicate
       // request, and never allowed to affect the response (see email.ts).
       if (outcome === 'inserted') {
+        await trackLeadEvent(db, {
+          channel: 'booking',
+          identifiers: [{ type: 'email', value: travelerEmail || '' }, { type: 'phone', value: travelerPhone || '' }],
+          name: travelerName || '',
+          language: locale,
+          externalRef: `booking:bk_${verified.paymentId}`,
+          stage: verified.paymentType === 'deposit' ? 'deposit_paid' : 'booked',
+          travelStart: verified.date,
+          partySize: verified.travelers,
+          bookingId: `bk_${verified.paymentId}`,
+          note: verified.paymentType === 'deposit' ? 'Booking deposit paid' : 'Booking paid in full',
+        });
         const tour = await getTourById(db, verified.tourId);
         const shownTour = tour ? await localizeTour(db, tour, locale) : null;
         await sendBookingConfirmationEmail(env, {

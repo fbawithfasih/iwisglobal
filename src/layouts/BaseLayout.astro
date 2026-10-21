@@ -234,6 +234,26 @@ const websiteJsonLd = Astro.url.pathname === '/'
     )}
     {!noTracking && <Fragment set:html={TRACKING_COMMENTS[2]} />}
     {!noindex && !noTracking && <script is:inline async src="https://analytics.ahrefs.com/analytics.js" data-key="E2hZqQs3rehWC6n7B5T+Cw"></script>}
+    {!noTracking && (
+    <script is:inline>
+      // First visit of the session: remember where the visitor came from. It stays in this tab's
+      // sessionStorage and is sent only if they submit the enquiry form (src/components/EnquiryForm.astro).
+      (function () {
+        try {
+          if (sessionStorage.getItem('iwis_first_touch')) return;
+          var q = new URLSearchParams(location.search);
+          var t = {
+            source: q.get('utm_source') || '', medium: q.get('utm_medium') || '', campaign: q.get('utm_campaign') || '',
+            utmContent: q.get('utm_content') || '', utmTerm: q.get('utm_term') || '',
+            fbclid: q.get('fbclid') || '', gclid: q.get('gclid') || '',
+            referrer: document.referrer ? new URL(document.referrer).hostname : '',
+            landingPage: location.pathname
+          };
+          sessionStorage.setItem('iwis_first_touch', JSON.stringify(t));
+        } catch (e) {}
+      })();
+    </script>
+    )}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Icon set made from the IWIS globe mark (logo-globe.png) on a white tile:

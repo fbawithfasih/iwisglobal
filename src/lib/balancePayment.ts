@@ -17,6 +17,7 @@
 // Same trust model as private offers (src/lib/offerPayment.ts).
 
 import type { D1Like } from './db';
+import { trackLeadEvent } from './contacts';
 import { getBookingById, type BookingRow } from './crm';
 import { createBalanceOrder, fetchRazorpayOrder, verifyRazorpaySignature } from './payments/razorpay';
 import { sendBalanceReceiptEmail, sendHotelAlertEmail } from './email';
@@ -245,6 +246,17 @@ export async function finalizeBalancePayment(
     ]);
   }
   await markBookingPaid(db, link.booking_id);
+  if (booking) {
+    await trackLeadEvent(db, {
+      channel: 'booking',
+      identifiers: [{ type: 'email', value: booking.traveler_email }, { type: 'phone', value: booking.traveler_phone }],
+      name: booking.traveler_name,
+      externalRef: `balance:${link.id}`,
+      stage: 'booked',
+      bookingId: booking.id,
+      note: 'Balance paid online',
+    });
+  }
 
   // Best effort; only the claim's winner gets here, so each email goes out once.
   try {

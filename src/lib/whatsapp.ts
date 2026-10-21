@@ -48,6 +48,8 @@ export interface WaMessage {
   body: string;
   profileName: string | null;
   sentAt: string;
+  // Click-to-WhatsApp ad data. Meta sends it on the first message of an ad click only.
+  referral?: { sourceId: string; sourceUrl: string; headline: string; ctwaClid: string };
 }
 
 export interface WaStatusUpdate {
@@ -104,6 +106,16 @@ export function parseWebhook(payload: any): ParsedWebhook {
           ...messageBody(m),
           profileName: names.get(phone) ?? null,
           sentAt: unixToIso(m.timestamp),
+          ...(m.referral
+            ? {
+                referral: {
+                  sourceId: String(m.referral.source_id ?? ''),
+                  sourceUrl: String(m.referral.source_url ?? ''),
+                  headline: String(m.referral.headline ?? ''),
+                  ctwaClid: String(m.referral.ctwa_clid ?? ''),
+                },
+              }
+            : {}),
         });
       }
 

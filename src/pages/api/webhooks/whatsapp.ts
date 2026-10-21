@@ -8,6 +8,7 @@ import { sendAdminPush } from '../../../lib/webPush';
 import { getAutoSettings, autoPermission, holdingPermission } from '../../../lib/waAuto';
 import type { D1Like } from '../../../lib/db';
 import { maybePurge } from '../../../lib/waLearning';
+import { recordLead } from '../../../lib/contacts';
 
 export const prerender = false;
 
@@ -102,12 +103,44 @@ async function handleGuestMessage(env: Record<string, any>, db: D1Like, m: WaMes
   }
 }
 
+// Every first guest message becomes (or joins) a lead, with the "(ref: ...)" tag of the button
+// they clicked and any click-to-WhatsApp ad data. Recorded per message id, so a replay adds
+// nothing. A failure here must never stop the reply agent.
+async function recordWhatsappLead(db: D1Like, m: WaMessage): Promise<void> {
+  try {
+    const ref = /\(ref:\s*([^)]+)\)/i.exec(m.body)?.[1]?.trim() ?? '';
+    await recordLead(db, {
+      channel: 'whatsapp',
+      identifiers: [{ type: 'wa_id', value: m.phone, source: 'whatsapp' }],
+      name: m.profileName ?? undefined,
+      message: m.body.slice(0, 500),
+      type: 'message',
+      externalRef: m.waMessageId,
+      occurredAt: m.sentAt,
+      attribution: {
+        source: m.referral ? 'meta_ad' : ref ? 'website' : '',
+        medium: m.referral ? 'click_to_whatsapp' : ref ? 'whatsapp_button' : '',
+        adId: m.referral?.sourceId,
+        ctwaClid: m.referral?.ctwaClid,
+        landingPage: m.referral?.sourceUrl,
+        refTag: ref,
+      },
+      payload: m.referral ? { referral: m.referral } : undefined,
+    });
+  } catch (err) {
+    console.error('whatsapp webhook: lead capture failed', err instanceof Error ? err.message : 'error');
+  }
+}
+
 async function processMessages(env: Record<string, any>, db: D1Like, messages: WaMessage[]): Promise<void> {
   // One at a time, so several messages in one delivery cannot race on the chat's state.
   for (const m of messages) {
     try {
       if (m.direction === 'echo') await onStaffReply(db, m.phone, new Date(m.sentAt));
-      else if (m.direction === 'in') await handleGuestMessage(env, db, m);
+      else if (m.direction === 'in') {
+        await recordWhatsappLead(db, m);
+        await handleGuestMessage(env, db, m);
+      }
     } catch (err) {
       console.error('whatsapp webhook: processing failed', err);
     }

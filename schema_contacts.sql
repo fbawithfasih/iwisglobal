@@ -191,3 +191,11 @@ CREATE INDEX IF NOT EXISTS idx_leads_person ON leads (person_id);
 CREATE INDEX IF NOT EXISTS idx_leads_activity ON leads (last_activity_at);
 CREATE INDEX IF NOT EXISTS idx_leads_next_action ON leads (next_action_at) WHERE next_action_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_leads_channel ON leads (channel);
+
+-- Throttle for the public enquiry form (src/pages/api/leads.ts): one row per accepted submit.
+CREATE TABLE IF NOT EXISTS lead_form_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip_hash TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_lead_form_requests ON lead_form_requests (ip_hash, created_at);
