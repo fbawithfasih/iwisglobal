@@ -1,0 +1,88 @@
+---
+import { pageI18n } from '../i18n/dictionaries';
+
+// Public enquiry form. Posts to /api/leads (src/pages/api/leads.ts), which files it in the
+// Leads inbox. The marketing box is never pre-ticked. First-touch UTM/referrer data was kept in
+// sessionStorage by BaseLayout and goes along only when the visitor submits.
+const { t, locale } = pageI18n(Astro);
+const f = t.enquiryForm;
+const input = 'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200';
+---
+
+<form id="enquiry-form" class="mb-10 rounded-2xl border border-brand-100 bg-white p-5 shadow-sm shadow-brand-900/5 sm:p-6" novalidate>
+  <h2 class="!mt-0 text-lg font-semibold mb-1" set:html={f.title} />
+  <p class="text-sm text-stone-600 mb-4" set:html={f.intro} />
+  <div class="grid gap-3 sm:grid-cols-2">
+    <label class="block text-sm font-medium text-stone-700">{f.name}
+      <input name="name" required maxlength="120" autocomplete="name" class={`mt-1 ${input}`} />
+    </label>
+    <label class="block text-sm font-medium text-stone-700">{f.email}
+      <input name="email" type="email" maxlength="200" autocomplete="email" class={`mt-1 ${input}`} />
+    </label>
+    <label class="block text-sm font-medium text-stone-700 sm:col-span-2">{f.phone}
+      <input name="phone" type="tel" maxlength="40" autocomplete="tel" class={`mt-1 ${input}`} />
+    </label>
+    <label class="block text-sm font-medium text-stone-700">{f.interest}
+      <input name="interest" maxlength="150" class={`mt-1 ${input}`} />
+    </label>
+    <label class="block text-sm font-medium text-stone-700">{f.dates}
+      <input name="dates" maxlength="100" class={`mt-1 ${input}`} />
+    </label>
+    <label class="block text-sm font-medium text-stone-700 sm:col-span-2">{f.message}
+      <textarea name="message" rows="4" maxlength="2000" class={`mt-1 ${input}`}></textarea>
+    </label>
+  </div>
+  <!-- Honeypot: hidden from people, filled in by bots. -->
+  <div class="absolute -left-[9999px]" aria-hidden="true">
+    <label>Website <input name="website" tabindex="-1" autocomplete="off" /></label>
+  </div>
+  <label class="mt-4 flex items-start gap-2 text-sm text-stone-700">
+    <input type="checkbox" name="marketing" class="mt-1 h-4 w-4 rounded border-stone-300" />
+    <span>{f.marketing}</span>
+  </label>
+  <p id="enquiry-need" class="mt-3 hidden text-sm text-red-700" role="alert">{f.need}</p>
+  <p id="enquiry-error" class="mt-3 hidden text-sm text-red-700" role="alert">{f.error}</p>
+  <button type="submit" class="mt-4 rounded-xl bg-brand-700 px-5 py-2.5 font-semibold text-white hover:bg-brand-800 disabled:opacity-60" data-sending={f.sending}>{f.send}</button>
+  <p id="enquiry-thanks" class="mt-3 hidden rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{f.thanks}</p>
+</form>
+
+<script is:inline define:vars={{ locale }}>
+  (function () {
+    var form = document.getElementById('enquiry-form');
+    if (!form) return;
+    var show = function (id, on) { document.getElementById(id).classList.toggle('hidden', !on); };
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var d = new FormData(form);
+      var email = String(d.get('email') || '').trim();
+      var phone = String(d.get('phone') || '').trim();
+      show('enquiry-error', false);
+      if (!email && !phone) { show('enquiry-need', true); return; }
+      show('enquiry-need', false);
+      var attribution = {};
+      try { attribution = JSON.parse(sessionStorage.getItem('iwis_first_touch') || '{}'); } catch (err) {}
+      var btn = form.querySelector('button[type=submit]');
+      var label = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = btn.getAttribute('data-sending');
+      fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: d.get('name'), email: email, phone: phone, interest: d.get('interest'), dates: d.get('dates'),
+          message: d.get('message'), website: d.get('website'), marketing: d.get('marketing') === 'on',
+          locale: locale, attribution: attribution
+        })
+      }).then(function (r) {
+        if (!r.ok) throw new Error('failed');
+        form.reset();
+        show('enquiry-thanks', true);
+        btn.classList.add('hidden');
+      }).catch(function () {
+        show('enquiry-error', true);
+        btn.disabled = false;
+        btn.textContent = label;
+      });
+    });
+  })();
+</script>

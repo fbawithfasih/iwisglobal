@@ -18,6 +18,7 @@
 // Opening an order is safe to repeat: a guest who closes the Razorpay window
 // and pays again gets the same order back when nothing about it changed.
 
+import { trackLeadEvent } from './contacts';
 import type { D1Like } from './db';
 import { parseContact, validateContact } from './customTrip';
 import { getOffer, listPaid, readOffer } from './offerData';
@@ -126,6 +127,15 @@ export async function handleOfferOrder(env: Record<string, any>, db: D1Like | un
       .run();
   }
 
+  await trackLeadEvent(db, {
+    channel: 'offer',
+    identifiers: [{ type: 'email', value: contact.email }, { type: 'phone', value: payerPhone }],
+    name: contact.name,
+    externalRef: `offer:${offer.id}:${contact.email.trim().toLowerCase()}`,
+    stage: 'quote_sent',
+    message: 'Opened a private offer payment',
+  });
+
   let order;
   try {
     order = await createOfferOrder(env, { amountMinor: plan.amountMinor, currency, offerPaymentId: rowId, receipt: rowId });
@@ -227,6 +237,15 @@ export async function finalizeOfferPayment(
   } catch (e) {
     console.error('private offer: could not check for a double payment', row.id, e instanceof Error ? e.message : 'error');
   }
+
+  await trackLeadEvent(db, {
+    channel: 'offer',
+    identifiers: [{ type: 'email', value: row.payer_email }, { type: 'phone', value: row.payer_phone }],
+    name: row.payer_name,
+    externalRef: `offerpaid:${row.id}`,
+    stage: row.kind === 'balance' ? 'booked' : 'deposit_paid',
+    note: `Private offer ${row.kind} paid`,
+  });
 
   await ensureOfferEmails(env, db, row.id);
   return 'paid';

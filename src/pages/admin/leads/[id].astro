@@ -1,0 +1,210 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { LEAD_STAGES, LOST_REASONS, CHANNEL_LABELS, scoreBucket, setLeadStage, mergePeople, undoMerge, dismissDuplicate, refreshLeadScore, type LeadStage } from '../../../lib/contacts';
+import { STAGE_LABELS, addNote, completeFollowUp, getLeadDetail, markContacted, setFollowUp } from '../../../lib/leadsAdmin';
+import { formatDateTimeIst } from '../../../lib/format';
+import { telHref, waHref } from '../../../lib/contact';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+const db = env.DB;
+const id = Astro.params.id ?? '';
+if (!db || !id) return new Response('Not found', { status: 404 });
+
+let error = '';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = String(form.get('_action') ?? '');
+  try {
+    if (action === 'stage') {
+      const stage = String(form.get('stage') ?? '') as LeadStage;
+      if ((LEAD_STAGES as readonly string[]).includes(stage)) {
+        await setLeadStage(db, id, stage, { by: 'admin', lostReason: String(form.get('lostReason') ?? 'other') });
+        await refreshLeadScore(db, id);
+      }
+    } else if (action === 'note') {
+      await addNote(db, id, String(form.get('body') ?? ''));
+    } else if (action === 'contacted') {
+      await markContacted(db, id);
+      await setLeadStage(db, id, 'contacted', { by: 'admin' }).catch(() => false);
+    } else if (action === 'followup') {
+      await setFollowUp(db, id, String(form.get('due') ?? ''), String(form.get('note') ?? ''));
+    } else if (action === 'done') {
+      await completeFollowUp(db, id, Number(form.get('activityId')));
+    } else if (action === 'merge') {
+      const res = await mergePeople(db, String(form.get('keep') ?? ''), String(form.get('drop') ?? ''), 'admin');
+      if (!res.ok) error = res.error;
+    } else if (action === 'undo') {
+      const res = await undoMerge(db, Number(form.get('logId')));
+      if (!res.ok) error = res.error;
+    } else if (action === 'dismiss') {
+      await dismissDuplicate(db, Number(form.get('suggestionId')));
+    }
+  } catch (err) {
+    console.error('admin lead action failed', err instanceof Error ? err.message : 'error');
+    error = 'That did not save. Please try again.';
+  }
+  if (!error) return Astro.redirect(`/admin/leads/${id}`);
+}
+
+const d = await getLeadDetail(db, id).catch(() => null);
+if (!d) return new Response('Lead not found', { status: 404 });
+const l = d.lead;
+const bucket = scoreBucket(l.score ?? 0);
+const wa = l.phone ? waHref(l.phone) : null;
+const open = !['booked', 'converted', 'lost', 'spam'].includes(l.status);
+const btn = 'inline-flex min-h-11 items-center rounded border border-stone-300 bg-white px-3 text-sm text-stone-800';
+const field = 'rounded border border-stone-300 px-3 py-2';
+const kindClass: Record<string, string> = { touchpoint: 'bg-violet-100 text-violet-800', note: 'bg-amber-100 text-amber-800', stage: 'bg-blue-100 text-blue-800', task: 'bg-green-100 text-green-800' };
+const marketing: Record<string, string> = { none: 'Not asked', pending: 'Asked, not yet confirmed', subscribed: 'Subscribed', unsubscribed: 'Unsubscribed', bounced: 'Address bounced', complained: 'Marked as spam' };
+---
+<AdminLayout title={l.name}>
+  <p class="mb-2 text-sm"><a href="/admin/leads" class="text-amber-800 hover:underline">&larr; All leads</a></p>
+  <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">{l.name}</h1>
+      <p class="text-sm text-stone-500">
+        {CHANNEL_LABELS[l.channel] ?? l.channel} · added {formatDateTimeIst(l.created_at)}
+        {l.first_response_at && <span> · first reply {formatDateTimeIst(l.first_response_at)}</span>}
+      </p>
+    </div>
+    <div class="flex gap-1">
+      <span class="rounded bg-stone-100 px-2 py-0.5 text-xs text-stone-700">{STAGE_LABELS[l.status] ?? l.status}</span>
+      {open && <span class={`rounded px-2 py-0.5 text-xs ${bucket === 'hot' ? 'bg-red-100 text-red-800' : bucket === 'warm' ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-600'}`}>{bucket} · {l.score}</span>}
+    </div>
+  </div>
+
+  {error && <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+
+  {d.duplicates.map((dup) => (
+    <div class="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
+      <p class="font-semibold">Possible duplicate: {dup.other_name}</p>
+      <p class="text-stone-600">{dup.reason}</p>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <form method="POST">
+          <input type="hidden" name="_action" value="merge" />
+          <input type="hidden" name="keep" value={l.person_id ?? ''} />
+          <input type="hidden" name="drop" value={dup.other_id} />
+          <button class="min-h-11 rounded bg-amber-800 px-4 text-white" onclick="return confirm('Merge these two people into this one? You can undo it.')">Merge into this person</button>
+        </form>
+        <form method="POST">
+          <input type="hidden" name="_action" value="dismiss" />
+          <input type="hidden" name="suggestionId" value={dup.id} />
+          <button class="min-h-11 rounded border border-stone-300 bg-white px-4">Not the same person</button>
+        </form>
+      </div>
+    </div>
+  ))}
+  {d.merges.map((m) => (
+    <form method="POST" class="mb-4 flex items-center justify-between gap-3 rounded-lg bg-stone-50 p-3 text-sm">
+      <span>Merged with another record on {formatDateTimeIst(m.merged_at)}.</span>
+      <input type="hidden" name="_action" value="undo" />
+      <input type="hidden" name="logId" value={m.id} />
+      <button class="rounded border border-stone-300 bg-white px-3 py-1.5">Undo merge</button>
+    </form>
+  ))}
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <div class="space-y-4 lg:col-span-1">
+      <section class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+        <h2 class="mb-2 font-semibold">Contact</h2>
+        <div class="mb-3 flex flex-wrap gap-2">
+          {l.phone && <a href={telHref(l.phone)} class={btn}>Call</a>}
+          {wa && <a href={wa} target="_blank" rel="noopener noreferrer" class={btn}>WhatsApp</a>}
+          {l.email && <a href={`mailto:${l.email}`} class={btn}>Email</a>}
+        </div>
+        <ul class="space-y-1 break-all text-stone-700">
+          {d.identifiers.map((i) => <li><span class="text-stone-500">{i.type}:</span> {i.value_raw}{i.is_shared ? ' (shared)' : ''}</li>)}
+          {d.identifiers.length === 0 && <li>{l.email}{l.email && l.phone ? ' · ' : ''}{l.phone}</li>}
+        </ul>
+        {d.person && <p class="mt-3 text-xs text-stone-500">Marketing email: {marketing[d.person.marketing_status] ?? d.person.marketing_status}</p>}
+        {d.tags.length > 0 && <p class="mt-1 text-xs text-stone-500">Tags: {d.tags.join(', ')}</p>}
+      </section>
+
+      <section class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+        <h2 class="mb-2 font-semibold">Enquiry</h2>
+        <dl class="space-y-1 text-stone-700">
+          {l.tour_interest && <div><dt class="inline text-stone-500">Interested in: </dt><dd class="inline">{l.tour_interest}</dd></div>}
+          {l.travel_start && <div><dt class="inline text-stone-500">Dates: </dt><dd class="inline">{l.travel_start}</dd></div>}
+          {l.party_size && <div><dt class="inline text-stone-500">Travellers: </dt><dd class="inline">{l.party_size}</dd></div>}
+          {l.country && <div><dt class="inline text-stone-500">Country: </dt><dd class="inline">{l.country}</dd></div>}
+          {l.language && <div><dt class="inline text-stone-500">Language: </dt><dd class="inline">{l.language}</dd></div>}
+          {l.booking_id && <div><dt class="inline text-stone-500">Booking: </dt><dd class="inline"><a class="text-amber-800 hover:underline" href={`/admin/bookings/${l.booking_id}`}>{l.booking_id}</a></dd></div>}
+        </dl>
+        {l.message && <p class="mt-2 whitespace-pre-line text-stone-700">{l.message}</p>}
+        {l.score_reason && <p class="mt-2 text-xs text-stone-500">Score: {l.score_reason}</p>}
+      </section>
+
+      <section class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+        <h2 class="mb-2 font-semibold">Stage</h2>
+        <form method="POST" class="space-y-2">
+          <input type="hidden" name="_action" value="stage" />
+          <select name="stage" class={`w-full ${field}`} aria-label="Stage">
+            {LEAD_STAGES.map((s) => <option value={s} selected={(l.status === 'converted' ? 'booked' : l.status) === s}>{STAGE_LABELS[s]}</option>)}
+          </select>
+          <select name="lostReason" class={`w-full ${field}`} aria-label="Reason, if lost">
+            {LOST_REASONS.map((r) => <option value={r} selected={l.lost_reason === r}>{r.replace(/_/g, ' ')}</option>)}
+          </select>
+          <p class="text-xs text-stone-500">The reason is saved only when the stage is Lost.</p>
+          <button class="min-h-11 w-full rounded bg-amber-800 text-white">Save stage</button>
+        </form>
+        {l.status === 'new' && (
+          <form method="POST" class="mt-2">
+            <input type="hidden" name="_action" value="contacted" />
+            <button class="min-h-11 w-full rounded border border-stone-300 bg-white">I have replied</button>
+          </form>
+        )}
+      </section>
+    </div>
+
+    <div class="space-y-4 lg:col-span-2">
+      <section class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+        <h2 class="mb-2 font-semibold">Add a note or set a follow-up</h2>
+        <form method="POST" class="mb-4 space-y-2">
+          <input type="hidden" name="_action" value="note" />
+          <textarea name="body" rows="3" required placeholder="What was said, what was promised..." class={`w-full ${field}`}></textarea>
+          <button class="min-h-11 rounded bg-amber-800 px-4 text-white">Save note</button>
+        </form>
+        <form method="POST" class="flex flex-wrap items-end gap-2">
+          <input type="hidden" name="_action" value="followup" />
+          <label class="text-xs text-stone-500">Follow up on<input type="date" name="due" required class={`mt-1 block ${field}`} /></label>
+          <label class="min-w-48 flex-1 text-xs text-stone-500">Reminder<input name="note" placeholder="Call about the quote" class={`mt-1 block w-full ${field}`} /></label>
+          <button class="min-h-11 rounded border border-stone-300 bg-white px-4">Set follow-up</button>
+        </form>
+      </section>
+
+      <section class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+        <h2 class="mb-3 font-semibold">History</h2>
+        {d.timeline.length === 0 ? <p class="text-stone-500">Nothing recorded yet.</p> : (
+          <ol class="space-y-3">
+            {d.timeline.map((t) => (
+              <li class="flex gap-3">
+                <span class={`mt-0.5 h-fit shrink-0 rounded px-2 py-0.5 text-xs ${kindClass[t.kind] ?? 'bg-stone-100 text-stone-700'}`}>{t.kind === 'touchpoint' ? 'contact' : t.kind}</span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs text-stone-500">{formatDateTimeIst(t.at)}</p>
+                  <p class="break-words text-stone-800">{t.kind === 'touchpoint' ? t.title : t.detail || t.title}</p>
+                  {t.kind === 'touchpoint' && t.detail && <p class="break-words text-xs text-stone-500">{t.detail}</p>}
+                  {t.kind === 'task' && (
+                    t.done ? <p class="text-xs text-green-700">Done</p> : (
+                      <form method="POST" class="mt-1">
+                        <input type="hidden" name="_action" value="done" />
+                        <input type="hidden" name="activityId" value={t.activityId} />
+                        <button class="rounded border border-stone-300 bg-white px-3 py-1 text-xs">Mark done</button>
+                      </form>
+                    )
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+    </div>
+  </div>
+</AdminLayout>

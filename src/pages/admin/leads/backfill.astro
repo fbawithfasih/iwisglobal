@@ -1,0 +1,52 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { BACKFILL_BATCH, SOURCES, backfillCounts, runBackfill } from '../../../lib/leadsBackfill';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+const db = env.DB;
+
+let ran: Record<string, number> | null = null;
+let error = '';
+if (Astro.request.method === 'POST' && db) {
+  try {
+    ran = await runBackfill(db);
+  } catch (err) {
+    console.error('backfill failed', err instanceof Error ? err.message : 'error');
+    error = 'The batch stopped part-way. It is safe to run it again.';
+  }
+}
+let counts: Record<string, number> = {};
+try {
+  counts = db ? await backfillCounts(db) : {};
+} catch {
+  error = error || 'The lead tables are not in the database yet.';
+}
+const remaining = Object.values(counts).reduce((a, n) => a + Math.max(n, 0), 0);
+---
+<AdminLayout title="Carry over existing contacts">
+  <p class="mb-2 text-sm"><a href="/admin/leads" class="text-amber-800 hover:underline">&larr; All leads</a></p>
+  <h1 class="mb-2 text-2xl font-semibold">Carry over existing contacts</h1>
+  <p class="mb-4 max-w-2xl text-sm text-stone-600">Files the people already in your database (old leads, bookings, quotes, hotel and private-offer payments, WhatsApp chats, account holders) into the Leads inbox, with the right stage. Nothing is sent to anyone and nobody is marked as agreeing to marketing email. Each press handles up to {BACKFILL_BATCH} rows per kind; press again until everything reads 0. It is safe to repeat.</p>
+
+  {error && <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+  {ran && <p class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800">Carried over: {Object.entries(ran).map(([k, n]) => `${SOURCES.find((s) => s.key === k)?.label ?? k} ${n}`).join(', ') || 'nothing'}.</p>}
+
+  <div class="mb-4 max-w-md rounded-xl border border-stone-200 bg-white p-4 text-sm">
+    <h2 class="mb-2 font-semibold">Still to carry over</h2>
+    <ul class="space-y-1">
+      {SOURCES.map((s) => <li class="flex justify-between"><span>{s.label}</span><span>{counts[s.key] === -1 ? 'none' : counts[s.key] ?? '-'}</span></li>)}
+    </ul>
+  </div>
+  {remaining > 0 ? (
+    <form method="POST"><button class="min-h-11 rounded bg-amber-800 px-5 text-white">Carry over the next batch</button></form>
+  ) : (
+    <p class="text-sm text-green-700">Everything is carried over.</p>
+  )}
+</AdminLayout>

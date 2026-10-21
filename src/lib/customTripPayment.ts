@@ -12,6 +12,7 @@
 // Finalising is safe to repeat: a guest's retry, the Razorpay webhook and the
 // verify call can all arrive, and only the first one books the trip.
 
+import { trackLeadEvent } from './contacts';
 import type { D1Like } from './db';
 import { isCustomEnabled, loadRates } from './customTripData';
 import {
@@ -132,6 +133,17 @@ export async function handleOrder(env: Record<string, any>, db: D1Like | undefin
   try {
     const order = await createCustomTripOrder(env, { amountMinor: quote.deposit * 100, currency: quote.currency, tripId: id, receipt: id });
     await db.prepare(`UPDATE custom_trips SET order_id = ?, updated_at = ? WHERE id = ?`).bind(order.orderId, stamp, id).run();
+    await trackLeadEvent(db, {
+      channel: 'custom_trip',
+      identifiers: [{ type: 'email', value: contact.email }, { type: 'phone', value: contact.phone }],
+      name: contact.name,
+      language: locale,
+      externalRef: `quote:${id}`,
+      stage: 'quote_sent',
+      travelStart: quote.startDate,
+      partySize: travellerTotal(quote.travellers),
+      message: 'Priced a custom trip and opened the deposit payment',
+    });
     return { status: 200, body: { tripId: id, orderId: order.orderId, amount: order.amount, currency: order.currency, publicKey: order.publicKey } };
   } catch (e) {
     await db.prepare(`DELETE FROM custom_trips WHERE id = ? AND status = 'quoted'`).bind(id).run();
@@ -218,6 +230,18 @@ export async function finalizeCustomTrip(
     await db.prepare(`UPDATE custom_trips SET status = 'quoted', updated_at = ? WHERE id = ?`).bind(stamp, trip.id).run();
     throw e;
   }
+
+  await trackLeadEvent(db, {
+    channel: 'custom_trip',
+    identifiers: [{ type: 'email', value: trip.email }, { type: 'phone', value: trip.phone }],
+    name: trip.name,
+    language: stored!.locale,
+    externalRef: `paid:${trip.id}`,
+    stage: 'deposit_paid',
+    travelStart: stored!.quote.startDate,
+    bookingId,
+    note: 'Custom trip deposit paid',
+  });
 
   const details = emailDetails(trip, stored!);
   await sendCustomTripGuestEmail(env, { ...details, kind: 'received', to: trip.email, name: trip.name, locale: stored!.locale });

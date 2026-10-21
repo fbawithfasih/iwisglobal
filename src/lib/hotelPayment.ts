@@ -16,6 +16,7 @@
 // asks Hotelbeds to book, and a booking is only ever posted once per id.
 
 import type { D1Like } from './db';
+import { trackLeadEvent } from './contacts';
 import { isHotelsEnabled, loadHotelSettings } from './hotelData';
 import { getHotelContent } from './hotelContent';
 import { buildVoucher, type HotelBookingRow } from './hotelVoucher';
@@ -179,6 +180,16 @@ export async function handleHotelOrder(
     const outcome = await finalizeHotelBooking(env, db, { bookingId: row.id, orderId, paymentId: `${TEST_PAYMENT_PREFIX}pay_${row.id}`, amountMinor: amount, currency: row.currency });
     return { status: 200, body: { success: outcome === 'booked', outcome, bookingId: row.id } };
   }
+
+  await trackLeadEvent(db, {
+    channel: 'hotel',
+    identifiers: [{ type: 'email', value: contact.email }, { type: 'phone', value: contact.phone }],
+    name: holderName,
+    language: locale,
+    externalRef: `hotelquote:${row.id}`,
+    stage: 'quote_sent',
+    message: 'Chose a hotel and opened the payment',
+  });
 
   // The guest is paying again after closing the Razorpay window: keep the
   // order, refresh the details.
@@ -415,6 +426,21 @@ export async function finalizeHotelBooking(
       .bind(paid.paymentId, stamp, row.id)
       .run();
     if (!changed(claim)) return strayPayment(await db.prepare(`SELECT payment_id, status FROM hotel_bookings WHERE id = ?`).bind(row.id).first<{ payment_id: string; status: string }>());
+    try {
+      const who = await db.prepare(`SELECT holder_name, email, phone FROM hotel_bookings WHERE id = ?`).bind(row.id).first<{ holder_name: string; email: string; phone: string }>();
+      if (who) {
+        await trackLeadEvent(db, {
+          channel: 'hotel',
+          identifiers: [{ type: 'email', value: who.email }, { type: 'phone', value: who.phone }],
+          name: who.holder_name,
+          externalRef: `hotelpaid:${row.id}`,
+          stage: 'booked',
+          note: 'Hotel booking paid',
+        });
+      }
+    } catch {
+      // Lead tracking must never hold up a paid hotel booking.
+    }
   } else if (row.status === 'paid' && row.hb_reference === '' && row.payment_id === paid.paymentId) {
     // A request that claimed this booking died before finishing. Take it over
     // once (the updated_at compare stops two retries both winning) and only
