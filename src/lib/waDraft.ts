@@ -8,7 +8,8 @@ import type { D1Like } from './db';
 import { callAnthropic, AI_GUIDE_MODEL } from './aiGuide';
 import { listTours, type ParsedTour } from './tours';
 import { retrieve, SITE_URL, type KbEntry } from './waKnowledge';
-import { sendText, storeMessage, type WaMessage } from './whatsapp';
+import { sendText, sendTemplate, storeMessage, type WaMessage } from './whatsapp';
+import { findTemplate, renderTemplate, cleanTemplateName } from './waTemplates';
 import { runTools, type ToolLog, type ToolRequest } from './waTools';
 import { onAdminSend, markHandedOff, takeOver } from './waInbox';
 import { getAutoSettings, qualityDecision } from './waAuto';
@@ -508,6 +509,51 @@ export async function sendStaffMessage(env: Record<string, any>, db: D1Like, pho
     sentAt: new Date().toISOString(),
   });
   // Any open draft for this chat is now stale; takeOver also pauses new drafts.
+  await takeOver(db, phone);
+  return { ok: true };
+}
+
+// Staff send an approved template to a guest whose 24-hour window has closed. The guest sees the
+// template text; their reply reopens the window. One template per chat per 24 hours, never to a guest
+// who opted out. The chat becomes staff-handled, like a typed reply.
+export async function sendStaffTemplate(env: Record<string, any>, db: D1Like, phone: string, templateId: string, guestName: string): Promise<SendOutcome> {
+  const template = findTemplate(templateId);
+  if (!template) return { ok: false, error: 'Choose one of the templates.' };
+  const name = cleanTemplateName(guestName);
+  if (!name) return { ok: false, error: 'Type the guest\'s first name (up to 60 characters, one line).' };
+
+  const chat = await db.prepare(`SELECT state FROM wa_conversations WHERE id = ?`).bind(phone).first<{ state: string }>();
+  if (!chat) return { ok: false, error: 'Chat not found.' };
+  if (chat.state === 'opted_out') return { ok: false, error: 'The guest asked us to stop, so nothing can be sent.' };
+
+  const recent = await db
+    .prepare(`SELECT MAX(sent_at) AS at FROM wa_messages WHERE conversation_id = ? AND direction = 'out' AND kind = 'template'`)
+    .bind(phone)
+    .first<{ at: string | null }>();
+  if (recent?.at && Date.now() - Date.parse(recent.at) < WINDOW_MS) {
+    return { ok: false, error: 'A template was already sent to this guest in the last 24 hours. Wait for their reply.' };
+  }
+
+  const sent = await sendTemplate(env, phone, template.name, template.language, [name]);
+  if (!sent.ok) {
+    const missing = /template|132001|132000/i.test(sent.error ?? '');
+    return {
+      ok: false,
+      error: missing
+        ? `WhatsApp does not have the template "${template.name}" (${template.language}) approved yet: ${sent.error}. Submit it in Meta and wait for approval.`
+        : `WhatsApp refused the message: ${sent.error ?? 'unknown error'}`,
+    };
+  }
+
+  await storeMessage(db, {
+    waMessageId: sent.waMessageId ?? `local-${crypto.randomUUID()}`,
+    phone,
+    direction: 'out',
+    kind: 'template',
+    body: renderTemplate(template, name),
+    profileName: null,
+    sentAt: new Date().toISOString(),
+  });
   await takeOver(db, phone);
   return { ok: true };
 }
