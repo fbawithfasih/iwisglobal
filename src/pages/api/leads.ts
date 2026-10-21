@@ -4,7 +4,7 @@ import { resolveLocale } from '../../lib/i18n';
 import { getDictionary } from '../../i18n/dictionaries';
 import { hashIp } from '../../lib/aiGuide';
 import { normaliseEmail, normalisePhone, recordConsent, recordLead, type Attribution } from '../../lib/contacts';
-import { sendAdminPush } from '../../lib/webPush';
+import { notifyNewLead } from '../../lib/leadsAdmin';
 import type { D1Like } from '../../lib/db';
 
 export const prerender = false;
@@ -111,15 +111,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Tell the owner. A failed alert must not fail the visitor's submit.
-    try {
-      await sendAdminPush(env, db, {
-        title: 'New enquiry on the website',
-        body: `${name}${interest ? `: ${interest}` : ''}`,
-        url: '/admin/leads',
-        tag: `lead-${result.leadId}`,
-      });
-    } catch (err) {
-      console.error('leads: alert failed', err instanceof Error ? err.message : 'error');
+    if (result.createdLead) {
+      await notifyNewLead(env, db, { id: result.leadId, name, channel: 'Website form', detail: [interest, message].filter(Boolean).join(' / ').slice(0, 300) });
     }
     return json(200, { ok: true });
   } catch (err) {

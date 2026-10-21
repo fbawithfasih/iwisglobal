@@ -9,6 +9,7 @@ import { getAutoSettings, autoPermission, holdingPermission } from '../../../lib
 import type { D1Like } from '../../../lib/db';
 import { maybePurge } from '../../../lib/waLearning';
 import { recordLead } from '../../../lib/contacts';
+import { notifyNewLead } from '../../../lib/leadsAdmin';
 
 export const prerender = false;
 
@@ -106,10 +107,10 @@ async function handleGuestMessage(env: Record<string, any>, db: D1Like, m: WaMes
 // Every first guest message becomes (or joins) a lead, with the "(ref: ...)" tag of the button
 // they clicked and any click-to-WhatsApp ad data. Recorded per message id, so a replay adds
 // nothing. A failure here must never stop the reply agent.
-async function recordWhatsappLead(db: D1Like, m: WaMessage): Promise<void> {
+async function recordWhatsappLead(env: Record<string, any>, db: D1Like, m: WaMessage): Promise<void> {
   try {
     const ref = /\(ref:\s*([^)]+)\)/i.exec(m.body)?.[1]?.trim() ?? '';
-    await recordLead(db, {
+    const res = await recordLead(db, {
       channel: 'whatsapp',
       identifiers: [{ type: 'wa_id', value: m.phone, source: 'whatsapp' }],
       name: m.profileName ?? undefined,
@@ -127,6 +128,9 @@ async function recordWhatsappLead(db: D1Like, m: WaMessage): Promise<void> {
       },
       payload: m.referral ? { referral: m.referral } : undefined,
     });
+    if (res.createdLead) {
+      await notifyNewLead(env, db, { id: res.leadId, name: m.profileName || `+${m.phone}`, channel: 'WhatsApp', detail: m.body.slice(0, 200) });
+    }
   } catch (err) {
     console.error('whatsapp webhook: lead capture failed', err instanceof Error ? err.message : 'error');
   }
@@ -138,7 +142,7 @@ async function processMessages(env: Record<string, any>, db: D1Like, messages: W
     try {
       if (m.direction === 'echo') await onStaffReply(db, m.phone, new Date(m.sentAt));
       else if (m.direction === 'in') {
-        await recordWhatsappLead(db, m);
+        await recordWhatsappLead(env, db, m);
         await handleGuestMessage(env, db, m);
       }
     } catch (err) {

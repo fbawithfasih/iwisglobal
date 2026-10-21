@@ -4,9 +4,11 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import * as C from '../../src/lib/contacts';
+import * as A from '../../src/lib/leadsAdmin';
+import * as B from '../../src/lib/leadsBackfill';
 
 const raw = new DatabaseSync(':memory:');
-for (const f of ['schema.sql', 'schema_crm.sql', 'schema_contacts.sql']) {
+for (const f of ['schema.sql', 'schema_crm.sql', 'schema_booking_locale.sql', 'schema_deposit_payments.sql', 'schema_whatsapp.sql', 'schema_contacts.sql']) {
   for (const stmt of readFileSync(`${process.env.ROOT}/${f}`, 'utf8').replace(/^\s*--.*$/gm, '').split(';')) {
     const t = stmt.trim();
     if (t) raw.exec(t);
@@ -151,4 +153,62 @@ assert.equal(count('suppressions'), 2);
 const sc = C.computeLeadScore({ channel: 'website', hasDates: true, hasPartySize: true, hasTour: true, hasPhone: true, hasEmail: true, firstResponseMinutes: 20, stage: 'quote_sent' });
 assert.equal(sc.score, 15 + 10 + 10 + 10 + 10 + 15 + 10);
 assert.equal(C.scoreBucket(sc.score), 'hot'); assert.equal(C.scoreBucket(35), 'warm'); assert.equal(C.scoreBucket(5), 'cold');
+
+// ---- admin: CSV, views, notes, follow-ups, import
+const parsed = A.parseCsv('Name,Email,Notes\r\n"Smith, Jo",jo@example.com,"said ""hi""\nlater"\n\nBob,,\n');
+assert.deepEqual(parsed[1], ['Smith, Jo', 'jo@example.com', 'said "hi"\nlater']);
+assert.equal(parsed.length, 3, 'blank line ignored');
+assert.equal(A.csvCell('=HYPERLINK("x")'), `"'=HYPERLINK(""x"")"`, 'formulas neutralised');
+assert.equal(A.csvCell('a,b'), '"a,b"');
+const mapped = A.mapCsvRows(A.parseCsv('First Name,Last Name,E-mail,Mobile,Junk\nAda,Lovelace,ada@example.com,+44 7911 123456,x\n'));
+assert.equal(mapped.rows[0].name, 'Ada Lovelace'); assert.equal(mapped.rows[0].phone, '+44 7911 123456'); assert.deepEqual(mapped.unknownColumns, ['Junk']);
+
+const imp = await A.importLeadRows(db, [
+  { name: 'Ada Lovelace', email: 'ada@example.com', phone: '', country: 'GB', tour: '', message: '', source: '', language: '' },
+  { name: 'No Contact', email: '', phone: '', country: '', tour: '', message: '', source: '', language: '' },
+], 'imp_test', 'admin');
+assert.deepEqual(imp, { imported: 1, skipped: 1, duplicates: 0 });
+const again = await A.importLeadRows(db, [{ name: 'Ada Lovelace', email: 'ada@example.com', phone: '', country: 'GB', tour: '', message: '', source: '', language: '' }], 'imp_test', 'admin');
+assert.equal(again.duplicates, 1, 'same batch and row is a replay');
+const adaPerson = (raw.prepare(`SELECT person_id FROM leads WHERE email = 'ada@example.com'`).get() as any).person_id;
+assert.equal((raw.prepare(`SELECT marketing_status FROM people WHERE id = ?`).get(adaPerson) as any).marketing_status, 'none', 'imports carry no consent');
+
+const open = await A.listLeadsView(db, { view: 'open' });
+assert.ok(open.rows.length >= 2);
+const all1 = await A.listLeadsView(db, { view: 'all', limit: 1 });
+assert.equal(all1.rows.length, 1); assert.ok(all1.next, 'a next page exists');
+const all2 = await A.listLeadsView(db, { view: 'all', limit: 1, cursor: all1.next! });
+assert.notEqual(all2.rows[0].id, all1.rows[0].id, 'cursor moves on');
+assert.equal((await A.listLeadsView(db, { view: 'all', q: 'lovelace' })).rows.length, 1, 'search by name');
+assert.equal((await A.listLeadsView(db, { view: 'all', channel: 'csv_import' })).rows.length, 1, 'channel filter');
+
+const leadId = (raw.prepare(`SELECT id FROM leads WHERE email = 'ada@example.com'`).get() as any).id as string;
+await A.addNote(db, leadId, 'Called, wants a quote');
+await A.setFollowUp(db, leadId, '2000-01-01', 'Call about the quote');
+assert.equal((await A.listLeadsView(db, { view: 'followups' })).rows.some((x) => x.id === leadId), true, 'overdue follow-up shows');
+const detail = (await A.getLeadDetail(db, leadId))!;
+assert.ok(detail.timeline.some((t) => t.kind === 'note') && detail.timeline.some((t) => t.kind === 'touchpoint') && detail.timeline.some((t) => t.kind === 'task'));
+await A.completeFollowUp(db, leadId, detail.timeline.find((t) => t.kind === 'task')!.activityId!);
+assert.equal((raw.prepare(`SELECT next_action_at FROM leads WHERE id = ?`).get(leadId) as any).next_action_at, null, 'no follow-up left');
+await A.markContacted(db, leadId);
+assert.ok((raw.prepare(`SELECT first_response_at FROM leads WHERE id = ?`).get(leadId) as any).first_response_at);
+const counts = await A.viewCounts(db);
+assert.equal(typeof counts.open, 'number');
+
+// ---- backfill
+raw.exec(`INSERT INTO leads (id, name, email, phone, message, tour_interest, status, created_at) VALUES ('lead_old', 'Old Lead', 'old@example.com', '+971 50 123 4567', '', '', 'converted', '2025-01-02T00:00:00.000Z')`);
+raw.exec(`INSERT INTO bookings (id, payment_id, order_id, tour_id, travel_date, travelers, traveler_name, traveler_email, traveler_phone, amount_paid, currency, created_at, payment_type)
+  VALUES ('bk_pay_1', 'pay_1', 'order_1', 'tour1', '2027-02-01', 2, 'Bo King', 'bo@example.com', '+14155550123', 1000, 'USD', '2026-05-01T00:00:00.000Z', 'deposit')`);
+raw.exec(`INSERT INTO wa_conversations (id, profile_name, last_message_at, created_at) VALUES ('919811122233', 'Raj', '2026-06-01T00:00:00.000Z', '2026-06-01T00:00:00.000Z')`);
+const bfBefore = await B.backfillCounts(db);
+assert.equal(bfBefore.leads, 1); assert.equal(bfBefore.bookings, 1); assert.equal(bfBefore.whatsapp, 1);
+await B.runBackfill(db);
+const bfAfter = await B.backfillCounts(db);
+assert.equal(bfAfter.leads, 0); assert.equal(bfAfter.bookings, 0); assert.equal(bfAfter.whatsapp, 0);
+const bfLeads = count('leads'); const bfPeople = count('people');
+await B.runBackfill(db);
+assert.equal(count('leads'), bfLeads, 'second run changes nothing'); assert.equal(count('people'), bfPeople);
+const bkRow = raw.prepare(`SELECT status, booking_id, created_at FROM leads WHERE email = 'bo@example.com'`).get() as any;
+assert.equal(bkRow.status, 'deposit_paid'); assert.equal(bkRow.booking_id, 'bk_pay_1'); assert.equal(bkRow.created_at, '2026-05-01T00:00:00.000Z', 'keeps the original date');
+assert.ok((raw.prepare(`SELECT person_id FROM leads WHERE id = 'lead_old'`).get() as any).person_id, 'old lead linked to a person');
 console.log('contacts tests ok');

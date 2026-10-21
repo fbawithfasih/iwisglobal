@@ -1,0 +1,110 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { normaliseEmail, normalisePhone } from '../../../lib/contacts';
+import { IMPORT_ROW_LIMIT, importLeadRows, mapCsvRows, parseCsv, type ImportRow } from '../../../lib/leadsAdmin';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+const db = env.DB;
+
+const MAX_BYTES = 300_000;
+let step: 'upload' | 'preview' | 'done' = 'upload';
+let error = '';
+let csvText = '';
+let rows: ImportRow[] = [];
+let unknownColumns: string[] = [];
+let result: { imported: number; skipped: number; duplicates: number } | null = null;
+let existing = 0;
+
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  const action = String(form.get('_action') ?? '');
+  const file = form.get('file');
+  if (action === 'preview') {
+    csvText = file instanceof File ? await file.text() : '';
+  } else if (action === 'import') {
+    csvText = String(form.get('csv') ?? '');
+  }
+  if (csvText.length > MAX_BYTES) {
+    error = 'That file is too large. Split it into smaller files (about 100 rows each).';
+    csvText = '';
+  } else if (csvText) {
+    const mapped = mapCsvRows(parseCsv(csvText));
+    rows = mapped.rows;
+    unknownColumns = mapped.unknownColumns;
+    if (rows.length === 0) error = 'No rows found. The first row must be column names such as name, email, phone.';
+    else if (action === 'preview') {
+      step = 'preview';
+      // How many rows already match someone we know (by email or phone).
+      for (const r of rows.slice(0, IMPORT_ROW_LIMIT)) {
+        const email = r.email && normaliseEmail(r.email);
+        const phone = r.phone && normalisePhone(r.phone);
+        const hit = await db
+          .prepare(`SELECT 1 AS x FROM person_identifiers WHERE (type = 'email' AND value_norm = ?) OR (type = 'phone' AND value_norm = ?) LIMIT 1`)
+          .bind(email || '\u0000', phone || '\u0000')
+          .first()
+          .catch(() => null);
+        if (hit) existing++;
+      }
+    } else if (action === 'import') {
+      result = await importLeadRows(db, rows, `imp_${crypto.randomUUID()}`, 'admin');
+      step = 'done';
+    }
+  } else if (action) {
+    error = 'Choose a CSV file first.';
+  }
+}
+const field = 'rounded border border-stone-300 px-3 py-2';
+const shown = rows.slice(0, 10);
+---
+<AdminLayout title="Import leads">
+  <p class="mb-2 text-sm"><a href="/admin/leads" class="text-amber-800 hover:underline">&larr; All leads</a></p>
+  <h1 class="mb-4 text-2xl font-semibold">Import leads from a CSV file</h1>
+
+  {error && <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+
+  {step === 'upload' && (
+    <form method="POST" enctype="multipart/form-data" class="max-w-xl space-y-3 rounded-xl border border-stone-200 bg-white p-6 text-sm">
+      <input type="hidden" name="_action" value="preview" />
+      <p>The first row must be column names. Recognised: <b>name</b> (or first name and last name), <b>email</b>, <b>phone</b> or <b>whatsapp</b>, <b>country</b>, <b>tour</b>, <b>message</b> or <b>notes</b>, <b>source</b>, <b>language</b>. Other columns are ignored.</p>
+      <p>Each row needs an email or a phone number. Up to {IMPORT_ROW_LIMIT} rows per file; split bigger lists.</p>
+      <p class="rounded bg-amber-50 p-3 text-amber-900">Imported people are filed as leads but are <b>not</b> marked as agreeing to marketing email. A list is not proof of consent, and they cannot be emailed as marketing until they opt in.</p>
+      <input type="file" name="file" accept=".csv,text/csv" required class={`block w-full ${field}`} />
+      <button class="min-h-11 rounded bg-amber-800 px-4 text-white">Check the file</button>
+    </form>
+  )}
+
+  {step === 'preview' && (
+    <div class="space-y-4 text-sm">
+      <p><b>{Math.min(rows.length, IMPORT_ROW_LIMIT)}</b> rows will be imported{rows.length > IMPORT_ROW_LIMIT ? ` (the file has ${rows.length}; only the first ${IMPORT_ROW_LIMIT} are used)` : ''}. About <b>{existing}</b> already match someone we know and will join their existing record instead of creating a new person.</p>
+      {unknownColumns.length > 0 && <p class="text-stone-500">Ignored columns: {unknownColumns.join(', ')}</p>}
+      <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white">
+        <table class="w-full text-left">
+          <thead class="bg-stone-50"><tr><th class="px-3 py-2">Name</th><th class="px-3 py-2">Email</th><th class="px-3 py-2">Phone</th><th class="px-3 py-2">Tour</th></tr></thead>
+          <tbody>
+            {shown.map((r) => <tr class="border-t border-stone-100"><td class="px-3 py-2">{r.name}</td><td class="px-3 py-2">{r.email}</td><td class="px-3 py-2">{r.phone}</td><td class="px-3 py-2">{r.tour}</td></tr>)}
+          </tbody>
+        </table>
+      </div>
+      <form method="POST" class="flex gap-2">
+        <input type="hidden" name="_action" value="import" />
+        <input type="hidden" name="csv" value={csvText} />
+        <button class="min-h-11 rounded bg-amber-800 px-4 text-white">Import these leads</button>
+        <a href="/admin/leads/import" class="inline-flex min-h-11 items-center rounded border border-stone-300 bg-white px-4">Cancel</a>
+      </form>
+    </div>
+  )}
+
+  {step === 'done' && result && (
+    <div class="space-y-3 text-sm">
+      <p class="rounded-lg bg-green-50 p-3 text-green-800">Imported {result.imported} leads. {result.duplicates} were already recorded and {result.skipped} were skipped (no email or phone, or unreadable).</p>
+      <a href="/admin/leads?view=all" class="inline-flex min-h-11 items-center rounded bg-amber-800 px-4 text-white">See the leads</a>
+    </div>
+  )}
+</AdminLayout>

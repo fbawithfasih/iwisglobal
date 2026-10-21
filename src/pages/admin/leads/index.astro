@@ -4,7 +4,8 @@ export const prerender = false;
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
-import { listLeads, insertLead, updateLeadStatus } from '../../../lib/crm';
+import { recordLead, scoreBucket, CHANNELS, CHANNEL_LABELS, LEAD_STAGES, type Channel } from '../../../lib/contacts';
+import { VIEWS, STAGE_LABELS, listLeadsView, viewCounts, waitingTooLong, type ViewKey } from '../../../lib/leadsAdmin';
 import { formatDateTimeIst } from '../../../lib/format';
 import { telHref, waHref } from '../../../lib/contact';
 import PhoneInput from '../../../components/PhoneInput';
@@ -13,140 +14,168 @@ const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
   return Astro.redirect('/admin/login');
 }
-
 const db = env.DB;
 
 if (Astro.request.method === 'POST' && db) {
   const form = await Astro.request.formData();
-  const action = String(form.get('_action') ?? '');
-
-  if (action === 'add') {
+  if (String(form.get('_action') ?? '') === 'add') {
     const name = String(form.get('name') ?? '').trim();
-    if (name) {
-      await insertLead(db, {
+    const email = String(form.get('email') ?? '').trim();
+    const phone = String(form.get('phone') ?? '').trim();
+    const picked = String(form.get('channel') ?? 'manual');
+    const channel = ((CHANNELS as readonly string[]).includes(picked) ? picked : 'manual') as Channel;
+    if (name && (email || phone)) {
+      const res = await recordLead(db, {
+        channel,
+        identifiers: [
+          ...(email ? [{ type: 'email' as const, value: email, source: 'admin' }] : []),
+          ...(phone ? [{ type: 'phone' as const, value: phone, source: 'admin' }] : []),
+        ],
         name,
-        email: String(form.get('email') ?? ''),
-        phone: String(form.get('phone') ?? ''),
         message: String(form.get('message') ?? ''),
         tourInterest: String(form.get('tourInterest') ?? ''),
+        type: 'manual',
+        externalRef: `manual:${crypto.randomUUID()}`,
+        createdBy: 'admin',
       });
+      return Astro.redirect(`/admin/leads/${res.leadId}`);
     }
-  } else if (action === 'status') {
-    const id = String(form.get('leadId') ?? '');
-    const status = String(form.get('status') ?? '');
-    if (id && status) await updateLeadStatus(db, id, status);
   }
   return Astro.redirect('/admin/leads');
 }
 
-const leads = db ? await listLeads(db) : []; // newest first
+const q = Astro.url.searchParams;
+const view = (VIEWS.find((v) => v.key === q.get('view'))?.key ?? 'open') as ViewKey;
+const channel = q.get('channel') ?? '';
+const stage = q.get('stage') ?? '';
+const search = q.get('q') ?? '';
+const cursor = q.get('cursor') ?? '';
 
-const STATUSES = [
-  { value: 'new', label: 'New' },
-  { value: 'contacted', label: 'Contacted' },
-  { value: 'converted', label: 'Converted' },
-  { value: 'lost', label: 'Lost' },
-];
-const statusClass = (status: string) =>
-  status === 'converted' ? 'bg-green-100 text-green-800' :
-  status === 'lost' ? 'bg-red-100 text-red-800' :
-  status === 'contacted' ? 'bg-blue-100 text-blue-800' :
+let failed = false;
+let rows: Awaited<ReturnType<typeof listLeadsView>>['rows'] = [];
+let next: string | null = null;
+let counts: Record<string, number> = {};
+let waiting = 0;
+if (db) {
+  try {
+    const page = await listLeadsView(db, { view, channel, stage, q: search, cursor });
+    rows = page.rows;
+    next = page.next;
+    counts = await viewCounts(db);
+    waiting = await waitingTooLong(db);
+  } catch (err) {
+    failed = true;
+    console.error('admin leads: list failed', err instanceof Error ? err.message : 'error');
+  }
+}
+
+const base = (extra: Record<string, string>) => {
+  const p = new URLSearchParams();
+  const all = { view, channel, stage, q: search, ...extra };
+  for (const [k, v] of Object.entries(all)) if (v) p.set(k, v);
+  return `/admin/leads?${p.toString()}`;
+};
+const stageClass = (s: string) =>
+  s === 'booked' || s === 'converted' ? 'bg-green-100 text-green-800' :
+  s === 'lost' || s === 'spam' ? 'bg-red-100 text-red-800' :
+  s === 'deposit_paid' || s === 'quote_sent' ? 'bg-amber-100 text-amber-800' :
+  s === 'contacted' || s === 'qualified' ? 'bg-blue-100 text-blue-800' :
   'bg-stone-100 text-stone-700';
+const bucketClass = { hot: 'bg-red-100 text-red-800', warm: 'bg-amber-100 text-amber-800', cold: 'bg-stone-100 text-stone-600' } as const;
 const contactBtn = 'inline-flex min-h-11 items-center rounded border border-stone-300 bg-white px-3 text-sm text-stone-800';
+const field = 'rounded border border-stone-300 px-3 py-2';
 ---
 <AdminLayout title="Leads">
-  <h1 class="text-2xl font-semibold mb-6">Leads</h1>
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold">Leads</h1>
+    <div class="flex gap-2 text-sm">
+      <a href="/admin/leads/import" class="rounded border border-stone-300 bg-white px-3 py-2">Import CSV</a>
+      <a href="/admin/leads/export" class="rounded border border-stone-300 bg-white px-3 py-2">Export CSV</a>
+      <a href="/admin/leads/backfill" class="rounded border border-stone-300 bg-white px-3 py-2">Carry over existing</a>
+    </div>
+  </div>
 
-  <details class="bg-white rounded-xl border border-stone-200 p-6 mb-6 text-sm">
-    <summary class="font-semibold cursor-pointer">+ Add a lead</summary>
-    <form method="POST" class="grid md:grid-cols-2 gap-3 mt-4">
+  {failed && (
+    <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">The leads could not be read. If the lead tables have not been added to the database yet, they need to be applied first.</p>
+  )}
+  {waiting > 0 && (
+    <p class="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{waiting} new {waiting === 1 ? 'lead has' : 'leads have'} waited more than an hour for a first reply.</p>
+  )}
+
+  <nav class="mb-4 flex flex-wrap gap-2 text-sm" aria-label="Saved views">
+    {VIEWS.map((v) => (
+      <a href={`/admin/leads?view=${v.key}`} class={`rounded-full border px-3 py-1.5 ${v.key === view ? 'border-amber-800 bg-amber-800 text-white' : 'border-stone-300 bg-white text-stone-700'}`}>
+        {v.label}{counts[v.key] ? ` (${counts[v.key]})` : ''}
+      </a>
+    ))}
+  </nav>
+
+  <form method="GET" class="mb-4 grid gap-2 text-sm sm:grid-cols-5">
+    <input type="hidden" name="view" value={view} />
+    <input name="q" value={search} placeholder="Search name, email, phone, tour" class={`${field} sm:col-span-2`} />
+    <select name="stage" class={field} aria-label="Stage">
+      <option value="">Any stage</option>
+      {LEAD_STAGES.map((s) => <option value={s} selected={stage === s}>{STAGE_LABELS[s]}</option>)}
+    </select>
+    <select name="channel" class={field} aria-label="Channel">
+      <option value="">Any channel</option>
+      {CHANNELS.map((c) => <option value={c} selected={channel === c}>{CHANNEL_LABELS[c]}</option>)}
+    </select>
+    <button type="submit" class="rounded bg-amber-800 px-4 py-2 text-white">Filter</button>
+  </form>
+
+  <details class="mb-6 rounded-xl border border-stone-200 bg-white p-6 text-sm">
+    <summary class="cursor-pointer font-semibold">+ Add a lead (call, walk-in, email, anything else)</summary>
+    <form method="POST" class="mt-4 grid gap-3 md:grid-cols-2">
       <input type="hidden" name="_action" value="add" />
-      <input name="name" placeholder="Name" required class="rounded border border-stone-300 px-3 py-2" />
-      <input name="email" type="email" placeholder="Email" class="rounded border border-stone-300 px-3 py-2" />
+      <input name="name" placeholder="Name" required class={field} />
+      <select name="channel" class={field} aria-label="Where did it come from?">
+        {(['manual', 'phone', 'email', 'whatsapp', 'instagram_dm', 'facebook_dm', 'marketplace'] as const).map((c) => <option value={c}>{CHANNEL_LABELS[c]}</option>)}
+      </select>
+      <input name="email" type="email" placeholder="Email" class={field} />
       <PhoneInput client:load id="leadPhone" name="phone" />
-      <input name="tourInterest" placeholder="Tour interest" class="rounded border border-stone-300 px-3 py-2" />
-      <textarea name="message" placeholder="Message / notes" class="rounded border border-stone-300 px-3 py-2 md:col-span-2"></textarea>
-      <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2 md:col-span-2">Add lead</button>
+      <input name="tourInterest" placeholder="Tour interest" class={field} />
+      <textarea name="message" placeholder="Message / notes" class={`${field} md:col-span-2`}></textarea>
+      <p class="text-xs text-stone-500 md:col-span-2">Add an email or a phone number. Hand-added people are not marked as agreeing to marketing email.</p>
+      <button type="submit" class="rounded bg-amber-800 px-4 py-2 text-white md:col-span-2">Add lead</button>
     </form>
   </details>
 
-  {leads.length === 0 ? (
-    <p class="text-stone-500">No leads yet.</p>
+  {rows.length === 0 ? (
+    <p class="text-stone-500">{failed ? '' : 'No leads here.'}</p>
   ) : (
-    <>
-    <!-- Phones: one card per lead, with tap-to-contact and status. -->
-    <ul class="md:hidden space-y-3">
-      {leads.map((l) => (
-        <li class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
-          <div class="flex items-start justify-between gap-3">
-            <p class="font-semibold text-base">{l.name}</p>
-            <span class={`shrink-0 px-2 py-0.5 rounded text-xs ${statusClass(l.status)}`}>{l.status}</span>
-          </div>
-          <p class="text-xs text-stone-500 mt-0.5">{formatDateTimeIst(l.created_at)}</p>
-          {l.tour_interest && <p class="mt-2"><span class="text-stone-500">Interested in:</span> {l.tour_interest}</p>}
-          {l.message && <p class="mt-1 text-stone-700 whitespace-pre-line">{l.message}</p>}
-          {(l.phone || l.email) && (
-            <div class="flex flex-wrap gap-2 mt-3">
-              {l.phone && <a href={telHref(l.phone)} class={contactBtn}>Call</a>}
-              {l.phone && waHref(l.phone) && <a href={waHref(l.phone)} target="_blank" rel="noopener noreferrer" class={contactBtn}>WhatsApp</a>}
-              {l.email && <a href={`mailto:${l.email}`} class={contactBtn}>Email</a>}
+    <ul class="space-y-3">
+      {rows.map((l) => {
+        const bucket = scoreBucket(l.score ?? 0);
+        const wa = l.phone ? waHref(l.phone) : null;
+        return (
+          <li class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+            <div class="flex items-start justify-between gap-3">
+              <a href={`/admin/leads/${l.id}`} class="text-base font-semibold text-amber-900 hover:underline">{l.name}</a>
+              <div class="flex shrink-0 flex-wrap justify-end gap-1">
+                <span class={`rounded px-2 py-0.5 text-xs ${stageClass(l.status)}`}>{STAGE_LABELS[l.status] ?? l.status}</span>
+                {l.status !== 'booked' && l.status !== 'lost' && l.status !== 'spam' && <span class={`rounded px-2 py-0.5 text-xs ${bucketClass[bucket]}`}>{bucket}</span>}
+              </div>
             </div>
-          )}
-          {(l.phone || l.email) && <p class="text-xs text-stone-500 mt-2 break-all">{l.phone}{l.phone && l.email ? ' · ' : ''}{l.email}</p>}
-          <form method="POST" class="flex gap-2 mt-3">
-            <input type="hidden" name="_action" value="status" />
-            <input type="hidden" name="leadId" value={l.id} />
-            <select name="status" aria-label={`Status for ${l.name}`} class="flex-1 min-h-11 rounded border border-stone-300 px-2">
-              {STATUSES.map((st) => <option value={st.value} selected={l.status === st.value}>{st.label}</option>)}
-            </select>
-            <button type="submit" class="min-h-11 rounded bg-amber-800 text-white px-4">Save</button>
-          </form>
-        </li>
-      ))}
+            <p class="mt-0.5 text-xs text-stone-500">
+              {CHANNEL_LABELS[l.channel] ?? l.channel} · {formatDateTimeIst(l.last_activity_at ?? l.created_at)}
+              {l.next_action_at && <span class="text-amber-800"> · follow up {formatDateTimeIst(l.next_action_at)}</span>}
+            </p>
+            {l.tour_interest && <p class="mt-2"><span class="text-stone-500">Interested in:</span> {l.tour_interest}</p>}
+            {l.message && <p class="mt-1 line-clamp-2 whitespace-pre-line text-stone-700">{l.message}</p>}
+            <div class="mt-3 flex flex-wrap gap-2">
+              {l.phone && <a href={telHref(l.phone)} class={contactBtn}>Call</a>}
+              {wa && <a href={wa} target="_blank" rel="noopener noreferrer" class={contactBtn}>WhatsApp</a>}
+              {l.email && <a href={`mailto:${l.email}`} class={contactBtn}>Email</a>}
+              <a href={`/admin/leads/${l.id}`} class={contactBtn}>Open</a>
+            </div>
+          </li>
+        );
+      })}
     </ul>
-    <div class="hidden md:block bg-white rounded-xl border border-stone-200 overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-stone-50 text-left">
-          <tr>
-            <th class="px-4 py-2">Added</th>
-            <th class="px-4 py-2">Name</th>
-            <th class="px-4 py-2">Contact</th>
-            <th class="px-4 py-2">Tour interest</th>
-            <th class="px-4 py-2">Message</th>
-            <th class="px-4 py-2">Status</th>
-            <th class="px-4 py-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {leads.map((l) => (
-            <tr class="border-t border-stone-100 align-top">
-              <td class="px-4 py-2 whitespace-nowrap text-stone-500">{formatDateTimeIst(l.created_at)}</td>
-              <td class="px-4 py-2">{l.name}</td>
-              <td class="px-4 py-2">
-                {l.email && <a href={`mailto:${l.email}`} class="text-amber-800 hover:underline">{l.email}</a>}
-                {l.email && l.phone ? ' / ' : ''}
-                {l.phone && <a href={telHref(l.phone)} class="text-amber-800 hover:underline">{l.phone}</a>}
-              </td>
-              <td class="px-4 py-2">{l.tour_interest}</td>
-              <td class="px-4 py-2 max-w-xs">{l.message}</td>
-              <td class="px-4 py-2">
-                <span class={`px-2 py-0.5 rounded text-xs ${statusClass(l.status)}`}>{l.status}</span>
-              </td>
-              <td class="px-4 py-2">
-                <form method="POST" class="flex items-center gap-1">
-                  <input type="hidden" name="_action" value="status" />
-                  <input type="hidden" name="leadId" value={l.id} />
-                  <select name="status" aria-label={`Status for ${l.name}`} class="rounded border border-stone-300 px-2 py-1 text-xs">
-                    {STATUSES.map((st) => <option value={st.value} selected={l.status === st.value}>{st.label}</option>)}
-                  </select>
-                  <button type="submit" class="rounded bg-amber-800 text-white px-3 py-1 text-xs">Save</button>
-                </form>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    </>
+  )}
+
+  {next && (
+    <p class="mt-6"><a href={base({ cursor: next })} class="rounded border border-stone-300 bg-white px-4 py-2 text-sm">Older leads</a></p>
   )}
 </AdminLayout>
