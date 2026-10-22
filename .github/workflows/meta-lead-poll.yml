@@ -1,0 +1,20 @@
+name: Meta lead poll
+
+# Safety net for the Facebook/Instagram lead webhook: retries failed events and fetches recent
+# leads that were never delivered (Meta deletes leads after 90 days). Needs the META_POLL_SECRET
+# GitHub secret, set to the same value as the META_POLL_SECRET variable in Cloudflare Pages.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Poll Meta leads
+        env:
+          META_POLL_SECRET: ${{ secrets.META_POLL_SECRET }}
+        run: |
+          if [ -z "${META_POLL_SECRET}" ]; then echo "META_POLL_SECRET not set; skipping"; exit 0; fi
+          curl -fsS -X POST -H "Authorization: Bearer ${META_POLL_SECRET}" https://www.iwisglobal.com/api/meta/poll
