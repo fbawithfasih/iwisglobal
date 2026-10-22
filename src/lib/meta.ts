@@ -327,3 +327,72 @@ export async function pollMeta(env: Record<string, any>, db: D1Like, fetchFn: Fe
   const found = await processMetaEvents(env, db, fresh, fetchFn);
   return { retried: retried.done, found: found.done, failed: retried.failed + found.failed };
 }
+
+// ------------------------------------------------------------- connection test
+
+interface GraphResult {
+  ok: boolean;
+  data?: any;
+  error?: string;
+}
+
+async function graphTry(token: string, path: string, fetchFn: FetchFn): Promise<GraphResult> {
+  try {
+    const res = await fetchFn(`${GRAPH}/${path}`, { headers: { Authorization: `Bearer ${token}` } });
+    const body: any = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: `(#${body?.error?.code ?? res.status}) ${String(body?.error?.message ?? 'error').slice(0, 200)}` };
+    return { ok: true, data: body };
+  } catch {
+    return { ok: false, error: 'network error' };
+  }
+}
+
+// Plain-language lines for the admin page: what the saved token is, what it may do, and whether a lead can be read.
+// Never returns a token.
+export async function diagnoseMeta(env: Record<string, any>, db: D1Like, fetchFn: FetchFn = fetch): Promise<string[]> {
+  const out: string[] = [];
+  const token = String(env.META_PAGE_ACCESS_TOKEN ?? '');
+  const pageId = String(env.META_PAGE_ID ?? '');
+  if (!token) return ['META_PAGE_ACCESS_TOKEN is not set.'];
+  if (!pageId) out.push('META_PAGE_ID is not set.');
+  out.push(`Page id saved on the site: ${pageId || '(none)'} (the Page in Meta's test event was 100724031348473 if you used the test tool).`);
+
+  const me = await graphTry(token, 'me?fields=id,name', fetchFn);
+  out.push(me.ok ? `The saved token belongs to: ${me.data?.name ?? '?'} (id ${me.data?.id ?? '?'}). A Page name here means it is a Page token; a system user or person means it is not.` : `The saved token was refused: ${me.error}`);
+
+  const perms = await graphTry(token, 'me/permissions', fetchFn);
+  if (perms.ok) {
+    const granted = (perms.data?.data ?? []).filter((p: any) => p.status === 'granted').map((p: any) => p.permission);
+    out.push(`Permissions on the saved token: ${granted.join(', ') || '(none listed)'}. leads_retrieval ${granted.includes('leads_retrieval') ? 'is' : 'is NOT'} among them.`);
+  } else out.push(`Permissions could not be listed: ${perms.error}`);
+
+  let useToken = token;
+  if (pageId) {
+    const page = await graphTry(token, `${encodeURIComponent(pageId)}?fields=id,name,access_token`, fetchFn);
+    if (page.ok) {
+      out.push(`Page lookup works: ${page.data?.name ?? '?'}.`);
+      if (page.data?.access_token) {
+        useToken = page.data.access_token;
+        out.push('A Page access token was obtained from the saved token: yes.');
+      } else out.push('A Page access token was obtained from the saved token: NO (the saved token has no access to this Page\'s own token).');
+    } else out.push(`Page lookup failed: ${page.error}`);
+
+    const forms = await graphTry(useToken, `${encodeURIComponent(pageId)}/leadgen_forms?fields=id,name&limit=5`, fetchFn);
+    out.push(forms.ok ? `Lead forms readable: ${(forms.data?.data ?? []).length} found.` : `Lead forms NOT readable: ${forms.error}`);
+  }
+
+  const last = await db
+    .prepare(`SELECT external_id FROM meta_events WHERE kind = 'leadgen' ORDER BY id DESC LIMIT 1`)
+    .bind()
+    .first<{ external_id: string }>()
+    .catch(() => null);
+  if (last?.external_id) {
+    const lead = await graphTry(useToken, `${encodeURIComponent(last.external_id)}?fields=id,created_time,field_data`, fetchFn);
+    out.push(lead.ok ? `Latest lead (${last.external_id}) can be read: yes.` : `Latest lead (${last.external_id}) cannot be read: ${lead.error}`);
+    if (!lead.ok && useToken !== token) {
+      const alt = await graphTry(token, `${encodeURIComponent(last.external_id)}?fields=id,created_time,field_data`, fetchFn);
+      out.push(alt.ok ? 'The same lead CAN be read with the saved token directly.' : `With the saved token directly: ${alt.error}`);
+    }
+  } else out.push('No lead event received yet to test with.');
+  return out;
+}
