@@ -141,4 +141,19 @@ const env2 = { META_PAGE_ACCESS_TOKEN: 'SYSTEM-USER-TOKEN', META_PAGE_ID: 'page1
 fresh = await M.storeMetaEvents(db, [{ kind: 'leadgen', externalId: 'L11', payload: { leadgen_id: 'L11', page_id: 'page1', form_id: 'F1', ad_id: '', created_time: 1 } }]);
 assert.deepEqual(await M.processMetaEvents(env2, db, fresh, exch), { done: 1, failed: 0 });
 assert.ok(seen.length > 0 && seen.every((a) => a === 'Bearer PAGE-TOKEN'), 'lead read uses the Page token');
+
+// ---- connection test: readable lines, never a token
+const diag: typeof fetch = async (url: any, init: any) => {
+  const u = String(url);
+  const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status });
+  if (u.includes('/me/permissions')) return json({ data: [{ permission: 'pages_show_list', status: 'granted' }] });
+  if (u.includes('/me?')) return json({ id: '99', name: 'iwis-leads' });
+  if (u.includes('/page1?fields=id,name,access_token')) return json({ id: 'page1', name: 'IWIS Global', access_token: 'SECRET-PAGE-TOKEN' });
+  if (u.includes('/leadgen_forms')) return json({ data: [{ id: 'F1' }] });
+  return json({ error: { code: 100, message: 'Unsupported get request' } }, 400);
+};
+const lines = await M.diagnoseMeta({ META_PAGE_ACCESS_TOKEN: 'SECRET-SYSTEM-TOKEN', META_PAGE_ID: 'page1' }, db, diag);
+const text = lines.join('\n');
+assert.ok(text.includes('iwis-leads') && text.includes('leads_retrieval is NOT') && text.includes('Page access token was obtained from the saved token: yes') && text.includes('cannot be read'));
+assert.ok(!text.includes('SECRET'), 'no token in the output');
 console.log('meta tests ok');
