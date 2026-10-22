@@ -116,8 +116,32 @@ export function extractContacts(text: string): { email: string; phone: string } 
 
 // ------------------------------------------------------------------ Graph
 
+// Lead data is only returned for a PAGE access token. The configured token may be a system-user token, so
+// exchange it for the Page's own token (GET /{page-id}?fields=access_token) and keep that for ten minutes.
+// If the exchange fails the configured token is used as it is, so a real Page token keeps working.
+let cachedPageToken: { source: string; token: string; at: number } | null = null;
+
+async function pageToken(env: Record<string, any>, fetchFn: FetchFn): Promise<string> {
+  const source = String(env.META_PAGE_ACCESS_TOKEN ?? '');
+  if (!env.META_PAGE_ID || !source) return source;
+  if (cachedPageToken && cachedPageToken.source === source && Date.now() - cachedPageToken.at < 10 * 60_000) return cachedPageToken.token;
+  try {
+    const res = await fetchFn(`${GRAPH}/${encodeURIComponent(env.META_PAGE_ID)}?fields=access_token`, { headers: { Authorization: `Bearer ${source}` } });
+    if (res.ok) {
+      const token = ((await res.json()) as any)?.access_token;
+      if (typeof token === 'string' && token) {
+        cachedPageToken = { source, token, at: Date.now() };
+        return token;
+      }
+    }
+  } catch {
+    // fall back to the configured token
+  }
+  return source;
+}
+
 async function graphGet(env: Record<string, any>, path: string, fetchFn: FetchFn): Promise<any> {
-  const res = await fetchFn(`${GRAPH}/${path}`, { headers: { Authorization: `Bearer ${env.META_PAGE_ACCESS_TOKEN}` } });
+  const res = await fetchFn(`${GRAPH}/${path}`, { headers: { Authorization: `Bearer ${await pageToken(env, fetchFn)}` } });
   if (!res.ok) {
     // Graph's error text (code and message) says why, e.g. "(#200) Requires leads_retrieval permission". It never contains the token.
     let why = '';
