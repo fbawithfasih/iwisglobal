@@ -33,5 +33,10 @@ export function resolveEnv(locals: unknown): Record<string, any> {
     VAPID_PUBLIC_KEY: runtimeEnv.VAPID_PUBLIC_KEY ?? import.meta.env.VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY: runtimeEnv.VAPID_PRIVATE_KEY ?? import.meta.env.VAPID_PRIVATE_KEY,
     HOTEL_SYNC_SECRET: runtimeEnv.HOTEL_SYNC_SECRET ?? import.meta.env.HOTEL_SYNC_SECRET,
+    META_VERIFY_TOKEN: runtimeEnv.META_VERIFY_TOKEN ?? import.meta.env.META_VERIFY_TOKEN,
+    META_APP_SECRET: runtimeEnv.META_APP_SECRET ?? import.meta.env.META_APP_SECRET,
+    META_PAGE_ID: runtimeEnv.META_PAGE_ID ?? import.meta.env.META_PAGE_ID,
+    META_PAGE_ACCESS_TOKEN: runtimeEnv.META_PAGE_ACCESS_TOKEN ?? import.meta.env.META_PAGE_ACCESS_TOKEN,
+    META_POLL_SECRET: runtimeEnv.META_POLL_SECRET ?? import.meta.env.META_POLL_SECRET,
   };
 }
