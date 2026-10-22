@@ -1,0 +1,19 @@
+name: Leads digest
+
+# Morning summary of leads that need attention (09:00 India time). Needs the LEADS_CRON_SECRET
+# GitHub secret, set to the same value as the LEADS_CRON_SECRET variable in Cloudflare Pages.
+on:
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send the digest
+        env:
+          LEADS_CRON_SECRET: ${{ secrets.LEADS_CRON_SECRET }}
+        run: |
+          if [ -z "${LEADS_CRON_SECRET}" ]; then echo "LEADS_CRON_SECRET not set; skipping"; exit 0; fi
+          curl -fsS -X POST -H "Authorization: Bearer ${LEADS_CRON_SECRET}" https://www.iwisglobal.com/api/leads/digest
