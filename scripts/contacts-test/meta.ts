@@ -119,4 +119,11 @@ assert.equal(again.found, 0, 'second poll finds nothing new');
 raw.exec(`UPDATE meta_events SET updated_at = '2000-01-01T00:00:00.000Z' WHERE external_id = 'L9'`);
 assert.equal((await M.pollMeta(env, db, graph)).retried, 0, 'still failing, not counted as done');
 assert.ok(calls > 0);
+
+// ---- the reason Meta refused a lead fetch is kept, so the admin page can show it
+const refuse: typeof fetch = async () => new Response(JSON.stringify({ error: { code: 200, message: 'Requires leads_retrieval permission' } }), { status: 400 });
+fresh = await M.storeMetaEvents(db, [{ kind: 'leadgen', externalId: 'L10', payload: { leadgen_id: 'L10', page_id: 'page1', form_id: 'F1', ad_id: '', created_time: 1 } }]);
+await M.processMetaEvents(env, db, fresh, refuse);
+const why = raw.prepare(`SELECT status, error FROM meta_events WHERE external_id = 'L10'`).get() as any;
+assert.equal(why.status, 'failed'); assert.ok(why.error.includes('#200') && why.error.includes('leads_retrieval'), why.error);
 console.log('meta tests ok');
