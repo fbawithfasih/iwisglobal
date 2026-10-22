@@ -1,0 +1,12 @@
+# Receives mail sent to enquiries@leads.iwisglobal.com (Cloudflare Email Routing) and files it as a lead.
+# Deploy:  cd workers/inbound-email && npm install && npx wrangler deploy
+# Then:    npx wrangler secret put INBOUND_EMAIL_SECRET   (same value as in Cloudflare Pages)
+# See docs/inbound-email-runbook.md.
+name = "iwis-inbound-email"
+main = "index.ts"
+compatibility_date = "2025-01-01"
+
+[vars]
+INBOUND_URL = "https://www.iwisglobal.com/api/inbound/email"
+# A verified Email Routing destination address that also gets a copy of every message.
+FORWARD_TO = ""

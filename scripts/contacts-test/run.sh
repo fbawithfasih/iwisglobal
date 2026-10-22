@@ -7,3 +7,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/run.ts" --bundle --pla
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/run.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/meta.ts" --bundle --platform=node --format=esm --outfile="$OUT/meta.mjs" --external:node:sqlite --log-level=error
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/meta.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/email.ts" --bundle --platform=node --format=esm --outfile="$OUT/email.mjs" --external:node:sqlite --log-level=error
+ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/email.mjs"
