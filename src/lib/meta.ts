@@ -118,7 +118,17 @@ export function extractContacts(text: string): { email: string; phone: string } 
 
 async function graphGet(env: Record<string, any>, path: string, fetchFn: FetchFn): Promise<any> {
   const res = await fetchFn(`${GRAPH}/${path}`, { headers: { Authorization: `Bearer ${env.META_PAGE_ACCESS_TOKEN}` } });
-  if (!res.ok) throw new Error(`graph ${res.status}`);
+  if (!res.ok) {
+    // Graph's error text (code and message) says why, e.g. "(#200) Requires leads_retrieval permission". It never contains the token.
+    let why = '';
+    try {
+      const e = ((await res.json()) as any)?.error;
+      if (e) why = ` (#${e.code ?? '?'}) ${String(e.message ?? '').slice(0, 160)}`;
+    } catch {
+      // not JSON: the status alone will do
+    }
+    throw new Error(`graph ${res.status}${why}`);
+  }
   return res.json();
 }
 
