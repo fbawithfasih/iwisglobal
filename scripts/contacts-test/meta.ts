@@ -126,4 +126,19 @@ fresh = await M.storeMetaEvents(db, [{ kind: 'leadgen', externalId: 'L10', paylo
 await M.processMetaEvents(env, db, fresh, refuse);
 const why = raw.prepare(`SELECT status, error FROM meta_events WHERE external_id = 'L10'`).get() as any;
 assert.equal(why.status, 'failed'); assert.ok(why.error.includes('#200') && why.error.includes('leads_retrieval'), why.error);
+
+// ---- a system-user token is exchanged for the Page token before leads are read
+const seen: string[] = [];
+const exch: typeof fetch = async (url: any, init: any) => {
+  const u = String(url);
+  const auth = String(init?.headers?.Authorization ?? '');
+  if (u.includes('/page1?fields=access_token')) { assert.equal(auth, 'Bearer SYSTEM-USER-TOKEN'); return new Response(JSON.stringify({ access_token: 'PAGE-TOKEN' }), { status: 200 }); }
+  seen.push(auth);
+  if (u.includes('/L11?')) return new Response(JSON.stringify(leadObj('L11', 'lead11@example.com')), { status: 200 });
+  return new Response('{}', { status: 400 });
+};
+const env2 = { META_PAGE_ACCESS_TOKEN: 'SYSTEM-USER-TOKEN', META_PAGE_ID: 'page1' };
+fresh = await M.storeMetaEvents(db, [{ kind: 'leadgen', externalId: 'L11', payload: { leadgen_id: 'L11', page_id: 'page1', form_id: 'F1', ad_id: '', created_time: 1 } }]);
+assert.deepEqual(await M.processMetaEvents(env2, db, fresh, exch), { done: 1, failed: 0 });
+assert.ok(seen.length > 0 && seen.every((a) => a === 'Bearer PAGE-TOKEN'), 'lead read uses the Page token');
 console.log('meta tests ok');
