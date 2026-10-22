@@ -366,6 +366,16 @@ export async function diagnoseMeta(env: Record<string, any>, db: D1Like, fetchFn
     out.push(`Permissions on the saved token: ${granted.join(', ') || '(none listed)'}. leads_retrieval ${granted.includes('leads_retrieval') ? 'is' : 'is NOT'} among them.`);
   } else out.push(`Permissions could not be listed: ${perms.error}`);
 
+  // The Pages this token's user can really act on, and with which tasks. The Page that received the lead must be listed.
+  for (const edge of ['me/assigned_pages', 'me/accounts']) {
+    const pages = await graphTry(token, `${edge}?fields=id,name,tasks&limit=25`, fetchFn);
+    if (pages.ok) {
+      const list = (pages.data?.data ?? []).map((p: any) => `${p.name ?? '?'} (id ${p.id}${Array.isArray(p.tasks) && p.tasks.length ? `; tasks: ${p.tasks.join(', ')}` : ''})`);
+      out.push(`Pages visible to the saved token via ${edge}: ${list.length ? list.join(' | ') : 'none'}.${pageId && !list.some((l: string) => l.includes(`id ${pageId}`)) && list.length ? ` The saved Page id ${pageId} is NOT among them.` : ''}`);
+      if (list.length) break;
+    } else out.push(`${edge} failed: ${pages.error}`);
+  }
+
   let useToken = token;
   if (pageId) {
     const page = await graphTry(token, `${encodeURIComponent(pageId)}?fields=id,name,access_token`, fetchFn);

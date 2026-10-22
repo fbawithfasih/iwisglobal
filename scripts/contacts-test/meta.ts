@@ -146,6 +146,7 @@ assert.ok(seen.length > 0 && seen.every((a) => a === 'Bearer PAGE-TOKEN'), 'lead
 const diag: typeof fetch = async (url: any, init: any) => {
   const u = String(url);
   const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status });
+  if (u.includes('me/assigned_pages')) return json({ data: [{ id: '555', name: 'Other Page', tasks: ['MANAGE'] }] });
   if (u.includes('/me/permissions')) return json({ data: [{ permission: 'pages_show_list', status: 'granted' }] });
   if (u.includes('/me?')) return json({ id: '99', name: 'iwis-leads' });
   if (u.includes('/page1?fields=id,name,access_token')) return json({ id: 'page1', name: 'IWIS Global', access_token: 'SECRET-PAGE-TOKEN' });
@@ -156,4 +157,5 @@ const lines = await M.diagnoseMeta({ META_PAGE_ACCESS_TOKEN: 'SECRET-SYSTEM-TOKE
 const text = lines.join('\n');
 assert.ok(text.includes('iwis-leads') && text.includes('leads_retrieval is NOT') && text.includes('Page access token was obtained from the saved token: yes') && text.includes('cannot be read'));
 assert.ok(!text.includes('SECRET'), 'no token in the output');
+assert.ok(text.includes('Other Page (id 555; tasks: MANAGE)') && text.includes('is NOT among them'), text);
 console.log('meta tests ok');
