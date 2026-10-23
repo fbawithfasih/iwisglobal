@@ -40,5 +40,6 @@ export function resolveEnv(locals: unknown): Record<string, any> {
     META_POLL_SECRET: runtimeEnv.META_POLL_SECRET ?? import.meta.env.META_POLL_SECRET,
     INBOUND_EMAIL_SECRET: runtimeEnv.INBOUND_EMAIL_SECRET ?? import.meta.env.INBOUND_EMAIL_SECRET,
     LEADS_CRON_SECRET: runtimeEnv.LEADS_CRON_SECRET ?? import.meta.env.LEADS_CRON_SECRET,
+    UNSUBSCRIBE_SECRET: runtimeEnv.UNSUBSCRIBE_SECRET ?? import.meta.env.UNSUBSCRIBE_SECRET,
   };
 }

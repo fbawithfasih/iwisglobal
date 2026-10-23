@@ -7,13 +7,15 @@ import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { LEAD_STAGES, LOST_REASONS, CHANNEL_LABELS, scoreBucket, setLeadStage, mergePeople, undoMerge, dismissDuplicate, refreshLeadScore, type LeadStage } from '../../../lib/contacts';
 import { STAGE_LABELS, addNote, completeFollowUp, getLeadDetail, markContacted, setFollowUp } from '../../../lib/leadsAdmin';
 import { formatDateTimeIst } from '../../../lib/format';
+import type { D1Like } from '../../../lib/db';
+import { erasePerson, personEmails, startDoubleOptIn, unsubscribePerson } from '../../../lib/marketing';
 import { telHref, waHref } from '../../../lib/contact';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
   return Astro.redirect('/admin/login');
 }
-const db = env.DB;
+const db: D1Like | undefined = env.DB;
 const id = Astro.params.id ?? '';
 if (!db || !id) return new Response('Not found', { status: 404 });
 
@@ -45,6 +47,26 @@ if (Astro.request.method === 'POST') {
       if (!res.ok) error = res.error;
     } else if (action === 'dismiss') {
       await dismissDuplicate(db, Number(form.get('suggestionId')));
+    } else if (action === 'resend_optin' || action === 'unsub' || action === 'erase') {
+      const lead = await db.prepare(`SELECT person_id, language FROM leads WHERE id = ?`).bind(id).first<{ person_id: string | null; language: string }>();
+      const pid = lead?.person_id;
+      if (!pid) {
+        error = 'This lead is not linked to a person yet.';
+      } else if (action === 'resend_optin') {
+        const emails = await personEmails(db, pid);
+        if (emails.length === 0) error = 'There is no email address on file for this person.';
+        else {
+          const r = await startDoubleOptIn(env, db, pid, emails[0].value_raw, lead?.language || 'en');
+          if (r !== 'sent') error = r === 'already' ? 'This person is already subscribed.' : r === 'blocked' ? 'This address asked not to be emailed (complaint, bounce or deletion) and cannot be re-added here.' : r === 'rate_limited' ? 'Three confirmation emails were already sent in the last hour.' : 'The confirmation email could not be sent.';
+        }
+      } else if (action === 'unsub') {
+        await unsubscribePerson(db, pid, 'manual');
+      } else if (String(form.get('confirm') ?? '').trim().toUpperCase() === 'ERASE') {
+        await erasePerson(db, pid);
+        return Astro.redirect('/admin/leads');
+      } else {
+        error = 'To erase this person, type ERASE in the box.';
+      }
     }
   } catch (err) {
     console.error('admin lead action failed', err instanceof Error ? err.message : 'error');
@@ -124,6 +146,21 @@ const marketing: Record<string, string> = { none: 'Not asked', pending: 'Asked, 
           {d.identifiers.length === 0 && <li>{l.email}{l.email && l.phone ? ' · ' : ''}{l.phone}</li>}
         </ul>
         {d.person && <p class="mt-3 text-xs text-stone-500">Marketing email: {marketing[d.person.marketing_status] ?? d.person.marketing_status}</p>}
+        {d.person && (
+          <details class="mt-3 text-xs">
+            <summary class="cursor-pointer text-stone-600">Email consent and data</summary>
+            <div class="mt-2 space-y-2">
+              <form method="POST"><input type="hidden" name="_action" value="resend_optin" /><button class="w-full rounded border border-stone-300 bg-white px-3 py-2">Send the confirmation email again</button></form>
+              <form method="POST"><input type="hidden" name="_action" value="unsub" /><button class="w-full rounded border border-stone-300 bg-white px-3 py-2" onclick="return confirm('Stop all marketing email to this person?')">Mark unsubscribed (they asked us)</button></form>
+              <form method="POST" class="space-y-1 rounded border border-red-200 bg-red-50 p-2">
+                <input type="hidden" name="_action" value="erase" />
+                <p class="text-red-900">Erase this person: names, contact details, history and consent records are deleted. Only a scrambled copy of the email stays so they are never emailed again. This cannot be undone.</p>
+                <input name="confirm" placeholder="Type ERASE" class="w-full rounded border border-red-300 px-2 py-1" />
+                <button class="w-full rounded bg-red-700 px-3 py-2 text-white">Erase</button>
+              </form>
+            </div>
+          </details>
+        )}
         {d.tags.length > 0 && <p class="mt-1 text-xs text-stone-500">Tags: {d.tags.join(', ')}</p>}
       </section>
 

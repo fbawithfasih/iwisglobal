@@ -5,6 +5,7 @@ import { getDictionary } from '../../i18n/dictionaries';
 import { hashIp } from '../../lib/aiGuide';
 import { normaliseEmail, normalisePhone, recordConsent, recordLead, type Attribution } from '../../lib/contacts';
 import { notifyNewLead } from '../../lib/leadsAdmin';
+import { consentVersionId, startDoubleOptIn } from '../../lib/marketing';
 import type { D1Like } from '../../lib/db';
 
 export const prerender = false;
@@ -16,7 +17,6 @@ export const prerender = false;
 const PER_IP_PER_HOUR = 5;
 const SITE_PER_HOUR = 200;
 const HOUR_MS = 60 * 60 * 1000;
-const CONSENT_VERSION = 'web-form-v1';
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const clean = (v: unknown, max: number): string => (typeof v === 'string' ? v.trim().replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, max) : '');
@@ -94,9 +94,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     if (wantsMarketing) {
       const text = getDictionary(locale).enquiryForm.marketing;
+      const version = await consentVersionId('enquiry-form', text);
       await db
         .prepare(`INSERT OR IGNORE INTO consent_texts (version_id, language, text, valid_from) VALUES (?, ?, ?, ?)`)
-        .bind(CONSENT_VERSION, locale, text, new Date().toISOString())
+        .bind(version, locale, text, new Date().toISOString())
         .run();
       await recordConsent(db, result.personId, {
         channel: 'email',
@@ -104,10 +105,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
         source: 'website_form',
         sourceUrl: attribution.landingPage ? `https://www.iwisglobal.com${attribution.landingPage}` : 'https://www.iwisglobal.com/contact',
         formId: 'enquiry_form',
-        textVersionId: CONSENT_VERSION,
+        textVersionId: version,
         ipHash,
         userAgent: request.headers.get('user-agent') ?? '',
       });
+      // Ticking the box is not enough: the address is subscribed only after the confirmation email is clicked.
+      await startDoubleOptIn(env, db, result.personId, email, locale);
     }
 
     // Tell the owner. A failed alert must not fail the visitor's submit.

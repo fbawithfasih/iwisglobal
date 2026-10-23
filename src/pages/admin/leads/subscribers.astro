@@ -1,0 +1,66 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { formatDateTimeIst } from '../../../lib/format';
+import type { D1Like } from '../../../lib/db';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+const db: D1Like | undefined = env.DB;
+
+const LABEL: Record<string, string> = { subscribed: 'Subscribed', pending: 'Waiting for confirmation', unsubscribed: 'Unsubscribed', bounced: 'Address bounced', complained: 'Marked as spam' };
+const status = Astro.url.searchParams.get('status') ?? 'subscribed';
+let counts: Record<string, number> = {};
+let rows: { id: string; display_name: string; language: string; marketing_status: string; email: string | null; at: string | null }[] = [];
+let failed = false;
+if (db) {
+  try {
+    for (const r of (await db.prepare(`SELECT marketing_status AS s, COUNT(*) AS n FROM people WHERE merged_into_id IS NULL GROUP BY marketing_status`).bind().all<{ s: string; n: number }>()).results) counts[r.s] = r.n;
+    rows = (
+      await db
+        .prepare(
+          `SELECT p.id, p.display_name, p.language, p.marketing_status,
+                  (SELECT i.value_raw FROM person_identifiers i WHERE i.person_id = p.id AND i.type = 'email' AND i.is_shared = 0 ORDER BY i.id LIMIT 1) AS email,
+                  (SELECT MAX(c.occurred_at) FROM consent_events c WHERE c.person_id = p.id AND c.channel = 'email') AS at
+             FROM people p WHERE p.merged_into_id IS NULL AND p.marketing_status = ? ORDER BY at DESC LIMIT 200`
+        )
+        .bind(status)
+        .all<(typeof rows)[number]>()
+    ).results;
+  } catch {
+    failed = true;
+  }
+}
+---
+<AdminLayout title="Email subscribers">
+  <p class="mb-2 text-sm"><a href="/admin/leads" class="text-amber-800 hover:underline">&larr; All leads</a></p>
+  <h1 class="mb-4 text-2xl font-semibold">Email subscribers</h1>
+  {failed && <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">The lists could not be read.</p>}
+  <nav class="mb-4 flex flex-wrap gap-2 text-sm">
+    {Object.entries(LABEL).map(([k, label]) => (
+      <a href={`/admin/leads/subscribers?status=${k}`} class={`rounded-full border px-3 py-1.5 ${k === status ? 'border-amber-800 bg-amber-800 text-white' : 'border-stone-300 bg-white text-stone-700'}`}>{label} ({counts[k] ?? 0})</a>
+    ))}
+  </nav>
+  <p class="mb-4 text-xs text-stone-500">Only people who confirmed by email are "Subscribed" and can receive marketing. Waiting for confirmation means they ticked the box but have not pressed the button in the email yet.</p>
+  <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white text-sm">
+    <table class="w-full text-left">
+      <thead class="bg-stone-50"><tr><th class="px-3 py-2">Name</th><th class="px-3 py-2">Email</th><th class="px-3 py-2">Language</th><th class="px-3 py-2">Last consent change</th></tr></thead>
+      <tbody>
+        {rows.length === 0 && <tr><td class="px-3 py-3 text-stone-500" colspan="4">No one here yet.</td></tr>}
+        {rows.map((r) => (
+          <tr class="border-t border-stone-100">
+            <td class="px-3 py-2">{r.display_name || '-'}</td>
+            <td class="px-3 py-2 break-all">{r.email ?? ''}</td>
+            <td class="px-3 py-2">{r.language || ''}</td>
+            <td class="px-3 py-2 whitespace-nowrap">{r.at ? formatDateTimeIst(r.at) : ''}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</AdminLayout>

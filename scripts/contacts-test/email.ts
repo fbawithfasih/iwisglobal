@@ -38,7 +38,7 @@ assert.equal(E.bookingRef('Booking reference: VX-99887766'), 'VX-99887766');
 // ---- a normal enquiry becomes a lead, a thread reply joins it
 const a = await E.handleInboundEmail(env, db, { from: { address: 'Anna.Berg@gmail.com', name: 'Anna Berg' }, subject: 'Sunrise Taj tour in March', text: 'Hello, price for 2?', messageId: '<m1@mail>' });
 assert.equal(a.status, 'lead');
-const lead = raw.prepare(`SELECT * FROM leads WHERE id = ?`).get(a.leadId) as any;
+const lead = raw.prepare(`SELECT * FROM leads WHERE id = ?`).get(a.leadId!) as any;
 assert.equal(lead.channel, 'email'); assert.equal(lead.name, 'Anna Berg'); assert.equal(lead.email, 'Anna.Berg@gmail.com');
 const again = await E.handleInboundEmail(env, db, { from: { address: 'annaberg@gmail.com' }, subject: 'Re: Sunrise Taj tour in March', text: 'And private car?', messageId: '<m2@mail>' });
 assert.equal(again.leadId, a.leadId, 'same person (gmail dots), same open lead');
@@ -51,7 +51,7 @@ assert.equal(ig.status, 'ignored'); assert.equal(count('leads'), 1);
 
 // ---- marketplace: relay address is shared (never matched), no marketing
 const g1 = await E.handleInboundEmail(env, db, { from: { address: 'relay-77@reply.getyourguide.com', name: 'Jo (GetYourGuide)' }, subject: 'New booking GYGXYZ998877', text: 'Booking GYGXYZ998877 for 3 travellers', messageId: '<g1>' });
-const mp = raw.prepare(`SELECT * FROM leads WHERE id = ?`).get(g1.leadId) as any;
+const mp = raw.prepare(`SELECT * FROM leads WHERE id = ?`).get(g1.leadId!) as any;
 assert.equal(mp.channel, 'marketplace'); assert.ok(mp.message.includes('GYGXYZ998877'));
 assert.equal(count('person_identifiers', `value_raw = 'relay-77@reply.getyourguide.com' AND is_shared = 1`), 1);
 assert.equal(count('consent_events'), 0);
