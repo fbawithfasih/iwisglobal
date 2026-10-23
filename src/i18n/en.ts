@@ -1418,6 +1418,13 @@ export const en = {
         button: "Confirm my subscription",
         note: "The link works for 7 days. If you did not sign up, ignore this email and we will not write to you again.",
       },
+      marketing: {
+        why: "You receive this email because you signed up for travel ideas and offers from IWIS Global.",
+        unsubscribe: "Unsubscribe",
+        privacy: "Privacy policy",
+        priceFrom: "From {price} per person",
+        seeTour: "See the tour",
+      },
     },
   // Paying the balance of a tour booking online (src/lib/balancePayment.ts): the /pay page and its emails.
   balance: {

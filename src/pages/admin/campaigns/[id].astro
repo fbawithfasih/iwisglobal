@@ -1,0 +1,227 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { LEAD_STAGES, CHANNELS, CHANNEL_LABELS } from '../../../lib/contacts';
+import { STAGE_LABELS } from '../../../lib/leadsAdmin';
+import { listTours } from '../../../lib/tours';
+import {
+  CAMPAIGN_LANGS, LANG_NAMES, EMPTY_CONTENT, audience, cancelCampaign, contentComplete, getCampaign, languageCounts, languageFor, loadContent, parseSegment,
+  readiness, saveContent, schedule, sendCounts, sendNextChunk, sendTest, startCampaign, translateContent, type CampaignContent,
+} from '../../../lib/campaigns';
+import { formatDateTimeIst } from '../../../lib/format';
+import type { D1Like } from '../../../lib/db';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+const db: D1Like | undefined = env.DB;
+const id = Astro.params.id ?? '';
+if (!db || !id) return new Response('Not found', { status: 404 });
+let campaign = await getCampaign(db, id).catch(() => null);
+if (!campaign) return new Response('Campaign not found', { status: 404 });
+
+const lang = (CAMPAIGN_LANGS as readonly string[]).includes(Astro.url.searchParams.get('lang') ?? '') ? (Astro.url.searchParams.get('lang') as string) : 'en';
+let notice = '';
+let problems: string[] = [];
+const editable = campaign.status === 'draft' || campaign.status === 'scheduled';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = String(form.get('_action') ?? '');
+  const str = (k: string) => String(form.get(k) ?? '');
+  const here = (extra = '') => Astro.redirect(`/admin/campaigns/${id}?lang=${lang}${extra}`);
+  try {
+    if (action === 'rename' && editable) {
+      await db.prepare(`UPDATE campaigns SET name = ?, updated_at = ? WHERE id = ?`).bind(str('name').slice(0, 120), new Date().toISOString(), id).run();
+    } else if (action === 'segment' && editable) {
+      const split = (k: string) => str(k).split(',').map((s) => s.trim()).filter(Boolean);
+      const seg = {
+        languages: form.getAll('languages').map(String),
+        countries: split('countries'),
+        stages: form.getAll('stages').map(String),
+        channels: form.getAll('channels').map(String),
+        tag: str('tag').trim(),
+        pastBooker: form.get('pastBooker') === 'on',
+      };
+      await db.prepare(`UPDATE campaigns SET segment_json = ?, updated_at = ? WHERE id = ?`).bind(JSON.stringify(seg), new Date().toISOString(), id).run();
+    } else if (action === 'content' && editable) {
+      const c: CampaignContent = {
+        ...EMPTY_CONTENT(lang),
+        subject: str('subject'), preheader: str('preheader'), headline: str('headline'), intro: str('intro'),
+        block1: str('block1'), block2: str('block2'), block3: str('block3'), tour_slug: str('tour_slug'), cta_label: str('cta_label'), cta_url: str('cta_url'),
+        // English is the master and needs no approval; a translation is sent only once someone ticks this.
+        reviewed: lang === 'en' || form.get('reviewed') === 'on' ? 1 : 0,
+      };
+      await saveContent(db, id, c);
+    } else if (action === 'translate' && editable) {
+      const err = await translateContent(env, db, id, lang);
+      return here(err ? `&notice=${encodeURIComponent(err)}` : '&notice=' + encodeURIComponent('Draft translation saved. Read it, fix anything, and tick "approved" when it is right.'));
+    } else if (action === 'test') {
+      const r = await sendTest(env, db, campaign, str('to').split(/[\s,;]+/), lang);
+      return here(`&notice=${encodeURIComponent(r.error ?? `Test sent to ${r.sent} address${r.sent === 1 ? '' : 'es'}. Check your inbox.`)}`);
+    } else if (action === 'start') {
+      problems = await startCampaign(env, db, campaign);
+      if (problems.length === 0) {
+        await sendNextChunk(env, db, id);
+        return here('&notice=' + encodeURIComponent('Sending has started.'));
+      }
+    } else if (action === 'schedule' && editable) {
+      const when = str('when'); // a time in India
+      const iso = when ? new Date(`${when}:00+05:30`) : null;
+      if (iso && !Number.isNaN(iso.getTime()) && iso.getTime() > Date.now()) await schedule(db, id, iso.toISOString());
+      else notice = 'Choose a time in the future.';
+    } else if (action === 'unschedule') {
+      await schedule(db, id, null);
+    } else if (action === 'cancel') {
+      await cancelCampaign(db, id);
+    } else if (action === 'next') {
+      const r = await sendNextChunk(env, db, id);
+      return here(`&notice=${encodeURIComponent(r.blocked ?? `Sent ${r.sent}, skipped ${r.skipped}, failed ${r.failed}, ${r.remaining} still waiting.`)}`);
+    }
+  } catch (err) {
+    console.error('campaign action failed', err instanceof Error ? err.message : 'error');
+    notice = 'That did not work. Please try again.';
+  }
+  if (problems.length === 0 && !notice) return here();
+  campaign = (await getCampaign(db, id)) ?? campaign;
+}
+
+notice = notice || Astro.url.searchParams.get('notice') || '';
+const content = await loadContent(db, id);
+const c = content[lang] ?? EMPTY_CONTENT(lang);
+const seg = parseSegment(campaign.segment_json);
+const people = await audience(db, seg);
+const counts = languageCounts(people);
+// Who will get English even though their language is chosen, because that version is missing or not approved.
+const fallback: Record<string, number> = {};
+for (const p of people) {
+  const used = languageFor(p.language, content);
+  if (used !== p.language) fallback[p.language] = (fallback[p.language] ?? 0) + 1;
+}
+const send = await sendCounts(db, id);
+const ready = campaign.status === 'draft' || campaign.status === 'scheduled' ? await readiness(env, db, campaign) : [];
+const tours = (await listTours(db, { status: 'published' }).catch(() => [])) as { slug: string; title: string }[];
+const field = 'w-full rounded border border-stone-300 px-3 py-2';
+const card = 'rounded-xl border border-stone-200 bg-white p-4 text-sm';
+---
+<AdminLayout title={campaign.name}>
+  <p class="mb-2 text-sm"><a href="/admin/campaigns" class="text-amber-800 hover:underline">&larr; All campaigns</a></p>
+  <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <h1 class="text-2xl font-semibold">{campaign.name}</h1>
+    <span class="rounded bg-stone-100 px-2 py-0.5 text-xs">{campaign.status}{campaign.scheduled_at && campaign.status === 'scheduled' ? ` · ${formatDateTimeIst(campaign.scheduled_at)}` : ''}</span>
+  </div>
+  {notice && <p class="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">{notice}</p>}
+  {problems.length > 0 && <ul class="mb-4 list-disc rounded-lg bg-red-50 p-3 pl-7 text-sm text-red-800">{problems.map((p) => <li>{p}</li>)}</ul>}
+  {campaign.last_error && <p class="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Last problem: {campaign.last_error}</p>}
+
+  <div class="grid gap-4 lg:grid-cols-3">
+    <div class="space-y-4 lg:col-span-2">
+      <section class={card}>
+        <div class="mb-3 flex flex-wrap gap-2">
+          {CAMPAIGN_LANGS.map((l) => (
+            <a href={`/admin/campaigns/${id}?lang=${l}`} class={`rounded-full border px-3 py-1.5 ${l === lang ? 'border-amber-800 bg-amber-800 text-white' : 'border-stone-300 bg-white text-stone-700'}`}>
+              {LANG_NAMES[l]}{l !== 'en' && contentComplete(content[l]) ? (content[l].reviewed ? ' ✓' : ' (draft)') : ''}
+            </a>
+          ))}
+        </div>
+        <form method="POST" class="space-y-2">
+          <input type="hidden" name="_action" value="content" />
+          <label class="block">Subject<input name="subject" value={c.subject} maxlength="200" class={field} disabled={!editable} /></label>
+          <label class="block">Preview line (shown next to the subject in the inbox)<input name="preheader" value={c.preheader} maxlength="200" class={field} disabled={!editable} /></label>
+          <label class="block">Headline<input name="headline" value={c.headline} maxlength="200" class={field} disabled={!editable} /></label>
+          <label class="block">Intro (leave a blank line between paragraphs)<textarea name="intro" rows="4" class={field} disabled={!editable}>{c.intro}</textarea></label>
+          <label class="block">Text block 1<textarea name="block1" rows="3" class={field} disabled={!editable}>{c.block1}</textarea></label>
+          <label class="block">Text block 2<textarea name="block2" rows="3" class={field} disabled={!editable}>{c.block2}</textarea></label>
+          <label class="block">Text block 3<textarea name="block3" rows="3" class={field} disabled={!editable}>{c.block3}</textarea></label>
+          <label class="block">Tour to show (photo, name, price)
+            <select name="tour_slug" class={field} disabled={!editable}>
+              <option value="">None</option>
+              {tours.map((t) => <option value={t.slug} selected={t.slug === c.tour_slug}>{t.title}</option>)}
+            </select>
+          </label>
+          <div class="grid gap-2 sm:grid-cols-2">
+            <label class="block">Button text<input name="cta_label" value={c.cta_label} maxlength="80" class={field} disabled={!editable} /></label>
+            <label class="block">Button link (https://...)<input name="cta_url" value={c.cta_url} maxlength="500" class={field} disabled={!editable} /></label>
+          </div>
+          {lang !== 'en' && (
+            <label class="flex items-start gap-2 rounded bg-amber-50 p-2"><input type="checkbox" name="reviewed" checked={!!c.reviewed} disabled={!editable} class="mt-1" /> <span>I have read this {LANG_NAMES[lang]} version and approve it. Until I tick this, {LANG_NAMES[lang]} readers get the English version.</span></label>
+          )}
+          {editable && <button class="min-h-11 rounded bg-amber-800 px-4 text-white">Save this version</button>}
+        </form>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <a href={`/admin/campaigns/${id}/preview?lang=${lang}`} target="_blank" rel="noopener" class="inline-flex min-h-11 items-center rounded border border-stone-300 bg-white px-4">Preview</a>
+          {editable && lang !== 'en' && (
+            <form method="POST"><input type="hidden" name="_action" value="translate" /><button class="min-h-11 rounded border border-stone-300 bg-white px-4">Draft {LANG_NAMES[lang]} from the English</button></form>
+          )}
+        </div>
+      </section>
+    </div>
+
+    <div class="space-y-4">
+      <section class={card}>
+        <h2 class="mb-2 font-semibold">Name</h2>
+        <form method="POST" class="flex gap-2"><input type="hidden" name="_action" value="rename" /><input name="name" value={campaign.name} class={field} disabled={!editable} />{editable && <button class="rounded border border-stone-300 bg-white px-3">Save</button>}</form>
+      </section>
+
+      <section class={card}>
+        <h2 class="mb-2 font-semibold">Who gets it</h2>
+        <form method="POST" class="space-y-2">
+          <input type="hidden" name="_action" value="segment" />
+          <fieldset><legend class="text-xs text-stone-500">Language (none ticked = everyone)</legend>
+            {CAMPAIGN_LANGS.map((l) => <label class="mr-3 inline-flex items-center gap-1"><input type="checkbox" name="languages" value={l} checked={seg.languages?.includes(l)} disabled={!editable} /> {LANG_NAMES[l]}</label>)}
+          </fieldset>
+          <label class="block">Countries (codes, comma separated, e.g. DE, FR)<input name="countries" value={(seg.countries ?? []).join(', ')} class={field} disabled={!editable} /></label>
+          <fieldset><legend class="text-xs text-stone-500">Lead stage</legend>
+            {LEAD_STAGES.map((s) => <label class="mr-3 inline-flex items-center gap-1"><input type="checkbox" name="stages" value={s} checked={seg.stages?.includes(s)} disabled={!editable} /> {STAGE_LABELS[s]}</label>)}
+          </fieldset>
+          <fieldset><legend class="text-xs text-stone-500">Came in through</legend>
+            {CHANNELS.map((ch) => <label class="mr-3 inline-flex items-center gap-1"><input type="checkbox" name="channels" value={ch} checked={seg.channels?.includes(ch)} disabled={!editable} /> {CHANNEL_LABELS[ch]}</label>)}
+          </fieldset>
+          <label class="block">Tag<input name="tag" value={seg.tag ?? ''} class={field} disabled={!editable} /></label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="pastBooker" checked={seg.pastBooker} disabled={!editable} /> Only people who have booked</label>
+          {editable && <button class="min-h-11 w-full rounded bg-amber-800 text-white">Save audience</button>}
+        </form>
+        <p class="mt-3 font-semibold">{people.length} confirmed subscriber{people.length === 1 ? '' : 's'} match</p>
+        <p class="text-xs text-stone-600">{Object.entries(counts).map(([l, n]) => `${LANG_NAMES[l] ?? l} ${n}`).join(' · ') || 'No one yet'}</p>
+        {Object.keys(fallback).length > 0 && <p class="mt-1 text-xs text-amber-800">{Object.entries(fallback).map(([l, n]) => `${n} ${LANG_NAMES[l] ?? l} reader${n === 1 ? '' : 's'}`).join(', ')} will get English because that version is missing or not approved.</p>}
+      </section>
+
+      <section class={card}>
+        <h2 class="mb-2 font-semibold">Test first</h2>
+        <form method="POST" class="space-y-2">
+          <input type="hidden" name="_action" value="test" />
+          <textarea name="to" rows="2" placeholder="your@email.com, another@email.com (up to 5)" class={field}></textarea>
+          <p class="text-xs text-stone-500">Sends the {LANG_NAMES[lang]} version, marked [TEST]. Try Gmail, Outlook and a German provider.{campaign.tested_at ? ` Last test: ${formatDateTimeIst(campaign.tested_at)}.` : ''}</p>
+          <button class="min-h-11 w-full rounded border border-stone-300 bg-white">Send test</button>
+        </form>
+      </section>
+
+      <section class={card}>
+        <h2 class="mb-2 font-semibold">Send</h2>
+        {editable && ready.length > 0 && <ul class="mb-2 list-disc pl-5 text-xs text-amber-900">{ready.map((r) => <li>{r}</li>)}</ul>}
+        {editable && (
+          <div class="space-y-2">
+            <form method="POST" onsubmit={`return confirm('Send this to ${people.length} subscribers now?')`}><input type="hidden" name="_action" value="start" /><button class="min-h-11 w-full rounded bg-amber-800 text-white">Send now</button></form>
+            <form method="POST" class="flex gap-2"><input type="hidden" name="_action" value="schedule" /><input type="datetime-local" name="when" class={field} aria-label="Send at (India time)" /><button class="rounded border border-stone-300 bg-white px-3">Schedule</button></form>
+            {campaign.status === 'scheduled' && <form method="POST"><input type="hidden" name="_action" value="unschedule" /><button class="w-full rounded border border-stone-300 bg-white px-3 py-2">Remove the schedule</button></form>}
+            <p class="text-xs text-stone-500">Times are India time. Sending is in batches and continues on its own; a daily limit applies while the sender is warming up.</p>
+          </div>
+        )}
+        {campaign.status === 'sending' && (
+          <div class="space-y-2">
+            <p>Sent {send.sent} · waiting {send.queued} · skipped {send.skipped} · failed {send.failed}</p>
+            <form method="POST"><input type="hidden" name="_action" value="next" /><button class="min-h-11 w-full rounded border border-stone-300 bg-white">Send the next batch now</button></form>
+          </div>
+        )}
+        {campaign.status === 'sent' && <p>Sent {send.sent} · skipped {send.skipped} · failed {send.failed}. Finished {formatDateTimeIst(campaign.finished_at)}.</p>}
+        {(campaign.status === 'draft' || campaign.status === 'scheduled' || campaign.status === 'sending') && (
+          <form method="POST" class="mt-2" onsubmit="return confirm('Cancel this campaign? Anyone not yet sent will not receive it.')"><input type="hidden" name="_action" value="cancel" /><button class="w-full rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800">Cancel campaign</button></form>
+        )}
+      </section>
+    </div>
+  </div>
+</AdminLayout>

@@ -1417,6 +1417,13 @@ export const de: Dictionary = {
         button: "Anmeldung bestätigen",
         note: "Der Link gilt 7 Tage. Wenn Sie sich nicht angemeldet haben, ignorieren Sie diese E-Mail. Wir schreiben Ihnen dann nicht wieder.",
       },
+      marketing: {
+        why: "Sie erhalten diese E-Mail, weil Sie sich für Reiseideen und Angebote von IWIS Global angemeldet haben.",
+        unsubscribe: "Abmelden",
+        privacy: "Datenschutzerklärung",
+        priceFrom: "Ab {price} pro Person",
+        seeTour: "Tour ansehen",
+      },
     },
   // Paying the balance of a tour booking online (src/lib/balancePayment.ts): the /pay page and its emails.
   balance: {

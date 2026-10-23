@@ -12,6 +12,7 @@ const navLinkClass = (active: boolean) =>
 const isBookings = path === '/admin' || path.startsWith('/admin/bookings/');
 const isTours = path.startsWith('/admin/tours');
 const isLeads = path.startsWith('/admin/leads');
+const isCampaigns = path.startsWith('/admin/campaigns');
 const isAgraHighlights = path.startsWith('/admin/agra-highlights');
 const isReviews = path.startsWith('/admin/reviews');
 const isBlog = path.startsWith('/admin/blog');
@@ -26,6 +27,7 @@ type NavItem = { href: string; label: string; active: boolean };
 const top: NavItem[] = [
   { href: '/admin', label: 'Bookings', active: isBookings },
   { href: '/admin/leads', label: 'Leads', active: isLeads },
+  { href: '/admin/campaigns', label: 'Campaigns', active: isCampaigns },
   { href: '/admin/whatsapp', label: 'WhatsApp', active: isWhatsapp },
 ];
 const groups: { label: string; items: NavItem[] }[] = [
