@@ -575,6 +575,98 @@ export async function sendEmailVerificationEmail(env: Record<string, any>, detai
   return post(env, 'sendEmailVerificationEmail', { from: FROM(env), to: details.to, subject: X.subject, html, text });
 }
 
+export const postEmail = post;
+
+// Several emails in one request (Resend allows up to 100). The Idempotency-Key makes a retried request return the
+// first answer instead of sending twice (Resend remembers it for 24 hours). `ids` line up with the payloads.
+export async function postBatch(
+  env: Record<string, any>,
+  label: string,
+  payloads: Record<string, unknown>[],
+  idempotencyKey: string
+): Promise<{ ok: boolean; status: number; ids: string[]; error?: string }> {
+  try {
+    const res = await fetch('https://api.resend.com/emails/batch', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey.slice(0, 250) },
+      body: JSON.stringify(payloads),
+    });
+    if (!res.ok) {
+      const body = (await res.text()).slice(0, 300);
+      console.error(`${label}: Resend batch error`, res.status, body);
+      return { ok: false, status: res.status, ids: [], error: `resend ${res.status}: ${body}` };
+    }
+    const json: any = await res.json().catch(() => ({}));
+    return { ok: true, status: res.status, ids: Array.isArray(json?.data) ? json.data.map((d: any) => String(d?.id ?? '')) : [] };
+  } catch (err) {
+    console.error(`${label}: batch request failed`, err);
+    return { ok: false, status: 0, ids: [], error: 'network error' };
+  }
+}
+
+// What every marketing email says about who sends it. Matches the registered details on /about and /contact.
+const LEGAL_ADDRESS = 'IWIS Global (partnership firm) &middot; A-5, First Floor, ESSAR Mughal Residency, Jyoti Nagar, Shaheed Nagar, Agra &ndash; 282001, Uttar Pradesh, India';
+
+export interface MarketingEmailParts {
+  locale?: Locale;
+  preheader: string;
+  headline: string;
+  intro: string;
+  blocks: string[];
+  tour?: { title: string; image: string; url: string; priceLine: string };
+  cta?: { label: string; url: string };
+  unsubscribeUrl: string;
+}
+
+// The branded campaign layout. Text from the admin is escaped; blank lines become paragraphs. Returns the HTML and a
+// plain-text copy. Inline styles and a solid header, like the other emails.
+export function marketingEmail(parts: MarketingEmailParts): { html: string; text: string } {
+  const M = getDictionary(parts.locale ?? 'en').emails.marketing;
+  const paras = (s: string) =>
+    s
+      .split(/\n{2,}/)
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((p) => `<p style="margin:0 0 14px;">${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
+      .join('');
+  const tour = parts.tour
+    ? `<a href="${escapeHtml(parts.tour.url)}" style="display:block; margin:18px 0; border:1px solid #ede9fe; border-radius:14px; overflow:hidden; text-decoration:none; color:#1c1917;">
+         ${parts.tour.image ? `<img src="${escapeHtml(parts.tour.image)}" alt="" width="480" style="display:block; width:100%; height:auto;">` : ''}
+         <span style="display:block; padding:12px 16px;"><strong style="display:block; font-size:16px;">${escapeHtml(parts.tour.title)}</strong><span style="font-size:13px; color:#57534e;">${escapeHtml(parts.tour.priceLine)}</span></span>
+       </a>`
+    : '';
+  const cta = parts.cta ? `<p style="margin:24px 0; text-align:center;"><a href="${escapeHtml(parts.cta.url)}" style="${EMAIL_BUTTON}">${escapeHtml(parts.cta.label)}</a></p>` : '';
+  const html = `
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">${escapeHtml(parts.preheader)}</div>
+    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1c1917; border:1px solid #ede9fe; border-radius:16px; overflow:hidden;">
+      <div style="background:#4c1d95; padding:22px 24px; text-align:center;">
+        <p style="margin:0; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:#ddd6fe;">IWIS Global</p>
+        <h2 style="margin:6px 0 0; color:#ffffff; font-size:22px;">${escapeHtml(parts.headline)}</h2>
+      </div>
+      <div style="padding:24px; line-height:1.55;">${paras(parts.intro)}${parts.blocks.map(paras).join('')}${tour}${cta}</div>
+      <div style="padding:16px 24px; background:#faf9ff; color:#78716c; font-size:12px; line-height:1.5; text-align:center;">
+        <p style="margin:0 0 8px;">${escapeHtml(M.why)}</p>
+        <p style="margin:0 0 8px;"><a href="${escapeHtml(parts.unsubscribeUrl)}" style="color:#7c3aed;">${escapeHtml(M.unsubscribe)}</a> &middot; <a href="${SITE}/privacy" style="color:#7c3aed;">${escapeHtml(M.privacy)}</a></p>
+        <p style="margin:0;">${LEGAL_ADDRESS}</p>
+      </div>
+    </div>`;
+  const text = [
+    parts.headline,
+    '',
+    parts.intro,
+    ...parts.blocks.filter(Boolean).flatMap((b) => ['', b]),
+    ...(parts.tour ? ['', `${parts.tour.title} - ${parts.tour.priceLine}`, parts.tour.url] : []),
+    ...(parts.cta ? ['', `${parts.cta.label}: ${parts.cta.url}`] : []),
+    '',
+    '--',
+    M.why,
+    `${M.unsubscribe}: ${parts.unsubscribeUrl}`,
+    `${M.privacy}: ${SITE}/privacy`,
+    plain(LEGAL_ADDRESS),
+  ].join('\n');
+  return { html, text };
+}
+
 // The one confirmation email of the double opt-in (src/lib/marketing.ts). Neutral on purpose: no offers,
 // no promotion, so it needs no consent itself. Sent once per sign-up.
 export async function sendOptInConfirmationEmail(env: Record<string, any>, details: { to: string; link: string; locale?: Locale }): Promise<boolean> {

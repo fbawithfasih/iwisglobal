@@ -1417,6 +1417,13 @@ export const es: Dictionary = {
         button: "Confirmar mi suscripción",
         note: "El enlace funciona durante 7 días. Si no te has suscrito, ignora este correo y no volveremos a escribirte.",
       },
+      marketing: {
+        why: "Recibes este correo porque te suscribiste a ideas de viaje y ofertas de IWIS Global.",
+        unsubscribe: "Darme de baja",
+        privacy: "Política de privacidad",
+        priceFrom: "Desde {price} por persona",
+        seeTour: "Ver el tour",
+      },
     },
   // Paying the balance of a tour booking online (src/lib/balancePayment.ts): the /pay page and its emails.
   balance: {

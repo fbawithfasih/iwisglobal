@@ -1,0 +1,20 @@
+name: Campaign send
+
+# Continues email campaigns (sends the next batches, starts scheduled ones). Needs the CAMPAIGN_CRON_SECRET GitHub
+# secret, set to the same value as the CAMPAIGN_CRON_SECRET variable in Cloudflare Pages. Does nothing until a
+# campaign is sending, and sending itself stays off until MARKETING_SENDING_ENABLED=1.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send the next batches
+        env:
+          CAMPAIGN_CRON_SECRET: ${{ secrets.CAMPAIGN_CRON_SECRET }}
+        run: |
+          if [ -z "${CAMPAIGN_CRON_SECRET}" ]; then echo "CAMPAIGN_CRON_SECRET not set; skipping"; exit 0; fi
+          curl -fsS -X POST -H "Authorization: Bearer ${CAMPAIGN_CRON_SECRET}" https://www.iwisglobal.com/api/campaigns/tick
