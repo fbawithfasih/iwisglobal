@@ -8,7 +8,7 @@ import type { Locale } from './lib/i18n';
 // save or payment is never followed by a stale read. After any write (a
 // non-GET request), the session's bookmark goes into a short-lived cookie so
 // that visitor's next pages read at least that fresh ("read your writes").
-const PRIMARY_PATHS = /^\/(admin|account|auth|login|signup|forgot-password|reset-password|verify-email|booking|offer|api)(\/|$)/;
+const PRIMARY_PATHS = /^\/(admin|account|auth|login|signup|forgot-password|reset-password|verify-email|confirm-subscription|unsubscribe|booking|offer|api)(\/|$)/;
 const BOOKMARK_COOKIE = 'd1_bookmark';
 
 type Session = { getBookmark(): string | null };

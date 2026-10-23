@@ -1,0 +1,42 @@
+---
+// Unsubscribe link of every marketing email. GET only shows a button (so a mail scanner cannot unsubscribe
+// anyone by accident); a POST unsubscribes. The same POST also serves the one-click unsubscribe of Gmail,
+// Yahoo and Apple Mail (RFC 8058): they post "List-Unsubscribe=One-Click" with no cookies and no page view.
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { resolveEnv } from '../../lib/env';
+import { unsubscribePerson, verifyUnsubscribeToken } from '../../lib/marketing';
+import { pageI18n } from '../../i18n/dictionaries';
+import type { D1Like } from '../../lib/db';
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+const { t } = pageI18n(Astro);
+const u = t.unsubscribePage;
+const env = resolveEnv(Astro.locals);
+const db: D1Like | undefined = env.DB;
+
+const token = String(Astro.params.token ?? '');
+const personId = await verifyUnsubscribeToken(env.UNSUBSCRIBE_SECRET, token);
+let state: 'ask' | 'done' | 'invalid' = personId ? 'ask' : 'invalid';
+if (Astro.request.method === 'POST' && personId && db) {
+  await unsubscribePerson(db, personId, 'unsubscribe');
+  state = 'done';
+}
+---
+<BaseLayout title={u.metaTitle} description={u.intro} noindex noTracking floatingWhatsApp={false}>
+  <div class="mx-auto max-w-xl px-5 py-14">
+    <h1 class="font-serif text-2xl font-semibold text-brand-900 md:text-3xl">{u.title}</h1>
+    {state === 'ask' && (
+      <>
+        <p class="mt-3 text-stone-700">{u.intro}</p>
+        <form method="POST" class="mt-6">
+          <button type="submit" class="min-h-11 rounded-full bg-brand-700 px-6 font-semibold text-white hover:bg-brand-800">{u.button}</button>
+        </form>
+      </>
+    )}
+    {state === 'done' && <p role="status" class="mt-4 rounded-2xl bg-emerald-50 p-4 text-emerald-900">{u.done}</p>}
+    {state === 'invalid' && <p role="alert" class="mt-4 rounded-2xl bg-amber-50 p-4 text-amber-900">{u.invalid}</p>}
+    <p class="mt-8"><a href="/" class="text-brand-700 underline">{u.home}</a></p>
+  </div>
+</BaseLayout>

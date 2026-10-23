@@ -348,6 +348,20 @@ async function insertTouchpoint(
   return changed(res);
 }
 
+// A touchpoint with no lead: for things that are a contact but not an enquiry (a newsletter signup), so
+// the person's history is complete without opening a lead in the inbox.
+export async function recordTouchpoint(
+  db: D1Like,
+  t: { personId: string; channel: Channel; type: string; attribution?: Attribution; externalRef?: string; occurredAt?: string }
+): Promise<boolean> {
+  return insertTouchpoint(db, {
+    personId: t.personId,
+    leadId: null,
+    input: { channel: t.channel, identifiers: [], type: t.type, attribution: t.attribution, externalRef: t.externalRef },
+    occurredAt: t.occurredAt ?? nowIso(),
+  });
+}
+
 export async function logActivity(
   db: D1Like,
   a: { leadId: string; personId?: string; kind: 'note' | 'call' | 'task' | 'stage' | 'system' | 'email'; body: string; dueAt?: string | null; by?: string }

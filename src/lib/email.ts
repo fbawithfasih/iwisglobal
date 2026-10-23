@@ -575,6 +575,19 @@ export async function sendEmailVerificationEmail(env: Record<string, any>, detai
   return post(env, 'sendEmailVerificationEmail', { from: FROM(env), to: details.to, subject: X.subject, html, text });
 }
 
+// The one confirmation email of the double opt-in (src/lib/marketing.ts). Neutral on purpose: no offers,
+// no promotion, so it needs no consent itself. Sent once per sign-up.
+export async function sendOptInConfirmationEmail(env: Record<string, any>, details: { to: string; link: string; locale?: Locale }): Promise<boolean> {
+  if (!env.RESEND_API_KEY || !details.to) return false;
+  const X = getDictionary(details.locale ?? 'en').emails.optIn;
+  const html = emailHtml(X.title, `
+        <p style="margin-top:0;">${X.intro}</p>
+        <p style="margin:24px 0; text-align:center;"><a href="${details.link}" style="${EMAIL_BUTTON}">${X.button}</a></p>
+        <p style="${EMAIL_NOTE}">${X.note}</p>`);
+  const text = [X.title, ``, X.intro, details.link, ``, X.note, ``, `IWIS Global · ${SITE}`].join('\n');
+  return post(env, 'sendOptInConfirmationEmail', { from: FROM(env), to: details.to, subject: X.subject, html, text });
+}
+
 // --- Custom Agra trips (src/lib/customTripPayment.ts) -----------------------
 
 export interface CustomTripEmailDetails {

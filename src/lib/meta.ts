@@ -1,6 +1,7 @@
 import type { D1Like } from './db';
 import { recordLead, recordConsent, type Attribution, type IdentifierInput } from './contacts';
 import { notifyNewLead } from './leadsAdmin';
+import { startDoubleOptIn } from './marketing';
 
 // Facebook / Instagram lead ads and Instagram / Messenger direct messages -> the Leads inbox.
 // Events are stored in meta_events first (schema_meta.sql), then processed; src/pages/api/meta/poll.ts
@@ -249,6 +250,7 @@ async function processOne(env: Record<string, any>, db: D1Like, row: MetaEventRo
         textVersionId: `meta-form-${attribution.formId}`,
         evidenceRef: String(p.leadgen_id ?? row.external_id),
       });
+      await startDoubleOptIn(env, db, res.personId, f.email, 'en');
     }
     return { leadId: res.leadId, created: res.createdLead, name: f.name || f.email || f.phone, channel: 'Facebook/Instagram ad', detail: f.tour };
   }

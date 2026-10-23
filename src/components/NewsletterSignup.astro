@@ -1,0 +1,48 @@
+---
+import { pageI18n } from '../i18n/dictionaries';
+
+// Footer signup for travel ideas by email (src/pages/api/subscribe.ts). The consent box is required and never
+// pre-ticked; the address is only subscribed after the confirmation email (double opt-in).
+const { t, locale } = pageI18n(Astro);
+const n = t.newsletter;
+---
+<form id="newsletter-form" class="mt-6 max-w-xs" novalidate>
+  <h2 class="text-xs font-semibold tracking-wide text-violet-300 uppercase">{n.title}</h2>
+  <p class="mt-2 text-sm text-violet-200">{n.intro}</p>
+  <label class="sr-only" for="newsletter-email">{n.email}</label>
+  <div class="mt-3 flex gap-2">
+    <input id="newsletter-email" name="email" type="email" required maxlength="200" autocomplete="email" placeholder={n.email} class="min-w-0 flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-violet-300 focus:border-white focus:outline-none" />
+    <button type="submit" class="shrink-0 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-brand-900 hover:bg-violet-100">{n.button}</button>
+  </div>
+  <label class="mt-2 flex items-start gap-2 text-xs text-violet-200">
+    <input type="checkbox" name="consent" required class="mt-0.5 h-4 w-4 shrink-0 rounded border-white/40" />
+    <span>{n.consent}</span>
+  </label>
+  <div class="absolute -left-[9999px]" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off" /></label></div>
+  <p id="newsletter-thanks" class="mt-2 hidden text-sm text-emerald-300" role="status">{n.thanks}</p>
+  <p id="newsletter-error" class="mt-2 hidden text-sm text-red-300" role="alert">{n.error}</p>
+</form>
+
+<script is:inline define:vars={{ locale }}>
+  (function () {
+    var form = document.getElementById('newsletter-form');
+    if (!form) return;
+    var show = function (id, on) { document.getElementById(id).classList.toggle('hidden', !on); };
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      show('newsletter-error', false);
+      var d = new FormData(form);
+      var email = String(d.get('email') || '').trim();
+      if (!email || d.get('consent') !== 'on') { show('newsletter-error', true); return; }
+      fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, consent: true, website: d.get('website'), locale: locale, page: location.pathname })
+      }).then(function (r) {
+        if (!r.ok) throw new Error('failed');
+        form.reset();
+        show('newsletter-thanks', true);
+      }).catch(function () { show('newsletter-error', true); });
+    });
+  })();
+</script>

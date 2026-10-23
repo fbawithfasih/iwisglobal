@@ -1,0 +1,47 @@
+---
+// The link in the double opt-in email. Opening it only shows a button: a mail scanner or link preview that
+// fetches the page cannot confirm anything. Pressing the button (a POST) subscribes the person.
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { resolveEnv } from '../lib/env';
+import { hashIp } from '../lib/aiGuide';
+import { confirmOptIn } from '../lib/marketing';
+import { pageI18n } from '../i18n/dictionaries';
+import type { D1Like } from '../lib/db';
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+const { t } = pageI18n(Astro);
+const c = t.confirmSubscription;
+const env = resolveEnv(Astro.locals);
+const db: D1Like | undefined = env.DB;
+
+let token = Astro.url.searchParams.get('t') ?? '';
+let state: 'ask' | 'done' | 'invalid' = 'ask';
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  token = String(form.get('t') ?? '');
+  const ipHash = await hashIp(Astro.request.headers.get('cf-connecting-ip') ?? 'unknown');
+  const res = await confirmOptIn(db, token, { ipHash, userAgent: Astro.request.headers.get('user-agent') ?? '' });
+  state = res.ok ? 'done' : 'invalid';
+} else if (!token) {
+  state = 'invalid';
+}
+---
+<BaseLayout title={c.metaTitle} description={c.intro} noindex noTracking floatingWhatsApp={false}>
+  <div class="mx-auto max-w-xl px-5 py-14">
+    <h1 class="font-serif text-2xl font-semibold text-brand-900 md:text-3xl">{c.title}</h1>
+    {state === 'ask' && (
+      <>
+        <p class="mt-3 text-stone-700">{c.intro}</p>
+        <form method="POST" class="mt-6">
+          <input type="hidden" name="t" value={token} />
+          <button type="submit" class="min-h-11 rounded-full bg-brand-700 px-6 font-semibold text-white hover:bg-brand-800">{c.button}</button>
+        </form>
+      </>
+    )}
+    {state === 'done' && <p role="status" class="mt-4 rounded-2xl bg-emerald-50 p-4 text-emerald-900">{c.done}</p>}
+    {state === 'invalid' && <p role="alert" class="mt-4 rounded-2xl bg-amber-50 p-4 text-amber-900">{c.invalid}</p>}
+    <p class="mt-8"><a href="/" class="text-brand-700 underline">{c.home}</a></p>
+  </div>
+</BaseLayout>

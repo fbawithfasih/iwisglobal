@@ -7,7 +7,7 @@ import * as M from '../../src/lib/meta';
 import { verifySignature } from '../../src/lib/whatsapp';
 
 const raw = new DatabaseSync(':memory:');
-for (const f of ['schema.sql', 'schema_crm.sql', 'schema_booking_locale.sql', 'schema_deposit_payments.sql', 'schema_whatsapp.sql', 'schema_contacts.sql', 'schema_meta.sql']) {
+for (const f of ['schema.sql', 'schema_crm.sql', 'schema_booking_locale.sql', 'schema_deposit_payments.sql', 'schema_whatsapp.sql', 'schema_contacts.sql', 'schema_meta.sql', 'schema_marketing.sql']) {
   for (const stmt of readFileSync(`${process.env.ROOT}/${f}`, 'utf8').replace(/^\s*--.*$/gm, '').split(';')) {
     const t = stmt.trim();
     if (t) raw.exec(t);
