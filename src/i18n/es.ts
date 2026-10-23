@@ -936,6 +936,7 @@ export const es: Dictionary = {
       k58: "<strong>Meta (WhatsApp)</strong>: transmite los mensajes que intercambia con nosotros en WhatsApp. <strong>Anthropic</strong>: también lee los mensajes de WhatsApp que nos envía, para preparar respuestas. <strong>Meta (Facebook e Instagram)</strong>: también nos entrega los formularios de anuncios y los mensajes de Messenger e Instagram que nos envías.",
       k59: "<strong>Suscripciones por correo:</strong> si te suscribes a ideas de viaje por correo, o marcas la casilla de uno de nuestros formularios o de un formulario de anuncios de Facebook o Instagram, registramos tu correo, el texto que aceptaste, la fecha y tu clic en el enlace de confirmación, para poder demostrar que lo aceptaste.",
       k60: "Para enviarte ideas de viaje y ofertas por correo, solo si te has suscrito y has confirmado tu dirección. Cada correo incluye un enlace para darte de baja, y puedes hacerlo en cualquier momento.",
+      k61: "<strong>Estadísticas de correo:</strong> cuando te enviamos un correo, nuestro proveedor de envío nos indica si se entregó, rebotó o fue marcado como spam, y contamos los clics en los enlaces de nuestros correos por enlace, no por persona. No registramos si abres un correo.",
     },
   help: {
       foundingLine: " Ahora mismo, nuestros primeros {cap} clientes obtienen un {percent}% de descuento automáticamente, sin necesidad de código (la oferta Founding Guest).",

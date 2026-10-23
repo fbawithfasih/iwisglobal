@@ -936,6 +936,7 @@ export const de: Dictionary = {
       k58: "<strong>Meta (WhatsApp)</strong>: übermittelt die Nachrichten, die Sie mit uns auf WhatsApp austauschen. <strong>Anthropic</strong>: liest außerdem die WhatsApp-Nachrichten, die Sie uns senden, um Antworten vorzubereiten. <strong>Meta (Facebook und Instagram)</strong>: übermittelt uns außerdem die Lead-Formulare und die Messenger- und Instagram-Nachrichten, die Sie uns senden.",
       k59: "<strong>E-Mail-Anmeldungen:</strong> Wenn Sie Reiseideen per E-Mail abonnieren oder das Kästchen in einem unserer Formulare oder in einem Facebook- oder Instagram-Lead-Formular ankreuzen, speichern wir Ihre E-Mail-Adresse, den Wortlaut, dem Sie zugestimmt haben, das Datum und Ihren Klick auf den Bestätigungslink, damit wir Ihre Einwilligung nachweisen können.",
       k60: "Um Ihnen Reiseideen und Angebote per E-Mail zu senden, nur wenn Sie sich angemeldet und Ihre Adresse bestätigt haben. Jede E-Mail enthält einen Abmeldelink, und Sie können sich jederzeit abmelden.",
+      k61: "<strong>E-Mail-Statistiken:</strong> Wenn wir Ihnen eine E-Mail senden, teilt uns unser E-Mail-Dienstleister mit, ob sie zugestellt wurde, nicht zustellbar war oder als Spam markiert wurde. Klicks auf die Links in unseren E-Mails zählen wir pro Link, nicht pro Person. Ob Sie eine E-Mail öffnen, erfassen wir nicht.",
     },
   help: {
       foundingLine: " Derzeit erhalten unsere ersten {cap} Gäste automatisch {percent} % Rabatt, ohne dass ein Code nötig ist (das Founding-Guest-Angebot).",

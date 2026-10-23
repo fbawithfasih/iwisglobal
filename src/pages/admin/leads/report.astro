@@ -1,0 +1,175 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../../lib/env';
+import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { formatMoneyMinor } from '../../../lib/format';
+import { addSpend, deleteSpend, loadReport, summarise, unitCost, type ReportLine, type SpendRow } from '../../../lib/leadReport';
+import { clickStats, deliveryStats, unsubscribedSince } from '../../../lib/resendEvents';
+import { sendCounts } from '../../../lib/campaigns';
+import type { D1Like } from '../../../lib/db';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+const db: D1Like | undefined = env.DB;
+
+const day = (d: Date) => d.toISOString().slice(0, 10);
+const isDay = (v: string | null): v is string => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v);
+const q = Astro.url.searchParams;
+const to = isDay(q.get('to')) ? (q.get('to') as string) : day(new Date());
+const from = isDay(q.get('from')) ? (q.get('from') as string) : day(new Date(Date.now() - 90 * 86400000));
+
+let notice = '';
+if (Astro.request.method === 'POST' && db) {
+  const form = await Astro.request.formData();
+  const action = String(form.get('_action') ?? '');
+  try {
+    if (action === 'add_spend') {
+      notice =
+        (await addSpend(db, {
+          date: String(form.get('date') ?? ''),
+          channel: String(form.get('channel') ?? ''),
+          campaign: String(form.get('campaign') ?? ''),
+          amountMajor: Number(form.get('amount')),
+          currency: String(form.get('currency') ?? ''),
+          note: String(form.get('note') ?? ''),
+        })) ?? 'Spend saved.';
+    } else if (action === 'delete_spend') {
+      await deleteSpend(db, Number(form.get('id')));
+      notice = 'Spend entry removed.';
+    }
+  } catch {
+    notice = 'That could not be saved.';
+  }
+}
+
+let byChannel: ReportLine[] = [];
+let byCampaign: ReportLine[] = [];
+let spend: SpendRow[] = [];
+let campaigns: { id: string; name: string; sent: number; delivered: number; bounced: number; complained: number; unsubscribed: number; clicks: number }[] = [];
+let failed = false;
+if (db) {
+  try {
+    const data = await loadReport(db, from, to);
+    spend = data.spend;
+    byChannel = summarise(data.leads, data.spend, 'channel');
+    byCampaign = summarise(data.leads, data.spend, 'campaign');
+  } catch {
+    failed = true;
+  }
+  try {
+    const list = (await db.prepare(`SELECT id, name FROM campaigns WHERE status IN ('sending','sent') ORDER BY created_at DESC LIMIT 20`).bind().all<{ id: string; name: string }>()).results;
+    for (const c of list) {
+      const d = await deliveryStats(db, c.id);
+      campaigns.push({
+        id: c.id,
+        name: c.name,
+        sent: (await sendCounts(db, c.id)).sent,
+        delivered: d.delivered,
+        bounced: d.bounced,
+        complained: d.complained,
+        unsubscribed: await unsubscribedSince(db, c.id),
+        clicks: (await clickStats(db, c.id)).reduce((n, x) => n + x.clicks, 0),
+      });
+    }
+  } catch {
+    // email tables not created yet: the section below simply stays empty
+  }
+}
+
+const money = (m: Record<string, number>) => Object.entries(m).map(([cur, minor]) => formatMoneyMinor(minor, cur)).join(' + ') || '-';
+const unit = (spendBy: Record<string, number>, n: number) => {
+  const u = unitCost(spendBy, n);
+  return u ? money(u) : '-';
+};
+const minutes = (m: number | null) => (m == null ? '-' : m < 90 ? `${m} min` : m < 2880 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`);
+const card = 'rounded-xl border border-stone-200 bg-white text-sm';
+const field = 'rounded border border-stone-300 px-3 py-2';
+---
+<AdminLayout title="Lead report">
+  <p class="mb-2 text-sm"><a href="/admin/leads" class="text-amber-800 hover:underline">&larr; All leads</a></p>
+  <h1 class="mb-4 text-2xl font-semibold">Where leads come from</h1>
+  {notice && <p class="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">{notice}</p>}
+  {failed && <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">The report could not be read.</p>}
+
+  <form method="GET" class="mb-4 flex flex-wrap items-end gap-2 text-sm">
+    <label>From <input type="date" name="from" value={from} class={field} /></label>
+    <label>To <input type="date" name="to" value={to} class={field} /></label>
+    <button class="min-h-11 rounded bg-amber-800 px-4 text-white">Show</button>
+  </form>
+  <p class="mb-4 text-xs text-stone-500">A lead counts at every stage it reached. Revenue is what was paid on the linked booking. Cost figures use the spend you enter below, so they are only as complete as that.</p>
+
+  {[['By channel', byChannel], ['By campaign', byCampaign]].map(([title, lines]) => (
+    <section class="mb-6">
+      <h2 class="mb-2 text-lg font-semibold">{title as string}</h2>
+      <div class={`${card} overflow-x-auto`}>
+        <table class="w-full text-left">
+          <thead class="bg-stone-50"><tr>
+            <th class="px-3 py-2">{title === 'By channel' ? 'Channel' : 'Campaign'}</th><th class="px-3 py-2">Leads</th><th class="px-3 py-2">Quotes</th><th class="px-3 py-2">Deposits</th><th class="px-3 py-2">Bookings</th><th class="px-3 py-2">Revenue</th><th class="px-3 py-2">Spend</th><th class="px-3 py-2">Per lead</th><th class="px-3 py-2">Per booking</th><th class="px-3 py-2">First reply</th>
+          </tr></thead>
+          <tbody>
+            {(lines as ReportLine[]).length === 0 && <tr><td class="px-3 py-3 text-stone-500" colspan="10">No leads in this period.</td></tr>}
+            {(lines as ReportLine[]).map((l) => (
+              <tr class="border-t border-stone-100">
+                <td class="px-3 py-2">{l.key}</td><td class="px-3 py-2">{l.leads}</td><td class="px-3 py-2">{l.quotes}</td><td class="px-3 py-2">{l.deposits}</td><td class="px-3 py-2">{l.bookings}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{money(l.revenue)}</td><td class="px-3 py-2 whitespace-nowrap">{money(l.spend)}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{unit(l.spend, l.leads)}</td><td class="px-3 py-2 whitespace-nowrap">{unit(l.spend, l.bookings)}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{minutes(l.medianResponseMinutes)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  ))}
+
+  <section class="mb-6">
+    <h2 class="mb-2 text-lg font-semibold">Email campaigns</h2>
+    <div class={`${card} overflow-x-auto`}>
+      <table class="w-full text-left">
+        <thead class="bg-stone-50"><tr><th class="px-3 py-2">Campaign</th><th class="px-3 py-2">Sent</th><th class="px-3 py-2">Delivered</th><th class="px-3 py-2">Bounced</th><th class="px-3 py-2">Spam</th><th class="px-3 py-2">Unsubscribed</th><th class="px-3 py-2">Link clicks</th></tr></thead>
+        <tbody>
+          {campaigns.length === 0 && <tr><td class="px-3 py-3 text-stone-500" colspan="7">No campaign has been sent yet.</td></tr>}
+          {campaigns.map((c) => (
+            <tr class="border-t border-stone-100">
+              <td class="px-3 py-2"><a href={`/admin/campaigns/${c.id}`} class="text-amber-800 hover:underline">{c.name}</a></td>
+              <td class="px-3 py-2">{c.sent}</td><td class="px-3 py-2">{c.delivered}</td><td class="px-3 py-2">{c.bounced}</td><td class="px-3 py-2">{c.complained}</td><td class="px-3 py-2">{c.unsubscribed}</td><td class="px-3 py-2">{c.clicks}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mb-6">
+    <h2 class="mb-2 text-lg font-semibold">Marketing spend</h2>
+    <form method="POST" class={`${card} mb-3 grid gap-2 p-4 sm:grid-cols-6`}>
+      <input type="hidden" name="_action" value="add_spend" />
+      <input type="date" name="date" value={day(new Date())} required class={field} />
+      <input name="channel" list="spend-channels" placeholder="Channel (facebook_ads)" required class={field} />
+      <datalist id="spend-channels">{byChannel.map((l) => <option value={l.key} />)}</datalist>
+      <input name="campaign" placeholder="Campaign (optional)" class={field} />
+      <input name="amount" type="number" step="0.01" min="0" placeholder="Amount" required class={field} />
+      <select name="currency" class={field}><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option></select>
+      <button class="min-h-11 rounded bg-amber-800 text-white">Add spend</button>
+      <input name="note" placeholder="Note (optional)" class={`${field} sm:col-span-6`} />
+    </form>
+    <div class={`${card} overflow-x-auto`}>
+      <table class="w-full text-left">
+        <tbody>
+          {spend.length === 0 && <tr><td class="px-3 py-3 text-stone-500">No spend entered for this period.</td></tr>}
+          {spend.map((s) => (
+            <tr class="border-t border-stone-100 first:border-0">
+              <td class="px-3 py-2 whitespace-nowrap">{s.spend_date}</td><td class="px-3 py-2">{s.channel}</td><td class="px-3 py-2">{s.campaign}</td>
+              <td class="px-3 py-2 whitespace-nowrap">{formatMoneyMinor(s.amount_minor, s.currency)}</td><td class="px-3 py-2">{s.note}</td>
+              <td class="px-3 py-2"><form method="POST"><input type="hidden" name="_action" value="delete_spend" /><input type="hidden" name="id" value={s.id} /><button class="text-red-700 hover:underline" aria-label="Remove this spend entry">Remove</button></form></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</AdminLayout>

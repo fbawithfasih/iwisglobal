@@ -1,5 +1,5 @@
 import type { D1Like } from './db';
-import { isSuppressed } from './contacts';
+import { hashIdentifier, isSuppressed } from './contacts';
 import { postBatch, postEmail, marketingEmail } from './email';
 import { signUnsubscribeToken, unsubscribeUrl, SITE_URL } from './marketing';
 import { callAnthropic } from './aiGuide';
@@ -194,10 +194,11 @@ export async function renderCampaignEmail(
   db: D1Like,
   campaignId: string,
   c: CampaignContent,
-  who: { language: string; country: string; unsubscribeLink: string }
+  who: { language: string; country: string; unsubscribeLink: string; track?: (url: string) => Promise<string> }
 ): Promise<Rendered> {
   const locale = emailLocale(c.language) as Locale;
   const M = getDictionary(locale).emails.marketing;
+  const trackUrl = async (url: string) => (who.track ? who.track(url) : url);
   let tour: { title: string; image: string; url: string; priceLine: string } | undefined;
   if (c.tour_slug) {
     const t = await getTourBySlug(db, c.tour_slug, locale).catch(() => null);
@@ -208,12 +209,12 @@ export async function renderCampaignEmail(
       tour = {
         title: t.title,
         image: t.image ? (t.image.startsWith('http') ? t.image : `${SITE_URL}${t.image}`) : '',
-        url: utm(`${SITE_URL}${locale === 'en' ? '' : `/${locale}`}/tours/${t.slug}`, campaignId),
+        url: await trackUrl(utm(`${SITE_URL}${locale === 'en' ? '' : `/${locale}`}/tours/${t.slug}`, campaignId)),
         priceLine: fmt(M.priceFrom, { price }),
       };
     }
   }
-  const cta = c.cta_label.trim() && /^https?:\/\//i.test(c.cta_url.trim()) ? { label: c.cta_label.trim(), url: utm(c.cta_url.trim(), campaignId) } : undefined;
+  const cta = c.cta_label.trim() && /^https?:\/\//i.test(c.cta_url.trim()) ? { label: c.cta_label.trim(), url: await trackUrl(utm(c.cta_url.trim(), campaignId)) } : undefined;
   const { html, text } = marketingEmail({
     locale,
     preheader: c.preheader || c.intro.slice(0, 120),
@@ -232,6 +233,25 @@ export async function renderCampaignEmail(
       'List-Unsubscribe': `<${who.unsubscribeLink}>, <mailto:info@iwisglobal.com?subject=unsubscribe>`,
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
     },
+  };
+}
+
+// Click tracking: the email links to /r/<code>, and the code maps to the stored URL (never to anything from the
+// request). Test sends skip this and link straight through. The same URL always gets the same code.
+export function linkTracker(db: D1Like, campaignId: string): (url: string) => Promise<string> {
+  const known = new Map<string, string>();
+  return async (url) => {
+    const hit = known.get(url);
+    if (hit) return hit;
+    const code = (await hashIdentifier(`${campaignId}|${url}`)).slice(0, 12);
+    try {
+      await db.prepare(`INSERT OR IGNORE INTO campaign_links (code, campaign_id, url, created_at) VALUES (?, ?, ?, ?)`).bind(code, campaignId, url, nowIso()).run();
+    } catch {
+      return url; // link table missing: send the plain link rather than fail the batch
+    }
+    const tracked = `${SITE_URL}/r/${code}`;
+    known.set(url, tracked);
+    return tracked;
   };
 }
 
@@ -402,6 +422,7 @@ export async function sendNextChunk(env: Record<string, any>, db: D1Like, campai
 
   const content = await loadContent(db, campaignId);
   const stamp = nowIso();
+  const track = linkTracker(db, campaignId);
   const ready: { row: (typeof rows)[number]; payload: Record<string, unknown> }[] = [];
   for (const row of rows) {
     // Check again now: they may have unsubscribed, bounced or complained since the campaign was queued.
@@ -413,7 +434,7 @@ export async function sendNextChunk(env: Record<string, any>, db: D1Like, campai
     }
     const c = content[row.language] ?? content.en;
     const link = unsubscribeUrl(await signUnsubscribeToken(env.UNSUBSCRIBE_SECRET, row.person_id), c.language);
-    const r = await renderCampaignEmail(db, campaignId, c, { language: c.language, country: p.country, unsubscribeLink: link });
+    const r = await renderCampaignEmail(db, campaignId, c, { language: c.language, country: p.country, unsubscribeLink: link, track });
     ready.push({
       row,
       payload: { from: env.MARKETING_EMAIL_FROM, to: [row.email], reply_to: 'info@iwisglobal.com', subject: r.subject, html: r.html, text: r.text, headers: r.headers, tags: [{ name: 'campaign', value: campaignId.replace(/[^A-Za-z0-9_-]/g, '_') }] },

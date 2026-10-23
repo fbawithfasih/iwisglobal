@@ -7,5 +7,6 @@ Allow: /
 Disallow: /admin/
 Disallow: /api/
 Disallow: /account/
+Disallow: /r/
 
 Sitemap: https://www.iwisglobal.com/sitemap-index.xml
