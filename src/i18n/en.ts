@@ -937,6 +937,7 @@ export const en = {
       k58: "<strong>Meta (WhatsApp)</strong> — carries the messages you exchange with us on WhatsApp. <strong>Anthropic</strong> — also reads the WhatsApp messages you send us, to prepare replies. <strong>Meta (Facebook and Instagram)</strong> — also delivers to us the lead-ad forms and the Messenger and Instagram messages you send us.",
       k59: "<strong>Email sign-ups:</strong> if you subscribe to travel ideas by email, or tick the box on one of our forms or on a Facebook or Instagram lead form, we record your email address, the wording you agreed to, the date, and your click on the confirmation link, so we can show that you agreed.",
       k60: "To send you travel ideas and offers by email, only if you signed up and confirmed your address. Every email has an unsubscribe link, and you can unsubscribe at any time.",
+      k61: "<strong>Email statistics:</strong> when we send you an email, our email provider tells us whether it was delivered, bounced or marked as spam, and we count clicks on the links in our emails per link, not per person. We do not track whether you open an email.",
     },
   help: {
       foundingLine: " Right now, our first {cap} guests get {percent}% off automatically, with no code needed (the Founding Guest offer).",

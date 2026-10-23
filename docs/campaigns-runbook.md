@@ -60,4 +60,12 @@ New sending domains should ramp slowly. Raise `MARKETING_DAILY_CAP` only when co
 
 - **Cancel** in the campaign page stops everyone not yet sent.
 - Unset `MARKETING_SENDING_ENABLED` (or set it to 0) and redeploy to pause every campaign immediately.
-- Bounces and complaints are not yet written back automatically (planned next step); until then, mark complaints unsubscribed from the lead page.
+
+## Bounces, complaints and clicks (Release 3-C)
+
+1. **Schema** (owner only, before deploying): `wrangler d1 execute iwisglobal-bookings --remote --file=schema_events.sql`
+2. **Webhook**: in Resend, Webhooks, Add Endpoint: URL `https://www.iwisglobal.com/api/webhooks/resend`, events `email.delivered`, `email.bounced`, `email.complained`, `email.delivery_delayed`. Copy the signing secret (starts with `whsec_`) into Cloudflare Pages as `RESEND_WEBHOOK_SECRET` and redeploy. Without it the endpoint answers 503 and nothing is trusted.
+3. A **permanent bounce** or a **spam complaint** suppresses that address for good and sets the person to "bounced" or "complained", so they drop out of every audience. Temporary bounces (full mailbox) are recorded but do not suppress. Each webhook delivery is stored once, so Resend retries are harmless.
+4. **Clicks**: links in campaign emails go through `https://www.iwisglobal.com/r/<code>`, which redirects only to the stored link and adds one to that link's daily count. No person, address or IP is stored. Mail programs sometimes open links to scan them, so treat counts as an upper estimate. Opens are not tracked.
+5. **Report**: `/admin/leads/report` shows leads, quotes, deposits, bookings, revenue and first-reply time by channel and by campaign, per-campaign delivery counts, and where you enter marketing spend (cost per lead and per booking use only what you enter).
+6. Test: send a campaign to your own Gmail and a Resend test address `bounced@resend.dev` / `complained@resend.dev` (Resend simulates those events), then check the person's status in `/admin/leads/subscribers`.

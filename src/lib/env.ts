@@ -45,5 +45,6 @@ export function resolveEnv(locals: unknown): Record<string, any> {
     MARKETING_SENDING_ENABLED: runtimeEnv.MARKETING_SENDING_ENABLED ?? import.meta.env.MARKETING_SENDING_ENABLED,
     MARKETING_DAILY_CAP: runtimeEnv.MARKETING_DAILY_CAP ?? import.meta.env.MARKETING_DAILY_CAP,
     CAMPAIGN_CRON_SECRET: runtimeEnv.CAMPAIGN_CRON_SECRET ?? import.meta.env.CAMPAIGN_CRON_SECRET,
+    RESEND_WEBHOOK_SECRET: runtimeEnv.RESEND_WEBHOOK_SECRET ?? import.meta.env.RESEND_WEBHOOK_SECRET,
   };
 }
