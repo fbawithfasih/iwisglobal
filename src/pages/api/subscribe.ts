@@ -3,8 +3,8 @@ import { resolveEnv } from '../../lib/env';
 import { resolveLocale } from '../../lib/i18n';
 import { getDictionary } from '../../i18n/dictionaries';
 import { hashIp } from '../../lib/aiGuide';
-import { normaliseEmail, recordConsent, recordTouchpoint, upsertPerson } from '../../lib/contacts';
-import { consentVersionId, startDoubleOptIn } from '../../lib/marketing';
+import { normaliseEmail } from '../../lib/contacts';
+import { signUpForEmail } from '../../lib/marketing';
 import type { D1Like } from '../../lib/db';
 
 export const prerender = false;
@@ -50,29 +50,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if ((perIp?.n ?? 0) >= PER_IP_PER_HOUR || (site?.n ?? 0) >= SITE_PER_HOUR) return json(429, { error: 'rate_limited' });
     await db.prepare(`INSERT INTO lead_form_requests (ip_hash, created_at) VALUES (?, ?)`).bind(ipHash, Date.now()).run();
 
-    const up = await upsertPerson(db, [{ type: 'email', value: email, source: 'newsletter' }], { language: locale });
-    await recordTouchpoint(db, {
-      personId: up.personId,
-      channel: 'website',
-      type: 'newsletter',
-      attribution: { landingPage: clean(body.page, 200), source: 'footer_signup' },
-      externalRef: `newsletter:${crypto.randomUUID()}`,
-    });
-
-    const text = getDictionary(locale).newsletter.consent;
-    const version = await consentVersionId('footer-newsletter', text);
-    await db.prepare(`INSERT OR IGNORE INTO consent_texts (version_id, language, text, valid_from) VALUES (?, ?, ?, ?)`).bind(version, locale, text, new Date().toISOString()).run();
-    await recordConsent(db, up.personId, {
-      channel: 'email',
-      action: 'granted',
-      source: 'website_form',
-      sourceUrl: `https://www.iwisglobal.com${clean(body.page, 200) || '/'}`,
+    await signUpForEmail(env, db, {
+      email,
+      locale,
+      page: clean(body.page, 200) || '/',
       formId: 'footer_newsletter',
-      textVersionId: version,
+      source: 'footer_signup',
+      consentText: getDictionary(locale).newsletter.consent,
       ipHash,
       userAgent: request.headers.get('user-agent') ?? '',
     });
-    await startDoubleOptIn(env, db, up.personId, email, locale);
     return json(200, { ok: true });
   } catch (err) {
     console.error('subscribe failed', err instanceof Error ? err.message : 'error');

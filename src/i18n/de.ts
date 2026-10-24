@@ -667,6 +667,14 @@ export const de: Dictionary = {
     thanks: "Fast geschafft: Bitte prüfen Sie Ihr Postfach und klicken Sie auf den Bestätigungslink.",
     error: "Das hat nicht geklappt. Bitte prüfen Sie die Adresse und versuchen Sie es erneut.",
   },
+  bookingSignup: {
+    title: "Reiseideen per E-Mail",
+    body: "Möchten Sie gelegentlich Reiseideen und Angebote zu Agra und dem Taj Mahal erhalten? Wir würden sie an {email} senden. Ihre Buchungs-E-Mails sind davon getrennt und werden immer gesendet.",
+    consent: "Ich möchte gelegentlich Reiseideen und Angebote von IWIS Global per E-Mail an die Adresse meiner Buchung erhalten. Ich bestätige meine Adresse zuerst und kann mich jederzeit abmelden.",
+    button: "Anmelden",
+    thanks: "Fast geschafft: Bitte prüfen Sie Ihr Postfach und klicken Sie auf den Bestätigungslink.",
+    error: "Das hat nicht geklappt. Bitte versuchen Sie es erneut.",
+  },
   confirmSubscription: {
     metaTitle: "Anmeldung bestätigen — IWIS Global",
     title: "Anmeldung bestätigen",

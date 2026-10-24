@@ -668,6 +668,14 @@ export const en = {
     thanks: "Almost done: check your inbox and tap the confirmation link.",
     error: "That did not work. Please check the address and try again.",
   },
+  bookingSignup: {
+    title: "Travel ideas by email",
+    body: "Want occasional Agra and Taj Mahal ideas and offers? We would send them to {email}. Your booking emails are separate and always sent.",
+    consent: "I agree to receive occasional travel ideas and offers from IWIS Global by email at the address on my booking. I will confirm my address first and can unsubscribe at any time.",
+    button: "Sign me up",
+    thanks: "Almost done: check your inbox and tap the confirmation link.",
+    error: "That did not work. Please try again.",
+  },
   confirmSubscription: {
     metaTitle: "Confirm your subscription — IWIS Global",
     title: "Confirm your subscription",

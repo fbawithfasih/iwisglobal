@@ -56,7 +56,7 @@ assert.equal(M.mapLeadFields([{ name: 'marketing_consent', values: ['No'] }]).co
 // ---- stubbed Graph API
 let calls = 0;
 const leadObj = (id: string, email: string, consent?: string) => ({
-  id, created_time: '2026-10-21T10:00:00+0000', ad_id: 'A1', ad_name: 'Taj ad', campaign_name: 'Autumn Taj', form_id: 'F1', platform: 'ig', is_organic: false,
+  id, created_time: new Date(Date.now() - 3600_000).toISOString().replace(/\.\d{3}Z$/, '+0000'), ad_id: 'A1', ad_name: 'Taj ad', campaign_name: 'Autumn Taj', form_id: 'F1', platform: 'ig', is_organic: false,
   field_data: [{ name: 'full_name', values: ['Lead ' + id] }, { name: 'email', values: [email] }, ...(consent ? [{ name: 'marketing_consent', values: [consent] }] : [])],
 });
 const graph: typeof fetch = async (url: any) => {

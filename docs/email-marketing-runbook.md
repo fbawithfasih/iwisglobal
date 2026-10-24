@@ -3,7 +3,7 @@
 Nobody is mailed unless they signed up **and** clicked the link in a confirmation email (double opt-in).
 
 ## How people opt in
-- **Footer signup** on every public page (needs a ticked, never pre-ticked box), the **contact form** box, and a **Meta lead form question** that is an explicit consent question answered yes. A standard lead form (name, email, phone) is not consent.
+- **Footer signup** on every public page (needs a ticked, never pre-ticked box), the **contact form** box, an optional box on the **booking confirmation page** (shown only for a confirmed booking whose address has no marketing choice yet; it uses the address on the booking, which the page never displays in full), and a **Meta lead form question** that is an explicit consent question answered yes. A standard lead form (name, email, phone) is not consent.
 - Each of these records the exact wording shown (versioned by a hash of the text, so edited wording can never reuse an old version), the date, and the page; then sends **one neutral confirmation email**. The person stays "pending" until they press the button on `/confirm-subscription` (a mail scanner opening the link cannot confirm: only the button press, a POST, does).
 
 ## Unsubscribe
