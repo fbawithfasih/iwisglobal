@@ -75,11 +75,18 @@ export interface MappedLead {
 }
 
 const TRUTHY = /^(yes|true|1|i agree|agree|agreed|ok|okay|checked|accept|accepted|sure)/i;
+const CONSENT_KEY = /consent|marketing|newsletter|updates|subscribe|offers|email_me|travel_ideas/;
+
+// Answers to the privacy-step checkboxes of an instant form come back in their own field, not in field_data.
+export interface DisclaimerResponse {
+  checkbox_key?: string;
+  is_checked?: string | boolean | number;
+}
 
 // Maps the answers of an instant form by question key. A standard form (name, email, phone) is
 // contact data, NOT marketing consent; consent is true only for an explicit consent-type question
 // that was answered yes.
-export function mapLeadFields(fieldData: { name?: string; values?: string[] }[] | undefined): MappedLead {
+export function mapLeadFields(fieldData: { name?: string; values?: string[] }[] | undefined, disclaimers?: DisclaimerResponse[]): MappedLead {
   const m: MappedLead = { name: '', email: '', phone: '', city: '', country: '', tour: '', dates: '', partySize: null, consent: null, answers: {} };
   let first = '';
   let last = '';
@@ -96,7 +103,7 @@ export function mapLeadFields(fieldData: { name?: string; values?: string[] }[] 
     else if (key === 'phone_number' || key === 'phone' || key === 'work_phone_number') m.phone = value;
     else if (key === 'city') m.city = value;
     else if (key === 'country') m.country = value;
-    else if (/consent|marketing|newsletter|updates|subscribe|offers/.test(key)) m.consent = TRUTHY.test(value) ? m.consent !== false : false;
+    else if (CONSENT_KEY.test(key)) m.consent = TRUTHY.test(value) ? m.consent !== false : false;
     else if (/date|when/.test(key)) m.dates = value;
     else if (/tour|interest|trip|package|experience/.test(key)) m.tour = value;
     else if (/people|traveller|traveler|group|guest|adult|size/.test(key)) {
@@ -105,6 +112,15 @@ export function mapLeadFields(fieldData: { name?: string; values?: string[] }[] 
     }
   }
   if (!m.name) m.name = [first, last].filter(Boolean).join(' ');
+  // Privacy-step checkboxes: one whose key names consent/updates/offers counts, and an unticked one overrides a ticked one.
+  // Other checkboxes (for example "I accept the privacy policy") are kept as answers only and are never marketing consent.
+  for (const d of Array.isArray(disclaimers) ? disclaimers : []) {
+    const key = String(d?.checkbox_key ?? '').toLowerCase();
+    if (!key) continue;
+    const checked = /^(1|true|yes|checked)$/i.test(String(d?.is_checked ?? ''));
+    m.answers[`checkbox:${key}`] = checked ? 'checked' : 'not checked';
+    if (CONSENT_KEY.test(key)) m.consent = checked ? m.consent !== false : false;
+  }
   return m;
 }
 
@@ -157,7 +173,7 @@ async function graphGet(env: Record<string, any>, path: string, fetchFn: FetchFn
   return res.json();
 }
 
-const LEAD_FIELDS = 'created_time,ad_id,ad_name,adset_name,campaign_id,campaign_name,form_id,is_organic,platform,field_data';
+const LEAD_FIELDS = 'created_time,ad_id,ad_name,adset_name,campaign_id,campaign_name,form_id,is_organic,platform,field_data,custom_disclaimer_responses';
 
 export async function fetchLeadgen(env: Record<string, any>, leadgenId: string, fetchFn: FetchFn = fetch): Promise<any> {
   try {
@@ -212,7 +228,7 @@ async function processOne(env: Record<string, any>, db: D1Like, row: MetaEventRo
   const p = JSON.parse(row.payload_json);
   if (row.kind === 'leadgen') {
     const lead = p.lead ?? (await fetchLeadgen(env, p.leadgen_id, fetchFn));
-    const f = mapLeadFields(lead?.field_data);
+    const f = mapLeadFields(lead?.field_data, lead?.custom_disclaimer_responses);
     const identifiers: IdentifierInput[] = [
       ...(f.email ? [{ type: 'email' as const, value: f.email, source: 'meta_lead_ad' }] : []),
       ...(f.phone ? [{ type: 'phone' as const, value: f.phone, source: 'meta_lead_ad' }] : []),
