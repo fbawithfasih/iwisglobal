@@ -1,0 +1,58 @@
+---
+// Standalone email signup page: the link staff can share in WhatsApp replies (/subscribe?src=whatsapp&lang=de).
+// Same rules as the footer box: an unticked consent box, a confirmation email first, nobody subscribed until they
+// click it, and the same answer whatever we already know about the address (src/pages/api/subscribe.ts).
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { pageI18n } from '../i18n/dictionaries';
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+const { t, locale } = pageI18n(Astro);
+const n = t.newsletter;
+const p = t.subscribePage;
+const src = Astro.url.searchParams.get('src') === 'whatsapp' ? 'whatsapp' : '';
+---
+<BaseLayout title={p.metaTitle} description={p.body} noindex floatingWhatsApp={false} hideNewsletter>
+  <div class="mx-auto max-w-xl px-5 py-14">
+    <h1 class="font-serif text-2xl font-semibold text-brand-900 md:text-3xl">{p.title}</h1>
+    <p class="mt-3 text-stone-700">{p.body}</p>
+    <form id="subscribe-form" class="mt-6" novalidate>
+      <label class="block text-sm font-medium text-stone-700" for="subscribe-email">{n.email}</label>
+      <input id="subscribe-email" name="email" type="email" required maxlength="200" autocomplete="email" class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-3 text-base focus:border-brand-700 focus:outline-none" />
+      <label class="mt-4 flex items-start gap-3 text-sm text-stone-700">
+        <input type="checkbox" name="consent" required class="mt-0.5 h-5 w-5 shrink-0 rounded border-stone-400" />
+        <span>{n.consent}</span>
+      </label>
+      <div class="absolute -left-[9999px]" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off" /></label></div>
+      <button type="submit" class="mt-5 min-h-12 w-full rounded-full bg-brand-700 px-6 font-semibold text-white hover:bg-brand-800 sm:w-auto">{n.button}</button>
+      <p id="subscribe-thanks" class="mt-4 hidden rounded-2xl bg-emerald-50 p-4 text-emerald-900" role="status">{n.thanks}</p>
+      <p id="subscribe-error" class="mt-4 hidden rounded-2xl bg-amber-50 p-4 text-amber-900" role="alert">{n.error}</p>
+    </form>
+    <p class="mt-8"><a href="/privacy" class="text-sm text-brand-700 underline">{t.footer.privacy}</a></p>
+  </div>
+</BaseLayout>
+
+<script is:inline define:vars={{ locale, src }}>
+  (function () {
+    var form = document.getElementById('subscribe-form');
+    if (!form) return;
+    var show = function (id, on) { document.getElementById(id).classList.toggle('hidden', !on); };
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      show('subscribe-error', false);
+      var d = new FormData(form);
+      var email = String(d.get('email') || '').trim();
+      if (!email || d.get('consent') !== 'on') { show('subscribe-error', true); return; }
+      fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, consent: true, website: d.get('website'), locale: locale, page: '/subscribe', form: 'subscribe_page', src: src })
+      }).then(function (r) {
+        if (!r.ok) throw new Error('failed');
+        form.reset();
+        show('subscribe-thanks', true);
+      }).catch(function () { show('subscribe-error', true); });
+    });
+  })();
+</script>

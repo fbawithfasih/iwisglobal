@@ -35,7 +35,8 @@ All under the admin sign-in.
 2. For a draft: read it, edit if needed, press **Send**. If it is wrong or unneeded, press **Discard**. Both count as "reviewed".
 3. If you reply from the WhatsApp Business app instead, the chat moves to **Staff handling** by itself and the agent stops drafting for it. Press **Give back to agent** when you are done, or it returns on its own after 12 hours.
 4. If the Business app on the phone is not available, answer from the admin: open the chat and use **Write your own reply** under the messages. It works inside the 24-hour reply window, moves the chat to **Staff handling**, and works for voice notes and images too (the guest message shows as [voice] or [image]; reply asking them to type).
-4. An email arrives when a chat first needs a person. It does not repeat more than once every 2 hours per chat.
+4. **Email signup link:** under a draft or your own reply, the small **EN / DE / FR / ES** buttons under "Add email signup link" add one ready-made line to the message, in that language, inviting the guest to sign up for travel ideas by email at `iwisglobal.com/subscribe`. Nothing is sent until you press Send, and the agent never adds it by itself. Use it once, after you have helped the guest, not in every message. The guest still confirms by email and can unsubscribe any time, and the signup is recorded as coming from WhatsApp.
+5. An email arrives when a chat first needs a person. It does not repeat more than once every 2 hours per chat.
 
 ## Every Monday (20 minutes)
 

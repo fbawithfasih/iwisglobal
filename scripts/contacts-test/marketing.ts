@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import * as C from '../../src/lib/contacts';
 import * as K from '../../src/lib/marketing';
+import { SIGNUP_LANGS, signupLink, signupMessage } from '../../src/lib/waSignup';
 
 const raw = new DatabaseSync(':memory:');
 for (const f of ['schema.sql', 'schema_crm.sql', 'schema_booking_locale.sql', 'schema_deposit_payments.sql', 'schema_whatsapp.sql', 'schema_contacts.sql', 'schema_marketing.sql']) {
@@ -135,4 +136,19 @@ assert.equal(await K.canOfferSignup(db, 'optout@example.com'), false, 'someone w
 await C.suppress(db, 'email', 'spam@example.com', 'complaint');
 assert.equal(await K.canOfferSignup(db, 'spam@example.com'), false);
 assert.equal(await K.canOfferSignup(db, 'not an email'), false);
+
+// ---- the WhatsApp signup line and the standalone page's form id
+for (const l of SIGNUP_LANGS) {
+  const m = signupMessage(l);
+  assert.equal(m.split('https://www.iwisglobal.com/subscribe?src=whatsapp').length, 2, `${l}: one link`);
+  assert.ok(!m.includes('{link}'), `${l}: link filled in`);
+  assert.equal(m.includes('&lang='), l !== 'en', `${l}: language only on the link when not English`);
+}
+assert.equal(signupMessage('xx'), signupMessage('en'), 'unknown language falls back to English');
+assert.equal(signupLink('de'), 'https://www.iwisglobal.com/subscribe?src=whatsapp&lang=de');
+const sp = await K.signUpForEmail(env, db, { email: 'wa.guest@example.com', locale: 'de', page: '/subscribe', formId: 'subscribe_page', source: 'whatsapp_link', consentText: wording, ipHash: 'h' });
+assert.equal(sp.optIn, 'sent');
+assert.ok((raw.prepare(`SELECT text_version_id AS v FROM consent_events WHERE person_id = ? AND action = 'granted'`).get(sp.personId) as any).v.startsWith('subscribe-page-'));
+assert.equal((raw.prepare(`SELECT source FROM touchpoints WHERE person_id = ? AND type = 'newsletter'`).get(sp.personId) as any).source, 'whatsapp_link', 'the signup is recorded as coming from WhatsApp');
+assert.equal(count('leads', `person_id = '${sp.personId}'`), 0);
 console.log('marketing tests ok');

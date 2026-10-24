@@ -668,6 +668,11 @@ export const en = {
     thanks: "Almost done: check your inbox and tap the confirmation link.",
     error: "That did not work. Please check the address and try again.",
   },
+  subscribePage: {
+    metaTitle: "Travel ideas by email | IWIS Global",
+    title: "Travel ideas by email",
+    body: "Occasional ideas and offers for visiting Agra and the Taj Mahal, from the team at IWIS Global. We will email you a confirmation link first, and every email has an unsubscribe link. Your bookings and enquiries are never affected.",
+  },
   bookingSignup: {
     title: "Travel ideas by email",
     body: "Want occasional Agra and Taj Mahal ideas and offers? We would send them to {email}. Your booking emails are separate and always sent.",
