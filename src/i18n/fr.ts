@@ -667,6 +667,14 @@ export const fr: Dictionary = {
     thanks: "Presque terminé : consultez votre boîte de réception et cliquez sur le lien de confirmation.",
     error: "Cela n'a pas fonctionné. Vérifiez l'adresse et réessayez.",
   },
+  bookingSignup: {
+    title: "Idées de voyage par e-mail",
+    body: "Souhaitez-vous recevoir de temps en temps des idées et des offres sur Agra et le Taj Mahal ? Nous les enverrions à {email}. Vos e-mails de réservation sont distincts et toujours envoyés.",
+    consent: "J'accepte de recevoir de temps en temps des idées de voyage et des offres d'IWIS Global par e-mail, à l'adresse de ma réservation. Je confirmerai d'abord mon adresse et je peux me désabonner à tout moment.",
+    button: "Je m'inscris",
+    thanks: "Presque terminé : vérifiez votre boîte de réception et cliquez sur le lien de confirmation.",
+    error: "Cela n'a pas fonctionné. Veuillez réessayer.",
+  },
   confirmSubscription: {
     metaTitle: "Confirmer votre inscription — IWIS Global",
     title: "Confirmez votre inscription",

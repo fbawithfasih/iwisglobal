@@ -111,4 +111,28 @@ const sup = raw.prepare(`SELECT reason, identifier_plain FROM suppressions WHERE
 assert.equal(sup.identifier_plain, '', 'no readable address kept');
 assert.equal(await C.isSuppressed(db, 'email', 'Mia.Roth@gmail.com'), true, 'still never emailed again');
 assert.equal((raw.prepare(`SELECT display_name FROM people WHERE id = ?`).get(up.personId) as any).display_name, '(erased)');
+
+// ---- signup boxes: the shared helper and the booking-page offer rule
+const leadsBefore = count('leads');
+const sentBefore = sent.length;
+assert.equal(await K.canOfferSignup(db, 'guest@example.com'), true, 'an unknown address is offered the box');
+const wording = 'I agree to receive travel ideas.';
+const su = await K.signUpForEmail(env, db, { email: 'guest@example.com', locale: 'en', page: '/booking/confirmation', formId: 'booking_confirmation', source: 'booking_confirmation', consentText: wording, ipHash: 'h' });
+assert.equal(su.optIn, 'sent');
+assert.equal(sent.length, sentBefore + 1, 'one confirmation email');
+assert.equal(count('leads'), leadsBefore, 'a signup box never opens a lead');
+assert.equal(status(su.personId), 'pending', 'not subscribed until confirmed');
+const ce = raw.prepare(`SELECT form_id, text_version_id FROM consent_events WHERE person_id = ? AND action = 'granted'`).get(su.personId) as any;
+assert.equal(ce.form_id, 'booking_confirmation');
+assert.equal(ce.text_version_id, await K.consentVersionId('booking-confirmation', wording), 'the stored version points at the exact wording');
+assert.equal((raw.prepare(`SELECT text FROM consent_texts WHERE version_id = ?`).get(ce.text_version_id) as any).text, wording);
+assert.equal(await K.canOfferSignup(db, 'guest@example.com'), false, 'not asked again while waiting for confirmation');
+await K.confirmOptIn(db, tokenFrom(sent[sent.length - 1]));
+assert.equal(status(su.personId), 'subscribed');
+assert.equal(await K.canOfferSignup(db, 'guest@example.com'), false, 'not asked once subscribed');
+await C.suppress(db, 'email', 'optout@example.com', 'unsubscribe');
+assert.equal(await K.canOfferSignup(db, 'optout@example.com'), false, 'someone who opted out is not asked again');
+await C.suppress(db, 'email', 'spam@example.com', 'complaint');
+assert.equal(await K.canOfferSignup(db, 'spam@example.com'), false);
+assert.equal(await K.canOfferSignup(db, 'not an email'), false);
 console.log('marketing tests ok');

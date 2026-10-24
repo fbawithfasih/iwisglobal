@@ -1,6 +1,6 @@
 import type { D1Like } from './db';
 import { newLinkToken, hashLinkToken } from './oneTimeLinks';
-import { hashIdentifier, normaliseEmail, recordConsent, refreshMarketingStatus, rootPerson, suppress } from './contacts';
+import { hashIdentifier, normaliseEmail, recordConsent, recordTouchpoint, refreshMarketingStatus, rootPerson, suppress, upsertPerson } from './contacts';
 import { sendOptInConfirmationEmail } from './email';
 import { emailLocale } from './i18n';
 
@@ -52,6 +52,59 @@ export const unsubscribeUrl = (token: string, locale: string): string => `${SITE
 // consent can never point at wording the person did not see.
 export async function consentVersionId(form: string, text: string): Promise<string> {
   return `${form}-${(await hashLinkToken(text)).slice(0, 8)}`;
+}
+
+// ------------------------------------------------------------ signup
+
+export interface SignupInput {
+  email: string;
+  locale: string;
+  page: string; // path the box was on, e.g. "/" or "/booking/confirmation"
+  formId: string; // footer_newsletter | booking_confirmation
+  source: string; // attribution source on the touchpoint
+  consentText: string; // the exact wording next to the ticked box
+  ipHash?: string;
+  userAgent?: string;
+}
+
+// The one way a signup box turns an address into a pending subscription: the person and a touchpoint (never a
+// lead), the wording they agreed to under a version id that changes when the text changes, a "granted" consent
+// record, and the single confirmation email. Nobody is subscribed until they click it.
+export async function signUpForEmail(env: Record<string, any>, db: D1Like, i: SignupInput): Promise<{ personId: string; optIn: OptInResult }> {
+  const up = await upsertPerson(db, [{ type: 'email', value: i.email, source: 'newsletter' }], { language: i.locale });
+  await recordTouchpoint(db, {
+    personId: up.personId,
+    channel: 'website',
+    type: 'newsletter',
+    attribution: { landingPage: i.page, source: i.source },
+    externalRef: `newsletter:${crypto.randomUUID()}`,
+  });
+  const version = await consentVersionId(i.formId.replace(/_/g, '-'), i.consentText);
+  await db.prepare(`INSERT OR IGNORE INTO consent_texts (version_id, language, text, valid_from) VALUES (?, ?, ?, ?)`).bind(version, i.locale, i.consentText, nowIso()).run();
+  await recordConsent(db, up.personId, {
+    channel: 'email',
+    action: 'granted',
+    source: 'website_form',
+    sourceUrl: `${SITE_URL}${i.page || '/'}`,
+    formId: i.formId,
+    textVersionId: version,
+    ipHash: i.ipHash,
+    userAgent: i.userAgent ?? '',
+  });
+  return { personId: up.personId, optIn: await startDoubleOptIn(env, db, up.personId, i.email, i.locale) };
+}
+
+// Whether to offer a signup box for this address: only when we hold nothing about marketing consent for it. Someone
+// who is waiting for confirmation, already subscribed, or has opted out is not asked again here.
+export async function canOfferSignup(db: D1Like, email: string): Promise<boolean> {
+  const norm = normaliseEmail(email);
+  if (!norm) return false;
+  if (await suppressionReason(db, norm)) return false;
+  const row = await db
+    .prepare(`SELECT p.marketing_status AS s FROM person_identifiers i JOIN people p ON p.id = i.person_id WHERE i.type = 'email' AND i.value_norm = ? AND i.is_shared = 0 AND p.merged_into_id IS NULL ORDER BY p.created_at LIMIT 1`)
+    .bind(norm)
+    .first<{ s: string }>();
+  return !row || row.s === 'none';
 }
 
 // ------------------------------------------------------------ double opt-in
