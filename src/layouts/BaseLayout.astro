@@ -43,6 +43,8 @@ interface Props {
   // analytics, advertising or tracking script, and no cookie banner (it only
   // exists to load the Meta Pixel and Metricool after consent).
   noTracking?: boolean;
+  // The page has its own signup form, so the footer one is left out (the two would share element ids).
+  hideNewsletter?: boolean;
 }
 
 const {
@@ -57,6 +59,7 @@ const {
   noindex = false,
   floatingWhatsApp = true,
   noTracking = false,
+  hideNewsletter = false,
 } = Astro.props;
 
 const TRACKING_COMMENTS: string[] = ['<!-- Google consent defaults, before the Google tag loads: analytics and\n         ad cookies stay off until the visitor taps Accept on the cookie\n         banner (CookieConsent.astro), which remembers the choice in the\n         cookie_consent cookie. -->', "<!-- Google tag (gtag.js), loaded after the page has finished loading (and the\n         browser is idle) so its 190 KB of script doesn't compete with the first\n         paint. The calls below queue in dataLayer, and consent updates and\n         events from the page queue behind them, until the tag arrives. -->", "<!-- Ahrefs Web Analytics: cookie-free page-view counts (Ahrefs states it needs no\n         consent), so unlike GA, Meta and Metricool it isn't held back for the cookie\n         banner. Skipped on private pages (login, account, ...), which are noindex. -->"];
@@ -373,7 +376,7 @@ const websiteJsonLd = Astro.url.pathname === '/'
             {t.footer.tagline}
           </p>
           <SocialLinks class="mt-3 -ml-3 [&_a]:text-violet-200 [&_a:hover]:text-white min-[2200px]:[&_svg]:h-7 min-[2200px]:[&_svg]:w-7" />
-          {!noTracking && <NewsletterSignup />}
+          {!noTracking && !hideNewsletter && <NewsletterSignup />}
         </div>
 
         <div>

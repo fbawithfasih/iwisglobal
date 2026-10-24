@@ -50,12 +50,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if ((perIp?.n ?? 0) >= PER_IP_PER_HOUR || (site?.n ?? 0) >= SITE_PER_HOUR) return json(429, { error: 'rate_limited' });
     await db.prepare(`INSERT INTO lead_form_requests (ip_hash, created_at) VALUES (?, ?)`).bind(ipHash, Date.now()).run();
 
+    // The footer box, or the standalone /subscribe page (linked from WhatsApp replies); nothing else is trusted from the client.
+    const onPage = body.form === 'subscribe_page';
     await signUpForEmail(env, db, {
       email,
       locale,
       page: clean(body.page, 200) || '/',
-      formId: 'footer_newsletter',
-      source: 'footer_signup',
+      formId: onPage ? 'subscribe_page' : 'footer_newsletter',
+      source: onPage ? (body.src === 'whatsapp' ? 'whatsapp_link' : 'subscribe_page') : 'footer_signup',
       consentText: getDictionary(locale).newsletter.consent,
       ipHash,
       userAgent: request.headers.get('user-agent') ?? '',

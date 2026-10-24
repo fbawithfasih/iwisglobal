@@ -15,6 +15,7 @@ import { sendDraft, sendStaffMessage, sendStaffTemplate, discardDraft, draftWait
 import { listInbox, inboxCounts, inboxSignature, takeOver, giveBack, formatDuration, WINDOW_MS, type InboxFilter } from '../../../lib/waInbox';
 import { auditOverdue } from '../../../lib/waLaunch';
 import { WA_TEMPLATES } from '../../../lib/waTemplates';
+import { SIGNUP_LANGS, signupMessage } from '../../../lib/waSignup';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -242,6 +243,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
                     ))}
                     <label class="sr-only" for={`draft-${draft.id}`}>Reply to send</label>
                     <textarea id={`draft-${draft.id}`} name="text" rows="4" class="w-full rounded-lg border border-stone-300 bg-white p-2" placeholder="Write a reply">{draft.body}</textarea>
+                    <p class="mt-1 flex flex-wrap items-center gap-1 text-xs text-stone-500">Add email signup link:{SIGNUP_LANGS.map((l) => <button type="button" data-signup-for={`draft-${draft.id}`} data-signup-text={signupMessage(l)} class="min-h-8 rounded border border-stone-300 bg-white px-2 uppercase text-stone-700">{l}</button>)}</p>
                     <div class="mt-2 flex flex-wrap gap-2">
                       <button type="submit" name="_action" value="send" class="min-h-11 rounded bg-emerald-600 px-4 text-sm font-medium text-white">Send</button>
                       <button type="submit" name="_action" value="discard" formnovalidate class="min-h-11 rounded border border-stone-300 bg-white px-4 text-sm font-medium text-stone-700">Discard</button>
@@ -284,6 +286,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
             ) : (
               <>
                 <textarea id="staff-reply" name="text" rows="3" maxlength="4096" required class="w-full rounded-lg border border-stone-300 bg-white p-2" placeholder="Type a message to send on WhatsApp"></textarea>
+                    <p class="mt-1 flex flex-wrap items-center gap-1 text-xs text-stone-500">Add email signup link:{SIGNUP_LANGS.map((l) => <button type="button" data-signup-for="staff-reply" data-signup-text={signupMessage(l)} class="min-h-8 rounded border border-stone-300 bg-white px-2 uppercase text-stone-700">{l}</button>)}</p>
                 <p class="mt-1 text-xs text-stone-500">Reply window: {formatDuration(selectedWindowLeft)} left. Sending marks this chat as staff handling, so the agent stops drafting until you give it back.</p>
                 <button type="submit" name="_action" value="reply" class="mt-2 min-h-11 rounded bg-emerald-600 px-4 text-sm font-medium text-white">Send reply</button>
               </>
@@ -362,6 +365,18 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
 <script>
   // Live updates: check every few seconds whether anything changed and reload when it did.
   // A reply being typed is never thrown away: then a banner offers the refresh instead.
+  // "Add email signup link": appends the ready-made line (in the chosen language) to the reply being written.
+  // Nothing is sent until a person presses Send.
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-signup-for]');
+    if (!btn) return;
+    const box = document.getElementById(btn.dataset.signupFor ?? '') as HTMLTextAreaElement | null;
+    if (!box) return;
+    const line = btn.dataset.signupText ?? '';
+    if (!box.value.includes(line)) box.value = box.value.trim() ? `${box.value.trimEnd()}\n\n${line}` : line;
+    box.focus();
+  });
+
   const live = document.getElementById('live');
   if (live) {
     let known = live.dataset.sig || '';

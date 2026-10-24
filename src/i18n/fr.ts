@@ -667,6 +667,11 @@ export const fr: Dictionary = {
     thanks: "Presque terminé : consultez votre boîte de réception et cliquez sur le lien de confirmation.",
     error: "Cela n'a pas fonctionné. Vérifiez l'adresse et réessayez.",
   },
+  subscribePage: {
+    metaTitle: "Idées de voyage par e-mail | IWIS Global",
+    title: "Idées de voyage par e-mail",
+    body: "De temps en temps, des idées et des offres pour visiter Agra et le Taj Mahal, de la part de l'équipe d'IWIS Global. Nous vous enverrons d'abord un lien de confirmation, et chaque e-mail contient un lien de désabonnement. Vos réservations et demandes ne sont pas concernées.",
+  },
   bookingSignup: {
     title: "Idées de voyage par e-mail",
     body: "Souhaitez-vous recevoir de temps en temps des idées et des offres sur Agra et le Taj Mahal ? Nous les enverrions à {email}. Vos e-mails de réservation sont distincts et toujours envoyés.",
