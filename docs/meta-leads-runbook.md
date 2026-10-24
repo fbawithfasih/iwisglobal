@@ -48,3 +48,20 @@ In the app: Webhooks.
 - Meta deletes leads after 90 days; every lead is stored on arrival and the 15-minute poll fetches any the webhook missed (look-back 3 days).
 - DM-only contacts are kept as their own person until they give an email or phone; a `+` country-code number or email typed in the chat links them to existing records.
 - Instagram/Messenger replies are limited to 24 hours after the person's last message; replying is done in the Meta Business Suite inbox, not here.
+
+## Asking for email consent on the instant form
+
+A standard form (name, email, phone) is **not** marketing consent. To collect it, add one extra question to the form. Do this in Meta Business Suite or Ads Manager, not in our code.
+
+1. Open **Meta Business Suite**, then **All tools**, then **Instant forms** (or Ads Manager, then the form library). Open the form you use for your ads and choose **Duplicate**. Published forms usually cannot be edited, so you edit the copy and point your ads at it.
+2. In the copy, go to **Questions**, then **Add custom question**, and choose **Multiple choice** (Yes/No).
+3. Question text: **Would you like occasional travel ideas by email?** Options: **Yes, email me travel ideas** and **No thanks**. Do not pre-select Yes, and do not make the question required.
+4. Leave the name, email and phone questions as they are. Keep the privacy policy link to `https://www.iwisglobal.com/privacy`.
+5. Save the copy, then change your ad to use it. Take a screenshot of the form's questions and keep it with today's date: it is the proof of what people agreed to.
+6. Submit a test lead (Meta's Lead Ads Testing Tool or the live ad), answer **Yes**, and check:
+   - the lead shows in `/admin/leads` with the channel Facebook/Instagram ad;
+   - the person shows under **Waiting for confirmation** in `/admin/leads/subscribers`, and a confirmation email arrives;
+   - after pressing the button in that email they show as **Subscribed**.
+7. A person who answers **No thanks**, or leaves it blank, gets no confirmation email and is never emailed marketing.
+
+How it is read: our code accepts the answer when the question's name contains words like consent, marketing, newsletter, updates, offers or "travel ideas" (Meta builds the name from the question text) and the answer starts with Yes. It also reads the optional checkboxes of the privacy step of the form (a separate field in Meta's data) when their name says the same. A checkbox that only accepts the privacy policy never counts as marketing consent. If you word the question very differently, tell us the wording so the match can be extended.

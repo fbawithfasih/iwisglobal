@@ -52,9 +52,22 @@ const custom = M.mapLeadFields([{ name: 'first_name', values: ['Bo'] }, { name: 
   { name: 'i_agree_to_receive_marketing_emails', values: ['Yes'] }]);
 assert.equal(custom.name, 'Bo King'); assert.equal(custom.tour, 'Taj Mahal sunrise'); assert.equal(custom.dates, 'March 2027'); assert.equal(custom.partySize, 3); assert.equal(custom.consent, true);
 assert.equal(M.mapLeadFields([{ name: 'marketing_consent', values: ['No'] }]).consent, false);
+// a custom Yes/No question as Meta names it (lower-cased question, option text as the value)
+assert.equal(M.mapLeadFields([{ name: 'would_you_like_occasional_travel_ideas_by_email?', values: ['Yes'] }]).consent, true);
+assert.equal(M.mapLeadFields([{ name: 'email_me_travel_ideas', values: ['yes,_email_me'] }]).consent, true);
+assert.equal(M.mapLeadFields([{ name: 'would_you_like_occasional_travel_ideas_by_email?', values: ['No'] }]).consent, false);
+// privacy-step checkboxes come back separately: a consent-named one counts, a privacy-policy one never does
+const std2 = [{ name: 'email', values: ['a@example.com'] }];
+assert.equal(M.mapLeadFields(std2, [{ checkbox_key: 'email_updates', is_checked: '1' }]).consent, true);
+assert.equal(M.mapLeadFields(std2, [{ checkbox_key: 'email_updates', is_checked: '0' }]).consent, false);
+assert.equal(M.mapLeadFields(std2, [{ checkbox_key: 'privacy_policy', is_checked: '1' }]).consent, null, 'accepting the policy is not marketing consent');
+assert.equal(M.mapLeadFields(std2, [{ checkbox_key: 'privacy_policy', is_checked: '1' }, { checkbox_key: 'marketing_emails', is_checked: '0' }]).consent, false);
+assert.equal(M.mapLeadFields(std2, [{ checkbox_key: 'marketing_emails', is_checked: true }]).consent, true);
+assert.equal(M.mapLeadFields(std2, [{ checkbox_key: 'privacy_policy', is_checked: '1' }]).answers['checkbox:privacy_policy'], 'checked', 'kept as an answer');
 
 // ---- stubbed Graph API
 let calls = 0;
+const requested: string[] = [];
 const leadObj = (id: string, email: string, consent?: string) => ({
   id, created_time: new Date(Date.now() - 3600_000).toISOString().replace(/\.\d{3}Z$/, '+0000'), ad_id: 'A1', ad_name: 'Taj ad', campaign_name: 'Autumn Taj', form_id: 'F1', platform: 'ig', is_organic: false,
   field_data: [{ name: 'full_name', values: ['Lead ' + id] }, { name: 'email', values: [email] }, ...(consent ? [{ name: 'marketing_consent', values: [consent] }] : [])],
@@ -65,6 +78,8 @@ const graph: typeof fetch = async (url: any) => {
   const json = (o: unknown) => new Response(JSON.stringify(o), { status: 200 });
   if (u.includes('/L1?')) return json(leadObj('L1', 'lead1@example.com'));
   if (u.includes('/L2?')) return json(leadObj('L2', 'lead2@example.com', 'Yes'));
+  if (u.includes('/L20?')) { requested.push(u); return json({ ...leadObj('L20', 'lead20@example.com'), custom_disclaimer_responses: [{ checkbox_key: 'privacy_policy', is_checked: '1' }, { checkbox_key: 'email_updates', is_checked: '1' }] }); }
+  if (u.includes('/L21?')) return json({ ...leadObj('L21', 'lead21@example.com'), custom_disclaimer_responses: [{ checkbox_key: 'privacy_policy', is_checked: '1' }] });
   if (u.includes('/page1/leadgen_forms')) return json({ data: [{ id: 'F1' }] });
   if (u.includes('/F1/leads')) return json({ data: [leadObj('L3', 'lead3@example.com'), { ...leadObj('L_OLD', 'old@example.com'), created_time: '2020-01-01T00:00:00+0000' }] });
   if (u.includes('/IGSID1?')) return json({ name: 'Sam Traveller', username: 'sam' });
@@ -90,6 +105,17 @@ await M.processMetaEvents(env, db, fresh, graph);
 assert.equal(count('consent_events', `source = 'meta_lead_ad' AND text_version_id = 'meta-form-F1'`), 1);
 const p2 = raw.prepare(`SELECT p.marketing_status AS s FROM leads l JOIN people p ON p.id = l.person_id WHERE l.email = 'lead2@example.com'`).get() as any;
 assert.equal(p2.s, 'pending');
+
+// consent given with a privacy-step checkbox (a separate field of the lead) -> pending; accepting the policy alone -> nothing
+const before20 = count('consent_events');
+fresh = await M.storeMetaEvents(db, [{ kind: 'leadgen', externalId: 'L20', payload: { leadgen_id: 'L20', page_id: 'page1', form_id: 'F1', ad_id: 'A1', created_time: 1 } }]);
+await M.processMetaEvents(env, db, fresh, graph);
+assert.ok(requested[0].includes('custom_disclaimer_responses'), 'the checkbox answers are asked for');
+assert.equal(count('consent_events'), before20 + 1);
+assert.equal((raw.prepare(`SELECT p.marketing_status AS s FROM leads l JOIN people p ON p.id = l.person_id WHERE l.email = 'lead20@example.com'`).get() as any).s, 'pending');
+fresh = await M.storeMetaEvents(db, [{ kind: 'leadgen', externalId: 'L21', payload: { leadgen_id: 'L21', page_id: 'page1', form_id: 'F1', ad_id: 'A1', created_time: 1 } }]);
+await M.processMetaEvents(env, db, fresh, graph);
+assert.equal(count('consent_events'), before20 + 1, 'accepting the privacy policy is not marketing consent');
 
 // Instagram DM: ig_sid person, email in the text links an identifier, name from the profile call
 fresh = await M.storeMetaEvents(db, M.parseMetaWebhook(igHook));
