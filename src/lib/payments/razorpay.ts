@@ -1,4 +1,4 @@
-import { computeTotal, computeDepositAmount, FOUNDING_GUEST_SLOT_CAP } from '../catalog';
+import { computeTotal, computeDepositAmount, foundingGuestSlotsLeft } from '../catalog';
 import { resolveBookingDiscount, FOUNDING_GUEST_OFFER_ID } from '../offers';
 import { todayIst } from '../availability';
 import type { Currency } from '../currency';
@@ -233,7 +233,7 @@ export const razorpayProvider: PaymentProvider = {
     // confirmed bookings site-wide. Decided once, here, and carried in the
     // trusted order notes below so verifyPayment applies the identical
     // discount rather than re-checking a count that may have moved on.
-    const foundingGuestDiscount = env.DB ? (await countBookings(env.DB as any)) < FOUNDING_GUEST_SLOT_CAP : false;
+    const foundingGuestDiscount = env.DB ? foundingGuestSlotsLeft(await countBookings(env.DB as any)) > 0 : false;
     // One discount per booking — the biggest of the Founding Guest Offer,
     // any automatic offer and the entered coupon (src/lib/offers.ts).
     // Throws CouponError for an unusable code rather than charging a price

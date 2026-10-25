@@ -109,6 +109,14 @@ export function computeDepositAmount(total: number): number {
 // without re-querying a booking count that may have moved on by then.
 export const FOUNDING_GUEST_DISCOUNT_RATE = 0.15;
 export const FOUNDING_GUEST_SLOT_CAP = 25;
+// Ended by the owner on 25 Oct 2026, before paid advertising, with 21 spots unused. Bookings that already had it
+// keep their discount (it is stored with each booking). Set back to false to reopen the remaining spots.
+export const FOUNDING_GUEST_ENDED = true;
+
+// The one place that decides whether the offer is open: the charge (razorpay.ts) and every banner use it.
+export function foundingGuestSlotsLeft(bookingCount: number): number {
+  return FOUNDING_GUEST_ENDED ? 0 : Math.max(0, FOUNDING_GUEST_SLOT_CAP - bookingCount);
+}
 
 // Rounded to a whole rupee/dollar: 15% off otherwise leaves paise/cents
 // (₹15,998 → ₹13,598.3), which the booking widget displayed as-is. Every
