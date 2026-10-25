@@ -107,6 +107,11 @@ export function computeDepositAmount(total: number): number {
 // countBookings) and carried in the trusted Razorpay order notes so
 // verify-payment.ts can apply the exact same discount deterministically,
 // without re-querying a booking count that may have moved on by then.
+// Online booking capacity: the most travellers one tour can take on one date, across all its bookings (owner's
+// limit, 20 since 25 Oct 2026). The server enforces it (src/lib/db.ts); the booking form's traveller picker uses
+// the same number, so both always agree.
+export const MAX_TRAVELERS_PER_DATE = 20;
+
 export const FOUNDING_GUEST_DISCOUNT_RATE = 0.15;
 export const FOUNDING_GUEST_SLOT_CAP = 25;
 // Ended by the owner on 25 Oct 2026, before paid advertising, with 21 spots unused. Bookings that already had it

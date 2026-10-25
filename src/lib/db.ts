@@ -31,11 +31,9 @@ export interface D1Like {
   };
 }
 
-// Same-day Agra tour: one vehicle/guide slot per date. Keep this simple cap
-// rather than a full availability calendar for Phase 1. Shared by the
-// fast-fail check in create-order.ts and the authoritative check in
-// insertVerifiedBooking below.
-export const MAX_TRAVELERS_PER_DATE = 12;
+// Travellers per tour per date, across all bookings: set in src/lib/catalog.ts (shared with the booking form).
+// Used by the fast-fail check in create-order.ts and the authoritative check in insertVerifiedBooking below.
+export { MAX_TRAVELERS_PER_DATE } from './catalog';
 
 export interface BookingRecord {
   id: string;
