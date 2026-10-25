@@ -4,6 +4,7 @@ import { finalizeTourBooking } from '../../lib/tourBooking';
 import { resolveEnv } from '../../lib/env';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
 import { resolveLocale } from '../../lib/i18n';
+import { metaContextFromRequest } from '../../lib/metaCapi';
 
 export const prerender = false;
 
@@ -44,6 +45,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
         travelerPhone,
         locale,
         customerId: await getSessionCustomerId(cookies, env.CUSTOMER_SESSION_SECRET),
+        meta: metaContextFromRequest(request),
       });
       if (outcome === 'refunded' || outcome === 'refund_failed') {
         return new Response(

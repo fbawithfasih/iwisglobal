@@ -8,6 +8,7 @@ import { emailLocale, type Locale } from './i18n';
 import { sendAdminBookingNotificationEmail, sendBookingConfirmationEmail } from './email';
 import { chosenAddOnNames } from './entryTickets';
 import { FOUNDING_GUEST_OFFER_ID } from './offers';
+import { sendMetaEvent, type MetaContext } from './metaCapi';
 
 // Records a paid tour booking. Called by the browser after Razorpay's checkout (src/pages/api/verify-payment.ts) and
 // by Razorpay's payment webhook (src/pages/api/webhooks/razorpay.ts), so a booking is never lost when the guest's
@@ -24,6 +25,8 @@ export interface TourBookingInput {
   travelerPhone?: string;
   locale?: string;
   customerId?: string | null;
+  // Consent and Meta identifiers from the browser's verify call; the webhook uses the copy kept with the order.
+  meta?: MetaContext;
 }
 
 export async function finalizeTourBooking(env: Record<string, any>, db: D1Like, i: TourBookingInput): Promise<TourBookingOutcome> {
@@ -137,5 +140,23 @@ export async function finalizeTourBooking(env: Record<string, any>, db: D1Like, 
   } catch (err) {
     console.error('tour booking: emails failed', bookingId, err instanceof Error ? err.message : 'error');
   }
+  // The server's copy of the Purchase the confirmation page sends: same event id (the payment id) and value, so
+  // Meta counts it once. Only with cookie consent (src/lib/metaCapi.ts).
+  await sendMetaEvent(
+    env,
+    {
+      name: 'Purchase',
+      eventId: v.paymentId,
+      sourceUrl: 'https://www.iwisglobal.com/booking/confirmation',
+      email,
+      phone,
+      fullName: name,
+      value: v.amountCharged / 100,
+      currency: v.currency,
+      contentIds: [v.tourId],
+      numItems: v.travelers,
+    },
+    i.meta?.consent ? i.meta : v.meta
+  );
   return 'inserted';
 }

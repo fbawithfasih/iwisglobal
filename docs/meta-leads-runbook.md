@@ -65,3 +65,13 @@ A standard form (name, email, phone) is **not** marketing consent. To collect it
 7. A person who answers **No thanks**, or leaves it blank, gets no confirmation email and is never emailed marketing.
 
 How it is read: our code accepts the answer when the question's name contains words like consent, marketing, newsletter, updates, offers or "travel ideas" (Meta builds the name from the question text) and the answer starts with Yes. It also reads the optional checkboxes of the privacy step of the form (a separate field in Meta's data) when their name says the same. A checkbox that only accepts the privacy policy never counts as marketing consent. If you word the question very differently, tell us the wording so the match can be extended.
+
+## Conversions API (server-side Purchase and Lead)
+
+The site sends Meta the same **Purchase** (tour booking) and **Lead** (enquiry form) events from the server that the Meta Pixel sends from the browser. Meta then still counts a sale when the browser could not report it (ad blockers, Safari, a page lost while a UPI app handled the payment). Both copies share one event id (the payment id for a purchase), so Meta counts each conversion once. Only visitors who **accepted cookies** are sent; for everyone else nothing goes to Meta. Email and phone are sent hashed (SHA-256), never readable.
+
+Setup:
+1. In **Meta Events Manager**, open the dataset (pixel) `179602460825688`, then **Settings**, then **Conversions API**, then **Generate access token**. Copy it (it is shown once).
+2. In Cloudflare Pages (Production) add a **Secret** `META_CAPI_TOKEN` with that token. Optional: `META_PIXEL_ID` if you ever change pixel.
+3. To check it before relying on it: in Events Manager open **Test events**, copy the test code (for example `TEST12345`), add it in Cloudflare as `META_CAPI_TEST_CODE`, redeploy, accept cookies on the site, send an enquiry. The Lead appears under Test events as received from **Server** and from **Browser**, marked deduplicated. Then **delete `META_CAPI_TEST_CODE`** and redeploy, or real events keep going to the test view only.
+4. After a few days, Events Manager, **Overview**: Purchase and Lead show both "Browser" and "Server", and the event match quality is listed. Ignore the warnings about events you do not send (AddToCart etc.).
