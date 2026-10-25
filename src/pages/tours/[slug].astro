@@ -22,7 +22,7 @@ import ShortlistButton from '../../components/ShortlistButton';
 import AgraMap from '../../components/AgraMap';
 import { sitesInText } from '../../lib/agraSites';
 import { isNightViewingTour, nightViewingDatesFrom } from '../../lib/nightViewing';
-import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE } from '../../lib/catalog';
+import { FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE, foundingGuestSlotsLeft as slotsLeftFor } from '../../lib/catalog';
 import { resolveCurrency, resolvePrice, resolveAddOns, resolvePricingTiers, resolveFromPrice, CURRENCY_SYMBOLS } from '../../lib/currency';
 
 export const prerender = false;
@@ -85,7 +85,7 @@ const fromPrice = resolveFromPrice(tour, requestedCurrency);
 // decision (and the actual discount applied) happens server-side at
 // payment time in razorpay.ts's createOrder, from a fresh count at that
 // exact moment. This is just for showing the banner/estimate.
-const foundingGuestSlotsLeft = Math.max(0, FOUNDING_GUEST_SLOT_CAP - bookingCount);
+const foundingGuestSlotsLeft = slotsLeftFor(bookingCount);
 const foundingGuestPercent = Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100);
 // Automatic offers running on this tour today (src/lib/offers.ts) — shown
 // here and applied in the widget's estimate; create-order decides the charge.
