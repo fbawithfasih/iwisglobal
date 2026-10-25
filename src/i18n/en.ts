@@ -927,7 +927,7 @@ export const en = {
       k33: "<strong>Open-Meteo and Google</strong> — some pages load content directly from them in your browser (the Agra weather card from Open-Meteo; the \"Add to Preferred Sources\" button on our blog from Google), which means they see your IP address like any website you visit.",
       k34: "We don't sell your information, and we don't give it to anyone else for their own marketing.",
       k35: "Cookies",
-      k36: "This site uses a small number of cookies. Most make the site work. The Google Analytics cookies, which measure site usage, and the Meta advertising cookies are set only if you tap Accept on our cookie banner:",
+      k36: "This site uses a small number of cookies. Most make the site work. The Google Analytics cookies, which measure site usage, and the Meta advertising cookies are listed below. Whether they are set depends on where you visit from (see the note after the list):",
       k37: "<code class=\"text-sm bg-stone-100 px-1 rounded\">currency</code> and <code class=\"text-sm bg-stone-100 px-1 rounded\">lang</code> — remember your preferred currency and language.",
       k38: "<code class=\"text-sm bg-stone-100 px-1 rounded\">customer_session</code> — keeps you signed in, if you have an account.",
       k39: "<code class=\"text-sm bg-stone-100 px-1 rounded\">admin_session</code> — staff-only, used to access the booking management system.",
@@ -954,6 +954,7 @@ export const en = {
       k60: "To send you travel ideas and offers by email, only if you signed up and confirmed your address. Every email has an unsubscribe link, and you can unsubscribe at any time.",
       k61: "<strong>Email statistics:</strong> when we send you an email, our email provider tells us whether it was delivered, bounced or marked as spam, and we count clicks on the links in our emails per link, not per person. We do not track whether you open an email.",
       k62: "<strong>Ad measurement:</strong> if you accept cookies, we also tell Meta from our server when you book or send an enquiry, so we can measure our Facebook and Instagram ads. We send your email address and phone number only in scrambled (hashed) form, together with the booking value. If you reject cookies, nothing is sent to Meta.",
+      k63: "<strong>Where you are matters.</strong> If you visit from the European Union, the wider European Economic Area (Iceland, Liechtenstein, Norway), the United Kingdom or Switzerland, the analytics and advertising cookies and tools described in this policy are used only if you tap Accept on our cookie banner. From all other countries they are on by default, and you can switch them off at any time with “Cookie settings” at the bottom of every page; your choice is then remembered and applies here exactly as described for Reject. Where this policy says “only if you accept”, read it this way. We tell where you are visiting from by your internet connection's country, which we do not store.",
     },
   help: {
       foundingLine: " Right now, our first {cap} guests get {percent}% off automatically, with no code needed (the Founding Guest offer).",

@@ -7,6 +7,7 @@ import { getDictionary } from '../i18n/dictionaries';
 import LocaleSwitcher from '../components/LocaleSwitcher.astro';
 import GlobeLogo from '../components/GlobeLogo.astro';
 import CookieConsent from '../components/CookieConsent.astro';
+import { consentRequired, requestCountry } from '../lib/consentRegion';
 import CompareTray from '../components/CompareTray';
 import SocialLinks from '../components/SocialLinks.astro';
 import NewsletterSignup from '../components/NewsletterSignup.astro';
@@ -61,6 +62,10 @@ const {
   noTracking = false,
   hideNewsletter = false,
 } = Astro.props;
+
+// The cookie banner and "wait for Accept" apply in the EU/EEA, UK and Switzerland only (src/lib/consentRegion.ts).
+// HTML pages are not cached at the edge, so this is decided for each visitor.
+const askConsent = consentRequired(requestCountry(Astro.request, (Astro.locals as { runtime?: { cf?: { country?: string } } }).runtime?.cf));
 
 const TRACKING_COMMENTS: string[] = ['<!-- Google consent defaults, before the Google tag loads: analytics and\n         ad cookies stay off until the visitor taps Accept on the cookie\n         banner (CookieConsent.astro), which remembers the choice in the\n         cookie_consent cookie. -->', "<!-- Google tag (gtag.js), loaded after the page has finished loading (and the\n         browser is idle) so its 190 KB of script doesn't compete with the first\n         paint. The calls below queue in dataLayer, and consent updates and\n         events from the page queue behind them, until the tag arrives. -->", "<!-- Ahrefs Web Analytics: cookie-free page-view counts (Ahrefs states it needs no\n         consent), so unlike GA, Meta and Metricool it isn't held back for the cookie\n         banner. Skipped on private pages (login, account, ...), which are noindex. -->"];
 
@@ -198,14 +203,16 @@ const websiteJsonLd = Astro.url.pathname === '/'
   : null;
 ---
 <!doctype html>
-<html lang={locale} class="scroll-smooth">
+<html lang={locale} class="scroll-smooth" data-consent-region={askConsent ? '1' : '0'}>
   <head>
     {!noTracking && <Fragment set:html={TRACKING_COMMENTS[0]} />}
     {!noTracking && (
     <script is:inline>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      var consentState = /(?:^|; )cookie_consent=granted/.test(document.cookie) ? 'granted' : 'denied';
+      // The visitor's own choice wins; without one, analytics and ads wait for Accept only in the consent region.
+      var consentChoice = document.cookie.match(/(?:^|; )cookie_consent=(granted|denied)/);
+      var consentState = consentChoice ? consentChoice[1] : (document.documentElement.getAttribute('data-consent-region') === '0' ? 'granted' : 'denied');
       gtag('consent', 'default', {
         analytics_storage: consentState,
         ad_storage: consentState,

@@ -7,6 +7,7 @@ import { finalizeTourBooking } from '../../src/lib/tourBooking';
 import { bookingFromOrder } from '../../src/lib/payments/razorpay';
 import { packAttribution, packGuest, unpackAttribution, unpackGuest, attributionFromBody, packMeta, unpackMeta } from '../../src/lib/payments/orderNotes';
 import { buildPayload, metaContextFromRequest, sendMetaEvent, NO_CONSENT } from '../../src/lib/metaCapi';
+import { consentRequired, effectiveConsent } from '../../src/lib/consentRegion';
 
 const raw = new DatabaseSync(':memory:');
 for (const f of ['schema.sql', 'schema_crm.sql', 'schema_booking_locale.sql', 'schema_deposit_payments.sql', 'schema_customers.sql', 'schema_tours.sql', 'schema_offers.sql', 'schema_whatsapp.sql', 'schema_contacts.sql']) {
@@ -107,6 +108,18 @@ const sha = async (v: string) => Array.from(new Uint8Array(await crypto.subtle.d
 const req = (cookie: string) => new Request('https://www.iwisglobal.com/api/create-order', { method: 'POST', headers: { cookie, 'user-agent': 'Mozilla/5.0 Test', 'cf-connecting-ip': '203.0.113.9' } });
 assert.deepEqual(metaContextFromRequest(req('_fbp=fb.1.1.123; _fbc=fb.1.2.abc')), NO_CONSENT, 'no cookie consent: nothing is kept for Meta');
 assert.deepEqual(metaContextFromRequest(req('cookie_consent=denied; _fbp=fb.1.1.123')), NO_CONSENT);
+// ---- where the banner asks first: EU/EEA, UK, Switzerland, and any unknown country
+for (const c of ['DE', 'FR', 'IT', 'ES', 'NL', 'IE', 'NO', 'IS', 'LI', 'GB', 'CH', 'de']) assert.equal(consentRequired(c), true, c);
+for (const c of ['IN', 'US', 'AU', 'CA', 'AE', 'SG', 'JP']) assert.equal(consentRequired(c), false, c);
+for (const c of [null, undefined, '', 'XX', 'T1', 'EUR']) assert.equal(consentRequired(c as any), true, `unknown ${c}`);
+assert.equal(effectiveConsent('', 'IN'), 'granted', 'India, no choice yet: on by default');
+assert.equal(effectiveConsent('', 'DE'), 'ask', 'Germany, no choice yet: ask first');
+assert.equal(effectiveConsent('cookie_consent=denied', 'IN'), 'denied', 'a Reject is always respected');
+assert.equal(effectiveConsent('cookie_consent=granted', 'DE'), 'granted');
+const reqFrom = (cookie: string, country: string) => new Request('https://www.iwisglobal.com/api/create-order', { method: 'POST', headers: { cookie, 'cf-ipcountry': country, 'user-agent': 'UA' } });
+assert.equal(metaContextFromRequest(reqFrom('_fbp=fb.1.1.9', 'IN')).consent, true, 'server-side events follow the same rule outside Europe');
+assert.equal(metaContextFromRequest(reqFrom('_fbp=fb.1.1.9', 'FR')).consent, false, 'and inside Europe wait for Accept');
+assert.equal(metaContextFromRequest(reqFrom('cookie_consent=denied; _fbp=fb.1.1.9', 'US')).consent, false, 'a Reject stops them anywhere');
 const ctx = metaContextFromRequest(req('cookie_consent=granted; _fbp=fb.1.1.123; _fbc=fb.1.2.abc'));
 assert.deepEqual(ctx, { consent: true, fbp: 'fb.1.1.123', fbc: 'fb.1.2.abc', ip: '203.0.113.9', userAgent: 'Mozilla/5.0 Test' });
 assert.deepEqual(unpackMeta(packMeta(ctx)), ctx, 'consent and identifiers round-trip through the order note');

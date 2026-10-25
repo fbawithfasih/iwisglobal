@@ -926,7 +926,7 @@ export const es: Dictionary = {
       k33: "<strong>Open-Meteo y Google</strong> — algunas páginas cargan contenido directamente de ellos en tu navegador (la tarjeta del tiempo de Agra, de Open-Meteo; el botón «Añadir a fuentes preferidas» de nuestro blog, de Google), por lo que ven tu dirección IP como cualquier sitio web que visites.",
       k34: "No vendemos tu información ni la damos a nadie más para su propio marketing.",
       k35: "Cookies",
-      k36: "Este sitio usa un pequeño número de cookies. La mayoría hacen que el sitio funcione. Las cookies de Google Analytics, que miden el uso del sitio, y las cookies de publicidad de Meta solo se instalan si pulsas Aceptar en nuestro aviso de cookies:",
+      k36: "Este sitio usa un pequeño número de cookies. La mayoría hacen que el sitio funcione. Las cookies de Google Analytics, que miden el uso del sitio, y las cookies de publicidad de Meta se indican a continuación. Que se instalen o no depende de desde dónde visites el sitio (ver la nota tras la lista):",
       k37: "<code class=\"text-sm bg-stone-100 px-1 rounded\">currency</code> y <code class=\"text-sm bg-stone-100 px-1 rounded\">lang</code> — recuerdan tu moneda e idioma preferidos.",
       k38: "<code class=\"text-sm bg-stone-100 px-1 rounded\">customer_session</code> — te mantiene con la sesión iniciada, si tienes una cuenta.",
       k39: "<code class=\"text-sm bg-stone-100 px-1 rounded\">admin_session</code> — solo para el personal, se usa para acceder al sistema de gestión de reservas.",
@@ -953,6 +953,7 @@ export const es: Dictionary = {
       k60: "Para enviarte ideas de viaje y ofertas por correo, solo si te has suscrito y has confirmado tu dirección. Cada correo incluye un enlace para darte de baja, y puedes hacerlo en cualquier momento.",
       k61: "<strong>Estadísticas de correo:</strong> cuando te enviamos un correo, nuestro proveedor de envío nos indica si se entregó, rebotó o fue marcado como spam, y contamos los clics en los enlaces de nuestros correos por enlace, no por persona. No registramos si abres un correo.",
       k62: "<strong>Medición de anuncios:</strong> si aceptas las cookies, también informamos a Meta desde nuestro servidor cuando reservas o envías una consulta, para medir nuestros anuncios de Facebook e Instagram. Solo enviamos tu correo y tu teléfono en forma cifrada (hash), junto con el importe de la reserva. Si rechazas las cookies, no se envía nada a Meta.",
+      k63: "<strong>Dónde estás importa.</strong> Si visitas el sitio desde la Unión Europea, el resto del Espacio Económico Europeo (Islandia, Liechtenstein, Noruega), el Reino Unido o Suiza, las cookies y herramientas de análisis y publicidad descritas en esta política solo se usan si pulsas Aceptar en nuestro aviso de cookies. Desde todos los demás países están activadas por defecto, y puedes desactivarlas en cualquier momento con «Ajustes de cookies» al pie de cada página; tu elección se recuerda y se aplica exactamente como se describe para Rechazar. Cuando esta política dice «solo si aceptas», debe entenderse así. Sabemos desde dónde visitas por el país de tu conexión a internet, que no guardamos.",
     },
   help: {
       foundingLine: " Ahora mismo, nuestros primeros {cap} clientes obtienen un {percent}% de descuento automáticamente, sin necesidad de código (la oferta Founding Guest).",

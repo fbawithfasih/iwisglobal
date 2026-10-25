@@ -1,6 +1,7 @@
 ---
-// Cookie consent for Google Analytics, the Meta Pixel and Metricool. None
-// sets cookies until the visitor taps Accept (UK PECR; see /privacy):
+// Cookie consent for Google Analytics, the Meta Pixel and Metricool. In the EU/EEA, UK and Switzerland none
+// sets cookies until the visitor taps Accept (GDPR, UK PECR; see /privacy); elsewhere they are on by default and
+// "Cookie settings" lets the visitor switch them off (src/lib/consentRegion.ts):
 // Google's consent defaults are set to denied in BaseLayout's <head>, and
 // the Meta Pixel and Metricool tracker don't load at all. Rejecting keeps the site working as before. The choice is kept in a first-party `cookie_consent` cookie for
 // 180 days; "Cookie settings" in the footer reopens the banner.
@@ -148,7 +149,13 @@ const { t } = pageI18n(Astro);
     })
   );
 
+  // In the EU/EEA, UK and Switzerland nothing loads until the visitor taps Accept, so the banner asks. Elsewhere
+  // analytics and ads are on by default (src/lib/consentRegion.ts); "Cookie settings" still opens the banner,
+  // and choosing Reject there is remembered and switches them off.
   const choice = readChoice();
+  const askFirst = document.documentElement.getAttribute('data-consent-region') !== '0';
   if (choice) apply(choice);
-  else if (banner) banner.hidden = false;
+  else if (askFirst) {
+    if (banner) banner.hidden = false;
+  } else apply('granted');
 </script>

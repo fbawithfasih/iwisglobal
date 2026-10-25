@@ -1,11 +1,12 @@
 import { META_GRAPH_VERSION } from './meta';
+import { effectiveConsent, requestCountry } from './consentRegion';
 
 // Meta Conversions API: the server sends the same Purchase and Lead events the browser's Meta Pixel sends, so Meta
 // still counts a conversion when the browser could not (ad blockers, Safari's tracking limits, a page lost after
 // paying). Each event carries the same event_id as the browser's copy, so Meta counts it once.
 //
-// Only for visitors who accepted cookies: the cookie banner (CookieConsent.astro) is the consent for Meta
-// measurement, and a server-side copy is no exception. Without consent, nothing is sent.
+// Only with consent, exactly as for the browser's pixel: in the EU/EEA, UK and Switzerland only after the visitor
+// tapped Accept; elsewhere unless they switched it off with "Cookie settings" (src/lib/consentRegion.ts).
 //
 // Settings (Cloudflare Pages): META_CAPI_TOKEN (Events Manager, the dataset, Settings, Conversions API,
 // Generate access token), optional META_PIXEL_ID (defaults to the site's pixel) and META_CAPI_TEST_CODE (Events
@@ -28,7 +29,7 @@ export const NO_CONSENT: MetaContext = { consent: false, fbp: '', fbc: '', ip: '
 export function metaContextFromRequest(request: Request): MetaContext {
   const cookie = request.headers.get('cookie') ?? '';
   const get = (name: string) => decodeURIComponent(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`).exec(cookie)?.[1] ?? '');
-  if (get('cookie_consent') !== 'granted') return NO_CONSENT;
+  if (effectiveConsent(cookie, requestCountry(request)) !== 'granted') return NO_CONSENT;
   return {
     consent: true,
     fbp: get('_fbp').slice(0, 120),
