@@ -950,6 +950,7 @@ export const fr: Dictionary = {
       k59: "<strong>Inscriptions par e-mail :</strong> si vous vous abonnez aux idées de voyage par e-mail, ou si vous cochez la case d'un de nos formulaires ou d'un formulaire de prospect Facebook ou Instagram, nous enregistrons votre adresse e-mail, le texte que vous avez accepté, la date et votre clic sur le lien de confirmation, afin de pouvoir prouver votre accord.",
       k60: "Pour vous envoyer des idées de voyage et des offres par e-mail, uniquement si vous vous êtes inscrit et avez confirmé votre adresse. Chaque e-mail contient un lien de désinscription, et vous pouvez vous désinscrire à tout moment.",
       k61: "<strong>Statistiques des e-mails :</strong> lorsque nous vous envoyons un e-mail, notre prestataire d'envoi nous indique s'il a été remis, rejeté ou signalé comme spam, et nous comptons les clics sur les liens de nos e-mails par lien, et non par personne. Nous ne suivons pas l'ouverture des e-mails.",
+      k62: "<strong>Mesure publicitaire :</strong> si vous acceptez les cookies, nous informons aussi Meta depuis notre serveur lorsque vous réservez ou envoyez une demande, afin de mesurer nos publicités Facebook et Instagram. Nous n'envoyons votre adresse e-mail et votre numéro de téléphone que sous forme brouillée (hachée), avec le montant de la réservation. Si vous refusez les cookies, rien n'est envoyé à Meta.",
     },
   help: {
       foundingLine: " En ce moment, nos {cap} premiers clients bénéficient automatiquement de {percent} % de réduction, sans code (l'offre Founding Guest).",

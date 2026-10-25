@@ -46,5 +46,8 @@ export function resolveEnv(locals: unknown): Record<string, any> {
     MARKETING_DAILY_CAP: runtimeEnv.MARKETING_DAILY_CAP ?? import.meta.env.MARKETING_DAILY_CAP,
     CAMPAIGN_CRON_SECRET: runtimeEnv.CAMPAIGN_CRON_SECRET ?? import.meta.env.CAMPAIGN_CRON_SECRET,
     RESEND_WEBHOOK_SECRET: runtimeEnv.RESEND_WEBHOOK_SECRET ?? import.meta.env.RESEND_WEBHOOK_SECRET,
+    META_CAPI_TOKEN: runtimeEnv.META_CAPI_TOKEN ?? import.meta.env.META_CAPI_TOKEN,
+    META_PIXEL_ID: runtimeEnv.META_PIXEL_ID ?? import.meta.env.META_PIXEL_ID,
+    META_CAPI_TEST_CODE: runtimeEnv.META_CAPI_TEST_CODE ?? import.meta.env.META_CAPI_TEST_CODE,
   };
 }

@@ -2,6 +2,9 @@
 // they came from. Razorpay keeps the notes with the order, so the payment webhook can still create the booking
 // (and send the emails) when the guest's browser never comes back after paying, for example when a UPI app takes
 // over on a phone. Razorpay allows at most 15 keys of 256 characters each, so each object is packed into one key.
+// A tour order uses up to 15 keys with every optional one present (offer, label, GA id): do not add another.
+
+import type { MetaContext } from '../metaCapi';
 
 const MAX_NOTE = 255;
 
@@ -69,4 +72,17 @@ export function unpackAttribution(note: unknown): OrderAttribution {
 export function attributionFromBody(v: unknown): OrderAttribution {
   const o = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
   return { source: s(o.source, 40), medium: s(o.medium, 40), campaign: s(o.campaign, 60), landingPage: s(o.landingPage, 80), gclid: s(o.gclid, 120), fbclid: !!s(o.fbclid, 500) };
+}
+
+// Consent and Meta's browser identifiers for the Conversions API (src/lib/metaCapi.ts). Only kept for a visitor who
+// accepted cookies; otherwise the note says "no consent" and nothing is sent to Meta for this booking.
+export function packMeta(m: MetaContext | undefined): string {
+  if (!m?.consent) return '{"k":0}';
+  return pack({ k: 1, b: s(m.fbp, 120), c: s(m.fbc, 300), i: s(m.ip, 45), u: s(m.userAgent, 400) });
+}
+
+export function unpackMeta(note: unknown): MetaContext {
+  const v = parse(note);
+  if (v.k !== 1) return { consent: false, fbp: '', fbc: '', ip: '', userAgent: '' };
+  return { consent: true, fbp: s(v.b, 120), fbc: s(v.c, 300), ip: s(v.i, 45), userAgent: s(v.u, 400) };
 }

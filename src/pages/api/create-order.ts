@@ -5,6 +5,7 @@ import { resolveEnv } from '../../lib/env';
 import { isBookableDate, isValidDateString, isTajClosedStart, tajDayOffset, FRIDAY_CLOSED_MESSAGE, TAJ_DAY_CLOSED_MESSAGE } from '../../lib/availability';
 import { getTourById } from '../../lib/tours';
 import { attributionFromBody } from '../../lib/payments/orderNotes';
+import { metaContextFromRequest } from '../../lib/metaCapi';
 import { resolveLocale } from '../../lib/i18n';
 import { fmt } from '../../i18n/fmt';
 import { isNightViewingTour, isNightViewingDate, NIGHT_VIEWING_DATE_MESSAGE } from '../../lib/nightViewing';
@@ -83,6 +84,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           locale: resolveLocale(new URL(request.url).searchParams, cookies.get('lang')?.value),
         },
         attribution: attributionFromBody(attribution),
+        meta: metaContextFromRequest(request),
       },
       env
     );

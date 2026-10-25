@@ -7,6 +7,7 @@ import { normaliseEmail, normalisePhone, recordConsent, recordLead, type Attribu
 import { notifyNewLead } from '../../lib/leadsAdmin';
 import { consentVersionId, startDoubleOptIn } from '../../lib/marketing';
 import type { D1Like } from '../../lib/db';
+import { metaContextFromRequest, sendMetaEvent } from '../../lib/metaCapi';
 
 export const prerender = false;
 
@@ -116,6 +117,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Tell the owner. A failed alert must not fail the visitor's submit.
     if (result.createdLead) {
       await notifyNewLead(env, db, { id: result.leadId, name, channel: 'Website form', detail: [interest, message].filter(Boolean).join(' / ').slice(0, 300) });
+    }
+    // The server's copy of the browser's Meta "Lead" (same event id, so Meta counts it once). Only with cookie consent.
+    const eventId = clean(body.eventId, 64);
+    if (eventId) {
+      await sendMetaEvent(
+        env,
+        { name: 'Lead', eventId, sourceUrl: `https://www.iwisglobal.com${attribution.landingPage || '/contact'}`, email, phone, fullName: name },
+        metaContextFromRequest(request)
+      );
     }
     return json(200, { ok: true });
   } catch (err) {

@@ -950,6 +950,7 @@ export const de: Dictionary = {
       k59: "<strong>E-Mail-Anmeldungen:</strong> Wenn Sie Reiseideen per E-Mail abonnieren oder das Kästchen in einem unserer Formulare oder in einem Facebook- oder Instagram-Lead-Formular ankreuzen, speichern wir Ihre E-Mail-Adresse, den Wortlaut, dem Sie zugestimmt haben, das Datum und Ihren Klick auf den Bestätigungslink, damit wir Ihre Einwilligung nachweisen können.",
       k60: "Um Ihnen Reiseideen und Angebote per E-Mail zu senden, nur wenn Sie sich angemeldet und Ihre Adresse bestätigt haben. Jede E-Mail enthält einen Abmeldelink, und Sie können sich jederzeit abmelden.",
       k61: "<strong>E-Mail-Statistiken:</strong> Wenn wir Ihnen eine E-Mail senden, teilt uns unser E-Mail-Dienstleister mit, ob sie zugestellt wurde, nicht zustellbar war oder als Spam markiert wurde. Klicks auf die Links in unseren E-Mails zählen wir pro Link, nicht pro Person. Ob Sie eine E-Mail öffnen, erfassen wir nicht.",
+      k62: "<strong>Anzeigenmessung:</strong> Wenn Sie Cookies akzeptieren, teilen wir Meta auch von unserem Server aus mit, wenn Sie buchen oder eine Anfrage senden, damit wir unsere Facebook- und Instagram-Anzeigen messen können. Ihre E-Mail-Adresse und Telefonnummer senden wir nur in verschlüsselter (gehashter) Form, zusammen mit dem Buchungswert. Wenn Sie Cookies ablehnen, wird nichts an Meta gesendet.",
     },
   help: {
       foundingLine: " Derzeit erhalten unsere ersten {cap} Gäste automatisch {percent} % Rabatt, ohne dass ein Code nötig ist (das Founding-Guest-Angebot).",

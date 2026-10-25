@@ -4,6 +4,7 @@
 // this interface.
 
 import type { OrderAttribution, OrderGuest } from './orderNotes';
+import type { MetaContext } from '../metaCapi';
 
 export interface BookingRequest {
   tourId: string;
@@ -28,6 +29,8 @@ export interface BookingRequest {
   // create the booking when the browser never returns (src/lib/payments/orderNotes.ts).
   guest?: OrderGuest;
   attribution?: OrderAttribution;
+  // Cookie consent and Meta's identifiers at checkout, for the Conversions API.
+  meta?: MetaContext;
 }
 
 export interface OrderResult {
@@ -68,6 +71,7 @@ export interface VerifiedBooking {
   amountCharged: number;
   guest: OrderGuest;
   attribution: OrderAttribution;
+  meta: MetaContext;
 }
 
 export interface PaymentProvider {

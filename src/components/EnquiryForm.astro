@@ -61,6 +61,8 @@ const input = 'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 te
       show('enquiry-need', false);
       var attribution = {};
       try { attribution = JSON.parse(sessionStorage.getItem('iwis_first_touch') || '{}'); } catch (err) {}
+      // One id for the browser's and the server's copy of Meta's Lead event, so Meta counts it once.
+      var eventId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
       var btn = form.querySelector('button[type=submit]');
       var label = btn.textContent;
       btn.disabled = true;
@@ -71,7 +73,7 @@ const input = 'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 te
         body: JSON.stringify({
           name: d.get('name'), email: email, phone: phone, interest: d.get('interest'), dates: d.get('dates'),
           message: d.get('message'), website: d.get('website'), marketing: d.get('marketing') === 'on',
-          locale: locale, attribution: attribution
+          locale: locale, attribution: attribution, eventId: eventId
         })
       }).then(function (r) {
         if (!r.ok) throw new Error('failed');
@@ -80,7 +82,7 @@ const input = 'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 te
         btn.classList.add('hidden');
         // Conversion events for Google (a key event to import into Google Ads) and Meta (sent only after cookie consent).
         if (window.gtag) window.gtag('event', 'generate_lead', { lead_source: 'enquiry_form' });
-        (window.iwisPixelQueue = window.iwisPixelQueue || []).push(['Lead', { content_name: 'Enquiry form' }]);
+        (window.iwisPixelQueue = window.iwisPixelQueue || []).push(['Lead', { content_name: 'Enquiry form' }, { eventID: eventId }]);
       }).catch(function () {
         show('enquiry-error', true);
         btn.disabled = false;

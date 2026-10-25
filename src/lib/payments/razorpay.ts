@@ -5,7 +5,7 @@ import type { Currency } from '../currency';
 import { getCatalogItem } from '../tours';
 import { countBookings } from '../db';
 import type { BookingRequest, OrderResult, VerifyRequest, VerifiedBooking, PaymentProvider } from './index';
-import { packAttribution, packGuest, unpackAttribution, unpackGuest } from './orderNotes';
+import { packAttribution, packGuest, packMeta, unpackAttribution, unpackGuest, unpackMeta } from './orderNotes';
 
 function getCreds(env: Record<string, unknown>) {
   const keyId = (env.PUBLIC_RAZORPAY_KEY_ID ?? env.RAZORPAY_KEY_ID) as string | undefined;
@@ -208,6 +208,7 @@ export function bookingFromOrder(paymentId: string, orderId: string, order: { am
     amountCharged: Number(order.amount),
     guest: unpackGuest(notes.guest),
     attribution: unpackAttribution(notes.attr),
+    meta: unpackMeta(notes.meta),
   };
 }
 
@@ -288,6 +289,7 @@ export const razorpayProvider: PaymentProvider = {
           // So the webhook can create the booking if the browser never comes back (one key each, see orderNotes.ts).
           guest: packGuest(req.guest),
           attr: packAttribution(req.attribution),
+          meta: packMeta(req.meta),
         },
       }),
     });
