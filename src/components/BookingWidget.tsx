@@ -8,12 +8,11 @@ import type { Dictionary } from '../i18n/dictionaries';
 import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import { isTajClosedStart, todayIst } from '../lib/availability';
 import { NIGHT_VIEWING_DATE_MESSAGE } from '../lib/nightViewing';
-import { pickPricingTier, computeDepositAmount, FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE, type PricingTier } from '../lib/catalog';
+import { pickPricingTier, computeDepositAmount, FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE, MAX_TRAVELERS_PER_DATE, type PricingTier } from '../lib/catalog';
 import { FOUNDING_GUEST_OFFER_ID, bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer, type OfferText, offerBadgeValue } from '../lib/offers';
 
-// Same as MAX_TRAVELERS_PER_DATE in src/lib/db.ts (one vehicle per date);
-// the server enforces it — this only keeps the stepper in range.
-const MAX_TRAVELERS = 12;
+// The server enforces the per-date capacity; this only keeps the stepper in range (same shared number).
+const MAX_TRAVELERS = MAX_TRAVELERS_PER_DATE;
 
 type ContactField = 'name' | 'email' | 'phone';
 // Checked before payment: a mistyped email means the confirmation and

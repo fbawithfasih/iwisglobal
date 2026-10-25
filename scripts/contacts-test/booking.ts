@@ -91,9 +91,11 @@ const b2 = raw.prepare(`SELECT traveler_email, traveler_name, locale, amount_pai
 assert.deepEqual([b2.traveler_email, b2.traveler_name, b2.locale, b2.amount_paid], ['elise.new@example.de', 'Elise M', 'en', 40000]);
 
 // ---- the date sold out between order and payment: full refund, no booking, no emails
-for (let i = 0; i < 4; i++) {
-  assert.equal(await finalizeTourBooking(env, db, { verified: bookingFromOrder(`pay_f${i}`, `o_f${i}`, order(1000, { date: '2026-12-09', travelers: '3' })) }), 'inserted');
+// fill the date to exactly the capacity (20 travellers), then one more traveller does not fit
+for (let i = 0; i < 5; i++) {
+  assert.equal(await finalizeTourBooking(env, db, { verified: bookingFromOrder(`pay_f${i}`, `o_f${i}`, order(1000, { date: '2026-12-09', travelers: '4' })) }), 'inserted');
 }
+assert.equal(count('bookings', `travel_date = '2026-12-09'`), 5, 'a 20-traveller day fits');
 const before = emails.length;
 assert.equal(await finalizeTourBooking(env, db, { verified: bookingFromOrder('pay_over', 'o_over', order(1000, { date: '2026-12-09', travelers: '1' })) }), 'refunded');
 assert.equal(refunds.length, 1); assert.ok(refunds[0].includes('/payments/pay_over/refund'));
