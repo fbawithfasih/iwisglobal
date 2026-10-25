@@ -28,6 +28,8 @@ interface Chat { id: string; profile_name: string | null; state: string; handoff
 interface Message { id: number; wa_message_id: string; direction: string; kind: string; body: string; status: string; sent_at: string; media_id: string | null; media_mime: string | null; meta_json: string | null }
 
 const db = env.DB as D1Like | undefined;
+// The newest messages of a chat (older ones stay in the WhatsApp Business app).
+const MESSAGE_LIMIT = 200;
 
 if (Astro.request.method === 'POST' && db) {
   const form = await Astro.request.formData();
@@ -77,8 +79,10 @@ const selected = db && selectedId
   ? await db.prepare(`SELECT id, profile_name, state, handoff_reason FROM wa_conversations WHERE id = ?`).bind(selectedId).first<Chat>()
   : null;
 const messages = db && selectedId
-  ? (await db.prepare(`SELECT id, wa_message_id, direction, kind, body, status, sent_at, media_id, media_mime, meta_json FROM wa_messages WHERE conversation_id = ? ORDER BY sent_at ASC LIMIT 200`).bind(selectedId).all<Message>()).results
+  ? (await db.prepare(`SELECT id, wa_message_id, direction, kind, body, status, sent_at, media_id, media_mime, meta_json FROM wa_messages WHERE conversation_id = ? ORDER BY sent_at DESC LIMIT ${MESSAGE_LIMIT}`).bind(selectedId).all<Message>()).results.reverse()
   : [];
+// Shown newest first, so the latest message and its draft are at the top of a long chat.
+const newestFirst = [...messages].reverse();
 const drafts = new Map<string, DraftRow>(
   db && selectedId
     ? (await db.prepare(`SELECT * FROM wa_drafts WHERE conversation_id = ? ORDER BY id ASC`).bind(selectedId).all<DraftRow>()).results.map((d) => [d.message_id, d])
@@ -209,7 +213,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
         ))}
       </ul>
 
-      <section aria-label="Messages" class={chatOpen ? '' : 'max-md:hidden'}>
+      <section id="chat" aria-label="Messages" class={chatOpen ? '' : 'max-md:hidden'}>
         <a href={`/admin/whatsapp?tab=${tab}`} class="mb-3 inline-flex min-h-11 items-center text-sm font-medium text-brand-800 md:hidden">← All chats</a>
         {selected && (
           <div class="mb-3 flex flex-wrap items-center gap-3">
@@ -226,8 +230,44 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
             {selected.state === 'opted_out' && <span class="text-xs text-stone-500">The guest asked us to stop. They can write START to resume.</span>}
           </div>
         )}
+        {selected && selected.state !== 'opted_out' && (
+          <form method="POST" class="mb-4 max-w-xl rounded-xl border border-stone-200 bg-white p-3 text-sm">
+            <input type="hidden" name="c" value={selectedId} />
+            <input type="hidden" name="tab" value={tab} />
+            <label class="mb-1 block text-xs font-medium text-stone-600" for="staff-reply">{selectedWindowLeft <= 0 ? 'Message the guest' : 'Write your own reply'}</label>
+            {selectedWindowLeft <= 0 ? (
+              <div>
+                <p class="rounded bg-amber-50 p-2 text-xs text-amber-900">
+                  The guest last wrote more than 24 hours ago, so WhatsApp only allows an approved template message now. They can then reply and the chat reopens.
+                </p>
+                <fieldset class="mt-3 grid gap-2">
+                  <legend class="mb-1 text-xs font-medium text-stone-600">Template to send</legend>
+                  {WA_TEMPLATES.map((t, i) => (
+                    <label class="flex cursor-pointer gap-2 rounded-lg border border-stone-200 p-2">
+                      <input type="radio" name="template" value={t.id} required checked={i === 0} class="mt-1" />
+                      <span><span class="block font-medium text-stone-800">{t.label}</span><span class="block text-xs text-stone-600">{t.body}</span></span>
+                    </label>
+                  ))}
+                </fieldset>
+                <label class="mt-3 block text-xs font-medium text-stone-600" for="guest-name">Guest's first name (fills {'{{1}}'})</label>
+                <input id="guest-name" name="guestName" type="text" required maxlength="60" value={(selected.profile_name ?? '').split(' ')[0]} class="w-full rounded-lg border border-stone-300 bg-white p-2" />
+                <p class="mt-1 text-xs text-stone-500">One template per guest per 24 hours. Templates are billed by WhatsApp per message, and each must be approved in Meta first.</p>
+                <button type="submit" name="_action" value="template" class="mt-2 min-h-11 rounded bg-emerald-600 px-4 text-sm font-medium text-white">Send template</button>
+              </div>
+            ) : (
+              <>
+                <textarea id="staff-reply" name="text" rows="3" maxlength="4096" required class="w-full rounded-lg border border-stone-300 bg-white p-2" placeholder="Type a message to send on WhatsApp"></textarea>
+                    <p class="mt-1 flex flex-wrap items-center gap-1 text-xs text-stone-500">Add email signup link:{SIGNUP_LANGS.map((l) => <button type="button" data-signup-for="staff-reply" data-signup-text={signupMessage(l)} class="min-h-8 rounded border border-stone-300 bg-white px-2 uppercase text-stone-700">{l}</button>)}</p>
+                <p class="mt-1 text-xs text-stone-500">Reply window: {formatDuration(selectedWindowLeft)} left. Sending marks this chat as staff handling, so the agent stops drafting until you give it back.</p>
+                <button type="submit" name="_action" value="reply" class="mt-2 min-h-11 rounded bg-emerald-600 px-4 text-sm font-medium text-white">Send reply</button>
+              </>
+            )}
+          </form>
+        )}
+        {messages.length >= MESSAGE_LIMIT && <p class="mb-2 text-xs text-stone-500">Showing the latest {MESSAGE_LIMIT} messages. Older ones are in the WhatsApp Business app.</p>}
+        <p class="mb-2 text-xs text-stone-500">Newest message first.</p>
         <ul class="space-y-3">
-          {messages.map((m) => {
+          {newestFirst.map((m) => {
             const draft = drafts.get(m.wa_message_id);
             const open = draft && draft.status === 'draft' && !repliedAfter(m);
             return (
@@ -309,41 +349,6 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
             );
           })}
         </ul>
-        {selected && selected.state !== 'opted_out' && (
-          <form method="POST" class="mt-4 max-w-xl rounded-xl border border-stone-200 bg-white p-3 text-sm">
-            <input type="hidden" name="c" value={selectedId} />
-            <input type="hidden" name="tab" value={tab} />
-            <label class="mb-1 block text-xs font-medium text-stone-600" for="staff-reply">{selectedWindowLeft <= 0 ? 'Message the guest' : 'Write your own reply'}</label>
-            {selectedWindowLeft <= 0 ? (
-              <div>
-                <p class="rounded bg-amber-50 p-2 text-xs text-amber-900">
-                  The guest last wrote more than 24 hours ago, so WhatsApp only allows an approved template message now. They can then reply and the chat reopens.
-                </p>
-                <fieldset class="mt-3 grid gap-2">
-                  <legend class="mb-1 text-xs font-medium text-stone-600">Template to send</legend>
-                  {WA_TEMPLATES.map((t, i) => (
-                    <label class="flex cursor-pointer gap-2 rounded-lg border border-stone-200 p-2">
-                      <input type="radio" name="template" value={t.id} required checked={i === 0} class="mt-1" />
-                      <span><span class="block font-medium text-stone-800">{t.label}</span><span class="block text-xs text-stone-600">{t.body}</span></span>
-                    </label>
-                  ))}
-                </fieldset>
-                <label class="mt-3 block text-xs font-medium text-stone-600" for="guest-name">Guest's first name (fills {'{{1}}'})</label>
-                <input id="guest-name" name="guestName" type="text" required maxlength="60" value={(selected.profile_name ?? '').split(' ')[0]} class="w-full rounded-lg border border-stone-300 bg-white p-2" />
-                <p class="mt-1 text-xs text-stone-500">One template per guest per 24 hours. Templates are billed by WhatsApp per message, and each must be approved in Meta first.</p>
-                <button type="submit" name="_action" value="template" class="mt-2 min-h-11 rounded bg-emerald-600 px-4 text-sm font-medium text-white">Send template</button>
-              </div>
-            ) : (
-              <>
-                <textarea id="staff-reply" name="text" rows="3" maxlength="4096" required class="w-full rounded-lg border border-stone-300 bg-white p-2" placeholder="Type a message to send on WhatsApp"></textarea>
-                    <p class="mt-1 flex flex-wrap items-center gap-1 text-xs text-stone-500">Add email signup link:{SIGNUP_LANGS.map((l) => <button type="button" data-signup-for="staff-reply" data-signup-text={signupMessage(l)} class="min-h-8 rounded border border-stone-300 bg-white px-2 uppercase text-stone-700">{l}</button>)}</p>
-                <p class="mt-1 text-xs text-stone-500">Reply window: {formatDuration(selectedWindowLeft)} left. Sending marks this chat as staff handling, so the agent stops drafting until you give it back.</p>
-                <button type="submit" name="_action" value="reply" class="mt-2 min-h-11 rounded bg-emerald-600 px-4 text-sm font-medium text-white">Send reply</button>
-              </>
-            )}
-          </form>
-        )}
-        <div id="chat-end" aria-hidden="true"></div>
       </section>
     </div>
   )}
@@ -442,9 +447,11 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
           live.classList.remove('hidden');
         } else {
           known = sig;
-          // Keep the reader's place: stay put if they scrolled up, follow the chat if they were at the bottom.
-          const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 80;
-          try { sessionStorage.setItem('waScroll', JSON.stringify({ y: window.scrollY, atBottom })); } catch {}
+          // Keep the reader's place: stay put if they scrolled down into older messages, follow the
+          // chat if they were reading the newest ones at the top.
+          const chat = document.getElementById('chat');
+          const atNewest = !chat || chat.getBoundingClientRect().top >= -80;
+          try { sessionStorage.setItem('waScroll', JSON.stringify({ y: window.scrollY, atNewest })); } catch {}
           location.reload();
         }
       } catch {}
@@ -455,17 +462,17 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
 </script>
 
 <script>
-  // Open a chat at its newest message (and the reply box), like a chat app, instead of at the top:
-  // after Send, after switching chats, and after a live refresh while reading the bottom.
-  // A live refresh while the reader was higher up restores that position instead.
-  const end = document.getElementById('chat-end');
-  if (end && new URLSearchParams(location.search).has('c')) {
-    let saved: { y: number; atBottom: boolean } | null = null;
+  // Open a chat at its newest message (shown first, with the reply box above it):
+  // after Send, after switching chats, and after a live refresh while reading the newest messages.
+  // A live refresh while the reader was further down in older messages restores that position instead.
+  const chat = document.getElementById('chat');
+  if (chat && new URLSearchParams(location.search).has('c')) {
+    let saved: { y: number; atNewest: boolean } | null = null;
     try {
       saved = JSON.parse(sessionStorage.getItem('waScroll') || 'null');
       sessionStorage.removeItem('waScroll');
     } catch {}
-    if (saved && !saved.atBottom) window.scrollTo(0, saved.y);
-    else end.scrollIntoView({ block: 'end' });
+    if (saved && !saved.atNewest) window.scrollTo(0, saved.y);
+    else chat.scrollIntoView({ block: 'start' });
   }
 </script>
