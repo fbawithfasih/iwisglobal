@@ -50,6 +50,45 @@ export interface WaMessage {
   sentAt: string;
   // Click-to-WhatsApp ad data. Meta sends it on the first message of an ad click only.
   referral?: { sourceId: string; sourceUrl: string; headline: string; ctwaClid: string };
+  // A photo, voice note, video, document or sticker: Meta's media ID (downloadable for 30 days).
+  media?: { id: string; mime: string };
+  // Small extras shown in the admin (schema_whatsapp_media.sql, meta_json).
+  meta?: WaMessageMeta;
+}
+
+export interface WaMessageMeta {
+  caption?: string;
+  filename?: string;
+  voice?: boolean;
+  latitude?: number;
+  longitude?: number;
+  // An unsupported message: what Meta says it was (edit, revoke, poll...) and its error text.
+  unsupportedType?: string;
+  error?: string;
+  // A reaction: the emoji (empty when the guest removed it) and the message it reacts to.
+  emoji?: string;
+  reactsTo?: string;
+}
+
+const MEDIA_KINDS = new Set(['image', 'audio', 'video', 'document', 'sticker']);
+
+// Messages that need no reply of any kind: a reaction, or a guest editing or
+// deleting an earlier message (Meta reports both as "unsupported").
+export function isSilentMessage(m: Pick<WaMessage, 'kind' | 'meta'>): boolean {
+  if (m.kind === 'reaction') return true;
+  return m.kind === 'unsupported' && /^(edit|edited|revoke|revoked|delete|deleted)$/i.test(m.meta?.unsupportedType ?? '');
+}
+
+// Plain-words label for what Meta could not pass on.
+export function unsupportedLabel(type: string | undefined): string {
+  const t = (type ?? '').toLowerCase();
+  if (/^edit/.test(t)) return 'an edited message';
+  if (/^(revoke|delete)/.test(t)) return 'a deleted message';
+  if (t === 'poll' || t === 'poll_update') return 'a poll';
+  if (/view_?once/.test(t)) return 'a view-once photo or video';
+  if (t === 'event') return 'an event invitation';
+  if (t) return `a message of type "${t}"`;
+  return 'a message type WhatsApp does not pass on to the API';
 }
 
 export interface WaStatusUpdate {
@@ -67,17 +106,66 @@ const unixToIso = (seconds: unknown): string => {
   return Number.isFinite(n) && n > 0 ? new Date(n * 1000).toISOString() : new Date().toISOString();
 };
 
-// What a message looks like in the admin list: its text, or the kind in
-// brackets when it is a voice note, image, location and so on.
-function messageBody(m: any): { kind: string; body: string } {
+const clip = (v: unknown, n: number): string => String(v ?? '').trim().slice(0, n);
+
+// What a message looks like in the admin list and to the draft writer: its
+// text, or a bracketed label ("[photo] caption", "[voice note]", "[location] ...")
+// for everything else, plus the media ID and extras the admin needs to show it.
+function messageBody(m: any): { kind: string; body: string; media?: WaMessage['media']; meta?: WaMessageMeta } {
   const kind = typeof m?.type === 'string' ? m.type : 'unknown';
   if (kind === 'text') return { kind, body: String(m.text?.body ?? '') };
   if (kind === 'button') return { kind, body: String(m.button?.text ?? '') };
   if (kind === 'interactive') {
     return { kind, body: String(m.interactive?.button_reply?.title ?? m.interactive?.list_reply?.title ?? '') };
   }
-  const caption = m?.[kind]?.caption;
-  return { kind, body: caption ? `[${kind}] ${caption}` : `[${kind}]` };
+  if (MEDIA_KINDS.has(kind)) {
+    const part = m[kind] ?? {};
+    const caption = clip(part.caption, 1000);
+    const filename = clip(part.filename, 200);
+    const voice = kind === 'audio' && part.voice === true;
+    const label = kind === 'image' ? 'photo' : voice ? 'voice note' : kind === 'document' && filename ? `document: ${filename}` : kind;
+    const meta: WaMessageMeta = {};
+    if (caption) meta.caption = caption;
+    if (filename) meta.filename = filename;
+    if (voice) meta.voice = true;
+    return {
+      kind,
+      body: caption ? `[${label}] ${caption}` : `[${label}]`,
+      ...(part.id ? { media: { id: String(part.id), mime: clip(part.mime_type, 100) } } : {}),
+      ...(Object.keys(meta).length ? { meta } : {}),
+    };
+  }
+  if (kind === 'location') {
+    const l = m.location ?? {};
+    const place = [clip(l.name, 200), clip(l.address, 300)].filter(Boolean).join(', ');
+    const latitude = Number(l.latitude);
+    const longitude = Number(l.longitude);
+    const meta: WaMessageMeta = Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : {};
+    return { kind, body: place ? `[location] ${place}` : '[location]', ...(Object.keys(meta).length ? { meta } : {}) };
+  }
+  if (kind === 'contacts') {
+    const cards = (Array.isArray(m.contacts) ? m.contacts : []).slice(0, 5).map((c: any) => {
+      const name = clip(c?.name?.formatted_name, 100);
+      const phone = clip(c?.phones?.[0]?.phone, 40);
+      return [name, phone].filter(Boolean).join(' ');
+    });
+    return { kind, body: `[contact card] ${cards.filter(Boolean).join('; ')}`.trim() };
+  }
+  if (kind === 'reaction') {
+    const emoji = clip(m.reaction?.emoji, 16);
+    return { kind, body: emoji ? `[reaction ${emoji}]` : '[reaction removed]', meta: { emoji, reactsTo: clip(m.reaction?.message_id, 200) } };
+  }
+  if (kind === 'unsupported') {
+    const unsupportedType = clip(m.unsupported?.type, 50);
+    const err = m.errors?.[0];
+    const error = clip(err?.error_data?.details || err?.title || err?.message, 200);
+    return {
+      kind,
+      body: `[unsupported: ${unsupportedLabel(unsupportedType)}]`,
+      meta: { ...(unsupportedType ? { unsupportedType } : {}), ...(error ? { error } : {}) },
+    };
+  }
+  return { kind, body: `[${kind}]` };
 }
 
 // Meta wraps events as entry[].changes[].value. Guest messages arrive in
@@ -146,10 +234,22 @@ export async function storeMessage(db: D1Like, m: WaMessage): Promise<boolean> {
   const status = m.direction === 'in' ? 'received' : 'sent';
   const inserted = await db
     .prepare(
-      `INSERT OR IGNORE INTO wa_messages (wa_message_id, conversation_id, direction, kind, body, status, sent_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT OR IGNORE INTO wa_messages (wa_message_id, conversation_id, direction, kind, body, status, sent_at, created_at, media_id, media_mime, meta_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    .bind(m.waMessageId, m.phone, m.direction, m.kind, m.body, status, m.sentAt, now)
+    .bind(
+      m.waMessageId,
+      m.phone,
+      m.direction,
+      m.kind,
+      m.body,
+      status,
+      m.sentAt,
+      now,
+      m.media?.id ?? null,
+      m.media?.mime || null,
+      m.meta ? JSON.stringify(m.meta) : null
+    )
     .run();
   if (!inserted.meta?.changes) return false;
 

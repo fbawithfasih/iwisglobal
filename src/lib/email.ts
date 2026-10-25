@@ -417,7 +417,7 @@ export const HANDOFF_REASON_TEXT: Record<string, string> = {
   handoff: 'a refund, complaint, booking change or similar',
   no_knowledge: 'there is no approved answer for the question',
   price_mismatch: 'the draft quoted a price that is not in the catalogue',
-  unsupported: 'the guest sent a voice note, image or other non-text message',
+  unsupported: 'the guest sent a photo, voice note or other message the agent cannot read',
   format: 'the draft was not in the expected format',
   no_booking: 'no booking was found under this WhatsApp number',
   cap: 'the daily draft limit was reached',

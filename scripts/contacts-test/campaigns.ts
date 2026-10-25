@@ -7,7 +7,7 @@ import * as K from '../../src/lib/marketing';
 import * as G from '../../src/lib/campaigns';
 
 const raw = new DatabaseSync(':memory:');
-for (const f of ['schema.sql', 'schema_crm.sql', 'schema_booking_locale.sql', 'schema_deposit_payments.sql', 'schema_whatsapp.sql', 'schema_contacts.sql', 'schema_marketing.sql', 'schema_campaigns.sql', 'schema_events.sql']) {
+for (const f of ['schema.sql', 'schema_crm.sql', 'schema_booking_locale.sql', 'schema_deposit_payments.sql', 'schema_whatsapp.sql', 'schema_whatsapp_media.sql', 'schema_contacts.sql', 'schema_marketing.sql', 'schema_campaigns.sql', 'schema_events.sql']) {
   for (const stmt of readFileSync(`${process.env.ROOT}/${f}`, 'utf8').replace(/^\s*--.*$/gm, '').split(';')) {
     const t = stmt.trim();
     if (t) raw.exec(t);
