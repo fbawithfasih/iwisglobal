@@ -1,6 +1,6 @@
 import { useState, type FocusEvent } from 'react';
 import PhoneInput from './PhoneInput';
-import { track } from '../lib/analytics';
+import { firstTouch, pixel, track } from '../lib/analytics';
 import { fmt } from '../i18n/fmt';
 import { fmtNode } from '../i18n/format';
 import { intlLocale, type Locale } from '../lib/i18n';
@@ -225,6 +225,9 @@ export default function BookingWidget({
     }
 
     track('checkout_started', { tour_id: tourId, tour_name: tourTitle, travelers, currency, value: total, payment_type: paymentType });
+    // The standard events Google Ads and Meta optimise on (Meta's only after cookie consent, see CookieConsent.astro).
+    track('begin_checkout', { currency, value: total, items: [{ item_id: tourId, item_name: tourTitle, quantity: travelers }] });
+    pixel('InitiateCheckout', { content_ids: [tourId], content_type: 'product', value: total, currency, num_items: travelers });
 
     setLoading(true);
     try {
@@ -247,6 +250,9 @@ export default function BookingWidget({
           paymentType,
           // Only a code that fits this booking; the server re-checks it.
           couponCode: coupon && !couponProblem ? coupon.code : undefined,
+          // Kept with the order so the booking is still created if this page is lost after paying.
+          guest: { name, email, phone },
+          attribution: firstTouch(),
         }),
       });
 
