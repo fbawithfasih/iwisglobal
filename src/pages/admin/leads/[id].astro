@@ -62,7 +62,7 @@ if (Astro.request.method === 'POST') {
       } else if (action === 'unsub') {
         await unsubscribePerson(db, pid, 'manual');
       } else if (String(form.get('confirm') ?? '').trim().toUpperCase() === 'ERASE') {
-        await erasePerson(db, pid);
+        await erasePerson(db, pid, env.IMAGES);
         return Astro.redirect('/admin/leads');
       } else {
         error = 'To erase this person, type ERASE in the box.';
@@ -154,7 +154,7 @@ const marketing: Record<string, string> = { none: 'Not asked', pending: 'Asked, 
               <form method="POST"><input type="hidden" name="_action" value="unsub" /><button class="w-full rounded border border-stone-300 bg-white px-3 py-2" onclick="return confirm('Stop all marketing email to this person?')">Mark unsubscribed (they asked us)</button></form>
               <form method="POST" class="space-y-1 rounded border border-red-200 bg-red-50 p-2">
                 <input type="hidden" name="_action" value="erase" />
-                <p class="text-red-900">Erase this person: names, contact details, history and consent records are deleted. Only a scrambled copy of the email stays so they are never emailed again. This cannot be undone.</p>
+                <p class="text-red-900">Erase this person: names, contact details, history, consent records and their WhatsApp chats on this site (with photos and voice notes) are deleted. Only a scrambled copy of the email and phone stays so they are never contacted again. The chat stays in the WhatsApp Business app; delete it there too. This cannot be undone.</p>
                 <input name="confirm" placeholder="Type ERASE" class="w-full rounded border border-red-300 px-2 py-1" />
                 <button class="w-full rounded bg-red-700 px-3 py-2 text-white">Erase</button>
               </form>

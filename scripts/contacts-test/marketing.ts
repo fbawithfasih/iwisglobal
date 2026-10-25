@@ -7,7 +7,7 @@ import * as K from '../../src/lib/marketing';
 import { SIGNUP_LANGS, signupLink, signupMessage } from '../../src/lib/waSignup';
 
 const raw = new DatabaseSync(':memory:');
-for (const f of ['schema.sql', 'schema_crm.sql', 'schema_booking_locale.sql', 'schema_deposit_payments.sql', 'schema_whatsapp.sql', 'schema_whatsapp_media.sql', 'schema_contacts.sql', 'schema_marketing.sql']) {
+for (const f of ['schema.sql', 'schema_crm.sql', 'schema_booking_locale.sql', 'schema_deposit_payments.sql', 'schema_whatsapp.sql', 'schema_whatsapp_media.sql', 'schema_whatsapp_kb.sql', 'schema_contacts.sql', 'schema_marketing.sql']) {
   for (const stmt of readFileSync(`${process.env.ROOT}/${f}`, 'utf8').replace(/^\s*--.*$/gm, '').split(';')) {
     const t = stmt.trim();
     if (t) raw.exec(t);
@@ -102,7 +102,17 @@ assert.equal(status(bad.personId), 'complained');
 // ---- erasure keeps only a hashed suppression
 const lead = await C.recordLead(db, { channel: 'website', name: 'Mia Roth', identifiers: [{ type: 'email', value: 'Mia.Roth@gmail.com' }, { type: 'phone', value: '+49 151 12345678' }], message: 'private text', externalRef: 'form:erase' });
 assert.equal(lead.personId, up.personId);
-await K.erasePerson(db, up.personId);
+// Their WhatsApp chat (keyed by the phone's digits), with a draft and a voice note in R2
+raw.exec(`INSERT INTO wa_conversations (id, profile_name, last_message_at, created_at) VALUES ('4915112345678', 'Mia', '2026-10-01T00:00:00Z', '2026-10-01T00:00:00Z')`);
+raw.exec(`INSERT INTO wa_messages (wa_message_id, conversation_id, direction, kind, body, sent_at, created_at, media_id) VALUES ('wamid.mia1', '4915112345678', 'in', 'audio', '[voice note]', '2026-10-01T00:00:00Z', '2026-10-01T00:00:00Z', 'M9')`);
+raw.exec(`INSERT INTO wa_drafts (message_id, conversation_id, created_at, updated_at) VALUES ('wamid.mia1', '4915112345678', '2026-10-01T00:00:00Z', '2026-10-01T00:00:00Z')`);
+const miaMedia = `wa-media/${(raw.prepare(`SELECT id FROM wa_messages WHERE wa_message_id = 'wamid.mia1'`).get() as any).id}`;
+const deletedKeys: string[] = [];
+await K.erasePerson(db, up.personId, { put: async () => {}, get: async () => null, delete: async (k: string | string[]) => { deletedKeys.push(...([] as string[]).concat(k)); } });
+assert.equal(count('wa_messages', `conversation_id = '4915112345678'`), 0, 'their WhatsApp messages are deleted');
+assert.equal(count('wa_drafts', `conversation_id = '4915112345678'`), 0);
+assert.equal(count('wa_conversations', `id = '4915112345678'`), 0);
+assert.deepEqual(deletedKeys, [miaMedia], 'and their voice note in R2');
 assert.equal(count('person_identifiers', `person_id = '${up.personId}'`), 0);
 assert.equal(count('touchpoints', `person_id = '${up.personId}'`), 0);
 assert.equal(count('consent_events', `person_id = '${up.personId}'`), 0);
