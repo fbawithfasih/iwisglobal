@@ -423,6 +423,8 @@ export const en = {
       ratingSummary: "{rating} out of 5 from {count} by guests who booked this tour with us",
       bookNow: "Book now",
       waMessage: "Hi! I have a question about the {title}.",
+      askTitle: "Questions before you book?",
+      askIntro: "Ask us anything about this tour. We reply by WhatsApp or email, usually within a few hours, and there is no obligation to book.",
     },
   booking: {
       errName: "Please enter your full name.",

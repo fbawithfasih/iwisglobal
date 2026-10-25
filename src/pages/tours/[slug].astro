@@ -4,6 +4,7 @@ import BookingWidget from '../../components/BookingWidget.tsx';
 import WeatherCard from '../../components/WeatherCard';
 import Icon, { type IconName } from '../../components/Icon.astro';
 import MobileActionBar from '../../components/MobileActionBar.astro';
+import EnquiryForm from '../../components/EnquiryForm.astro';
 import ReviewList from '../../components/ReviewList.astro';
 import { listApprovedReviews, averageRating, hasApprovedReviewsForRequest } from '../../lib/reviews';
 import { getTourBySlug } from '../../lib/tours';
@@ -529,6 +530,18 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
           <ReviewList reviews={reviews} />
         </div>
       )}
+
+      <!-- For visitors (often from an ad) who are not ready to pay yet: a short enquiry with this tour filled in.
+           It lands in the Leads inbox and sends the lead conversion events. -->
+      <details id="ask" class="group mt-10 scroll-mt-24 rounded-2xl border border-brand-100 bg-brand-50/40">
+        <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 font-serif text-lg font-semibold text-brand-900">
+          {tp.askTitle}
+          <span aria-hidden="true" class="text-brand-700 transition group-open:rotate-45">+</span>
+        </summary>
+        <div class="px-2 pb-2 sm:px-3 sm:pb-3 [&_form]:mb-0">
+          <EnquiryForm interest={tour.title} title="" intro={tp.askIntro} />
+        </div>
+      </details>
     </div>
 
     <div id="booking" class="min-w-0 lg:sticky lg:top-24 self-start scroll-mt-24 md:mx-auto md:w-full md:max-w-xl lg:max-w-none">
@@ -555,6 +568,7 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
         offerText={offerText}
         locale={locale}
       />
+      <p class="mt-3 text-center text-sm"><a href="#ask" data-open-ask class="font-medium text-brand-800 underline hover:text-brand-900">{tp.askTitle}</a></p>
     </div>
   </section>
 
@@ -580,6 +594,15 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
       {tp.bookNow}
     </a>
   </MobileActionBar>
+  <script>
+    // "#ask" opens the enquiry section (a closed <details> would otherwise just scroll to its title).
+    const openAsk = () => {
+      const ask = document.getElementById('ask') as HTMLDetailsElement | null;
+      if (ask) ask.open = true;
+    };
+    if (location.hash === '#ask') openAsk();
+    document.querySelectorAll('[data-open-ask]').forEach((a) => a.addEventListener('click', openAsk));
+  </script>
 </BaseLayout>
 
 <script define:vars={{ tourId: tour.id, tourName: tour.title, currency: price.currency, value: price.amount }}>
