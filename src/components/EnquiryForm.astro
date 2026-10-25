@@ -4,14 +4,21 @@ import { pageI18n } from '../i18n/dictionaries';
 // Public enquiry form. Posts to /api/leads (src/pages/api/leads.ts), which files it in the
 // Leads inbox. The marketing box is never pre-ticked. First-touch UTM/referrer data was kept in
 // sessionStorage by BaseLayout and goes along only when the visitor submits.
+// On a tour page the tour is filled in and the heading speaks to someone not ready to book yet.
+interface Props {
+  interest?: string;
+  title?: string;
+  intro?: string;
+}
+const { interest = '', title, intro } = Astro.props;
 const { t, locale } = pageI18n(Astro);
 const f = t.enquiryForm;
 const input = 'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200';
 ---
 
 <form id="enquiry-form" class="mb-10 rounded-2xl border border-brand-100 bg-white p-5 shadow-sm shadow-brand-900/5 sm:p-6" novalidate>
-  <h2 class="!mt-0 text-lg font-semibold mb-1" set:html={f.title} />
-  <p class="text-sm text-stone-600 mb-4" set:html={f.intro} />
+  {(title ?? f.title) && <h2 class="!mt-0 text-lg font-semibold mb-1" set:html={title ?? f.title} />}
+  <p class="text-sm text-stone-600 mb-4" set:html={intro ?? f.intro} />
   <div class="grid gap-3 sm:grid-cols-2">
     <label class="block text-sm font-medium text-stone-700">{f.name}
       <input name="name" required maxlength="120" autocomplete="name" class={`mt-1 ${input}`} />
@@ -23,7 +30,7 @@ const input = 'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 te
       <input name="phone" type="tel" maxlength="40" autocomplete="tel" class={`mt-1 ${input}`} />
     </label>
     <label class="block text-sm font-medium text-stone-700">{f.interest}
-      <input name="interest" maxlength="150" class={`mt-1 ${input}`} />
+      <input name="interest" maxlength="150" value={interest} class={`mt-1 ${input}`} />
     </label>
     <label class="block text-sm font-medium text-stone-700">{f.dates}
       <input name="dates" maxlength="100" class={`mt-1 ${input}`} />

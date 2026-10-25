@@ -422,6 +422,8 @@ export const de: Dictionary = {
       ratingSummary: "{rating} von 5 aus {count} von Gästen, die diese Tour bei uns gebucht haben",
       bookNow: "Jetzt buchen",
       waMessage: "Hi! I have a question about the {title}.",
+      askTitle: "Fragen vor der Buchung?",
+      askIntro: "Fragen Sie uns alles zu dieser Tour. Wir antworten per WhatsApp oder E-Mail, meist innerhalb weniger Stunden, ohne Buchungsverpflichtung.",
     },
   booking: {
       errName: "Bitte geben Sie Ihren vollständigen Namen ein.",
