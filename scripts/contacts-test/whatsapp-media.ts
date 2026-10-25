@@ -7,6 +7,7 @@ import { parseWebhook, storeWebhook, isSilentMessage, unsupportedLabel } from '.
 import { copyNewMedia, copyMediaToR2, isInlineMime, mediaKey, deleteOldMedia, MAX_MEDIA_BYTES } from '../../src/lib/waMedia';
 import { generateDraft, nonTextReply } from '../../src/lib/waDraft';
 import { purgeOld } from '../../src/lib/waLearning';
+import { deleteWaMessage, deleteWaChat } from '../../src/lib/waDelete';
 
 const raw = new DatabaseSync(':memory:');
 for (const f of ['schema_whatsapp.sql', 'schema_whatsapp_media.sql', 'schema_whatsapp_kb.sql', 'schema_whatsapp_inbox.sql', 'schema_whatsapp_learning.sql', 'schema_whatsapp_tools.sql', 'schema_whatsapp_auto.sql']) {
@@ -135,5 +136,32 @@ assert.equal(store.has(photoKey), false);
 assert.equal(row('wamid.photo'), undefined);
 assert.equal(store.has(mediaKey(row('wamid.voice').id)), true, 'recent media stays');
 assert.equal(await deleteOldMedia(db, undefined, '2030-01-01'), 0);
+
+// ---- deleting one message: its draft and R2 copy go, the chat stays and its time follows the newest message left
+const voiceRow = row('wamid.voice');
+const voiceKey = mediaKey(voiceRow.id);
+assert.equal(store.has(voiceKey), true);
+assert.equal(await deleteWaMessage(db, r2, voiceRow.id), '919811122233');
+assert.equal(row('wamid.voice'), undefined);
+assert.equal(store.has(voiceKey), false);
+assert.equal(raw.prepare(`SELECT COUNT(*) AS n FROM wa_drafts WHERE message_id = 'wamid.voice'`).get().n, 0);
+assert.ok(raw.prepare(`SELECT 1 FROM wa_conversations WHERE id = '919811122233'`).get(), 'the chat is still there');
+assert.equal(await deleteWaMessage(db, r2, voiceRow.id), null, 'already gone');
+
+// ---- deleting a whole chat removes everything; an opted-out chat keeps an empty, nameless row
+const left = raw.prepare(`SELECT COUNT(*) AS n FROM wa_messages WHERE conversation_id = '919811122233'`).get().n;
+assert.equal(await deleteWaChat(db, r2, '919811122233'), left);
+assert.equal(raw.prepare(`SELECT COUNT(*) AS n FROM wa_messages WHERE conversation_id = '919811122233'`).get().n, 0);
+assert.equal(raw.prepare(`SELECT COUNT(*) AS n FROM wa_drafts WHERE conversation_id = '919811122233'`).get().n, 0);
+assert.equal(raw.prepare(`SELECT 1 AS x FROM wa_conversations WHERE id = '919811122233'`).get(), undefined);
+assert.equal([...store.keys()].length, 0, 'no media left in R2');
+
+const stopped = parseWebhook({ entry: [{ changes: [{ value: { contacts: [{ wa_id: '447700900123', profile: { name: 'Tom' } }], messages: [msg('wamid.stop', 'text', { text: { body: 'STOP' } }, { from: '447700900123' })] } }] }] });
+await storeWebhook(db, stopped);
+raw.exec(`UPDATE wa_conversations SET state = 'opted_out' WHERE id = '447700900123'`);
+await deleteWaChat(db, r2, '447700900123');
+const kept = raw.prepare(`SELECT state, profile_name FROM wa_conversations WHERE id = '447700900123'`).get() as any;
+assert.deepEqual([kept.state, kept.profile_name], ['opted_out', null], 'the opt-out survives, without the name');
+assert.equal(raw.prepare(`SELECT COUNT(*) AS n FROM wa_messages WHERE conversation_id = '447700900123'`).get().n, 0);
 
 console.log('whatsapp media: all checks passed');

@@ -18,6 +18,7 @@ import { WA_TEMPLATES } from '../../../lib/waTemplates';
 import { SIGNUP_LANGS, signupMessage } from '../../../lib/waSignup';
 import { unsupportedLabel, type WaMessageMeta } from '../../../lib/whatsapp';
 import { isInlineMime } from '../../../lib/waMedia';
+import { deleteWaMessage, deleteWaChat } from '../../../lib/waDelete';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -56,6 +57,18 @@ if (Astro.request.method === 'POST' && db) {
       await draftWaitingMessage(env, db, conversation);
     } catch {
       error = 'Given back, but the waiting message could not be drafted.';
+    }
+  } else if (form.get('_action') === 'delete_message') {
+    if (!(await deleteWaMessage(db, env.IMAGES, Number(form.get('messageId'))))) error = 'That message was already deleted.';
+  } else if (form.get('_action') === 'delete_chat') {
+    if (String(form.get('confirm') ?? '').trim().toUpperCase() !== 'DELETE') {
+      error = 'To delete this chat, type DELETE in the box.';
+    } else {
+      await deleteWaChat(db, env.IMAGES, conversation);
+      const back = new URLSearchParams();
+      const postedTab = String(form.get('tab') ?? '');
+      if (postedTab) back.set('tab', postedTab);
+      return Astro.redirect(`/admin/whatsapp?${back}`);
     }
   }
   const query = new URLSearchParams({ c: conversation });
@@ -230,6 +243,22 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
             {selected.state === 'opted_out' && <span class="text-xs text-stone-500">The guest asked us to stop. They can write START to resume.</span>}
           </div>
         )}
+        {selected && (
+          <details class="mb-3 max-w-xl text-xs">
+            <summary class="cursor-pointer text-stone-500">Delete this chat</summary>
+            <form method="POST" class="mt-2 space-y-2 rounded-lg border border-red-200 bg-red-50 p-3">
+              <input type="hidden" name="c" value={selectedId} />
+              <input type="hidden" name="tab" value={tab} />
+              <input type="hidden" name="_action" value="delete_chat" />
+              <p class="text-red-900">
+                Deletes every message, draft, photo and voice note of this chat from this site. It does not delete anything on WhatsApp: the guest and the WhatsApp Business app keep their copy (delete it in the app too if needed).{selected.state === 'opted_out' && ' The opt-out is kept, so this guest is still never messaged.'} This cannot be undone.
+              </p>
+              <label class="sr-only" for="delete-chat-confirm">Type DELETE to confirm</label>
+              <input id="delete-chat-confirm" name="confirm" required autocomplete="off" placeholder="Type DELETE" class="w-full rounded border border-red-300 bg-white px-2 py-2" />
+              <button type="submit" class="min-h-11 w-full rounded bg-red-700 px-3 text-sm font-medium text-white">Delete chat</button>
+            </form>
+          </details>
+        )}
         {selected && selected.state !== 'opted_out' && (
           <form method="POST" class="mb-4 max-w-xl rounded-xl border border-stone-200 bg-white p-3 text-sm">
             <input type="hidden" name="c" value={selectedId} />
@@ -314,6 +343,12 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
                     return <p class="whitespace-pre-line break-words">{m.body || `[${m.kind}]`}</p>;
                   })()}
                 </div>
+                <form method="POST" class={`mt-1 max-w-xl text-xs ${m.direction === 'in' ? '' : 'ml-auto text-right'}`}>
+                  <input type="hidden" name="c" value={selectedId} />
+                  <input type="hidden" name="tab" value={tab} />
+                  <input type="hidden" name="messageId" value={m.id} />
+                  <button type="submit" name="_action" value="delete_message" class="min-h-8 text-stone-400 underline hover:text-red-700" onclick="return confirm('Delete this message from the site? It stays in WhatsApp itself.')">Delete message</button>
+                </form>
                 {open && (
                   <form method="POST" class="mt-2 max-w-xl rounded-xl border border-violet-200 bg-violet-50 p-3 text-sm">
                     <input type="hidden" name="c" value={selectedId} />

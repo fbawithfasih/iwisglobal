@@ -3,6 +3,8 @@ import { newLinkToken, hashLinkToken } from './oneTimeLinks';
 import { hashIdentifier, normaliseEmail, recordConsent, recordTouchpoint, refreshMarketingStatus, rootPerson, suppress, upsertPerson } from './contacts';
 import { sendOptInConfirmationEmail } from './email';
 import { emailLocale } from './i18n';
+import { deleteWaChat } from './waDelete';
+import type { MediaBucket } from './waMedia';
 
 // Marketing email consent: double opt-in, unsubscribe, erasure. Nobody is "subscribed" until they have
 // clicked the link in a confirmation email (consent_events action 'confirmed'); an unsubscribe is a permanent
@@ -218,9 +220,11 @@ export async function listSubscribed(db: D1Like, limit = 5000): Promise<{ person
 
 // ----------------------------------------------------------------- erasure
 
-// Deletes what identifies the person. Only a hashed copy of their email addresses stays (as an "erasure"
-// suppression), so they are never emailed again. Leads stay as anonymous statistics (stage, channel, campaign).
-export async function erasePerson(db: D1Like, personId: string): Promise<{ emails: number }> {
+// Deletes what identifies the person, including their WhatsApp chats on the site (messages, drafts, photos
+// and voice notes; pass the R2 bucket so those files go too). Only a hashed copy of their email addresses and
+// phones stays (as "erasure" suppressions), so they are never contacted again. Leads stay as anonymous
+// statistics (stage, channel, campaign).
+export async function erasePerson(db: D1Like, personId: string, r2?: MediaBucket): Promise<{ emails: number }> {
   const person = await rootPerson(db, personId);
   const emails = await personEmails(db, person);
   for (const e of emails) {
@@ -231,6 +235,9 @@ export async function erasePerson(db: D1Like, personId: string): Promise<{ email
   for (const p of phones) {
     await suppress(db, 'whatsapp', p.value_norm, 'erasure');
     await db.prepare(`UPDATE suppressions SET identifier_plain = '' WHERE channel = 'whatsapp' AND identifier_hash = ?`).bind(await hashIdentifier(p.value_norm)).run();
+    // WhatsApp chats are keyed by the phone's digits.
+    const chat = p.value_norm.replace(/\D/g, '');
+    if (chat) await deleteWaChat(db, r2, chat);
   }
   const stamp = nowIso();
   await db.prepare(`UPDATE leads SET name = '(erased)', email = '', phone = '', message = '', tour_interest = '', updated_at = ? WHERE person_id = ?`).bind(stamp, person).run();
