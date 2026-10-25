@@ -600,7 +600,10 @@ const websiteJsonLd = Astro.url.pathname === '/'
   // as long as it carries data-wa-ref.
   document.addEventListener('click', (e) => {
     const link = (e.target as Element)?.closest?.('[data-wa-ref]');
-    if (link) window.gtag?.('event', 'whatsapp_clicked', { ref: link.getAttribute('data-wa-ref') });
+    if (!link) return;
+    window.gtag?.('event', 'whatsapp_clicked', { ref: link.getAttribute('data-wa-ref') });
+    // Meta's "Contact" standard event (queued, sent only after cookie consent).
+    (window.iwisPixelQueue = window.iwisPixelQueue || []).push(['Contact', { content_name: 'WhatsApp', content_category: link.getAttribute('data-wa-ref') ?? '' }]);
   });
 
   // currency_switched / language_switched: only when someone picks a

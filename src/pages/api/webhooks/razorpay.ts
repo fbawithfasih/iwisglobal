@@ -4,7 +4,8 @@ import { finalizeCustomTrip } from '../../../lib/customTripPayment';
 import { finalizeHotelBooking, hotelBookingNeedsRetry } from '../../../lib/hotelPayment';
 import { ensureOfferEmails, finalizeOfferPayment } from '../../../lib/offerPayment';
 import { finalizeBalancePayment } from '../../../lib/balancePayment';
-import { fetchRazorpayOrder } from '../../../lib/payments/razorpay';
+import { bookingFromOrder, fetchRazorpayOrder } from '../../../lib/payments/razorpay';
+import { finalizeTourBooking } from '../../../lib/tourBooking';
 
 export const prerender = false;
 
@@ -141,6 +142,28 @@ export const POST: APIRoute = async ({ request, locals }) => {
       } catch (err) {
         console.error('razorpay webhook: hotel booking could not be finalised', hotelBookingId, err instanceof Error ? err.message : 'error');
         return new Response('retry', { status: 500 });
+      }
+    }
+    // A tour booking (the main checkout). The browser normally records it via /api/verify-payment, but on a phone
+    // the page can be lost while a UPI app handles the payment. If the booking is not there yet, create it here
+    // from Razorpay's own record of the order, with the amount actually captured, and send the emails.
+    if (!customTripId && !hotelBookingId && !offerPaymentId && !balanceLinkId && payment.order_id) {
+      const exists = await env.DB.prepare(`SELECT 1 FROM bookings WHERE payment_id = ?`).bind(payment.id).first();
+      if (!exists) {
+        try {
+          const order = await fetchRazorpayOrder(env, payment.order_id);
+          if (order.notes.tourId) {
+            orderNotes = order.notes;
+            const outcome = await finalizeTourBooking(env, env.DB, {
+              verified: bookingFromOrder(payment.id, payment.order_id, { amount: Number(payment.amount), notes: order.notes }),
+            });
+            if (outcome === 'inserted') console.log('razorpay webhook: tour booking created from the webhook', payment.id);
+            if (outcome === 'refund_failed') console.error('razorpay webhook: date sold out and the refund failed, refund by hand', payment.id);
+          }
+        } catch (err) {
+          console.error('razorpay webhook: tour booking could not be created', payment.id, err instanceof Error ? err.message : 'error');
+          return new Response('retry', { status: 500 });
+        }
       }
     }
     // A private offer payment (src/lib/offerPayment.ts). Every outcome is

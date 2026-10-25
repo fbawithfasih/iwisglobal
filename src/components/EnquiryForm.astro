@@ -78,6 +78,9 @@ const input = 'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 te
         form.reset();
         show('enquiry-thanks', true);
         btn.classList.add('hidden');
+        // Conversion events for Google (a key event to import into Google Ads) and Meta (sent only after cookie consent).
+        if (window.gtag) window.gtag('event', 'generate_lead', { lead_source: 'enquiry_form' });
+        (window.iwisPixelQueue = window.iwisPixelQueue || []).push(['Lead', { content_name: 'Enquiry form' }]);
       }).catch(function () {
         show('enquiry-error', true);
         btn.disabled = false;

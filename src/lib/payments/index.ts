@@ -3,6 +3,8 @@
 // in USD/EUR) without touching the booking API routes, which only talk to
 // this interface.
 
+import type { OrderAttribution, OrderGuest } from './orderNotes';
+
 export interface BookingRequest {
   tourId: string;
   date: string; // ISO date (YYYY-MM-DD)
@@ -22,6 +24,10 @@ export interface BookingRequest {
   // A coupon the customer entered (src/lib/offers.ts). The server checks it
   // and picks the single biggest discount; an unusable code fails the order.
   couponCode?: string;
+  // The guest's contact details and the ad they came from, kept with the order so the payment webhook can
+  // create the booking when the browser never returns (src/lib/payments/orderNotes.ts).
+  guest?: OrderGuest;
+  attribution?: OrderAttribution;
 }
 
 export interface OrderResult {
@@ -58,6 +64,10 @@ export interface VerifiedBooking {
   discount?: number;
   offerId?: string;
   discountLabel?: string;
+  // What Razorpay actually charged for this order, in the smallest unit: the amount the booking records as paid.
+  amountCharged: number;
+  guest: OrderGuest;
+  attribution: OrderAttribution;
 }
 
 export interface PaymentProvider {

@@ -15,3 +15,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/campaigns.ts" --bundle
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/campaigns.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/events.ts" --bundle --platform=node --format=esm --outfile="$OUT/events.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/events.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/booking.ts" --bundle --platform=node --format=esm --outfile="$OUT/booking.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
+ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/booking.mjs"

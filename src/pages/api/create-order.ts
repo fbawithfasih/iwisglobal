@@ -4,6 +4,8 @@ import { travelersBookedOn, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
 import { resolveEnv } from '../../lib/env';
 import { isBookableDate, isValidDateString, isTajClosedStart, tajDayOffset, FRIDAY_CLOSED_MESSAGE, TAJ_DAY_CLOSED_MESSAGE } from '../../lib/availability';
 import { getTourById } from '../../lib/tours';
+import { attributionFromBody } from '../../lib/payments/orderNotes';
+import { resolveLocale } from '../../lib/i18n';
 import { fmt } from '../../i18n/fmt';
 import { isNightViewingTour, isNightViewingDate, NIGHT_VIEWING_DATE_MESSAGE } from '../../lib/nightViewing';
 
@@ -15,11 +17,11 @@ export const prerender = false;
 // insertVerifiedBooking() in verify-payment.ts, which refunds the payment if
 // the date sold out between order creation and payment completion.
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, locals, cookies }) => {
   try {
-    const { tourId, date, travelers, addOnIds, currency, receipt, gaClientId, paymentType, couponCode } = await request.json();
+    const { tourId, date, travelers, addOnIds, currency, receipt, gaClientId, paymentType, couponCode, guest, attribution } = await request.json();
 
-    if (!tourId || !date || !travelers) {
+    if (!tourId || !date || !Number.isInteger(travelers) || travelers < 1) {
       return new Response(JSON.stringify({ error: 'Missing tourId, date, or travelers' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -73,6 +75,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
         gaClientId: typeof gaClientId === 'string' ? gaClientId : undefined,
         paymentType: paymentType === 'deposit' ? 'deposit' : 'full',
         couponCode: typeof couponCode === 'string' ? couponCode.slice(0, 40) : undefined,
+        // Kept with the order so the payment webhook can still create the booking if the browser never returns.
+        guest: {
+          name: typeof guest?.name === 'string' ? guest.name : '',
+          email: typeof guest?.email === 'string' ? guest.email : '',
+          phone: typeof guest?.phone === 'string' ? guest.phone : '',
+          locale: resolveLocale(new URL(request.url).searchParams, cookies.get('lang')?.value),
+        },
+        attribution: attributionFromBody(attribution),
       },
       env
     );

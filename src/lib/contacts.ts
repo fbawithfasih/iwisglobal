@@ -543,6 +543,7 @@ export async function trackLeadEvent(
     message?: string;
     bookingId?: string | null;
     note?: string;
+    attribution?: Attribution;
   }
 ): Promise<LeadResult | null> {
   try {
@@ -559,6 +560,7 @@ export async function trackLeadEvent(
       message: e.message,
       type: e.channel,
       stage: e.stage,
+      attribution: e.attribution,
     });
     await advanceLead(db, r.leadId, e.stage, { bookingId: e.bookingId, note: e.note });
     await refreshLeadScore(db, r.leadId);

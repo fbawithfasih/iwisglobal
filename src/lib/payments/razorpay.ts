@@ -5,6 +5,7 @@ import type { Currency } from '../currency';
 import { getCatalogItem } from '../tours';
 import { countBookings } from '../db';
 import type { BookingRequest, OrderResult, VerifyRequest, VerifiedBooking, PaymentProvider } from './index';
+import { packAttribution, packGuest, unpackAttribution, unpackGuest } from './orderNotes';
 
 function getCreds(env: Record<string, unknown>) {
   const keyId = (env.PUBLIC_RAZORPAY_KEY_ID ?? env.RAZORPAY_KEY_ID) as string | undefined;
@@ -185,6 +186,31 @@ export async function fetchRazorpayOrder(env: Record<string, unknown>, orderId: 
   return { amount: Number(order.amount), currency: String(order.currency), notes: order.notes ?? {} };
 }
 
+// A tour booking as its Razorpay order describes it. Used by the browser's verify call and by the payment webhook,
+// so both record exactly the same thing: the amount Razorpay charged, and the totals and discount fixed when the
+// order was created (never re-priced from today's catalog).
+export function bookingFromOrder(paymentId: string, orderId: string, order: { amount: number; notes: Record<string, string> }): VerifiedBooking {
+  const notes = order.notes ?? {};
+  return {
+    paymentId,
+    orderId,
+    tourId: notes.tourId,
+    date: notes.date,
+    travelers: Number(notes.travelers ?? 1),
+    addOnIds: notes.addOnIds ? String(notes.addOnIds).split(',').filter(Boolean) : [],
+    currency: notes.currency === 'USD' ? 'USD' : 'INR',
+    totalAmount: notes.totalAmount != null ? Number(notes.totalAmount) : Number(order.amount),
+    paymentType: notes.paymentType === 'deposit' ? 'deposit' : 'full',
+    foundingGuestDiscount: notes.foundingGuestDiscount === 'true',
+    discount: notes.discount != null ? Number(notes.discount) : undefined,
+    offerId: notes.offerId || undefined,
+    discountLabel: notes.discountLabel || undefined,
+    amountCharged: Number(order.amount),
+    guest: unpackGuest(notes.guest),
+    attribution: unpackAttribution(notes.attr),
+  };
+}
+
 // True when Razorpay's checkout signature for this order and payment is valid.
 export async function verifyRazorpaySignature(env: Record<string, unknown>, orderId: string, paymentId: string, signature: string): Promise<boolean> {
   const { keySecret } = getCreds(env);
@@ -259,6 +285,9 @@ export const razorpayProvider: PaymentProvider = {
           discount: String(discount?.amount ?? 0),
           ...(discount ? { offerId: discount.offerId, discountLabel: discount.label } : {}),
           ...(req.gaClientId ? { gaClientId: req.gaClientId } : {}),
+          // So the webhook can create the booking if the browser never comes back (one key each, see orderNotes.ts).
+          guest: packGuest(req.guest),
+          attr: packAttribution(req.attribution),
         },
       }),
     });
@@ -298,32 +327,8 @@ export const razorpayProvider: PaymentProvider = {
     // never from the client request — so a caller can't pay for one tour
     // and claim a different (more expensive) itinerary.
     if (!keyId) throw new Error('Server configuration error');
-    const auth = btoa(`${keyId}:${keySecret}`);
-    const orderRes = await fetch(`https://api.razorpay.com/v1/orders/${req.orderId}`, {
-      headers: { Authorization: `Basic ${auth}` },
-    });
-    if (!orderRes.ok) throw new Error('Could not verify order');
-    const order = await orderRes.json();
-    const notes = order?.notes ?? {};
-
-    return {
-      paymentId: req.paymentId,
-      orderId: req.orderId,
-      tourId: notes.tourId,
-      date: notes.date,
-      travelers: Number(notes.travelers ?? 1),
-      addOnIds: notes.addOnIds ? String(notes.addOnIds).split(',').filter(Boolean) : [],
-      currency: notes.currency === 'USD' ? 'USD' : 'INR',
-      // Falls back to the actually-charged amount if an order predates this
-      // field (won't happen for new orders, but keeps old in-flight orders
-      // from breaking verification during the deploy that adds this).
-      totalAmount: notes.totalAmount != null ? Number(notes.totalAmount) : order.amount,
-      paymentType: notes.paymentType === 'deposit' ? 'deposit' : 'full',
-      foundingGuestDiscount: notes.foundingGuestDiscount === 'true',
-      discount: notes.discount != null ? Number(notes.discount) : undefined,
-      offerId: notes.offerId || undefined,
-      discountLabel: notes.discountLabel || undefined,
-    };
+    const order = await fetchRazorpayOrder(env, req.orderId);
+    return bookingFromOrder(req.paymentId, req.orderId, order);
   },
 
   async refundPayment(paymentId: string, env: Record<string, unknown>): Promise<void> {

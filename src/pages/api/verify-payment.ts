@@ -1,16 +1,9 @@
 import type { APIRoute } from 'astro';
 import { razorpayProvider } from '../../lib/payments/razorpay';
-import { computeTotal, computeDepositAmount, applyFoundingGuestDiscount } from '../../lib/catalog';
-import { getCatalogItem } from '../../lib/tours';
-import { FOUNDING_GUEST_OFFER_ID } from '../../lib/offers';
-import { trackLeadEvent } from '../../lib/contacts';
-import { insertVerifiedBooking, MAX_TRAVELERS_PER_DATE } from '../../lib/db';
+import { finalizeTourBooking } from '../../lib/tourBooking';
 import { resolveEnv } from '../../lib/env';
 import { getSessionCustomerId } from '../../lib/requireCustomer';
-import { getTourById, localizeTour } from '../../lib/tours';
 import { resolveLocale } from '../../lib/i18n';
-import { sendBookingConfirmationEmail, sendAdminBookingNotificationEmail } from '../../lib/email';
-import { chosenAddOnNames } from '../../lib/entryTickets';
 
 export const prerender = false;
 
@@ -40,131 +33,28 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       env
     );
 
-    const item = await getCatalogItem(env.DB, verified.tourId, { onlyPublished: false, currency: verified.currency });
-    if (!item) {
-      return new Response(JSON.stringify({ error: 'Booking references an unknown tour' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Mirrors razorpay.ts's createOrder computation exactly (major units,
-    // then round to paise) so this always matches what was actually charged
-    // — including for a deposit, where amountPaid is 25% of totalAmount,
-    // and for the Founding Guest offer (backlog 1.1), applied here using
-    // the same eligibility decision createOrder made and carried in the
-    // trusted order notes — never re-checked against a booking count that
-    // may have moved on since the order was created.
-    const rawTotalMajorUnits = computeTotal(item, verified.travelers, verified.addOnIds);
-    // The discount createOrder decided (src/lib/offers.ts), from the order
-    // notes. Orders created before offers existed only carry the Founding
-    // Guest flag.
-    const discountMajorUnits =
-      verified.discount ?? (verified.foundingGuestDiscount ? rawTotalMajorUnits - applyFoundingGuestDiscount(rawTotalMajorUnits, true) : 0);
-    const totalMajorUnits = rawTotalMajorUnits - discountMajorUnits;
-    const discountLabel =
-      verified.discountLabel ?? (discountMajorUnits > 0 && verified.foundingGuestDiscount ? 'Founding Guest Offer (15% off)' : null);
-    const totalAmount = Math.round(totalMajorUnits * 100);
-    const chargeMajorUnits = verified.paymentType === 'deposit' ? computeDepositAmount(totalMajorUnits) : totalMajorUnits;
-    const amountPaid = Math.round(chargeMajorUnits * 100);
-
     // The guest's language: the lang cookie is set by the /es /fr /de pages.
     const locale = resolveLocale(new URL(request.url).searchParams, cookies.get('lang')?.value);
     const db = env.DB;
     if (db) {
-      const customerId = await getSessionCustomerId(cookies, env.CUSTOMER_SESSION_SECRET);
-      const outcome = await insertVerifiedBooking(
-        db,
-        {
-          id: `bk_${verified.paymentId}`,
-          paymentId: verified.paymentId,
-          orderId: verified.orderId,
-          tourId: verified.tourId,
-          travelDate: verified.date,
-          travelers: verified.travelers,
-          addOnIds: verified.addOnIds,
-          travelerName: travelerName || '',
-          travelerEmail: travelerEmail || '',
-          travelerPhone: travelerPhone || '',
-          amountPaid,
-          currency: item.currency,
-          customerId,
-          totalAmount,
-          paymentType: verified.paymentType,
-          offerId: discountMajorUnits > 0 ? verified.offerId ?? FOUNDING_GUEST_OFFER_ID : null,
-          discountLabel: discountMajorUnits > 0 ? discountLabel : null,
-          discountAmount: discountMajorUnits > 0 ? Math.round(discountMajorUnits * 100) : null,
-          locale,
-        },
-        MAX_TRAVELERS_PER_DATE
-      );
-
-      if (outcome === 'capacity_exceeded') {
-        let refunded = false;
-        try {
-          await razorpayProvider.refundPayment(verified.paymentId, env);
-          refunded = true;
-        } catch (refundError) {
-          console.error('verify-payment refund error:', refundError);
-        }
+      const outcome = await finalizeTourBooking(env, db, {
+        verified,
+        travelerName,
+        travelerEmail,
+        travelerPhone,
+        locale,
+        customerId: await getSessionCustomerId(cookies, env.CUSTOMER_SESSION_SECRET),
+      });
+      if (outcome === 'refunded' || outcome === 'refund_failed') {
         return new Response(
           JSON.stringify({
-            error: refunded
-              ? 'This date just sold out while your payment was processing. You have been fully refunded — please choose another date.'
-              : 'This date just sold out while your payment was processing. Please contact support for a refund.',
+            error:
+              outcome === 'refunded'
+                ? 'This date just sold out while your payment was processing. You have been fully refunded — please choose another date.'
+                : 'This date just sold out while your payment was processing. Please contact support for a refund.',
           }),
           { status: 409, headers: { 'Content-Type': 'application/json' } }
         );
-      }
-
-      // Best-effort — only on the first insert, never on a retried/duplicate
-      // request, and never allowed to affect the response (see email.ts).
-      if (outcome === 'inserted') {
-        await trackLeadEvent(db, {
-          channel: 'booking',
-          identifiers: [{ type: 'email', value: travelerEmail || '' }, { type: 'phone', value: travelerPhone || '' }],
-          name: travelerName || '',
-          language: locale,
-          externalRef: `booking:bk_${verified.paymentId}`,
-          stage: verified.paymentType === 'deposit' ? 'deposit_paid' : 'booked',
-          travelStart: verified.date,
-          partySize: verified.travelers,
-          bookingId: `bk_${verified.paymentId}`,
-          note: verified.paymentType === 'deposit' ? 'Booking deposit paid' : 'Booking paid in full',
-        });
-        const tour = await getTourById(db, verified.tourId);
-        const shownTour = tour ? await localizeTour(db, tour, locale) : null;
-        await sendBookingConfirmationEmail(env, {
-          to: travelerEmail || '',
-          travelerName: travelerName || '',
-          tourTitle: shownTour?.title || 'your tour',
-          locale,
-          travelDate: verified.date,
-          travelers: verified.travelers,
-          amountPaid,
-          currency: item.currency,
-          bookingId: `bk_${verified.paymentId}`,
-          paymentId: verified.paymentId,
-          totalAmount,
-          paymentType: verified.paymentType,
-          discountLabel: discountMajorUnits > 0 ? discountLabel : null,
-          discountAmount: discountMajorUnits > 0 ? Math.round(discountMajorUnits * 100) : null,
-          addOnNames: shownTour ? chosenAddOnNames(shownTour, verified.addOnIds) : [],
-        });
-        await sendAdminBookingNotificationEmail(env, {
-          travelerName: travelerName || '',
-          travelerEmail: travelerEmail || '',
-          travelerPhone: travelerPhone || '',
-          tourTitle: tour?.title || verified.tourId,
-          travelDate: verified.date,
-          travelers: verified.travelers,
-          amountPaid,
-          totalAmount,
-          currency: item.currency,
-          bookingId: `bk_${verified.paymentId}`,
-          paymentType: verified.paymentType,
-          discountLabel: discountMajorUnits > 0 ? discountLabel : null,
-        });
       }
     }
 
