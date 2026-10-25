@@ -357,6 +357,10 @@ export const de: Dictionary = {
       applied: "Wird automatisch angewendet, kein Code nötig.",
       checkout: "Kein Code nötig; der Rabatt wird an der Kasse abgezogen.",
       founding: "Founding-Guest-Angebot ({percent} % Rabatt)",
+      bookWithin: "innerhalb von {n} Minuten buchen",
+      countdownEnded: "Ihr {n}-Minuten-Angebot ist abgelaufen.",
+      countdownNotStarted: "Dieses Angebot gilt für Buchungen innerhalb von {n} Minuten nach dem Öffnen einer Tourseite.",
+      countdownBanner: "Buchen Sie in den nächsten {time} und erhalten Sie {value} Rabatt. Kein Code nötig.",
     },
   toursPage: {
       metaTitle: "Private Taj-Mahal-Touren von Delhi nach Agra | IWIS Global",
@@ -954,6 +958,7 @@ export const de: Dictionary = {
       k61: "<strong>E-Mail-Statistiken:</strong> Wenn wir Ihnen eine E-Mail senden, teilt uns unser E-Mail-Dienstleister mit, ob sie zugestellt wurde, nicht zustellbar war oder als Spam markiert wurde. Klicks auf die Links in unseren E-Mails zählen wir pro Link, nicht pro Person. Ob Sie eine E-Mail öffnen, erfassen wir nicht.",
       k62: "<strong>Anzeigenmessung:</strong> Wenn Sie Cookies akzeptieren, teilen wir Meta auch von unserem Server aus mit, wenn Sie buchen oder eine Anfrage senden, damit wir unsere Facebook- und Instagram-Anzeigen messen können. Ihre E-Mail-Adresse und Telefonnummer senden wir nur in verschlüsselter (gehashter) Form, zusammen mit dem Buchungswert. Wenn Sie Cookies ablehnen, wird nichts an Meta gesendet.",
       k63: "<strong>Ihr Standort ist entscheidend.</strong> Wenn Sie die Website aus der Europäischen Union, dem übrigen Europäischen Wirtschaftsraum (Island, Liechtenstein, Norwegen), dem Vereinigten Königreich oder der Schweiz besuchen, werden die in dieser Erklärung beschriebenen Analyse- und Werbe-Cookies und -Dienste nur verwendet, wenn Sie in unserem Cookie-Banner auf Akzeptieren tippen. Aus allen anderen Ländern sind sie standardmäßig aktiv, und Sie können sie jederzeit über „Cookie-Einstellungen“ unten auf jeder Seite ausschalten; Ihre Wahl wird dann gespeichert und gilt genau wie bei Ablehnen beschrieben. Wo in dieser Erklärung „nur wenn Sie akzeptieren“ steht, ist es so zu verstehen. Ihren Standort erkennen wir am Land Ihrer Internetverbindung, das wir nicht speichern.",
+      k64: "<strong>Countdown-Angebote:</strong> Zeigt eine Tourseite ein Angebot für eine Buchung innerhalb einer bestimmten Zeit (zum Beispiel 20 % Rabatt bei Buchung innerhalb von 30 Minuten), speichern wir ein kleines Cookie (<code>offer_timer</code>) mit dem Zeitpunkt, zu dem Ihre Zeit begann, damit das Angebot wie angegeben endet und bei Ihrem nächsten Besuch nicht neu startet. Es enthält nur diesen Zeitpunkt, ist gegen Änderungen signiert und wird 90 Tage gespeichert. In den oben genannten Regionen wird es nur gesetzt, wenn Sie Cookies akzeptieren; ohne es sehen Sie einfach unsere normalen Preise.",
     },
   help: {
       foundingLine: " Derzeit erhalten unsere ersten {cap} Gäste automatisch {percent} % Rabatt, ohne dass ein Code nötig ist (das Founding-Guest-Angebot).",

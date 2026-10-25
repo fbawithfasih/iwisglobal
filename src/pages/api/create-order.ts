@@ -8,6 +8,7 @@ import { attributionFromBody } from '../../lib/payments/orderNotes';
 import { metaContextFromRequest } from '../../lib/metaCapi';
 import { resolveLocale } from '../../lib/i18n';
 import { fmt } from '../../i18n/fmt';
+import { OFFER_TIMER_COOKIE, timerSecret, verifyTimer } from '../../lib/offerTimer';
 import { isNightViewingTour, isNightViewingDate, NIGHT_VIEWING_DATE_MESSAGE } from '../../lib/nightViewing';
 
 export const prerender = false;
@@ -76,6 +77,8 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
         gaClientId: typeof gaClientId === 'string' ? gaClientId : undefined,
         paymentType: paymentType === 'deposit' ? 'deposit' : 'full',
         couponCode: typeof couponCode === 'string' ? couponCode.slice(0, 40) : undefined,
+        // A countdown offer counts from the signed cookie only, never from anything the browser sends in the body.
+        offerTimerStartedAt: await verifyTimer(timerSecret(env), cookies.get(OFFER_TIMER_COOKIE)?.value),
         // Kept with the order so the payment webhook can still create the booking if the browser never returns.
         guest: {
           name: typeof guest?.name === 'string' ? guest.name : '',

@@ -1,5 +1,6 @@
 import { computeTotal, computeDepositAmount, foundingGuestSlotsLeft } from '../catalog';
 import { resolveBookingDiscount, FOUNDING_GUEST_OFFER_ID } from '../offers';
+import { OFFER_TIMER_GRACE_MS } from '../offerTimer';
 import { todayIst } from '../availability';
 import type { Currency } from '../currency';
 import { getCatalogItem } from '../tours';
@@ -241,7 +242,16 @@ export const razorpayProvider: PaymentProvider = {
     const discount = env.DB
       ? await resolveBookingDiscount(
           env.DB as any,
-          { tourId: req.tourId, travelDate: req.date, travelers: req.travelers, currency: item.currency as Currency, today: todayIst() },
+          {
+            tourId: req.tourId,
+            travelDate: req.date,
+            travelers: req.travelers,
+            currency: item.currency as Currency,
+            today: todayIst(),
+            timerStartedAt: req.offerTimerStartedAt ?? null,
+            nowMs: Date.now(),
+            timerGraceMs: OFFER_TIMER_GRACE_MS,
+          },
           rawTotalMajorUnits,
           foundingGuestDiscount,
           req.couponCode
