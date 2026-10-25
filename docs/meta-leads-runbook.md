@@ -70,7 +70,9 @@ How it is read: our code accepts the answer when the question's name contains wo
 
 The site sends Meta the same **Purchase** (tour booking) and **Lead** (enquiry form) events from the server that the Meta Pixel sends from the browser. Meta then still counts a sale when the browser could not report it (ad blockers, Safari, a page lost while a UPI app handled the payment). Both copies share one event id (the payment id for a purchase), so Meta counts each conversion once. Only visitors who **accepted cookies** are sent; for everyone else nothing goes to Meta. Email and phone are sent hashed (SHA-256), never readable.
 
-Setup:
+Quickest setup (no new secret): without `META_CAPI_TOKEN` the site sends with the leads system-user token (`META_PAGE_ACCESS_TOKEN`). In **Business Settings**, **Data sources**, **Datasets**, open `179602460825688`, **Assign people**, add the `iwis-leads` system user with full control. Then on `/admin/leads/meta` press **Test Conversions API**: it says whether the dataset is reachable and whether the token has `ads_management`. With a code from Events Manager, **Test events**, it also sends one test Lead (shown only under Test events). If `ads_management` is missing, either generate the system user's token again with it ticked and replace `META_PAGE_ACCESS_TOKEN`, or use the dedicated token below.
+
+Setup with a dedicated token:
 1. In **Meta Events Manager**, open the dataset (pixel) `179602460825688`, then **Settings**, then **Conversions API**, then **Generate access token**. Copy it (it is shown once).
 2. In Cloudflare Pages (Production) add a **Secret** `META_CAPI_TOKEN` with that token. Optional: `META_PIXEL_ID` if you ever change pixel.
 3. To check it before relying on it: in Events Manager open **Test events**, copy the test code (for example `TEST12345`), add it in Cloudflare as `META_CAPI_TEST_CODE`, redeploy, accept cookies on the site, send an enquiry. The Lead appears under Test events as received from **Server** and from **Browser**, marked deduplicated. Then **delete `META_CAPI_TEST_CODE`** and redeploy, or real events keep going to the test view only.

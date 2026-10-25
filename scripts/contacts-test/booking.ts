@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { finalizeTourBooking } from '../../src/lib/tourBooking';
 import { bookingFromOrder } from '../../src/lib/payments/razorpay';
 import { packAttribution, packGuest, unpackAttribution, unpackGuest, attributionFromBody, packMeta, unpackMeta } from '../../src/lib/payments/orderNotes';
-import { buildPayload, metaContextFromRequest, sendMetaEvent, NO_CONSENT } from '../../src/lib/metaCapi';
+import { buildPayload, capiToken, metaContextFromRequest, sendMetaEvent, testMetaCapi, NO_CONSENT } from '../../src/lib/metaCapi';
 import { consentRequired, effectiveConsent } from '../../src/lib/consentRegion';
 
 const raw = new DatabaseSync(':memory:');
@@ -153,4 +153,33 @@ assert.equal(metaCalls.length, 1, 'a repeat never sends a second Purchase');
 // a booking without consent: no Purchase to Meta
 assert.equal(await finalizeTourBooking(capiEnv, db, { verified: bookingFromOrder('pay_nometa', 'o_nometa', order(25000, { date: '2026-12-21' })) }), 'inserted');
 assert.equal(metaCalls.length, 1, 'no consent at checkout: nothing sent');
+
+// token choice: the dedicated token wins, else the leads system-user token
+assert.equal(capiToken({ META_CAPI_TOKEN: 'a', META_PAGE_ACCESS_TOKEN: 'b' }).token, 'a');
+assert.deepEqual(capiToken({ META_PAGE_ACCESS_TOKEN: 'b' }), { token: 'b', source: 'leads' });
+assert.equal(capiToken({}).source, 'none');
+const metaBefore = metaCalls.length;
+assert.equal(await sendMetaEvent({ META_PAGE_ACCESS_TOKEN: 'SYS' }, { name: 'Lead', eventId: 'l2', sourceUrl: 'x' }, ctx), true);
+assert.equal(metaCalls[metaBefore].auth, 'Bearer SYS', 'falls back to the leads token');
+
+// admin check: no code means nothing is sent; a code sends one test Lead; refusals are explained
+const calls: { url: string; init: any }[] = [];
+const stub = (status: number, events: any) => (async (url: string, init: any = {}) => {
+  calls.push({ url, init });
+  if (url.endsWith('/me/permissions')) return new Response(JSON.stringify({ data: [{ permission: 'ads_management', status: 'granted' }] }));
+  if (url.endsWith('/events')) return new Response(JSON.stringify(events), { status });
+  return new Response(JSON.stringify({ id: '179602460825688', name: 'IWIS pixel' }));
+}) as any;
+const lines = await testMetaCapi({ META_PAGE_ACCESS_TOKEN: 'SYS' }, '', { ip: '', userAgent: '' }, stub(200, {}));
+assert.ok(lines.some((l) => l.includes('leads system-user token')) && lines.some((l) => l.includes('ads_management is among')) && lines.some((l) => l.includes('reachable: IWIS pixel')));
+assert.ok(!calls.some((c) => c.url.endsWith('/events')), 'no test code: no event sent');
+const ok = await testMetaCapi({ META_CAPI_TOKEN: 'OWN' }, 'TEST9', { ip: '1.2.3.4', userAgent: 'UA' }, stub(200, { events_received: 1 }));
+const sentCall = calls.find((c) => c.url.endsWith('/events'))!;
+assert.equal(JSON.parse(sentCall.init.body).test_event_code, 'TEST9');
+assert.equal(sentCall.init.headers.Authorization, 'Bearer OWN');
+assert.ok(ok.some((l) => l.includes('accepted by Meta (events received: 1)')));
+assert.ok(!ok.join(' ').includes('OWN'), 'token never shown');
+const bad = await testMetaCapi({ META_PAGE_ACCESS_TOKEN: 'SYS' }, 'TEST9', { ip: '', userAgent: '' }, stub(400, { error: { code: 200, message: 'Permission denied' } }));
+assert.ok(bad.some((l) => l.includes('refused: (#200) Permission denied')) && bad.some((l) => l.startsWith('Fix:')));
+assert.deepEqual(await testMetaCapi({}, 'X', { ip: '', userAgent: '' }, stub(200, {})), ['No token: neither META_CAPI_TOKEN nor META_PAGE_ACCESS_TOKEN is set, so nothing is sent to Meta.']);
 console.log('booking tests ok');

@@ -10,7 +10,9 @@ import { effectiveConsent, requestCountry } from './consentRegion';
 //
 // Settings (Cloudflare Pages): META_CAPI_TOKEN (Events Manager, the dataset, Settings, Conversions API,
 // Generate access token), optional META_PIXEL_ID (defaults to the site's pixel) and META_CAPI_TEST_CODE (Events
-// Manager, Test events) while checking it works. Without the token this does nothing.
+// Manager, Test events) while checking it works. Without META_CAPI_TOKEN the leads system-user token
+// (META_PAGE_ACCESS_TOKEN) is tried instead: it works once that system user is given the dataset in Business
+// Settings and the token has ads_management. testMetaCapi below says which. With neither token this does nothing.
 
 export const DEFAULT_PIXEL_ID = '179602460825688';
 
@@ -92,16 +94,24 @@ export async function buildPayload(e: MetaEvent, ctx: MetaContext, nowSeconds = 
   };
 }
 
+// The token events are sent with: the dedicated one, else the leads system-user token.
+export function capiToken(env: Record<string, any>): { token: string; source: 'own' | 'leads' | 'none' } {
+  if (env.META_CAPI_TOKEN) return { token: String(env.META_CAPI_TOKEN), source: 'own' };
+  if (env.META_PAGE_ACCESS_TOKEN) return { token: String(env.META_PAGE_ACCESS_TOKEN), source: 'leads' };
+  return { token: '', source: 'none' };
+}
+
 // Sends one event. Never throws and never blocks a booking: returns whether Meta accepted it.
 export async function sendMetaEvent(env: Record<string, any>, e: MetaEvent, ctx: MetaContext): Promise<boolean> {
-  if (!env.META_CAPI_TOKEN || !ctx.consent) return false;
+  const { token } = capiToken(env);
+  if (!token || !ctx.consent) return false;
   try {
     const pixel = String(env.META_PIXEL_ID || DEFAULT_PIXEL_ID);
     const body: Record<string, unknown> = { data: [await buildPayload(e, ctx)] };
     if (env.META_CAPI_TEST_CODE) body.test_event_code = String(env.META_CAPI_TEST_CODE);
     const res = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/${encodeURIComponent(pixel)}/events`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.META_CAPI_TOKEN}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(8000),
     });
@@ -115,4 +125,65 @@ export async function sendMetaEvent(env: Record<string, any>, e: MetaEvent, ctx:
     console.error('meta capi: send failed', e.name, err instanceof Error ? err.message : 'error');
     return false;
   }
+}
+
+type FetchFn = typeof fetch;
+
+async function graphJson(fetchFn: FetchFn, url: string, init: RequestInit): Promise<{ ok: boolean; data: any; error: string }> {
+  try {
+    const res = await fetchFn(url, { ...init, signal: AbortSignal.timeout(8000) });
+    const data: any = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, data, error: `(#${data?.error?.code ?? res.status}) ${String(data?.error?.message ?? 'error').slice(0, 200)}` };
+    return { ok: true, data, error: '' };
+  } catch {
+    return { ok: false, data: null, error: 'network error' };
+  }
+}
+
+// Plain-language check for the admin page: which token is used, whether it can reach the dataset, and, only with a
+// test code, whether Meta accepts an event (it then shows under Events Manager, Test events, and counts nowhere
+// else). Without a test code nothing is sent, so a check never adds a fake Lead to the real figures. Never returns a token.
+export async function testMetaCapi(env: Record<string, any>, testCode: string, ctx: { ip: string; userAgent: string }, fetchFn: FetchFn = fetch): Promise<string[]> {
+  const out: string[] = [];
+  const { token, source } = capiToken(env);
+  const pixel = String(env.META_PIXEL_ID || DEFAULT_PIXEL_ID);
+  if (!token) return ['No token: neither META_CAPI_TOKEN nor META_PAGE_ACCESS_TOKEN is set, so nothing is sent to Meta.'];
+  out.push(source === 'own'
+    ? 'Token used: META_CAPI_TOKEN (the dedicated Conversions API token).'
+    : 'Token used: META_PAGE_ACCESS_TOKEN (the leads system-user token), because META_CAPI_TOKEN is not set.');
+  const auth = { Authorization: `Bearer ${token}` };
+  const base = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
+
+  if (source === 'leads') {
+    const perms = await graphJson(fetchFn, `${base}/me/permissions`, { headers: auth });
+    if (perms.ok) {
+      const granted = (perms.data?.data ?? []).filter((p: any) => p.status === 'granted').map((p: any) => p.permission);
+      out.push(`ads_management ${granted.includes('ads_management') ? 'is' : 'is NOT'} among the token's permissions${granted.includes('ads_management') ? '.' : ' (needed to send events with a system-user token).'}`);
+    } else out.push(`Permissions could not be listed: ${perms.error}`);
+  }
+
+  const ds = await graphJson(fetchFn, `${base}/${encodeURIComponent(pixel)}?fields=id,name,last_fired_time`, { headers: auth });
+  out.push(ds.ok
+    ? `Dataset ${pixel} is reachable: ${ds.data?.name ?? '?'}${ds.data?.last_fired_time ? `, last event ${ds.data.last_fired_time}` : ''}.`
+    : `Dataset ${pixel} is NOT reachable with this token: ${ds.error}`);
+
+  const code = testCode || String(env.META_CAPI_TEST_CODE ?? '');
+  if (!code) {
+    out.push('No test event sent: enter the code from Events Manager, Test events, to send one.');
+    return out;
+  }
+  const event = await buildPayload(
+    { name: 'Lead', eventId: `capi_test_${Date.now()}`, sourceUrl: 'https://www.iwisglobal.com/contact', email: 'capi-test@iwisglobal.com' },
+    { consent: true, fbp: '', fbc: '', ip: ctx.ip, userAgent: ctx.userAgent || 'iwis-admin-capi-test' },
+  );
+  const sent = await graphJson(fetchFn, `${base}/${encodeURIComponent(pixel)}/events`, {
+    method: 'POST',
+    headers: { ...auth, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: [event], test_event_code: code }),
+  });
+  out.push(sent.ok
+    ? `Test Lead accepted by Meta (events received: ${sent.data?.events_received ?? '?'}). It shows in Events Manager, Test events, as from Server.`
+    : `Test Lead refused: ${sent.error}`);
+  if (!sent.ok && source === 'leads') out.push('Fix: in Business Settings, Data sources, Datasets, open the pixel, Assign people, add the iwis-leads system user with full control; if ads_management is missing, generate its token again with ads_management ticked and replace META_PAGE_ACCESS_TOKEN. Or create a dedicated token (runbook, Conversions API).');
+  return out;
 }
