@@ -358,6 +358,10 @@ export const en = {
       applied: "Applied automatically, no code needed.",
       checkout: "No code needed; it comes off at checkout.",
       founding: "Founding Guest Offer ({percent}% off)",
+      bookWithin: "book within {n} minutes",
+      countdownEnded: "Your {n}-minute offer has ended.",
+      countdownNotStarted: "This offer is for bookings made within {n} minutes of opening a tour page.",
+      countdownBanner: "Book in the next {time} and get {value} off. No code needed.",
     },
   toursPage: {
       metaTitle: "Private Delhi to Agra Taj Mahal Tours | IWIS Global",
@@ -955,6 +959,7 @@ export const en = {
       k61: "<strong>Email statistics:</strong> when we send you an email, our email provider tells us whether it was delivered, bounced or marked as spam, and we count clicks on the links in our emails per link, not per person. We do not track whether you open an email.",
       k62: "<strong>Ad measurement:</strong> if you accept cookies, we also tell Meta from our server when you book or send an enquiry, so we can measure our Facebook and Instagram ads. We send your email address and phone number only in scrambled (hashed) form, together with the booking value. If you reject cookies, nothing is sent to Meta.",
       k63: "<strong>Where you are matters.</strong> If you visit from the European Union, the wider European Economic Area (Iceland, Liechtenstein, Norway), the United Kingdom or Switzerland, the analytics and advertising cookies and tools described in this policy are used only if you tap Accept on our cookie banner. From all other countries they are on by default, and you can switch them off at any time with “Cookie settings” at the bottom of every page; your choice is then remembered and applies here exactly as described for Reject. Where this policy says “only if you accept”, read it this way. We tell where you are visiting from by your internet connection's country, which we do not store.",
+      k64: "<strong>Countdown offers:</strong> when a tour page shows an offer for booking within a set time (for example 20% off if you book within 30 minutes), we store one small cookie (<code>offer_timer</code>) recording when your time started, so the offer ends when it says and does not restart on your next visit. It holds only that time, signed so it cannot be changed, and is kept for 90 days. In the regions above it is set only if you accept cookies; without it you simply see our normal prices.",
     },
   help: {
       foundingLine: " Right now, our first {cap} guests get {percent}% off automatically, with no code needed (the Founding Guest offer).",

@@ -10,6 +10,7 @@ export function resolveEnv(locals: unknown): Record<string, any> {
     ADMIN_PASSWORD_SALT: runtimeEnv.ADMIN_PASSWORD_SALT ?? import.meta.env.ADMIN_PASSWORD_SALT,
     ADMIN_PASSWORD_HASH: runtimeEnv.ADMIN_PASSWORD_HASH ?? import.meta.env.ADMIN_PASSWORD_HASH,
     ADMIN_SESSION_SECRET: runtimeEnv.ADMIN_SESSION_SECRET ?? import.meta.env.ADMIN_SESSION_SECRET,
+    OFFER_TIMER_SECRET: runtimeEnv.OFFER_TIMER_SECRET ?? import.meta.env.OFFER_TIMER_SECRET,
     CUSTOMER_SESSION_SECRET: runtimeEnv.CUSTOMER_SESSION_SECRET ?? import.meta.env.CUSTOMER_SESSION_SECRET,
     GOOGLE_CLIENT_ID: runtimeEnv.GOOGLE_CLIENT_ID ?? import.meta.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: runtimeEnv.GOOGLE_CLIENT_SECRET ?? import.meta.env.GOOGLE_CLIENT_SECRET,

@@ -27,6 +27,9 @@ export interface Offer {
   travelFrom: string | null; // travel dates, inclusive
   travelTo: string | null;
   minTravelers: number | null;
+  // A countdown offer: only for a booking made within this many minutes of the
+  // visitor's first tour-page view (src/lib/offerTimer.ts). null = no countdown.
+  windowMinutes: number | null;
   active: boolean;
 }
 
@@ -36,6 +39,20 @@ export interface BookingContext {
   travelers: number;
   currency: Currency;
   today: string; // YYYY-MM-DD, India time
+  // Countdown offers: when the visitor's clock started (ms, from the signed
+  // cookie) and the time now (ms). Without a start, countdown offers don't apply.
+  timerStartedAt?: number | null;
+  nowMs?: number;
+  // Extra time the server allows past the countdown for the click on Pay to arrive.
+  timerGraceMs?: number;
+}
+
+export const isCountdownOffer = (offer: Pick<Offer, 'windowMinutes'>): boolean => !!offer.windowMinutes && offer.windowMinutes > 0;
+
+// Milliseconds left on a countdown offer (0 when over), or null when the visitor's clock hasn't started.
+export function countdownLeftMs(offer: Pick<Offer, 'windowMinutes'>, startedAt: number | null | undefined, nowMs: number): number | null {
+  if (!isCountdownOffer(offer) || !startedAt) return null;
+  return Math.max(0, startedAt + (offer.windowMinutes ?? 0) * 60_000 - nowMs);
 }
 
 export interface Discount {
@@ -74,6 +91,11 @@ export interface OfferText {
   checkout?: string;
   founding?: string;
   dateTag?: string;
+  // Countdown offers.
+  bookWithin?: string;
+  countdownEnded?: string;
+  countdownNotStarted?: string;
+  countdownBanner?: string;
 }
 export const EN_OFFER_TEXT: OfferText = {
   off: '{value} off',
@@ -94,6 +116,10 @@ export const EN_OFFER_TEXT: OfferText = {
   applied: 'Applied automatically, no code needed.',
   checkout: 'No code needed; it comes off at checkout.',
   founding: 'Founding Guest Offer ({percent}% off)',
+  bookWithin: 'book within {n} minutes',
+  countdownEnded: 'Your {n}-minute offer has ended.',
+  countdownNotStarted: 'This offer is for bookings made within {n} minutes of opening a tour page.',
+  countdownBanner: 'Book in the next {time} and get {value} off. No code needed.',
 };
 const fill = (template: string, values: Record<string, string | number>) =>
   template.replace(/\{(\w+)\}/g, (_, k: string) => String(values[k] ?? ''));
@@ -121,6 +147,7 @@ export function offerValueLabel(offer: Offer, currency: Currency, text: OfferTex
 export function offerConditions(offer: Offer, { includeBookBy = true } = {}, text: OfferText = EN_OFFER_TEXT): string {
   const d = (ymd: string) => shortDate(ymd, text.dateTag);
   const parts: string[] = [];
+  if (isCountdownOffer(offer)) parts.push(fill(text.bookWithin ?? EN_OFFER_TEXT.bookWithin!, { n: offer.windowMinutes! }));
   if (includeBookBy && offer.endsOn) parts.push(fill(text.bookBy, { date: d(offer.endsOn) }));
   if (offer.travelFrom && offer.travelTo) parts.push(fill(text.travelRange, { from: d(offer.travelFrom), to: d(offer.travelTo) }));
   else if (offer.travelFrom) parts.push(fill(text.travelFrom, { date: d(offer.travelFrom) }));
@@ -139,8 +166,9 @@ export function offerBookingWindow(offer: Offer): string | null {
 
 // Short badge for a tour card, e.g. "Diwali Offer · 10% off", from the
 // first automatic offer live for the tour (offers from listLiveAutomaticOffers).
+// Countdown offers are left out: only the booking widget, which knows the visitor's clock, shows them.
 export function offerBadge(offers: Offer[], tourId: string, currency: Currency, text: OfferText = EN_OFFER_TEXT): string | null {
-  const offer = offers.find((o) => o.tourIds.length === 0 || o.tourIds.includes(tourId));
+  const offer = offers.find((o) => !isCountdownOffer(o) && (o.tourIds.length === 0 || o.tourIds.includes(tourId)));
   return offer ? `${offer.name} · ${offerValueLabel(offer, currency, text)}` : null;
 }
 
@@ -166,6 +194,12 @@ export function offerProblem(offer: Offer, ctx: BookingContext, text: OfferText 
   if (offer.travelTo && ctx.travelDate > offer.travelTo) return fill(text.validUntil, { date: d(offer.travelTo) });
   if (offer.minTravelers && ctx.travelers < offer.minTravelers) return fill(text.minTravelersProblem, { n: offer.minTravelers });
   if (offer.kind === 'fixed' && fixedAmount(offer, ctx.currency) == null) return fill(text.notInCurrency, { currency: ctx.currency });
+  if (isCountdownOffer(offer)) {
+    const n = offer.windowMinutes!;
+    if (!ctx.timerStartedAt) return fill(text.countdownNotStarted ?? EN_OFFER_TEXT.countdownNotStarted!, { n });
+    const endsAt = ctx.timerStartedAt + n * 60_000 + (ctx.timerGraceMs ?? 0);
+    if ((ctx.nowMs ?? Date.now()) >= endsAt) return fill(text.countdownEnded ?? EN_OFFER_TEXT.countdownEnded!, { n });
+  }
   return null;
 }
 
@@ -210,6 +244,7 @@ interface OfferRow {
   travel_from: string | null;
   travel_to: string | null;
   min_travelers: number | null;
+  window_minutes?: number | null;
   active: number;
 }
 
@@ -232,6 +267,7 @@ function toOffer(row: OfferRow): Offer {
     travelFrom: row.travel_from,
     travelTo: row.travel_to,
     minTravelers: row.min_travelers,
+    windowMinutes: row.window_minutes ?? null,
     active: !!row.active,
   };
 }
@@ -325,6 +361,7 @@ export interface OfferInput {
   travelFrom: string | null;
   travelTo: string | null;
   minTravelers: number | null;
+  windowMinutes: number | null;
   active: boolean;
 }
 
@@ -354,6 +391,7 @@ export function parseOfferForm(form: FormData): { input: OfferInput; error?: str
     travelFrom: date('travelFrom'),
     travelTo: date('travelTo'),
     minTravelers: int('minTravelers'),
+    windowMinutes: int('windowMinutes'),
     active: form.get('active') === 'on',
   };
 
@@ -365,6 +403,8 @@ export function parseOfferForm(form: FormData): { input: OfferInput; error?: str
   if (input.startsOn && input.endsOn && input.endsOn < input.startsOn) return { input, error: 'The booking end date is before the start date.' };
   if (input.travelFrom && input.travelTo && input.travelTo < input.travelFrom) return { input, error: 'The travel end date is before the travel start date.' };
   if (input.minTravelers != null && input.minTravelers < 1) return { input, error: 'Minimum travelers must be at least 1, or left blank.' };
+  if (input.windowMinutes != null && !(input.windowMinutes >= 5 && input.windowMinutes <= 1440)) return { input, error: 'The countdown must be 5 to 1,440 minutes, or left blank.' };
+  if (input.windowMinutes != null && code) return { input, error: 'A countdown offer applies automatically, so leave the code empty.' };
   return { input };
 }
 
@@ -382,6 +422,7 @@ function bindInput(input: OfferInput) {
     input.travelFrom,
     input.travelTo,
     input.minTravelers,
+    input.windowMinutes,
     input.active ? 1 : 0,
   ];
 }
@@ -398,8 +439,8 @@ export async function createOffer(db: D1Like, input: OfferInput): Promise<string
   await db
     .prepare(
       `INSERT INTO offers (name, code, kind, percent, amount_inr, amount_usd, tour_ids, starts_on, ends_on,
-         travel_from, travel_to, min_travelers, active, id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         travel_from, travel_to, min_travelers, window_minutes, active, id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(...bindInput(input), id, new Date().toISOString())
     .run();
@@ -411,7 +452,7 @@ export async function updateOffer(db: D1Like, id: string, input: OfferInput): Pr
   await db
     .prepare(
       `UPDATE offers SET name = ?, code = ?, kind = ?, percent = ?, amount_inr = ?, amount_usd = ?, tour_ids = ?,
-         starts_on = ?, ends_on = ?, travel_from = ?, travel_to = ?, min_travelers = ?, active = ?
+         starts_on = ?, ends_on = ?, travel_from = ?, travel_to = ?, min_travelers = ?, window_minutes = ?, active = ?
        WHERE id = ?`
     )
     .bind(...bindInput(input), id)

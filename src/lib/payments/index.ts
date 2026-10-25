@@ -25,6 +25,8 @@ export interface BookingRequest {
   // A coupon the customer entered (src/lib/offers.ts). The server checks it
   // and picks the single biggest discount; an unusable code fails the order.
   couponCode?: string;
+  // Countdown offers: when the visitor's clock started (ms), from the signed cookie create-order verified.
+  offerTimerStartedAt?: number | null;
   // The guest's contact details and the ad they came from, kept with the order so the payment webhook can
   // create the booking when the browser never returns (src/lib/payments/orderNotes.ts).
   guest?: OrderGuest;

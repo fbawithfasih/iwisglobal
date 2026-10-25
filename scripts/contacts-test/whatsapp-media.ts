@@ -144,15 +144,15 @@ assert.equal(store.has(voiceKey), true);
 assert.equal(await deleteWaMessage(db, r2, voiceRow.id), '919811122233');
 assert.equal(row('wamid.voice'), undefined);
 assert.equal(store.has(voiceKey), false);
-assert.equal(raw.prepare(`SELECT COUNT(*) AS n FROM wa_drafts WHERE message_id = 'wamid.voice'`).get().n, 0);
+assert.equal((raw.prepare(`SELECT COUNT(*) AS n FROM wa_drafts WHERE message_id = 'wamid.voice'`).get() as any).n, 0);
 assert.ok(raw.prepare(`SELECT 1 FROM wa_conversations WHERE id = '919811122233'`).get(), 'the chat is still there');
 assert.equal(await deleteWaMessage(db, r2, voiceRow.id), null, 'already gone');
 
 // ---- deleting a whole chat removes everything; an opted-out chat keeps an empty, nameless row
-const left = raw.prepare(`SELECT COUNT(*) AS n FROM wa_messages WHERE conversation_id = '919811122233'`).get().n;
+const left = (raw.prepare(`SELECT COUNT(*) AS n FROM wa_messages WHERE conversation_id = '919811122233'`).get() as any).n;
 assert.equal(await deleteWaChat(db, r2, '919811122233'), left);
-assert.equal(raw.prepare(`SELECT COUNT(*) AS n FROM wa_messages WHERE conversation_id = '919811122233'`).get().n, 0);
-assert.equal(raw.prepare(`SELECT COUNT(*) AS n FROM wa_drafts WHERE conversation_id = '919811122233'`).get().n, 0);
+assert.equal((raw.prepare(`SELECT COUNT(*) AS n FROM wa_messages WHERE conversation_id = '919811122233'`).get() as any).n, 0);
+assert.equal((raw.prepare(`SELECT COUNT(*) AS n FROM wa_drafts WHERE conversation_id = '919811122233'`).get() as any).n, 0);
 assert.equal(raw.prepare(`SELECT 1 AS x FROM wa_conversations WHERE id = '919811122233'`).get(), undefined);
 assert.equal([...store.keys()].length, 0, 'no media left in R2');
 
@@ -162,6 +162,6 @@ raw.exec(`UPDATE wa_conversations SET state = 'opted_out' WHERE id = '4477009001
 await deleteWaChat(db, r2, '447700900123');
 const kept = raw.prepare(`SELECT state, profile_name FROM wa_conversations WHERE id = '447700900123'`).get() as any;
 assert.deepEqual([kept.state, kept.profile_name], ['opted_out', null], 'the opt-out survives, without the name');
-assert.equal(raw.prepare(`SELECT COUNT(*) AS n FROM wa_messages WHERE conversation_id = '447700900123'`).get().n, 0);
+assert.equal((raw.prepare(`SELECT COUNT(*) AS n FROM wa_messages WHERE conversation_id = '447700900123'`).get() as any).n, 0);
 
 console.log('whatsapp media: all checks passed');

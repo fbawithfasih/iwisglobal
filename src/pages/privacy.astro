@@ -13,7 +13,7 @@ export const prerender = false;
 // because payment-network reviewers read it as an incomplete policy.
 // Apple sign-in is built but not switched on, so only Google is named
 // below (same in terms.astro); add Apple back when it is.
-const lastUpdated = '25 October 2026';
+const lastUpdated = '26 October 2026';
 const { t } = pageI18n(Astro);
 ---
 
@@ -88,6 +88,7 @@ const { t } = pageI18n(Astro);
       <li set:html={t.privacyPage.k45} />
     </ul>
     <p class="text-stone-700 mb-2" set:html={t.privacyPage.k63} />
+    <p class="text-stone-700 mb-2" set:html={t.privacyPage.k64} />
     <p class="text-stone-700 mb-6" set:html={t.privacyPage.k46} />
 
     <h2 class="text-lg font-semibold mb-2" set:html={t.privacyPage.k47} />

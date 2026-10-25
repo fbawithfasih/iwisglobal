@@ -131,6 +131,8 @@ const { t } = pageI18n(Astro);
       saveChoice(choice);
       banner.hidden = true;
       updateGoogleConsent(choice);
+      // The booking widget's countdown offer (src/lib/offerTimer.ts) waits for this in the EU, UK and Switzerland.
+      window.dispatchEvent(new CustomEvent('iwis:consent', { detail: choice }));
       if (choice === 'granted') {
         apply(choice);
       } else {

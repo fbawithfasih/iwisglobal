@@ -357,6 +357,10 @@ export const fr: Dictionary = {
       applied: "Appliquée automatiquement, sans code.",
       checkout: "Aucun code nécessaire : la réduction se déduit au paiement.",
       founding: "Offre Founding Guest ({percent} % de réduction)",
+      bookWithin: "réservez sous {n} minutes",
+      countdownEnded: "Votre offre de {n} minutes est terminée.",
+      countdownNotStarted: "Cette offre vaut pour les réservations faites dans les {n} minutes suivant l’ouverture d’une page de circuit.",
+      countdownBanner: "Réservez dans les {time} qui viennent et obtenez {value} de réduction. Aucun code nécessaire.",
     },
   toursPage: {
       metaTitle: "Circuits privés de Delhi à Agra au Taj Mahal | IWIS Global",
@@ -954,6 +958,7 @@ export const fr: Dictionary = {
       k61: "<strong>Statistiques des e-mails :</strong> lorsque nous vous envoyons un e-mail, notre prestataire d'envoi nous indique s'il a été remis, rejeté ou signalé comme spam, et nous comptons les clics sur les liens de nos e-mails par lien, et non par personne. Nous ne suivons pas l'ouverture des e-mails.",
       k62: "<strong>Mesure publicitaire :</strong> si vous acceptez les cookies, nous informons aussi Meta depuis notre serveur lorsque vous réservez ou envoyez une demande, afin de mesurer nos publicités Facebook et Instagram. Nous n'envoyons votre adresse e-mail et votre numéro de téléphone que sous forme brouillée (hachée), avec le montant de la réservation. Si vous refusez les cookies, rien n'est envoyé à Meta.",
       k63: "<strong>Votre lieu de connexion compte.</strong> Si vous visitez le site depuis l'Union européenne, le reste de l'Espace économique européen (Islande, Liechtenstein, Norvège), le Royaume-Uni ou la Suisse, les cookies et outils d'analyse et de publicité décrits dans cette politique ne sont utilisés que si vous touchez Accepter sur notre bandeau de cookies. Depuis tous les autres pays, ils sont activés par défaut, et vous pouvez les désactiver à tout moment avec « Paramètres des cookies » en bas de chaque page ; votre choix est alors mémorisé et s'applique exactement comme décrit pour Refuser. Lorsque cette politique indique « seulement si vous acceptez », c'est en ce sens. Nous déterminons d'où vous visitez à partir du pays de votre connexion internet, que nous ne conservons pas.",
+      k64: "<strong>Offres à compte à rebours :</strong> lorsqu’une page de circuit propose une offre pour une réservation dans un délai donné (par exemple 20 % de réduction si vous réservez sous 30 minutes), nous enregistrons un petit cookie (<code>offer_timer</code>) indiquant le moment où votre délai a commencé, afin que l’offre se termine comme annoncé et ne recommence pas à votre prochaine visite. Il ne contient que cette heure, signée pour ne pas pouvoir être modifiée, et est conservé 90 jours. Dans les régions ci-dessus, il n’est déposé que si vous acceptez les cookies ; sans lui, vous voyez simplement nos prix normaux.",
     },
   help: {
       foundingLine: " En ce moment, nos {cap} premiers clients bénéficient automatiquement de {percent} % de réduction, sans code (l'offre Founding Guest).",

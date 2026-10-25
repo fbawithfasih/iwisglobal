@@ -116,6 +116,14 @@ const field = 'w-full min-h-11 rounded border border-stone-300 px-3 py-2';
     <input id="minTravelers" type="number" name="minTravelers" min="1" value={offer?.minTravelers ?? ''} placeholder="No minimum" class={field} />
   </div>
 
+  <div>
+    <label for="windowMinutes" class="block text-stone-500 mb-1">Countdown (minutes)</label>
+    <input id="windowMinutes" type="number" name="windowMinutes" min="5" max="1440" value={offer?.windowMinutes ?? ''} placeholder="No countdown" class={field} />
+    <p class="mt-1 text-xs text-stone-500">
+      Only for automatic offers (no code). The visitor's clock starts the first time they open a tour page with this offer and is never restarted in that browser; the booking widget shows the time left, and the discount applies only if they press Pay before it runs out. In the EU, UK and Switzerland it starts only after they accept cookies. Give it a real end date above.
+    </p>
+  </div>
+
   <label class="flex items-center gap-2 min-h-11">
     <input type="checkbox" name="active" checked={offer ? offer.active : true} /> On (untick to pause without deleting)
   </label>

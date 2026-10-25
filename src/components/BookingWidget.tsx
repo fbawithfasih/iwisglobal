@@ -1,4 +1,4 @@
-import { useState, type FocusEvent } from 'react';
+import { useEffect, useState, type FocusEvent } from 'react';
 import PhoneInput from './PhoneInput';
 import { firstTouch, pixel, track } from '../lib/analytics';
 import { fmt } from '../i18n/fmt';
@@ -9,7 +9,7 @@ import { CURRENCY_SYMBOLS, type Currency } from '../lib/currency';
 import { isTajClosedStart, todayIst } from '../lib/availability';
 import { NIGHT_VIEWING_DATE_MESSAGE } from '../lib/nightViewing';
 import { pickPricingTier, computeDepositAmount, FOUNDING_GUEST_SLOT_CAP, FOUNDING_GUEST_DISCOUNT_RATE, MAX_TRAVELERS_PER_DATE, type PricingTier } from '../lib/catalog';
-import { FOUNDING_GUEST_OFFER_ID, bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer, type OfferText, offerBadgeValue } from '../lib/offers';
+import { FOUNDING_GUEST_OFFER_ID, bestDiscount, offerProblem, offerValueLabel, offerConditions, type Offer, type OfferText, offerBadgeValue, isCountdownOffer, countdownLeftMs } from '../lib/offers';
 
 // The server enforces the per-date capacity; this only keeps the stepper in range (same shared number).
 const MAX_TRAVELERS = MAX_TRAVELERS_PER_DATE;
@@ -139,6 +139,59 @@ export default function BookingWidget({
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponChecking, setCouponChecking] = useState(false);
 
+  // Countdown offers (src/lib/offerTimer.ts): the server starts the visitor's clock once (only with cookie
+  // consent where it is needed) and tells us when; we count down from it. create-order checks the clock
+  // again itself, so this is display only.
+  const hasCountdown = offers.some(isCountdownOffer);
+  const [timer, setTimer] = useState<{ startedAt: number; offset: number } | null>(null);
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    if (!hasCountdown) return;
+    let cancelled = false;
+    const start = async () => {
+      try {
+        const res = await fetch('/api/offer-timer', { method: 'POST' });
+        const body = await res.json();
+        if (!cancelled && body?.ok && typeof body.startedAt === 'number') setTimer({ startedAt: body.startedAt, offset: Number(body.now) - Date.now() || 0 });
+      } catch {}
+    };
+    start();
+    // In the EU, UK and Switzerland the clock can start only after the visitor taps Accept.
+    const onConsent = (e: Event) => {
+      if ((e as CustomEvent).detail === 'granted') start();
+    };
+    window.addEventListener('iwis:consent', onConsent);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('iwis:consent', onConsent);
+    };
+  }, [hasCountdown]);
+  useEffect(() => {
+    if (!timer) return;
+    const id = setInterval(() => setClock(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [timer]);
+  const serverNow = clock + (timer?.offset ?? 0);
+  const mmss = (ms: number) => {
+    const s = Math.ceil(ms / 1000);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  };
+  // The countdown offers still running for this visitor, with the time left.
+  const runningCountdowns = offers
+    .filter(isCountdownOffer)
+    .map((offer) => ({ offer, left: countdownLeftMs(offer, timer?.startedAt, serverNow) ?? 0 }))
+    .filter((c) => timer && c.left > 0);
+  const countdownLine = runningCountdowns[0]
+    ? fmt(offerText.countdownBanner ?? '', { time: mmss(runningCountdowns[0].left), value: offerBadgeValue(runningCountdowns[0].offer, currency) })
+    : '';
+  const countdownShort = runningCountdowns[0]
+    ? `${offerValueLabel(runningCountdowns[0].offer, currency, offerText)} · ${mmss(runningCountdowns[0].left)}`
+    : '';
+  // The title area and the phone Book bar show it too (src/pages/tours/[slug].astro).
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('iwis:offer-countdown', { detail: { line: countdownLine, short: countdownShort } }));
+  }, [countdownLine, countdownShort]);
+
   // Same tier-matching logic computeTotal() uses server-side — this is a
   // display estimate only; the server independently recomputes it from its
   // own D1-sourced catalog, so this can't be tampered with to change price.
@@ -163,7 +216,7 @@ export default function BookingWidget({
   // Same choice razorpay.ts's createOrder makes: one discount, the biggest
   // of the Founding Guest Offer, automatic offers and the entered coupon,
   // on the full total (tour + add-ons).
-  const bookingCtx = { tourId, travelDate: date, travelers, currency, today: todayIst() };
+  const bookingCtx = { tourId, travelDate: date, travelers, currency, today: todayIst(), timerStartedAt: timer?.startedAt ?? null, nowMs: serverNow };
   const couponProblem = coupon ? offerProblem(coupon, bookingCtx, offerText) : null;
   const discount = bestDiscount(rawTotal, bookingCtx, coupon && !couponProblem ? [...offers, coupon] : offers, foundingGuestEligible);
   const total = rawTotal - (discount?.amount ?? 0);
@@ -395,7 +448,10 @@ export default function BookingWidget({
       )}
       {offers.map((offer) => {
         const badgeValue = offerBadgeValue(offer, currency);
-        const conditions = offerConditions(offer, {}, offerText);
+        const countdown = isCountdownOffer(offer) ? runningCountdowns.find((c) => c.offer.id === offer.id) : null;
+        // A countdown offer shows only while this visitor's clock is running.
+        if (isCountdownOffer(offer) && !countdown) return null;
+        const conditions = countdown ? '' : offerConditions(offer, {}, offerText);
         return (
           <div
             key={offer.id}
@@ -410,9 +466,15 @@ export default function BookingWidget({
               </span>
               <div className="min-w-0">
                 <p className="font-serif text-[15px] font-semibold leading-tight">{offer.name}</p>
-                <p className="mt-0.5 text-[11px] leading-snug text-brand-50">
-                  {conditions ? `${conditions}. ` : ''}{offerText.checkout}
-                </p>
+                {countdown ? (
+                  <p className="mt-0.5 text-[11px] leading-snug text-brand-50" role="timer" aria-live="off">
+                    {fmt(offerText.countdownBanner ?? '', { time: mmss(countdown.left), value: badgeValue })}
+                  </p>
+                ) : (
+                  <p className="mt-0.5 text-[11px] leading-snug text-brand-50">
+                    {conditions ? `${conditions}. ` : ''}{offerText.checkout}
+                  </p>
+                )}
               </div>
             </div>
           </div>

@@ -10,7 +10,7 @@ import { listApprovedReviews, averageRating, hasApprovedReviewsForRequest } from
 import { getTourBySlug } from '../../lib/tours';
 import { resizedSrcset, uploadedImageSize } from '../../lib/resizedImages';
 import { getAvailability, todayIst, tajDayOffset, firstOpenStart } from '../../lib/availability';
-import { listLiveAutomaticOffers, offerLiveFor, offerValueLabel, offerConditions, offerBadgeValue } from '../../lib/offers';
+import { listLiveAutomaticOffers, offerLiveFor, offerValueLabel, offerConditions, offerBadgeValue, isCountdownOffer } from '../../lib/offers';
 import { resolveEnv } from '../../lib/env';
 import { pageI18n, fmt, languageName } from '../../i18n/dictionaries';
 import { intlLocale } from '../../lib/i18n';
@@ -90,9 +90,11 @@ const foundingGuestPercent = Math.round(FOUNDING_GUEST_DISCOUNT_RATE * 100);
 // Automatic offers running on this tour today (src/lib/offers.ts) — shown
 // here and applied in the widget's estimate; create-order decides the charge.
 const tourOffers = liveOffers.filter((o) => offerLiveFor(o, tour.id, todayIst()));
+// Countdown offers depend on the visitor's own clock, so only the booking widget shows them (with the time left).
+const pageOffers = tourOffers.filter((o) => !isCountdownOffer(o));
 // Phones: the offer banners sit far down the page, so the title area and the
 // bottom Book bar also carry the first automatic offer.
-const offerTag = tourOffers[0] ? offerValueLabel(tourOffers[0], price.currency, offerText) : null;
+const offerTag = pageOffers[0] ? offerValueLabel(pageOffers[0], price.currency, offerText) : null;
 
 // Approved guest reviews (src/lib/reviews.ts); nothing shows until there's one.
 const reviews = env.DB ? await listApprovedReviews(env.DB, tour.id) : [];
@@ -297,10 +299,17 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
             <span aria-hidden="true" class="text-amber-500">★</span> {avgRating.toFixed(1)} · {reviewCount(reviews.length)}
           </a>
         )}
-        {tourOffers[0] && offerTag && (
+        {pageOffers[0] && offerTag && (
           <a href="#booking" class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
-            <Icon name="gift" class="h-3.5 w-3.5" /> {tourOffers[0].name} · {offerTag}
+            <Icon name="gift" class="h-3.5 w-3.5" /> {pageOffers[0].name} · {offerTag}
           </a>
+        )}
+        {tourOffers.some(isCountdownOffer) && (
+          <span data-offer-countdown="line" hidden>
+            <a href="#booking" class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
+              <Icon name="gift" class="h-3.5 w-3.5" /> <span data-offer-countdown-text></span>
+            </a>
+          </span>
         )}
       </div>
       {requestedCurrency === 'USD' && price.currency === 'INR' && (
@@ -357,7 +366,7 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
             </p>
           </div>
         )}
-        {tourOffers.map((offer) => {
+        {pageOffers.map((offer) => {
           const badgeValue = offerBadgeValue(offer, price.currency);
           const conditions = offerConditions(offer, {}, offerText);
           return (
@@ -585,6 +594,7 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
       <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">
         {tp.from}
         {offerTag && <span class="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 normal-case tracking-normal font-semibold text-amber-800">{offerTag}</span>}
+        {tourOffers.some(isCountdownOffer) && <span data-offer-countdown="short" hidden><span data-offer-countdown-text class="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 normal-case tracking-normal font-semibold text-amber-800"></span></span>}
       </p>
       <p class="text-lg font-semibold leading-tight text-stone-900">
         {fromPriceLabel} <span class="text-xs font-normal text-stone-500">{tp.perPerson}</span>
@@ -604,6 +614,20 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
     document.querySelectorAll('[data-open-ask]').forEach((a) => a.addEventListener('click', openAsk));
   </script>
 </BaseLayout>
+
+<script>
+  // The countdown offer's time left, from the booking widget (src/components/BookingWidget.tsx), in the title area
+  // ("line") and the phone Book bar ("short"). Hidden until the visitor's clock is running, and again when it ends.
+  window.addEventListener('iwis:offer-countdown', (e) => {
+    const detail = (e as CustomEvent<{ line: string; short: string }>).detail;
+    document.querySelectorAll<HTMLElement>('[data-offer-countdown]').forEach((el) => {
+      const text = el.dataset.offerCountdown === 'short' ? detail?.short : detail?.line;
+      el.hidden = !text;
+      const slot = el.querySelector('[data-offer-countdown-text]');
+      if (slot) slot.textContent = text ?? '';
+    });
+  });
+</script>
 
 <script define:vars={{ tourId: tour.id, tourName: tour.title, currency: price.currency, value: price.amount }}>
   // Backlog 2.8 — product-marketing-context.md §9's "Key events" list.

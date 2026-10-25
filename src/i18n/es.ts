@@ -357,6 +357,10 @@ export const es: Dictionary = {
       applied: "Se aplica automáticamente, sin código.",
       checkout: "No hace falta código; se descuenta al pagar.",
       founding: "Oferta Founding Guest ({percent}% de descuento)",
+      bookWithin: "reserve en {n} minutos",
+      countdownEnded: "Su oferta de {n} minutos ha terminado.",
+      countdownNotStarted: "Esta oferta es para reservas hechas en los {n} minutos siguientes a abrir la página de un tour.",
+      countdownBanner: "Reserve en los próximos {time} y obtenga {value} de descuento. No necesita código.",
     },
   toursPage: {
       metaTitle: "Tours privados de Delhi a Agra al Taj Mahal | IWIS Global",
@@ -954,6 +958,7 @@ export const es: Dictionary = {
       k61: "<strong>Estadísticas de correo:</strong> cuando te enviamos un correo, nuestro proveedor de envío nos indica si se entregó, rebotó o fue marcado como spam, y contamos los clics en los enlaces de nuestros correos por enlace, no por persona. No registramos si abres un correo.",
       k62: "<strong>Medición de anuncios:</strong> si aceptas las cookies, también informamos a Meta desde nuestro servidor cuando reservas o envías una consulta, para medir nuestros anuncios de Facebook e Instagram. Solo enviamos tu correo y tu teléfono en forma cifrada (hash), junto con el importe de la reserva. Si rechazas las cookies, no se envía nada a Meta.",
       k63: "<strong>Dónde estás importa.</strong> Si visitas el sitio desde la Unión Europea, el resto del Espacio Económico Europeo (Islandia, Liechtenstein, Noruega), el Reino Unido o Suiza, las cookies y herramientas de análisis y publicidad descritas en esta política solo se usan si pulsas Aceptar en nuestro aviso de cookies. Desde todos los demás países están activadas por defecto, y puedes desactivarlas en cualquier momento con «Ajustes de cookies» al pie de cada página; tu elección se recuerda y se aplica exactamente como se describe para Rechazar. Cuando esta política dice «solo si aceptas», debe entenderse así. Sabemos desde dónde visitas por el país de tu conexión a internet, que no guardamos.",
+      k64: "<strong>Ofertas con cuenta atrás:</strong> cuando la página de un tour muestra una oferta por reservar en un plazo determinado (por ejemplo, un 20% de descuento si reserva en 30 minutos), guardamos una pequeña cookie (<code>offer_timer</code>) con el momento en que empezó su plazo, para que la oferta termine cuando indica y no vuelva a empezar en su próxima visita. Solo contiene esa hora, firmada para que no pueda modificarse, y se conserva 90 días. En las regiones indicadas arriba solo se guarda si acepta las cookies; sin ella, simplemente verá nuestros precios normales.",
     },
   help: {
       foundingLine: " Ahora mismo, nuestros primeros {cap} clientes obtienen un {percent}% de descuento automáticamente, sin necesidad de código (la oferta Founding Guest).",
