@@ -303,14 +303,33 @@ async function saveDraft(db: D1Like, m: WaMessage, f: DraftFields): Promise<void
     .run();
 }
 
-const UNSUPPORTED_REPLY = 'Thanks for your message! Could you please type your question? I cannot read voice notes or images yet.';
+// Typed text, a tapped quick-reply button, or a photo, video or document with a
+// caption: these go to the draft writer. The caption is all it sees of a photo.
+const TEXT_KINDS = new Set(['text', 'button', 'interactive']);
+const CAPTION_KINDS = new Set(['image', 'video', 'document']);
+
+// The holding reply for anything the draft writer cannot read: a person looks
+// at the photo or listens to the voice note.
+export function nonTextReply(m: Pick<WaMessage, 'kind' | 'meta'>): string {
+  const thing =
+    m.kind === 'audio' ? (m.meta?.voice ? 'voice note' : 'audio message')
+    : m.kind === 'image' || m.kind === 'sticker' ? 'photo'
+    : m.kind === 'video' ? 'video'
+    : m.kind === 'document' ? 'document'
+    : m.kind === 'location' ? 'location'
+    : m.kind === 'contacts' ? 'contact card'
+    : '';
+  if (thing) return `Thanks for the ${thing}! A member of our team will check it and reply shortly.`;
+  return "Thanks for your message! We couldn't open it here. Could you send it again, or type your question?";
+}
 
 // Writes and saves the draft for one new guest message. Never throws: any
 // failure becomes a draft that says a person is needed.
 export async function generateDraft(env: Record<string, any>, db: D1Like, m: WaMessage, now: Date = new Date()): Promise<void> {
   try {
-    if (m.kind !== 'text' || !m.body.trim()) {
-      await saveDraft(db, m, { needsPerson: true, reason: 'unsupported', body: UNSUPPORTED_REPLY });
+    const readable = TEXT_KINDS.has(m.kind) || (CAPTION_KINDS.has(m.kind) && !!m.meta?.caption);
+    if (!readable || !m.body.trim()) {
+      await saveDraft(db, m, { needsPerson: true, reason: 'unsupported', body: nonTextReply(m) });
       return;
     }
     const apiKey = env.ANTHROPIC_API_KEY;
@@ -326,7 +345,7 @@ export async function generateDraft(env: Record<string, any>, db: D1Like, m: WaM
     // the model is working.
     await recordCall(db);
 
-    const guestText = m.body.slice(0, MAX_GUEST_CHARS);
+    const guestText = (CAPTION_KINDS.has(m.kind) ? `(The guest sent a ${m.kind === 'image' ? 'photo' : m.kind}; you can only see its caption.) ${m.meta?.caption ?? ''}` : m.body).slice(0, MAX_GUEST_CHARS);
     const history = await chatHistory(db, m);
     const chat = history.map((h) => `${h.direction === 'in' ? 'Guest' : 'IWIS'}: ${h.body.slice(0, 500)}`).join('\n');
     const isFirst = !(await db

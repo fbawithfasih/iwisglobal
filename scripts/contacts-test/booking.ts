@@ -10,7 +10,7 @@ import { buildPayload, capiToken, metaContextFromRequest, sendMetaEvent, testMet
 import { consentRequired, effectiveConsent } from '../../src/lib/consentRegion';
 
 const raw = new DatabaseSync(':memory:');
-for (const f of ['schema.sql', 'schema_crm.sql', 'schema_booking_locale.sql', 'schema_deposit_payments.sql', 'schema_customers.sql', 'schema_tours.sql', 'schema_offers.sql', 'schema_whatsapp.sql', 'schema_contacts.sql']) {
+for (const f of ['schema.sql', 'schema_crm.sql', 'schema_booking_locale.sql', 'schema_deposit_payments.sql', 'schema_customers.sql', 'schema_tours.sql', 'schema_offers.sql', 'schema_whatsapp.sql', 'schema_whatsapp_media.sql', 'schema_contacts.sql']) {
   for (const stmt of readFileSync(`${process.env.ROOT}/${f}`, 'utf8').replace(/--.*$/gm, '').split(';')) {
     const t = stmt.trim();
     if (t) raw.exec(t);

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { resolveEnv } from '../../../lib/env';
-import { parseWebhook, storeWebhook, verifySignature, type WaMessage } from '../../../lib/whatsapp';
+import { parseWebhook, storeWebhook, verifySignature, isSilentMessage, type WaMessage } from '../../../lib/whatsapp';
+import { copyNewMedia } from '../../../lib/waMedia';
 import { generateDraft, sendDraft } from '../../../lib/waDraft';
 import { routeIncoming, onStaffReply, markHandedOff } from '../../../lib/waInbox';
 import { sendWhatsappHandoffEmail, sendAutoReplyAlertEmail, HANDOFF_REASON_TEXT } from '../../../lib/email';
@@ -137,10 +138,18 @@ async function recordWhatsappLead(env: Record<string, any>, db: D1Like, m: WaMes
 }
 
 async function processMessages(env: Record<string, any>, db: D1Like, messages: WaMessage[]): Promise<void> {
+  // Photos and voice notes first: Meta's download link is fetched while it is fresh.
+  try {
+    await copyNewMedia(env, db, messages.filter((m) => m.media).map((m) => m.waMessageId));
+  } catch (err) {
+    console.error('whatsapp webhook: media copy failed', err);
+  }
   // One at a time, so several messages in one delivery cannot race on the chat's state.
   for (const m of messages) {
     try {
       if (m.direction === 'echo') await onStaffReply(db, m.phone, new Date(m.sentAt));
+      // A reaction, or an edit or deletion of an earlier message: stored and shown, nothing to answer.
+      else if (m.direction === 'in' && isSilentMessage(m)) continue;
       else if (m.direction === 'in') {
         await recordWhatsappLead(env, db, m);
         await handleGuestMessage(env, db, m);
@@ -151,7 +160,7 @@ async function processMessages(env: Record<string, any>, db: D1Like, messages: W
   }
   // Old message text is deleted once a day, triggered by whichever message arrives first.
   try {
-    await maybePurge(db);
+    await maybePurge(db, new Date(), env.IMAGES);
   } catch (err) {
     console.error('whatsapp webhook: retention purge failed', err);
   }

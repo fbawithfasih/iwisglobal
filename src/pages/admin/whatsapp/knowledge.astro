@@ -115,7 +115,7 @@ if (Astro.request.method === 'POST' && db) {
     const r = await importPairs(db, pairs);
     note = `Imported: ${r.created} new proposals, ${r.duplicate} matched an existing entry, ${r.skipped} skipped.`;
   } else if (action === 'purge' && form.get('confirm') === 'yes') {
-    const r = await purgeOld(db);
+    const r = await purgeOld(db, new Date(), false, env.IMAGES);
     note = `Deleted ${r.messages} messages, ${r.drafts} drafts and ${r.conversations} old conversations. Knowledge entries were not touched.`;
   }
   if (!preview && !error) {

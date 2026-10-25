@@ -16,6 +16,8 @@ import { listInbox, inboxCounts, inboxSignature, takeOver, giveBack, formatDurat
 import { auditOverdue } from '../../../lib/waLaunch';
 import { WA_TEMPLATES } from '../../../lib/waTemplates';
 import { SIGNUP_LANGS, signupMessage } from '../../../lib/waSignup';
+import { unsupportedLabel, type WaMessageMeta } from '../../../lib/whatsapp';
+import { isInlineMime } from '../../../lib/waMedia';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
@@ -23,7 +25,7 @@ if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
 }
 
 interface Chat { id: string; profile_name: string | null; state: string; handoff_reason: string }
-interface Message { wa_message_id: string; direction: string; kind: string; body: string; status: string; sent_at: string }
+interface Message { id: number; wa_message_id: string; direction: string; kind: string; body: string; status: string; sent_at: string; media_id: string | null; media_mime: string | null; meta_json: string | null }
 
 const db = env.DB as D1Like | undefined;
 
@@ -75,13 +77,23 @@ const selected = db && selectedId
   ? await db.prepare(`SELECT id, profile_name, state, handoff_reason FROM wa_conversations WHERE id = ?`).bind(selectedId).first<Chat>()
   : null;
 const messages = db && selectedId
-  ? (await db.prepare(`SELECT wa_message_id, direction, kind, body, status, sent_at FROM wa_messages WHERE conversation_id = ? ORDER BY sent_at ASC LIMIT 200`).bind(selectedId).all<Message>()).results
+  ? (await db.prepare(`SELECT id, wa_message_id, direction, kind, body, status, sent_at, media_id, media_mime, meta_json FROM wa_messages WHERE conversation_id = ? ORDER BY sent_at ASC LIMIT 200`).bind(selectedId).all<Message>()).results
   : [];
 const drafts = new Map<string, DraftRow>(
   db && selectedId
     ? (await db.prepare(`SELECT * FROM wa_drafts WHERE conversation_id = ? ORDER BY id ASC`).bind(selectedId).all<DraftRow>()).results.map((d) => [d.message_id, d])
     : []
 );
+// Extras for photos, voice notes, locations and unsupported messages (schema_whatsapp_media.sql).
+const metaOf = (m: Message): WaMessageMeta => {
+  try {
+    return m.meta_json ? JSON.parse(m.meta_json) : {};
+  } catch {
+    return {};
+  }
+};
+const mediaUrl = (m: Message, download = false) => `/admin/api/whatsapp/media/${m.id}${download ? '?download=1' : ''}`;
+const inlineMime = (m: Message) => !!m.media_mime && isInlineMime(m.media_mime);
 const lastGuestAt = messages.filter((m) => m.direction === 'in').map((m) => m.sent_at).sort().pop();
 const selectedWindowLeft = lastGuestAt ? WINDOW_MS - (Date.now() - Date.parse(lastGuestAt)) : 0;
 const autoReply = db
@@ -106,7 +118,7 @@ const reasonLabel: Record<string, string> = {
   handoff: 'Needs a person: money, complaint, booking change or similar',
   no_knowledge: 'Needs a person: no approved answer for this',
   price_mismatch: 'Needs a person: the draft quotes a price that is not in the catalogue',
-  unsupported: 'Needs a person: not a text message',
+  unsupported: 'Needs a person: a photo, voice note or other message the agent cannot read',
   format: 'Needs a person: the draft was not in the expected format, check it carefully',
   no_booking: 'Needs a person: no booking found under this WhatsApp number',
   cap: 'No draft: daily limit reached',
@@ -222,7 +234,45 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
               <li>
                 <div class={`max-w-xl rounded-xl p-3 text-sm ${m.direction === 'in' ? 'bg-white border border-stone-200' : 'ml-auto bg-violet-100'}`}>
                   <p class="text-xs text-stone-500 mb-1">{directionLabel[m.direction] ?? m.direction}{m.kind === 'template' && ' (template)'} · {formatDateTimeIst(m.sent_at)}{m.direction !== 'in' && ` · ${m.status}`}</p>
-                  <p class="whitespace-pre-line break-words">{m.body || `[${m.kind}]`}</p>
+                  {(() => {
+                    const meta = metaOf(m);
+                    if (m.media_id) {
+                      const caption = meta.caption;
+                      return (
+                        <div class="space-y-2">
+                          {(m.kind === 'image' || m.kind === 'sticker') && inlineMime(m) && (
+                            <a href={mediaUrl(m)} target="_blank" rel="noopener">
+                              <img src={mediaUrl(m)} alt={caption || 'Photo from the guest'} loading="lazy" class={`rounded-lg ${m.kind === 'sticker' ? 'h-32 w-32 object-contain' : 'max-h-80 w-auto'}`} />
+                            </a>
+                          )}
+                          {m.kind === 'audio' && <audio controls preload="none" src={mediaUrl(m)} class="w-full max-w-sm"></audio>}
+                          {m.kind === 'video' && inlineMime(m) && <video controls preload="none" src={mediaUrl(m)} class="max-h-80 w-full rounded-lg"></video>}
+                          <p class="text-xs">
+                            {m.kind === 'audio' && (meta.voice ? 'Voice note · ' : 'Audio · ')}
+                            {m.kind === 'document' && `${meta.filename || 'Document'} · `}
+                            <a href={mediaUrl(m, true)} class="font-medium text-brand-800 underline">Download</a>
+                          </p>
+                          {caption && <p class="whitespace-pre-line break-words">{caption}</p>}
+                        </div>
+                      );
+                    }
+                    if (m.kind === 'location' && meta.latitude !== undefined && meta.longitude !== undefined) {
+                      return (
+                        <p class="break-words">
+                          📍 {m.body.replace(/^\[location\]\s*/, '') || 'Location'} ·{' '}
+                          <a href={`https://www.google.com/maps?q=${meta.latitude},${meta.longitude}`} target="_blank" rel="noopener" class="font-medium text-brand-800 underline">Open in Google Maps</a>
+                        </p>
+                      );
+                    }
+                    if (m.kind === 'unsupported') {
+                      return (
+                        <p class="break-words text-stone-600">
+                          WhatsApp did not pass this on: {unsupportedLabel(meta.unsupportedType)}.{meta.error && ` (${meta.error})`} Open the chat in the WhatsApp Business app to see it.
+                        </p>
+                      );
+                    }
+                    return <p class="whitespace-pre-line break-words">{m.body || `[${m.kind}]`}</p>;
+                  })()}
                 </div>
                 {open && (
                   <form method="POST" class="mt-2 max-w-xl rounded-xl border border-violet-200 bg-violet-50 p-3 text-sm">

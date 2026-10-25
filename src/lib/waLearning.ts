@@ -8,6 +8,7 @@
 // money, complaints, bookings and health are never learned from, and the
 // retention purge deletes old message text. Tables: schema_whatsapp_learning.sql.
 import type { D1Like } from './db';
+import { deleteOldMedia, type MediaBucket } from './waMedia';
 import { callAnthropic } from './aiGuide';
 import { listTours } from './tours';
 import { catalogueText, COMPOSE_MODEL, parseModelJson } from './waDraft';
@@ -279,7 +280,7 @@ export interface PurgeCounts {
 
 // Deletes message text older than the retention period. Never touches knowledge
 // entries, whose evidence is already redacted. dryRun only counts.
-export async function purgeOld(db: D1Like, now: Date = new Date(), dryRun = false): Promise<PurgeCounts> {
+export async function purgeOld(db: D1Like, now: Date = new Date(), dryRun = false, r2?: MediaBucket): Promise<PurgeCounts> {
   const cutoff = new Date(now.getTime() - RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const count = async (sql: string) => (await db.prepare(sql).bind(cutoff).first<{ n: number }>())?.n ?? 0;
   const counts: PurgeCounts = {
@@ -288,6 +289,8 @@ export async function purgeOld(db: D1Like, now: Date = new Date(), dryRun = fals
     conversations: await count(`SELECT COUNT(*) AS n FROM wa_conversations WHERE last_message_at < ?`),
   };
   if (dryRun) return counts;
+  // Photos and voice notes go with their messages.
+  await deleteOldMedia(db, r2, cutoff);
   await db.prepare(`DELETE FROM wa_messages WHERE sent_at < ?`).bind(cutoff).run();
   await db.prepare(`DELETE FROM wa_drafts WHERE created_at < ?`).bind(cutoff).run();
   // A conversation goes only when it is old and has no messages left.
@@ -300,14 +303,14 @@ export async function purgeOld(db: D1Like, now: Date = new Date(), dryRun = fals
 
 // Runs the purge at most once per UTC day. The day is claimed first with a
 // conditional update, so two webhooks arriving together purge once.
-export async function maybePurge(db: D1Like, now: Date = new Date()): Promise<PurgeCounts | null> {
+export async function maybePurge(db: D1Like, now: Date = new Date(), r2?: MediaBucket): Promise<PurgeCounts | null> {
   const today = now.toISOString().slice(0, 10);
   const claimed = await db
     .prepare(`UPDATE wa_settings SET value = ?, updated_at = ? WHERE key = 'last_purge' AND value != ?`)
     .bind(today, now.toISOString(), today)
     .run();
   if (!claimed.meta?.changes) return null;
-  return purgeOld(db, now);
+  return purgeOld(db, now, false, r2);
 }
 
 // ------------------------------------------------------------- chat export import
