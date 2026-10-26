@@ -361,6 +361,12 @@ export const es: Dictionary = {
       countdownEnded: "Su oferta de {n} minutos ha terminado.",
       countdownNotStarted: "Esta oferta es para reservas hechas en los {n} minutos siguientes a abrir la página de un tour.",
       countdownBanner: "Reserve en los próximos {time} y obtenga {value} de descuento. No necesita código.",
+      cardCountdown: "{value} de descuento · reserve en {n} min",
+      heroDeal: "{value} de descuento si reserva en {n} minutos",
+      promoKicker: "Oferta por tiempo limitado",
+      promoBody: "Abra un tour participante y reserve en {n} minutos: se descuenta {value} automáticamente al pagar. No necesita código.",
+      promoCta: "Ver los tours",
+      promoNote: "Sus {n} minutos empiezan cuando abre por primera vez la página de un tour.",
     },
   toursPage: {
       metaTitle: "Tours privados de Delhi a Agra al Taj Mahal | IWIS Global",
