@@ -13,7 +13,10 @@ import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
 import { sendDraft, sendStaffMessage, sendStaffTemplate, discardDraft, draftWaitingMessage, type DraftRow } from '../../../lib/waDraft';
-import { listInbox, inboxCounts, inboxSignature, takeOver, giveBack, formatDuration, WINDOW_MS, type InboxFilter } from '../../../lib/waInbox';
+import { listInbox, inboxCounts, inboxSignature, takeChat, handOverChat, giveBack, formatDuration, WINDOW_MS, type InboxFilter } from '../../../lib/waInbox';
+import { actorLabel } from '../../../lib/authz';
+import { listStaff } from '../../../lib/staff';
+import { ownerLabel } from '../../../lib/leadsAdmin';
 import { auditOverdue } from '../../../lib/waLaunch';
 import { WA_TEMPLATES } from '../../../lib/waTemplates';
 import { SIGNUP_LANGS, signupMessage } from '../../../lib/waSignup';
@@ -26,12 +29,17 @@ if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.
   return Astro.redirect('/admin/login');
 }
 
-interface Chat { id: string; profile_name: string | null; state: string; handoff_reason: string }
-interface Message { id: number; wa_message_id: string; direction: string; kind: string; body: string; status: string; sent_at: string; media_id: string | null; media_mime: string | null; meta_json: string | null }
+interface Chat { id: string; profile_name: string | null; state: string; handoff_reason: string; handled_by: string }
+interface Message { id: number; wa_message_id: string; direction: string; kind: string; body: string; status: string; sent_at: string; media_id: string | null; media_mime: string | null; meta_json: string | null; sent_by: string }
 
 const db = env.DB as D1Like | undefined;
+const me = actorLabel(Astro.locals.admin);
 // The newest messages of a chat (older ones stay in the WhatsApp Business app).
 const MESSAGE_LIMIT = 200;
+
+// Active team members by email, for names on chats and for the hand-over list.
+const staffList = db ? (await listStaff(db).catch(() => [])).filter((s) => s.status === 'active') : [];
+const staffNames: Record<string, string> = Object.fromEntries(staffList.map((s) => [s.email, s.name || s.email]));
 
 if (Astro.request.method === 'POST' && db) {
   const form = await Astro.request.formData();
@@ -39,18 +47,22 @@ if (Astro.request.method === 'POST' && db) {
   const draftId = Number(form.get('draftId'));
   let error = '';
   if (form.get('_action') === 'send') {
-    const result = await sendDraft(env, db, draftId, String(form.get('text') ?? ''));
+    const result = await sendDraft(env, db, draftId, String(form.get('text') ?? ''), 'staff', me);
     if (!result.ok) error = result.error ?? 'Could not send.';
   } else if (form.get('_action') === 'reply') {
-    const result = await sendStaffMessage(env, db, conversation, String(form.get('text') ?? ''));
+    const result = await sendStaffMessage(env, db, conversation, String(form.get('text') ?? ''), me);
     if (!result.ok) error = result.error ?? 'Could not send.';
   } else if (form.get('_action') === 'template') {
-    const result = await sendStaffTemplate(env, db, conversation, String(form.get('template') ?? ''), String(form.get('guestName') ?? ''));
+    const result = await sendStaffTemplate(env, db, conversation, String(form.get('template') ?? ''), String(form.get('guestName') ?? ''), me);
     if (!result.ok) error = result.error ?? 'Could not send.';
   } else if (form.get('_action') === 'discard') {
     await discardDraft(db, draftId);
   } else if (form.get('_action') === 'takeover') {
-    await takeOver(db, conversation);
+    const r = await takeChat(db, conversation, me);
+    if (!r.ok && 'heldBy' in r) error = `${ownerLabel(r.heldBy, staffNames)} is already handling this chat. Use Hand over to pass it to someone.`;
+    else if (!r.ok) error = 'This chat cannot be taken (the guest asked us to stop, or it no longer exists).';
+  } else if (form.get('_action') === 'handover') {
+    if (!(await handOverChat(db, conversation, String(form.get('to') ?? '')))) error = 'Could not hand the chat over.';
   } else if (form.get('_action') === 'giveback') {
     await giveBack(db, conversation);
     // Answer what the guest wrote while staff had the chat. Giving back must not fail on this.
@@ -82,20 +94,20 @@ if (Astro.request.method === 'POST' && db) {
 }
 
 const signature = db ? await inboxSignature(db) : '';
-const counts = db ? await inboxCounts(db) : {};
+const counts = db ? await inboxCounts(db, me) : {};
 const overdue = db ? await auditOverdue(db) : 0;
 const waitingForPerson = counts.handed_off ?? 0;
 const tabParam = Astro.url.searchParams.get('tab');
-const tab: InboxFilter = tabParam === 'attention' || tabParam === 'staff' || tabParam === 'all' ? tabParam : waitingForPerson > 0 ? 'attention' : 'all';
-const conversations = db ? await listInbox(db, tab) : [];
+const tab: InboxFilter = tabParam === 'attention' || tabParam === 'staff' || tabParam === 'mine' || tabParam === 'all' ? tabParam : waitingForPerson > 0 ? 'attention' : 'all';
+const conversations = db ? await listInbox(db, tab, new Date(), me) : [];
 // On a phone the list and the open chat are separate screens; ?c= opens the chat.
 const chatOpen = Astro.url.searchParams.has('c');
 const selectedId = Astro.url.searchParams.get('c') ?? conversations[0]?.id ?? '';
 const selected = db && selectedId
-  ? await db.prepare(`SELECT id, profile_name, state, handoff_reason FROM wa_conversations WHERE id = ?`).bind(selectedId).first<Chat>()
+  ? await db.prepare(`SELECT id, profile_name, state, handoff_reason, handled_by FROM wa_conversations WHERE id = ?`).bind(selectedId).first<Chat>()
   : null;
 const messages = db && selectedId
-  ? (await db.prepare(`SELECT id, wa_message_id, direction, kind, body, status, sent_at, media_id, media_mime, meta_json FROM wa_messages WHERE conversation_id = ? ORDER BY sent_at DESC LIMIT ${MESSAGE_LIMIT}`).bind(selectedId).all<Message>()).results.reverse()
+  ? (await db.prepare(`SELECT id, wa_message_id, direction, kind, body, status, sent_at, media_id, media_mime, meta_json, sent_by FROM wa_messages WHERE conversation_id = ? ORDER BY sent_at DESC LIMIT ${MESSAGE_LIMIT}`).bind(selectedId).all<Message>()).results.reverse()
   : [];
 // Shown newest first, so the latest message and its draft are at the top of a long chat.
 const newestFirst = [...messages].reverse();
@@ -129,6 +141,7 @@ const stateLabel: Record<string, { text: string; style: string }> = {
 };
 const tabs: { id: InboxFilter; label: string; count?: number }[] = [
   { id: 'attention', label: 'Needs a person', count: waitingForPerson },
+  { id: 'mine', label: 'Mine', count: counts.mine ?? 0 },
   { id: 'staff', label: 'Staff handling', count: counts.staff ?? 0 },
   { id: 'all', label: 'All' },
 ];
@@ -218,6 +231,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
                 <span class={`rounded px-2 py-0.5 text-xs ${stateLabel[c.state]?.style ?? ''}`}>{stateLabel[c.state]?.text ?? c.state}</span>
               </span>
               {who(c) !== `+${c.id}` && <span class="block text-stone-500">+{c.id}</span>}
+              {c.handled_by && <span class="block text-xs text-stone-600">Handled by <span class="font-semibold">{ownerLabel(c.handled_by, staffNames)}</span></span>}
               {c.waiting && <span class={`block text-xs font-medium ${toneStyle[c.tone]}`}>Waiting {formatDuration(c.waitingMs)}</span>}
               {c.windowLeftMs !== null && (
                 <span class={`block text-xs ${c.waiting && c.windowLeftMs < 2 * 3600000 ? 'text-red-700' : 'text-stone-400'}`}>
@@ -239,8 +253,21 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
               <form method="POST" class="flex gap-2">
                 <input type="hidden" name="c" value={selectedId} />
                 <input type="hidden" name="tab" value={tab} />
-                {selected.state !== 'staff' && <button type="submit" name="_action" value="takeover" class="min-h-11 rounded border border-violet-200 bg-white px-4 text-sm font-medium text-stone-700">Take over</button>}
+                {selected.handled_by === '' && <button type="submit" name="_action" value="takeover" class="min-h-11 rounded btn-primary px-4 text-sm font-medium text-white">Take it</button>}
                 {selected.state !== 'agent' && <button type="submit" name="_action" value="giveback" class="min-h-11 rounded bg-brand-800 px-4 text-sm font-medium text-white">Give back to agent</button>}
+              </form>
+            )}
+            {selected.handled_by && <span class="text-sm text-stone-700">Handled by <span class="font-semibold">{ownerLabel(selected.handled_by, staffNames)}</span></span>}
+            {selected.state !== 'opted_out' && (
+              <form method="POST" class="flex gap-2">
+                <input type="hidden" name="c" value={selectedId} />
+                <input type="hidden" name="tab" value={tab} />
+                <input type="hidden" name="_action" value="handover" />
+                <select name="to" aria-label="Hand this chat to" class="min-h-11 rounded border border-violet-200 bg-white px-2 text-sm">
+                  <option value="owner" selected={selected.handled_by === 'owner'}>Owner</option>
+                  {staffList.map((s) => <option value={s.email} selected={selected.handled_by === s.email}>{s.name || s.email}</option>)}
+                </select>
+                <button class="min-h-11 rounded border border-violet-200 bg-white px-3 text-sm">Hand over</button>
               </form>
             )}
             {selected.state === 'opted_out' && <span class="text-xs text-stone-500">The guest asked us to stop. They can write START to resume.</span>}
@@ -305,7 +332,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
             return (
               <li>
                 <div class={`max-w-xl rounded-xl p-3 text-sm ${m.direction === 'in' ? 'bg-white border border-violet-100' : 'ml-auto bg-violet-100'}`}>
-                  <p class="text-xs text-stone-500 mb-1">{directionLabel[m.direction] ?? m.direction}{m.kind === 'template' && ' (template)'} · {formatDateTimeIst(m.sent_at)}{m.direction !== 'in' && ` · ${m.status}`}</p>
+                  <p class="text-xs text-stone-500 mb-1">{directionLabel[m.direction] ?? m.direction}{m.sent_by && ` by ${ownerLabel(m.sent_by, staffNames)}`}{m.kind === 'template' && ' (template)'} · {formatDateTimeIst(m.sent_at)}{m.direction !== 'in' && ` · ${m.status}`}</p>
                   {(() => {
                     const meta = metaOf(m);
                     if (m.media_id) {

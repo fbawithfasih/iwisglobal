@@ -2,6 +2,7 @@ import type { D1Like } from './db';
 import { OPEN_STAGES, canonicalStage, logActivity, recordLead, refreshLeadScore, type Channel } from './contacts';
 import { sendHotelAlertEmail } from './email';
 import { sendAdminPush } from './webPush';
+import { isValidHolder } from './authz';
 
 // Reads and small writes for the admin Leads screens (src/pages/admin/leads/*).
 
@@ -272,7 +273,7 @@ export async function markContacted(db: D1Like, leadId: string, by = ''): Promis
 
 /** Who a lead may be handed to: nobody, the owner login, or a staff member's email. */
 export function validOwner(value: string): boolean {
-  return value === '' || value === 'owner' || (value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
+  return isValidHolder(value);
 }
 
 /** Hands a lead to someone (or to nobody with ''). Does not touch the waiting clock. Returns false if the lead or the target is not valid. */

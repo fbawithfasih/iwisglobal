@@ -11,7 +11,7 @@ import { retrieve, SITE_URL, type KbEntry } from './waKnowledge';
 import { sendText, sendTemplate, storeMessage, type WaMessage } from './whatsapp';
 import { findTemplate, renderTemplate, cleanTemplateName } from './waTemplates';
 import { runTools, type ToolLog, type ToolRequest } from './waTools';
-import { onAdminSend, markHandedOff, takeOver } from './waInbox';
+import { attributeSend, onAdminSend, markHandedOff, takeOver } from './waInbox';
 import { getAutoSettings, qualityDecision } from './waAuto';
 import { todayIst } from './availability';
 
@@ -448,7 +448,7 @@ export interface SendOutcome {
 // handled, or more than 24 hours after the guest's last message, when WhatsApp
 // allows only approved templates. The draft is claimed first, so a double
 // click sends once.
-export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: number, text: string, by: 'staff' | 'auto' = 'staff'): Promise<SendOutcome> {
+export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: number, text: string, by: 'staff' | 'auto' = 'staff', person = ''): Promise<SendOutcome> {
   const body = text.trim();
   if (!body) return { ok: false, error: 'The message is empty.' };
   if (body.length > MAX_SEND_CHARS) return { ok: false, error: 'The message is too long for WhatsApp.' };
@@ -492,7 +492,11 @@ export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: n
     .run();
   // An automatic reply leaves the chat's owner alone; a staff send to a chat that
   // was waiting for a person means a person has now dealt with it.
-  if (by === 'staff') await onAdminSend(db, draft.conversation_id);
+  if (by === 'staff') {
+    await onAdminSend(db, draft.conversation_id);
+    // Record which person sent it; if it moved the chat to a person, it is theirs.
+    await attributeSend(db, draft.conversation_id, waMessageId, person);
+  }
   return { ok: true };
 }
 
@@ -500,7 +504,7 @@ export async function sendDraft(env: Record<string, any>, db: D1Like, draftId: n
 // a "Needs a person" or "Staff handling" chat is answered now that the phone app is
 // not connected to the number. Same 24-hour rule as sendDraft. The chat becomes
 // staff-handled, so the agent stops drafting until it is given back.
-export async function sendStaffMessage(env: Record<string, any>, db: D1Like, phone: string, text: string): Promise<SendOutcome> {
+export async function sendStaffMessage(env: Record<string, any>, db: D1Like, phone: string, text: string, person = ''): Promise<SendOutcome> {
   const body = text.trim();
   if (!body) return { ok: false, error: 'The message is empty.' };
   if (body.length > MAX_SEND_CHARS) return { ok: false, error: 'The message is too long for WhatsApp.' };
@@ -518,8 +522,9 @@ export async function sendStaffMessage(env: Record<string, any>, db: D1Like, pho
   const sent = await sendText(env, phone, body);
   if (!sent.ok) return { ok: false, error: `WhatsApp refused the message: ${sent.error ?? 'unknown error'}` };
 
+  const waMessageId = sent.waMessageId ?? `local-${crypto.randomUUID()}`;
   await storeMessage(db, {
-    waMessageId: sent.waMessageId ?? `local-${crypto.randomUUID()}`,
+    waMessageId,
     phone,
     direction: 'out',
     kind: 'text',
@@ -529,13 +534,14 @@ export async function sendStaffMessage(env: Record<string, any>, db: D1Like, pho
   });
   // Any open draft for this chat is now stale; takeOver also pauses new drafts.
   await takeOver(db, phone);
+  await attributeSend(db, phone, waMessageId, person);
   return { ok: true };
 }
 
 // Staff send an approved template to a guest whose 24-hour window has closed. The guest sees the
 // template text; their reply reopens the window. One template per chat per 24 hours, never to a guest
 // who opted out. The chat becomes staff-handled, like a typed reply.
-export async function sendStaffTemplate(env: Record<string, any>, db: D1Like, phone: string, templateId: string, guestName: string): Promise<SendOutcome> {
+export async function sendStaffTemplate(env: Record<string, any>, db: D1Like, phone: string, templateId: string, guestName: string, person = ''): Promise<SendOutcome> {
   const template = findTemplate(templateId);
   if (!template) return { ok: false, error: 'Choose one of the templates.' };
   const name = cleanTemplateName(guestName);
@@ -564,8 +570,9 @@ export async function sendStaffTemplate(env: Record<string, any>, db: D1Like, ph
     };
   }
 
+  const waMessageId = sent.waMessageId ?? `local-${crypto.randomUUID()}`;
   await storeMessage(db, {
-    waMessageId: sent.waMessageId ?? `local-${crypto.randomUUID()}`,
+    waMessageId,
     phone,
     direction: 'out',
     kind: 'template',
@@ -574,6 +581,7 @@ export async function sendStaffTemplate(env: Record<string, any>, db: D1Like, ph
     sentAt: new Date().toISOString(),
   });
   await takeOver(db, phone);
+  await attributeSend(db, phone, waMessageId, person);
   return { ok: true };
 }
 

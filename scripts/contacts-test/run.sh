@@ -38,3 +38,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/admin-password.ts" --b
 ROOT="$ROOT" node --no-warnings "$OUT/admin-password.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/leads-owner.ts" --bundle --platform=node --format=esm --outfile="$OUT/leads-owner.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/leads-owner.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/wa-handler.ts" --bundle --platform=node --format=esm --outfile="$OUT/wa-handler.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
+ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/wa-handler.mjs"
