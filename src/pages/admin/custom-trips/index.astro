@@ -15,7 +15,7 @@ import { TRAVELLER_CATEGORIES } from '../../../lib/customTrip';
 import { addStop, clearStopFees, enableBlockers, loadRates, saveSettings, saveStop, saveStopFee, saveVehicle, setEnabled } from '../../../lib/customTripData';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 
@@ -76,7 +76,7 @@ if (Astro.request.method === 'POST' && db) {
   } catch (e) {
     result = { ok: false, error: e instanceof Error ? e.message : 'Could not save.' };
   }
-  if (result.ok && action !== 'refresh') await recordAudit(db, auditContext(Astro.request), { action: `custom_trips.${action}`, resource: 'custom_trips', resourceId: text('id') || text('stopId') || text('bookingId') || undefined, summary: note || undefined });
+  if (result.ok && action !== 'refresh') await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: `custom_trips.${action}`, resource: 'custom_trips', resourceId: text('id') || text('stopId') || text('bookingId') || undefined, summary: note || undefined });
   const query = new URLSearchParams();
   if (!result.ok) query.set('err', result.error ?? 'Could not save.');
   else if (note) query.set('note', note);

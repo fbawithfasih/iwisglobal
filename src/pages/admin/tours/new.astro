@@ -10,7 +10,7 @@ import { parseLines, parseItinerary, parseAddOns, parsePricingTiers } from '../.
 import { uploadTourImage } from '../../../lib/images';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 
@@ -60,7 +60,7 @@ if (Astro.request.method === 'POST' && db) {
       if (addOns.length > 0) await replaceAddOns(db, id, addOns);
       const pricingTiers = parsePricingTiers(String(form.get('pricingTiers') ?? ''));
       if (pricingTiers.length > 0) await replacePricingTiers(db, id, pricingTiers);
-      await recordAudit(db, auditContext(Astro.request), { action: 'tour.create', resource: 'tour', resourceId: id, summary: 'Created a tour', meta: { amount } });
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'tour.create', resource: 'tour', resourceId: id, summary: 'Created a tour', meta: { amount } });
       return Astro.redirect(`/admin/tours/${id}/edit`);
     } catch (err: any) {
       error = err?.message || 'Failed to create tour.';

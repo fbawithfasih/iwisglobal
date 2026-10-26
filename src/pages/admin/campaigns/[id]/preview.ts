@@ -9,7 +9,7 @@ export const prerender = false;
 // Opens the campaign exactly as a reader would see it (with a dummy unsubscribe link). Admin only; nothing is sent.
 export const GET: APIRoute = async ({ params, url, cookies, locals }) => {
   const env = resolveEnv(locals);
-  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET))) return new Response('Unauthorized', { status: 401 });
+  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET, locals))) return new Response('Unauthorized', { status: 401 });
   const db: D1Like | undefined = env.DB;
   const id = params.id ?? '';
   if (!db || !id || !(await getCampaign(db, id))) return new Response('Not found', { status: 404 });

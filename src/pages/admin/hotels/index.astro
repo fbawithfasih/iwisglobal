@@ -5,6 +5,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { canDo } from '../../../lib/authz';
 import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -16,7 +17,7 @@ import { cancelHotelBookingAndRefund, previewHotelRefund, STUCK_PAID_MS, isTestP
 import { formatDateTimeIst, formatMoneyMinor } from '../../../lib/format';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 
@@ -28,7 +29,8 @@ if (Astro.request.method === 'POST' && db) {
   const text = (name: string) => String(form.get(name) ?? '');
   let result: { ok: boolean; error?: string } = { ok: true };
   let note = '';
-  try {
+  if (!canDo(Astro.locals.admin, 'hotels', action)) result = { ok: false, error: 'Only the owner can change hotel settings.' };
+  else try {
     if (action === 'switch_on') {
       result = await setHotelsEnabled(db, true);
       note = 'Hotels are now live. The /hotels page is public.';
@@ -57,7 +59,7 @@ if (Astro.request.method === 'POST' && db) {
   } catch (e) {
     result = { ok: false, error: e instanceof Error ? e.message : 'Could not complete that.' };
   }
-  if (result.ok && action !== 'refresh') await recordAudit(db, auditContext(Astro.request), { action: `hotels.${action}`, resource: 'hotels', resourceId: text('id') || text('stopId') || text('bookingId') || undefined, summary: note || undefined });
+  if (result.ok && action !== 'refresh') await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: `hotels.${action}`, resource: 'hotels', resourceId: text('id') || text('stopId') || text('bookingId') || undefined, summary: note || undefined });
   const query = new URLSearchParams();
   if (!result.ok) query.set('err', result.error ?? 'Could not complete that.');
   else if (note) query.set('note', note);

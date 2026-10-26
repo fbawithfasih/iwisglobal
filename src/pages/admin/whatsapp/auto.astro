@@ -31,7 +31,7 @@ import {
 } from '../../../lib/waAuto';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 
@@ -47,11 +47,11 @@ if (Astro.request.method === 'POST' && db) {
     if (!r.ok) error = r.error ?? '';
     else {
       note = 'Automatic replies are on, for the kinds of message you have enabled.';
-      await recordAudit(db, auditContext(Astro.request), { action: 'whatsapp.auto_on', resource: 'setting', summary: 'Turned automatic WhatsApp replies on' });
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'whatsapp.auto_on', resource: 'setting', summary: 'Turned automatic WhatsApp replies on' });
     }
   } else if (action === 'master_off') {
     await turnOffMaster(db);
-    await recordAudit(db, auditContext(Astro.request), { action: 'whatsapp.auto_off', resource: 'setting', summary: 'Turned automatic WhatsApp replies off' });
+    await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'whatsapp.auto_off', resource: 'setting', summary: 'Turned automatic WhatsApp replies off' });
     note = 'Automatic replies are off. Nothing will be sent without a person.';
   } else if (action === 'intent_on' || action === 'intent_off') {
     const r = await setIntentEnabled(db, String(form.get('intent') ?? ''), action === 'intent_on');

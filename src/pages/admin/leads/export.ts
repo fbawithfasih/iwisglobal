@@ -13,7 +13,7 @@ export const prerender = false;
 // them. Cells starting with = + - @ are neutralised so a spreadsheet cannot run them.
 export const GET: APIRoute = async ({ cookies, locals, request }) => {
   const env = resolveEnv(locals);
-  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET))) return new Response('Unauthorized', { status: 401 });
+  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET, locals))) return new Response('Unauthorized', { status: 401 });
   const db: D1Like | undefined = env.DB;
   if (!db) return new Response('No database', { status: 503 });
   const { results } = await db
@@ -29,7 +29,7 @@ export const GET: APIRoute = async ({ cookies, locals, request }) => {
     r.id, r.name, r.email, r.phone, STAGE_LABELS[r.status] ?? r.status, CHANNEL_LABELS[r.channel] ?? r.channel, r.campaign, r.tour_interest, r.travel_start, r.country,
     r.language, r.score, r.created_at, r.marketing_status, r.marketing_status === 'subscribed' ? 'yes' : 'no',
   ]);
-  await recordAudit(db, auditContext(request), { action: 'lead.export', resource: 'lead', summary: 'Downloaded the full leads CSV', meta: { rows: rows.length } });
+  await recordAudit(db, auditContext(request, locals), { action: 'lead.export', resource: 'lead', summary: 'Downloaded the full leads CSV', meta: { rows: rows.length } });
   return new Response(toCsv([header, ...rows]), {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',

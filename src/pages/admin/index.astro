@@ -11,7 +11,7 @@ import { formatTravelDate, formatMoneyMinor } from '../../lib/format';
 import { AWAITING_STATUS, CUSTOM_TOUR_ID } from '../../lib/customTripPayment';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 

@@ -12,7 +12,7 @@ import { sendBookingConfirmationEmail } from '../../../lib/email';
 import { isFriday, FRIDAY_CLOSED_MESSAGE } from '../../../lib/availability';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 

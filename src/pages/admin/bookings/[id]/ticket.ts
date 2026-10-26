@@ -9,7 +9,7 @@ export const prerender = false;
 // the private tickets/ prefix, which the public /images route refuses to serve.
 export const GET: APIRoute = async ({ params, locals, cookies }) => {
   const env = resolveEnv(locals);
-  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET))) {
+  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET, locals))) {
     return new Response('Not found', { status: 404 });
   }
   const db = env.DB;

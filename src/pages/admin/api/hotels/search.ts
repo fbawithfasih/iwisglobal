@@ -12,7 +12,7 @@ export const prerender = false;
 // only sent to /admin addresses.
 export const POST: APIRoute = async ({ request, locals, url, cookies }) => {
   const env = resolveEnv(locals);
-  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET))) return new Response('Unauthorized', { status: 401 });
+  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET, locals))) return new Response('Unauthorized', { status: 401 });
   let body: unknown = null;
   try {
     body = await request.json();

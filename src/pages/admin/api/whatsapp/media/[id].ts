@@ -13,7 +13,7 @@ export const prerender = false;
 // running as a page on this domain.
 export const GET: APIRoute = async ({ params, url, locals, cookies }) => {
   const env = resolveEnv(locals);
-  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET))) return new Response('Unauthorized', { status: 401 });
+  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET, locals))) return new Response('Unauthorized', { status: 401 });
   const db = env.DB as D1Like | undefined;
   const r2 = env.IMAGES as MediaBucket | undefined;
   const id = Number(params.id);

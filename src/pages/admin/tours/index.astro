@@ -8,7 +8,7 @@ import { listTours, setTourStatus } from '../../../lib/tours';
 import { resolveFromPrice } from '../../../lib/currency';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 

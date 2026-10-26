@@ -10,7 +10,7 @@ import { intlLocale } from '../../../lib/i18n';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 const { locale, t: dict } = pageI18n(Astro);

@@ -9,6 +9,7 @@ export const prerender = false;
 
 import { getCollection } from 'astro:content';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { canDo } from '../../../lib/authz';
 import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -39,7 +40,7 @@ import {
 } from '../../../lib/waLearning';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 
@@ -115,9 +116,11 @@ if (Astro.request.method === 'POST' && db) {
     }
     const r = await importPairs(db, pairs);
     note = `Imported: ${r.created} new proposals, ${r.duplicate} matched an existing entry, ${r.skipped} skipped.`;
+  } else if (action === 'purge' && !canDo(Astro.locals.admin, 'whatsapp', 'purge')) {
+    error = 'Only the owner can delete old conversations.';
   } else if (action === 'purge' && form.get('confirm') === 'yes') {
     const r = await purgeOld(db, new Date(), false, env.IMAGES);
-    await recordAudit(db, auditContext(Astro.request), { action: 'whatsapp.purge', resource: 'wa_conversation', summary: 'Deleted old WhatsApp conversations', meta: { messages: r.messages, drafts: r.drafts, conversations: r.conversations } });
+    await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'whatsapp.purge', resource: 'wa_conversation', summary: 'Deleted old WhatsApp conversations', meta: { messages: r.messages, drafts: r.drafts, conversations: r.conversations } });
     note = `Deleted ${r.messages} messages, ${r.drafts} drafts and ${r.conversations} old conversations. Knowledge entries were not touched.`;
   }
   if (!preview && !error) {

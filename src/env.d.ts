@@ -12,5 +12,7 @@ declare namespace App {
   interface Locals {
     locale?: 'en' | 'es' | 'fr' | 'de';
     canonicalPath?: string;
+    // Set by src/lib/adminGate.ts on /admin requests: who is signed in.
+    admin?: import('./lib/authz').Principal;
   }
 }

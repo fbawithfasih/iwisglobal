@@ -1,15 +1,18 @@
 ---
+import { canAccessPath } from '../lib/authz';
+
 interface Props {
   title: string;
 }
 const { title } = Astro.props;
 
 const path = Astro.url.pathname;
+const me = Astro.locals.admin;
 const isReport = path.startsWith('/admin/leads/report');
 
 // One list drives the sidebar (desktop) and the slide-over drawer (phone): they are the same element.
 type NavItem = { href: string; label: string; active: boolean };
-const sections: { label: string; items: NavItem[] }[] = [
+const allSections: { label: string; items: NavItem[] }[] = [
   {
     label: 'Work',
     items: [
@@ -41,10 +44,15 @@ const sections: { label: string; items: NavItem[] }[] = [
   {
     label: 'System',
     items: [
+      { href: '/admin/team', label: 'Team', active: path.startsWith('/admin/team') },
       { href: '/admin/audit', label: 'Audit log', active: path.startsWith('/admin/audit') },
     ],
   },
 ];
+// Links a person cannot use are not shown. Hiding is only tidiness: the middleware refuses the pages anyway (src/lib/adminGate.ts).
+const sections = allSections
+  .map((g) => ({ ...g, items: g.items.filter((i) => !me || canAccessPath(me, i.href)) }))
+  .filter((g) => g.items.length > 0);
 const itemClass = (active: boolean) =>
   active
     ? 'flex items-center rounded-lg bg-white/15 px-3 py-2 font-semibold text-white'

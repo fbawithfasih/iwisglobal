@@ -11,7 +11,7 @@ import { telHref, waHref } from '../../../lib/contact';
 import PhoneInput from '../../../components/PhoneInput';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 const db = env.DB;
