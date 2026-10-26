@@ -136,4 +136,7 @@ export default defineConfig({
   // The site does not use Astro's image optimiser (images are served as-is from R2 or /public); passthrough keeps the
   // native image library (sharp) out of the Worker bundle, where it cannot run.
   adapter: cloudflare({ imageService: 'passthrough' }),
+  // Astro's built-in cross-site form check refuses the one-click unsubscribe of Gmail, Yahoo and Apple Mail (they send no
+  // Origin header). It is replaced by the same rule in src/middleware.ts with that single exemption: src/lib/originCheck.ts.
+  security: { checkOrigin: false },
 });

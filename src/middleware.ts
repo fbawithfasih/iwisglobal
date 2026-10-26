@@ -2,6 +2,7 @@ import { defineMiddleware } from 'astro:middleware';
 import { isLocalizedPath, splitLocale, localizedPath } from './lib/localizedPaths.mjs';
 import type { Locale } from './lib/i18n';
 import { isBlockedPath } from './lib/blockedPaths';
+import { isForbiddenCrossSitePost } from './lib/originCheck';
 import { adminGate } from './lib/adminGate';
 import { resolveEnv } from './lib/env';
 
@@ -21,6 +22,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Framework endpoints this site does not use (see src/lib/blockedPaths.ts): refused before any routing.
   if (isBlockedPath(context.url.pathname)) {
     return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store', 'Content-Type': 'text/plain; charset=utf-8' } });
+  }
+
+  // Cross-site form posts are refused here: Astro's own check is replaced (astro.config.mjs) by the same rule with one
+  // narrow exemption, the one-click unsubscribe of mail apps. See src/lib/originCheck.ts.
+  if (await isForbiddenCrossSitePost(context.request, context.url)) {
+    return new Response('Cross-site POST form submissions are forbidden', { status: 403, headers: { 'Cache-Control': 'no-store', 'Content-Type': 'text/plain; charset=utf-8' } });
   }
 
   // Every page is server-rendered and BaseLayout builds its canonical from the
