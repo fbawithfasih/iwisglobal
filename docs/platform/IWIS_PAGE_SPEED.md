@@ -35,7 +35,9 @@ What the Bookings page did: fetch bookings, then fetch tours, then fetch each to
 - WhatsApp counts: two queries together.
 `scripts/contacts-test/speed.ts` guards this: it gives every query a simulated 40 ms delay and fails if Bookings, lead counts, WhatsApp counts, Today or Owner overview need more than 1 to 3 rounds in a row.
 
-Expected effect: roughly one round trip instead of three on Bookings, one instead of fifteen on Leads. Please re-measure after the release (same steps below) and send the numbers.
+Expected effect: roughly one round trip instead of three on Bookings, one instead of fifteen on Leads. **Result (27 Oct 2026, owner's browser, after the release):** Bookings Server Timing `app` = **249 ms**, down from **1.12 s** (a 78% cut; under the 500 ms line). Leads, WhatsApp and Tours have not been measured yet; re-measuring them (same steps below) is optional follow-up, not a gate.
+
+What the same screenshot says about the rest of the wait: the browser waited 1.15 s for the page, of which our code is 249 ms and Cloudflare's worker 476 ms in total (the extra 227 ms is the worker starting and the framework, before and after our timer). The remaining roughly 0.65 s is between the browser and Cloudflare's worker (network route, and a possibly cold first request after a deploy). It is not database time. To tell which: reload the page twice more and read the waiting time on the second and third loads; a warm worker should be well below the first. If it stays near a second, the next thing to look at is where Cloudflare runs the worker relative to the database (Smart Placement), which I would only change with your say-so.
 
 **Not done, needs a decision:** the admin always reads from the primary database (in the US) so a page never shows data older than a save. D1 also has read copies closer to you. Using them for admin page loads would cut each round trip a lot more, at the cost of a page occasionally showing data a few seconds old (for example a chat that arrived a moment ago). I have not changed this; say if you want it.
 
