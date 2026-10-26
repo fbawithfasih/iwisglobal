@@ -30,7 +30,7 @@ export const GET: APIRoute = async ({ url, cookies, locals, request, redirect })
     }
     cookies.set(STAFF_COOKIE, result.token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/admin', maxAge: Math.floor(SESSION_TTL_MS / 1000) });
     await recordAudit(db, auditContext(request, result.user.email), { action: 'auth.staff_login', resource: 'session', summary: 'Signed in with Google' });
-    return redirect('/admin');
+    return redirect('/admin/today');
   } catch (err) {
     console.error('staff google sign-in failed', err instanceof Error ? err.message : 'error');
     return back('failed');

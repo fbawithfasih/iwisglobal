@@ -47,7 +47,7 @@ if (Astro.request.method === 'POST') {
         path: '/admin',
         maxAge: 60 * 60 * 12,
       });
-      return Astro.redirect('/admin');
+      return Astro.redirect('/admin/today');
     }
     if (db) await recordFailedLogin(db, ip);
     await recordAudit(db, auditContext(Astro.request, 'anonymous'), { action: 'auth.login_failed', resource: 'session', summary: 'Wrong password' });
