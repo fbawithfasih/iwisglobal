@@ -2,12 +2,14 @@
 export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
-import { canDo } from '../../../lib/authz';
 import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { LEAD_STAGES, LOST_REASONS, CHANNEL_LABELS, scoreBucket, setLeadStage, mergePeople, undoMerge, dismissDuplicate, refreshLeadScore, type LeadStage } from '../../../lib/contacts';
-import { STAGE_LABELS, addNote, completeFollowUp, getLeadDetail, markContacted, setFollowUp } from '../../../lib/leadsAdmin';
+import { STAGE_LABELS, addNote, assignLead, completeFollowUp, getLeadDetail, markContacted, ownerLabel, setFollowUp, takeLead } from '../../../lib/leadsAdmin';
+import { waitingLabel } from '../../../lib/leadsAdmin';
+import { actorLabel, canDo } from '../../../lib/authz';
+import { listStaff } from '../../../lib/staff';
 import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
 import { erasePerson, personEmails, startDoubleOptIn, unsubscribePerson } from '../../../lib/marketing';
@@ -19,7 +21,12 @@ if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.
 }
 const db: D1Like | undefined = env.DB;
 const id = Astro.params.id ?? '';
+const actor = actorLabel(Astro.locals.admin);
 if (!db || !id) return new Response('Not found', { status: 404 });
+
+// Names for the people who can hold a lead: active team members by email.
+const staffList = (await listStaff(db).catch(() => [])).filter((s) => s.status === 'active');
+const staffNames: Record<string, string> = Object.fromEntries(staffList.map((s) => [s.email, s.name || s.email]));
 
 let error = '';
 if (Astro.request.method === 'POST') {
@@ -30,20 +37,27 @@ if (Astro.request.method === 'POST') {
     if (action === 'stage') {
       const stage = String(form.get('stage') ?? '') as LeadStage;
       if ((LEAD_STAGES as readonly string[]).includes(stage)) {
-        await setLeadStage(db, id, stage, { by: 'admin', lostReason: String(form.get('lostReason') ?? 'other') });
+        await setLeadStage(db, id, stage, { by: actor, lostReason: String(form.get('lostReason') ?? 'other') });
+        // Moving a lead on means you are working it: take it if nobody else has.
+        if (stage === 'contacted' || stage === 'qualified' || stage === 'quote_sent') await takeLead(db, id, actor);
         await refreshLeadScore(db, id);
       }
     } else if (action === 'note') {
-      await addNote(db, id, String(form.get('body') ?? ''));
+      await addNote(db, id, String(form.get('body') ?? ''), actor);
     } else if (action === 'contacted') {
-      await markContacted(db, id);
-      await setLeadStage(db, id, 'contacted', { by: 'admin' }).catch(() => false);
+      await markContacted(db, id, actor);
+      await setLeadStage(db, id, 'contacted', { by: actor }).catch(() => false);
     } else if (action === 'followup') {
-      await setFollowUp(db, id, String(form.get('due') ?? ''), String(form.get('note') ?? ''));
+      await setFollowUp(db, id, String(form.get('due') ?? ''), String(form.get('note') ?? ''), actor);
+    } else if (action === 'take') {
+      const r = await takeLead(db, id, actor);
+      if (!r.ok) error = `${ownerLabel(r.heldBy, staffNames)} is already handling this lead.`;
+    } else if (action === 'assign') {
+      await assignLead(db, id, String(form.get('owner') ?? ''), actor);
     } else if (action === 'done') {
       await completeFollowUp(db, id, Number(form.get('activityId')));
     } else if (action === 'merge') {
-      const res = await mergePeople(db, String(form.get('keep') ?? ''), String(form.get('drop') ?? ''), 'admin');
+      const res = await mergePeople(db, String(form.get('keep') ?? ''), String(form.get('drop') ?? ''), actor);
       if (!res.ok) error = res.error;
       else await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'lead.merge', resource: 'person', resourceId: String(form.get('keep') ?? ''), summary: 'Merged two people into one', meta: { dropped: String(form.get('drop') ?? '') } });
     } else if (action === 'undo') {
@@ -88,6 +102,7 @@ const l = d.lead;
 const bucket = scoreBucket(l.score ?? 0);
 const wa = l.phone ? waHref(l.phone) : null;
 const open = !['booked', 'converted', 'lost', 'spam'].includes(l.status);
+const waiting = waitingLabel(l);
 const btn = 'inline-flex min-h-11 items-center rounded border border-violet-200 bg-white px-3 text-sm text-stone-800';
 const field = 'rounded border border-violet-200 px-3 py-2';
 const kindClass: Record<string, string> = { touchpoint: 'bg-violet-100 text-violet-800', note: 'bg-brand-100 text-brand-700', stage: 'bg-blue-100 text-blue-800', task: 'bg-green-100 text-green-800' };
@@ -101,6 +116,7 @@ const marketing: Record<string, string> = { none: 'Not asked', pending: 'Asked, 
       <p class="text-sm text-stone-500">
         {CHANNEL_LABELS[l.channel] ?? l.channel} · added {formatDateTimeIst(l.created_at)}
         {l.first_response_at && <span> · first reply {formatDateTimeIst(l.first_response_at)}</span>}
+        {waiting && <span class="font-semibold text-amber-800"> · {waiting}</span>}
       </p>
     </div>
     <div class="flex gap-1">
@@ -159,12 +175,12 @@ const marketing: Record<string, string> = { none: 'Not asked', pending: 'Asked, 
             <div class="mt-2 space-y-2">
               <form method="POST"><input type="hidden" name="_action" value="resend_optin" /><button class="w-full rounded border border-violet-200 bg-white px-3 py-2">Send the confirmation email again</button></form>
               <form method="POST"><input type="hidden" name="_action" value="unsub" /><button class="w-full rounded border border-violet-200 bg-white px-3 py-2" onclick="return confirm('Stop all marketing email to this person?')">Mark unsubscribed (they asked us)</button></form>
-              <form method="POST" class="space-y-1 rounded border border-red-200 bg-red-50 p-2">
+              {canDo(Astro.locals.admin, 'person', 'erase') && <form method="POST" class="space-y-1 rounded border border-red-200 bg-red-50 p-2">
                 <input type="hidden" name="_action" value="erase" />
                 <p class="text-red-900">Erase this person: names, contact details, history, consent records and their WhatsApp chats on this site (with photos and voice notes) are deleted. Only a scrambled copy of the email and phone stays so they are never contacted again. The chat stays in the WhatsApp Business app; delete it there too. This cannot be undone.</p>
                 <input name="confirm" placeholder="Type ERASE" class="w-full rounded border border-red-300 px-2 py-1" />
                 <button class="w-full rounded bg-red-700 px-3 py-2 text-white">Erase</button>
-              </form>
+              </form>}
             </div>
           </details>
         )}
@@ -183,6 +199,24 @@ const marketing: Record<string, string> = { none: 'Not asked', pending: 'Asked, 
         </dl>
         {l.message && <p class="mt-2 whitespace-pre-line text-stone-700">{l.message}</p>}
         {l.score_reason && <p class="mt-2 text-xs text-stone-500">Score: {l.score_reason}</p>}
+      </section>
+
+      <section class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
+        <h2 class="mb-2 font-semibold">Handled by</h2>
+        <p class="mb-2 text-stone-800">{ownerLabel(l.owner, staffNames)}</p>
+        {l.owner === '' && open && (
+          <form method="POST" class="mb-2"><input type="hidden" name="_action" value="take" /><button class="min-h-11 w-full rounded btn-primary text-white">Take it</button></form>
+        )}
+        <form method="POST" class="flex gap-2">
+          <input type="hidden" name="_action" value="assign" />
+          <select name="owner" class={`min-w-0 flex-1 ${field}`} aria-label="Hand this lead to">
+            <option value="" selected={l.owner === ''}>Nobody</option>
+            <option value="owner" selected={l.owner === 'owner'}>Owner</option>
+            {staffList.map((s) => <option value={s.email} selected={l.owner === s.email}>{s.name || s.email}</option>)}
+            {l.owner && l.owner !== 'owner' && !staffNames[l.owner] && <option value={l.owner} selected>{l.owner}</option>}
+          </select>
+          <button class="min-h-11 rounded border border-violet-200 bg-white px-3">Hand over</button>
+        </form>
       </section>
 
       <section class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
@@ -231,7 +265,7 @@ const marketing: Record<string, string> = { none: 'Not asked', pending: 'Asked, 
               <li class="flex gap-3">
                 <span class={`mt-0.5 h-fit shrink-0 rounded px-2 py-0.5 text-xs ${kindClass[t.kind] ?? 'bg-stone-100 text-stone-700'}`}>{t.kind === 'touchpoint' ? 'contact' : t.kind}</span>
                 <div class="min-w-0 flex-1">
-                  <p class="text-xs text-stone-500">{formatDateTimeIst(t.at)}</p>
+                  <p class="text-xs text-stone-500">{formatDateTimeIst(t.at)}{t.by && t.by !== 'backfill' && t.by !== 'system' ? ` · ${ownerLabel(t.by, staffNames)}` : ''}</p>
                   <p class="break-words text-stone-800">{t.kind === 'touchpoint' ? t.title : t.detail || t.title}</p>
                   {t.kind === 'touchpoint' && t.detail && <p class="break-words text-xs text-stone-500">{t.detail}</p>}
                   {t.kind === 'task' && (

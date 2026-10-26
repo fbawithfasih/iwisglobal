@@ -22,6 +22,8 @@ export interface LeadListRow {
   first_response_at: string | null;
   last_activity_at: string | null;
   marketing_status: string | null;
+  /** Who is handling it: '' (nobody), 'owner' (the owner password login) or a staff member's email. */
+  owner: string;
 }
 
 export const STAGE_LABELS: Record<string, string> = {
@@ -30,6 +32,9 @@ export const STAGE_LABELS: Record<string, string> = {
 };
 
 export const VIEWS = [
+  { key: 'attention', label: 'Needs attention' },
+  { key: 'mine', label: 'Mine' },
+  { key: 'unassigned', label: 'Unassigned' },
   { key: 'unanswered', label: 'New and unanswered' },
   { key: 'followups', label: 'Follow-ups due' },
   { key: 'quotes', label: 'Quotes awaiting reply' },
@@ -45,12 +50,19 @@ export type ViewKey = (typeof VIEWS)[number]['key'];
 const OPEN_SQL = `l.status IN ('new','contacted','qualified','quote_sent','deposit_paid')`;
 const STALE_DAYS = 7;
 const SELECT = `SELECT l.id, l.name, l.email, l.phone, l.message, l.tour_interest, l.status, l.created_at, l.person_id, l.channel, l.campaign, l.score,
-  l.next_action_at, l.first_response_at, l.last_activity_at, p.marketing_status
+  l.next_action_at, l.first_response_at, l.last_activity_at, p.marketing_status, l.owner
   FROM leads l LEFT JOIN people p ON p.id = l.person_id`;
 
-function viewWhere(view: ViewKey, nowIso: string): { sql: string; args: unknown[] } {
+function viewWhere(view: ViewKey, nowIso: string, me = ''): { sql: string; args: unknown[] } {
   const staleCutoff = new Date(Date.parse(nowIso) - STALE_DAYS * 86_400_000).toISOString();
   switch (view) {
+    // What someone should act on now: leads nobody has replied to, and follow-ups that have come due.
+    case 'attention':
+      return { sql: `(l.status = 'new' OR (${OPEN_SQL} AND l.next_action_at IS NOT NULL AND l.next_action_at <= ?))`, args: [nowIso] };
+    case 'mine':
+      return me ? { sql: `${OPEN_SQL} AND l.owner = ?`, args: [me] } : { sql: '1 = 0', args: [] };
+    case 'unassigned':
+      return { sql: `${OPEN_SQL} AND l.owner = ''`, args: [] };
     case 'unanswered':
       return { sql: `l.status = 'new'`, args: [] };
     case 'followups':
@@ -82,14 +94,18 @@ export interface ListQuery {
   q?: string;
   cursor?: string;
   limit?: number;
+  /** The signed-in person ('owner' or an email), for the Mine view. */
+  me?: string;
 }
 
 const sortKey = `COALESCE(l.last_activity_at, l.created_at)`;
 
-// Newest activity first, paged by (activity time, id) so a page never skips or repeats a row.
+// Newest activity first, paged by (activity time, id) so a page never skips or repeats a row. The 'attention' view runs the
+// other way, longest-waiting first, because the oldest unanswered lead is the one that matters most.
 export async function listLeadsView(db: D1Like, query: ListQuery, nowIso = new Date().toISOString()): Promise<{ rows: LeadListRow[]; next: string | null }> {
   const limit = Math.min(Math.max(query.limit ?? 30, 1), 100);
-  const w = viewWhere(query.view, nowIso);
+  const w = viewWhere(query.view, nowIso, query.me);
+  const asc = query.view === 'attention';
   const where: string[] = [w.sql];
   const args: unknown[] = [...w.args];
   if (query.channel) {
@@ -109,12 +125,12 @@ export async function listLeadsView(db: D1Like, query: ListQuery, nowIso = new D
   if (query.cursor) {
     const [at, id] = query.cursor.split('|');
     if (at && id) {
-      where.push(`(${sortKey} < ? OR (${sortKey} = ? AND l.id < ?))`);
+      where.push(asc ? `(${sortKey} > ? OR (${sortKey} = ? AND l.id > ?))` : `(${sortKey} < ? OR (${sortKey} = ? AND l.id < ?))`);
       args.push(at, at, id);
     }
   }
   const { results } = await db
-    .prepare(`${SELECT} WHERE ${where.join(' AND ')} ORDER BY ${sortKey} DESC, l.id DESC LIMIT ?`)
+    .prepare(`${SELECT} WHERE ${where.join(' AND ')} ORDER BY ${sortKey} ${asc ? 'ASC' : 'DESC'}, l.id ${asc ? 'ASC' : 'DESC'} LIMIT ?`)
     .bind(...args, limit + 1)
     .all<LeadListRow>();
   const more = results.length > limit;
@@ -123,10 +139,10 @@ export async function listLeadsView(db: D1Like, query: ListQuery, nowIso = new D
   return { rows, next: more && last ? `${last.last_activity_at ?? last.created_at}|${last.id}` : null };
 }
 
-export async function viewCounts(db: D1Like, nowIso = new Date().toISOString()): Promise<Record<string, number>> {
+export async function viewCounts(db: D1Like, nowIso = new Date().toISOString(), me = ''): Promise<Record<string, number>> {
   const out: Record<string, number> = {};
   for (const v of VIEWS) {
-    const w = viewWhere(v.key, nowIso);
+    const w = viewWhere(v.key, nowIso, me);
     const row = await db.prepare(`SELECT COUNT(*) AS n FROM leads l WHERE ${w.sql}`).bind(...w.args).first<{ n: number }>();
     out[v.key] = row?.n ?? 0;
   }
@@ -152,6 +168,8 @@ export interface TimelineItem {
   detail: string;
   done?: boolean;
   activityId?: number;
+  /** Who did it (a staff email, 'owner', or empty for automatic entries). */
+  by?: string;
 }
 
 export interface LeadDetail {
@@ -169,7 +187,7 @@ export async function getLeadDetail(db: D1Like, id: string): Promise<LeadDetail 
     .prepare(
       `SELECT l.id, l.name, l.email, l.phone, l.message, l.tour_interest, l.status, l.created_at, l.person_id, l.channel, l.campaign, l.score,
          l.next_action_at, l.first_response_at, l.last_activity_at, p.marketing_status, l.lost_reason, l.score_reason, l.travel_start, l.party_size,
-         l.language, l.country, l.booking_id
+         l.language, l.country, l.booking_id, l.owner
        FROM leads l LEFT JOIN people p ON p.id = l.person_id WHERE l.id = ?`
     )
     .bind(id)
@@ -205,6 +223,7 @@ async function buildDetail(db: D1Like, lead: LeadDetail['lead']): Promise<LeadDe
       detail: a.body,
       done: !!a.done_at,
       activityId: a.id,
+      by: a.created_by,
     });
   }
   timeline.sort((x, y) => (x.at < y.at ? 1 : -1));
@@ -234,7 +253,7 @@ async function buildDetail(db: D1Like, lead: LeadDetail['lead']): Promise<LeadDe
 
 // -------------------------------------------------------------- small writes
 
-export async function addNote(db: D1Like, leadId: string, body: string, by = 'admin'): Promise<void> {
+export async function addNote(db: D1Like, leadId: string, body: string, by = 'owner'): Promise<void> {
   const text = body.trim();
   if (!text) return;
   const row = await db.prepare(`SELECT person_id FROM leads WHERE id = ?`).bind(leadId).first<{ person_id: string | null }>();
@@ -243,13 +262,58 @@ export async function addNote(db: D1Like, leadId: string, body: string, by = 'ad
 }
 
 // Staff reached out: stamps the first reply time (once) so response speed can be measured.
-export async function markContacted(db: D1Like, leadId: string): Promise<void> {
+// If nobody was handling the lead, the person who reached out now is.
+export async function markContacted(db: D1Like, leadId: string, by = ''): Promise<void> {
   const stamp = new Date().toISOString();
   await db.prepare(`UPDATE leads SET first_response_at = COALESCE(first_response_at, ?), updated_at = ? WHERE id = ?`).bind(stamp, stamp, leadId).run();
+  if (by) await takeLead(db, leadId, by);
   await refreshLeadScore(db, leadId);
 }
 
-export async function setFollowUp(db: D1Like, leadId: string, dueDate: string, note: string, by = 'admin'): Promise<void> {
+/** Who a lead may be handed to: nobody, the owner login, or a staff member's email. */
+export function validOwner(value: string): boolean {
+  return value === '' || value === 'owner' || (value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
+}
+
+/** Hands a lead to someone (or to nobody with ''). Does not touch the waiting clock. Returns false if the lead or the target is not valid. */
+export async function assignLead(db: D1Like, leadId: string, owner: string, by: string): Promise<boolean> {
+  const target = owner.trim().toLowerCase();
+  if (!validOwner(target)) return false;
+  const lead = await db.prepare(`SELECT person_id, owner FROM leads WHERE id = ?`).bind(leadId).first<{ person_id: string | null; owner: string }>();
+  if (!lead || lead.owner === target) return false;
+  await db.prepare(`UPDATE leads SET owner = ?, updated_at = ? WHERE id = ?`).bind(target, new Date().toISOString(), leadId).run();
+  await logActivity(db, { leadId, personId: lead.person_id ?? '', kind: 'system', body: target ? (target === by ? 'Took this lead' : `Assigned to ${target}`) : 'Unassigned', by });
+  return true;
+}
+
+/** Takes an unassigned lead. Never steals one someone else is handling: returns who has it instead. */
+export async function takeLead(db: D1Like, leadId: string, me: string): Promise<{ ok: true } | { ok: false; heldBy: string }> {
+  const who = me.trim().toLowerCase();
+  const r = await db.prepare(`UPDATE leads SET owner = ?, updated_at = ? WHERE id = ? AND owner = ''`).bind(who, new Date().toISOString(), leadId).run();
+  if (((r as { meta?: { changes?: number } })?.meta?.changes ?? 0) > 0) {
+    const lead = await db.prepare(`SELECT person_id FROM leads WHERE id = ?`).bind(leadId).first<{ person_id: string | null }>();
+    await logActivity(db, { leadId, personId: lead?.person_id ?? '', kind: 'system', body: 'Took this lead', by: who });
+    return { ok: true };
+  }
+  const row = await db.prepare(`SELECT owner FROM leads WHERE id = ?`).bind(leadId).first<{ owner: string }>();
+  return row?.owner === who ? { ok: true } : { ok: false, heldBy: row?.owner ?? '' };
+}
+
+/** A person's name for the owner column: 'Nobody yet', 'Owner', a team member's name, or the stored email as a last resort. */
+export function ownerLabel(owner: string, names: Record<string, string> = {}): string {
+  return owner === '' ? 'Nobody yet' : owner === 'owner' ? 'Owner' : names[owner] ?? owner;
+}
+
+/** How long a lead nobody has answered has been waiting, as short text ("waiting 3 h"), or null if it has been answered. */
+export function waitingLabel(lead: { status: string; first_response_at: string | null; created_at: string }, nowMs = Date.now()): string | null {
+  if (lead.status !== 'new' || lead.first_response_at) return null;
+  const mins = Math.max(0, Math.floor((nowMs - Date.parse(lead.created_at)) / 60_000));
+  if (mins < 60) return `waiting ${mins} min`;
+  if (mins < 48 * 60) return `waiting ${Math.floor(mins / 60)} h`;
+  return `waiting ${Math.floor(mins / 1440)} days`;
+}
+
+export async function setFollowUp(db: D1Like, leadId: string, dueDate: string, note: string, by = 'owner'): Promise<void> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return;
   const due = `${dueDate}T03:30:00.000Z`; // 09:00 India time
   const row = await db.prepare(`SELECT person_id FROM leads WHERE id = ?`).bind(leadId).first<{ person_id: string | null }>();
