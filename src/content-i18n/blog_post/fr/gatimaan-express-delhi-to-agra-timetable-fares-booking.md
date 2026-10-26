@@ -1,9 +1,11 @@
 ---
-title: "Gatimaan Express de Delhi à Agra : horaires, tarifs et réservation"
-description: "Horaires des Gatimaan Express 12050 et 12049 de Delhi à Agra : heures de départ et d'arrivée, classes, tarifs, jours de circulation et comment réserver."
+title: "Gatimaan (Gatiman) Express Delhi–Agra : horaires et tarifs 2026"
+description: "Départ 08:10 de Delhi, Agra à 09:50, retour 19:30. Tarifs dès ~860 roupies, jours de circulation, réservation IRCTC, ou notre excursion clé en main."
 ---
 
 **Le Gatimaan Express est le train le plus rapide entre Delhi et Agra : le train 12050 quitte Hazrat Nizamuddin à 08:10 et arrive à Agra Cantt à 09:50, soit un trajet de 1 heure 40.** Le retour, le train 12049, quitte Agra Cantt à 17:35 et arrive à Hazrat Nizamuddin à 19:30. C'est donc une excursion d'une journée au Taj Mahal parfaitement réalisable. Ce guide présente l'horaire complet, les jours de circulation, les deux classes, les tarifs et la façon de réserver. (Vous pouvez aussi le voir orthographié « Gatiman » ; c'est le même train.)
+
+> **Vous préférez ne rien réserver vous-même ?** Notre [excursion d'une journée au Taj Mahal en Gatimaan Express](/tours/same-day-taj-mahal-tour-by-gatimaan-express) comprend les billets de train aller-retour en Executive Class, les entrées du Taj Mahal et du Fort d'Agra, un guide privé et un véhicule privé à Agra. [Voir la visite et les prix →](/tours/same-day-taj-mahal-tour-by-gatimaan-express)
 
 ## Horaires du Gatimaan Express
 
