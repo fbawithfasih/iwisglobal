@@ -393,7 +393,7 @@ const addOnNames = booking.add_on_ids
         <button type="submit" class={actionBtn}>Save itinerary</button>
       </form>
       {pickupWa ? (
-        <a href={pickupWa} target="_blank" rel="noopener noreferrer" class="flex min-h-11 items-center justify-center rounded bg-emerald-600 px-4 font-medium text-white">
+        <a href={pickupWa} target="_blank" rel="noopener noreferrer" class="flex min-h-11 items-center justify-center rounded bg-emerald-700 px-4 font-medium text-white">
           Send pickup details on WhatsApp
         </a>
       ) : pickupMessage ? (
@@ -490,7 +490,7 @@ const addOnNames = booking.add_on_ids
         {contactWa && (
           <form method="POST" target="_blank" onsubmit="setTimeout(() => location.reload(), 1000)">
             <input type="hidden" name="_action" value="review_whatsapp" />
-            <button type="submit" class="min-h-11 rounded bg-emerald-600 px-4 text-sm font-medium text-white">Request on WhatsApp</button>
+            <button type="submit" class="min-h-11 rounded bg-emerald-700 px-4 text-sm font-medium text-white">Request on WhatsApp</button>
           </form>
         )}
       </div>

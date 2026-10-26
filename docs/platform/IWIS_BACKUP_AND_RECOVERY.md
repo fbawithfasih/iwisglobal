@@ -47,7 +47,7 @@ Why not plain `wrangler d1 export`: Cloudflare refuses to export a database that
 
 Known limits of an export file:
 
-- It has tables and rows but **no indexes and no triggers**. The restore tool puts all 53 indexes and the 2 audit-log triggers back from the `schema*.sql` files (the triggers are what make the audit log append-only).
+- It has tables and rows but **no indexes and no triggers**. The restore tool puts all 56 indexes and the 2 audit-log triggers back from the `schema*.sql` files (the triggers are what make the audit log append-only).
 - It is a snapshot at one moment. Run it before any risky change (schema change, bulk import, framework upgrade) and monthly.
 
 ## 3. Restore from a file into an empty database **[Rehearsed locally]**
@@ -65,11 +65,11 @@ The tool:
 
 1. refuses to run against `iwisglobal-bookings` with `--remote`, and refuses a database that already has tables;
 2. loads the tables and rows;
-3. re-creates every index and trigger from the schema files (53 indexes and 2 triggers today);
+3. re-creates every index and trigger from the schema files (56 indexes and 2 triggers today);
 4. rebuilds the WhatsApp answer search from the approved entries;
 5. prints the table and index counts and fails if indexes are missing.
 
-Production now has 65 tables (the audit log was added on 26 Oct 2026), 53 indexes and 2 triggers. Rehearsal result before the audit log existed (local copy built from the schema files): backup of 58 tables, restore gives 64 tables (58 + search table + 5 search shadow tables) and 51 indexes, matching production's structure. Without step 3 a control restore had zero indexes and accepted a duplicate row that the unique index should have blocked, which is why the tool always runs it.
+Production now has 67 tables (62 defined by the schema files plus the five internal tables SQLite keeps for the WhatsApp answer search; the audit log and staff tables were added on 26 and 27 Oct 2026), 56 indexes and 2 triggers, checked against the schema files on 27 Oct 2026 (`IWIS_DATABASE_MIGRATION_PLAN.md`). Rehearsal result before the audit log existed (local copy built from the schema files): backup of 58 tables, restore gives 64 tables (58 + search table + 5 search shadow tables) and 51 indexes, matching production's structure. Without step 3 a control restore had zero indexes and accepted a duplicate row that the unique index should have blocked, which is why the tool always runs it.
 
 ### If production itself must be rebuilt from a file
 

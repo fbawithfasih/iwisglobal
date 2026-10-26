@@ -48,3 +48,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/today.ts" --bundle --p
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/today.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/overview.ts" --bundle --platform=node --format=esm --outfile="$OUT/overview.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/overview.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/access-matrix.ts" --bundle --platform=node --format=esm --outfile="$OUT/access-matrix.mjs" --log-level=error
+ROOT="$ROOT" node --no-warnings "$OUT/access-matrix.mjs"
