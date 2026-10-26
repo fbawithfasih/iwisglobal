@@ -132,6 +132,8 @@ export default defineConfig({
     }),
   ],
   site: 'https://www.iwisglobal.com',
-  output: 'hybrid',
-  adapter: cloudflare(),
+  output: 'static', // Astro 5: 'static' now behaves as 'hybrid' did (pages opt in to server rendering)
+  // The site does not use Astro's image optimiser (images are served as-is from R2 or /public); passthrough keeps the
+  // native image library (sharp) out of the Worker bundle, where it cannot run.
+  adapter: cloudflare({ imageService: 'passthrough' }),
 });

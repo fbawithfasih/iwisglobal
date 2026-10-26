@@ -143,6 +143,10 @@ Severity is my judgement for a business that handles customer names, phone numbe
 
 Fixing these means moving Astro 4 to a current major and the adapter 11 to a current major. These are breaking upgrades and need their own milestone (M0b in the blueprint), not an `npm audit fix`.
 
+**M0b step 1 (Astro 5.18, adapter 12.6, React integration 4, Tailwind integration 6): findings fall from 20 to 11.** The middleware-bypass, server-island XSS and `/_image` adapter advisories are fixed. What remains in production dependencies: build and dev tooling (`wrangler`, `miniflare`, `ws`, `undici`, `esbuild`), `sharp`/`zod`, and the Astro advisories that need Astro 6 or 7 (including the critical AVIF one, which sits in the image optimiser; the site uses `imageService: 'passthrough'` and `/_image` is blocked in middleware).
+
+**Why not Astro 6/7 yet:** the Cloudflare adapter dropped Cloudflare Pages support from version 13 (Astro 6). Astro 7 needs adapter 14, which deploys as a Cloudflare Worker, not Pages. That is a hosting migration (deploy command, domain routing, D1/R2 bindings, secrets, `Astro.locals.runtime` removed in about 15 files), so it needs its own decision and rehearsal (M0c).
+
 ### Performance **[Not measured]**
 
 I did not measure admin page speed. Two things are known: the middleware pins admin to the primary D1 database (correct for read-after-write, costs latency from distant locations), and the home page batches its D1 queries (already optimised). Anything beyond that would be guessing, so the roadmap makes measurement a first step.
