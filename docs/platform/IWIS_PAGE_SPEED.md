@@ -35,7 +35,7 @@ What the Bookings page did: fetch bookings, then fetch tours, then fetch each to
 - WhatsApp counts: two queries together.
 `scripts/contacts-test/speed.ts` guards this: it gives every query a simulated 40 ms delay and fails if Bookings, lead counts, WhatsApp counts, Today or Owner overview need more than 1 to 3 rounds in a row.
 
-Expected effect: roughly one round trip instead of three on Bookings, one instead of fifteen on Leads. Please re-measure after the release (same steps below) and send the numbers.
+Expected effect: roughly one round trip instead of three on Bookings, one instead of fifteen on Leads. **Status:** M4 was closed on 27 Oct 2026 before the after-release numbers were collected, so the improvement is expected but not yet measured. Re-measuring (same steps below) is optional follow-up, not a gate.
 
 **Not done, needs a decision:** the admin always reads from the primary database (in the US) so a page never shows data older than a save. D1 also has read copies closer to you. Using them for admin page loads would cut each round trip a lot more, at the cost of a page occasionally showing data a few seconds old (for example a chat that arrived a moment ago). I have not changed this; say if you want it.
 
