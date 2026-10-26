@@ -45,6 +45,7 @@ const allSections: { label: string; items: NavItem[] }[] = [
   {
     label: 'System',
     items: [
+      { href: '/admin/overview', label: 'Owner overview', active: path.startsWith('/admin/overview') },
       { href: '/admin/team', label: 'Team', active: path.startsWith('/admin/team') },
       { href: '/admin/audit', label: 'Audit log', active: path.startsWith('/admin/audit') },
     ],
