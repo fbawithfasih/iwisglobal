@@ -37,6 +37,13 @@ The owner password stays as emergency access. Every use is written to the audit 
 - Someone whose Google account email changes needs a fresh invite for the new address.
 - A team member cannot invite anyone or see this page. If a team member opens an owner-only address they see "This page is only for the owner."
 
+## Working leads together
+
+- The Leads page opens on **Needs attention**: enquiries nobody has replied to and follow-ups that have come due, with the one that has waited longest at the top.
+- Every open lead shows **Handled by**. **Take it** makes a lead yours (the first person to press it wins; nobody can take a lead someone else holds). Replying to a lead nobody holds, moving it to Contacted, Qualified or Quote sent, or adding a lead yourself also makes it yours.
+- **Mine** lists your leads; **Unassigned** lists open leads nobody holds. On a lead's page, **Hand over** passes it to someone else or back to nobody.
+- The history of a lead shows who did each note, follow-up, stage change and hand-over.
+
 ## How it is protected
 
 - Every `/admin` request is identified in one place (`src/lib/adminGate.ts`) before any page runs, and every page and action also checks for itself. A test (`scripts/contacts-test/route-inventory.ts`) fails the build if a new admin page forgets its check.
