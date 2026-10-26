@@ -248,7 +248,8 @@ const websiteJsonLd = Astro.url.pathname === '/'
     {!noTracking && (
     <script is:inline>
       // First visit of the session: remember where the visitor came from. It stays in this tab's
-      // sessionStorage and is sent only if they submit the enquiry form (src/components/EnquiryForm.astro).
+      // sessionStorage and is sent only if they submit the enquiry form (src/components/EnquiryForm.astro),
+      // book, or start a WhatsApp chat (a short "via google/paid/<campaign>" in the prefilled text).
       (function () {
         try {
           if (sessionStorage.getItem('iwis_first_touch')) return;
@@ -567,6 +568,8 @@ const websiteJsonLd = Astro.url.pathname === '/'
 </style>
 
 <script>
+  import { sourceTag, withSourceTag } from '../lib/waSourceTag';
+
   // Mirrors LocaleSwitcher.astro's own open/close/click-outside/Escape
   // pattern for consistency.
   const mobileNavTrigger = document.getElementById('mobile-nav-trigger');
@@ -605,6 +608,19 @@ const websiteJsonLd = Astro.url.pathname === '/'
   // whatsapp_clicked: delegated so it covers every wa.me link site-wide
   // (footer, floating button, and any page-specific ones like /help's),
   // as long as it carries data-wa-ref.
+  // A visitor who came from an ad keeps that source when they start a WhatsApp chat: the link's
+  // prefilled "(ref: ...)" gets " · via google/paid/<campaign>" (src/lib/waSourceTag.ts), read
+  // back by the WhatsApp webhook. Done on pointerdown too, so a long-press or new-tab open has it.
+  const tagWhatsAppLink = (e: Event) => {
+    const a = (e.target as Element)?.closest?.('a[href*="wa.me/"]') as HTMLAnchorElement | null;
+    if (!a) return;
+    try {
+      a.href = withSourceTag(a.href, sourceTag(JSON.parse(sessionStorage.getItem('iwis_first_touch') || 'null')));
+    } catch {}
+  };
+  document.addEventListener('pointerdown', tagWhatsAppLink, true);
+  document.addEventListener('click', tagWhatsAppLink, true);
+
   document.addEventListener('click', (e) => {
     const link = (e.target as Element)?.closest?.('[data-wa-ref]');
     if (!link) return;

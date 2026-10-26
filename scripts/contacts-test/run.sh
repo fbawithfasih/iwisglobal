@@ -21,3 +21,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/whatsapp-media.ts" --b
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/whatsapp-media.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/offers-timer.ts" --bundle --platform=node --format=esm --outfile="$OUT/offers-timer.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/offers-timer.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/wa-source.ts" --bundle --platform=node --format=esm --outfile="$OUT/wa-source.mjs" --log-level=error
+ROOT="$ROOT" node --no-warnings "$OUT/wa-source.mjs"

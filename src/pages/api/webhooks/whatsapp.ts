@@ -10,6 +10,7 @@ import { getAutoSettings, autoPermission, holdingPermission } from '../../../lib
 import type { D1Like } from '../../../lib/db';
 import { maybePurge } from '../../../lib/waLearning';
 import { recordLead } from '../../../lib/contacts';
+import { parseWaRef } from '../../../lib/waSourceTag';
 import { notifyNewLead } from '../../../lib/leadsAdmin';
 
 export const prerender = false;
@@ -110,7 +111,8 @@ async function handleGuestMessage(env: Record<string, any>, db: D1Like, m: WaMes
 // nothing. A failure here must never stop the reply agent.
 async function recordWhatsappLead(env: Record<string, any>, db: D1Like, m: WaMessage): Promise<void> {
   try {
-    const ref = /\(ref:\s*([^)]+)\)/i.exec(m.body)?.[1]?.trim() ?? '';
+    // "(ref: BOOKBAR-TOURS-... · via google/paid/123)": the site button, and the ad the visitor came from (src/lib/waSourceTag.ts).
+    const { ref, source: viaSource, medium: viaMedium, campaign: viaCampaign } = parseWaRef(m.body);
     const res = await recordLead(db, {
       channel: 'whatsapp',
       identifiers: [{ type: 'wa_id', value: m.phone, source: 'whatsapp' }],
@@ -120,8 +122,9 @@ async function recordWhatsappLead(env: Record<string, any>, db: D1Like, m: WaMes
       externalRef: m.waMessageId,
       occurredAt: m.sentAt,
       attribution: {
-        source: m.referral ? 'meta_ad' : ref ? 'website' : '',
-        medium: m.referral ? 'click_to_whatsapp' : ref ? 'whatsapp_button' : '',
+        source: m.referral ? 'meta_ad' : viaSource || (ref ? 'website' : ''),
+        medium: m.referral ? 'click_to_whatsapp' : viaSource ? viaMedium || 'paid' : ref ? 'whatsapp_button' : '',
+        campaign: m.referral ? undefined : viaCampaign || undefined,
         adId: m.referral?.sourceId,
         ctwaClid: m.referral?.ctwaClid,
         landingPage: m.referral?.sourceUrl,
