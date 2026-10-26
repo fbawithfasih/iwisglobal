@@ -96,6 +96,13 @@ export interface OfferText {
   countdownEnded?: string;
   countdownNotStarted?: string;
   countdownBanner?: string;
+  // Countdown offer on the home page and tour cards.
+  cardCountdown?: string;
+  heroDeal?: string;
+  promoKicker?: string;
+  promoBody?: string;
+  promoCta?: string;
+  promoNote?: string;
 }
 export const EN_OFFER_TEXT: OfferText = {
   off: '{value} off',
@@ -120,6 +127,12 @@ export const EN_OFFER_TEXT: OfferText = {
   countdownEnded: 'Your {n}-minute offer has ended.',
   countdownNotStarted: 'This offer is for bookings made within {n} minutes of opening a tour page.',
   countdownBanner: 'Book in the next {time} and get {value} off. No code needed.',
+  cardCountdown: '{value} off · book within {n} min',
+  heroDeal: '{value} off when you book within {n} minutes',
+  promoKicker: 'Limited-time deal',
+  promoBody: 'Open an eligible tour and book within {n} minutes: {value} comes off automatically at checkout. No code needed.',
+  promoCta: 'See the tours',
+  promoNote: 'Your {n} minutes start when you first open a tour page.',
 };
 const fill = (template: string, values: Record<string, string | number>) =>
   template.replace(/\{(\w+)\}/g, (_, k: string) => String(values[k] ?? ''));
@@ -170,6 +183,18 @@ export function offerBookingWindow(offer: Offer): string | null {
 export function offerBadge(offers: Offer[], tourId: string, currency: Currency, text: OfferText = EN_OFFER_TEXT): string | null {
   const offer = offers.find((o) => !isCountdownOffer(o) && (o.tourIds.length === 0 || o.tourIds.includes(tourId)));
   return offer ? `${offer.name} · ${offerValueLabel(offer, currency, text)}` : null;
+}
+
+// The first live countdown offer (for this tour, when given): the home page promotes it and tour cards flag it.
+// Only the booking widget knows the visitor's clock, so these say how the deal works, never how much time is left.
+export function liveCountdownOffer(offers: Offer[], tourId?: string): Offer | null {
+  return offers.find((o) => isCountdownOffer(o) && (!tourId || o.tourIds.length === 0 || o.tourIds.includes(tourId))) ?? null;
+}
+
+// "20% off · book within 30 min" for a tour card, or null when no countdown offer covers the tour.
+export function countdownCardBadge(offers: Offer[], tourId: string, currency: Currency, text: OfferText = EN_OFFER_TEXT): string | null {
+  const offer = liveCountdownOffer(offers, tourId);
+  return offer ? fill(text.cardCountdown ?? EN_OFFER_TEXT.cardCountdown!, { value: offerBadgeValue(offer, currency), n: offer.windowMinutes! }) : null;
 }
 
 // Whether the offer is live for this tour on this booking date — the part

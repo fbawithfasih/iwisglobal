@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { signTimer, verifyTimer, timerCookieFrom, OFFER_TIMER_GRACE_MS } from '../../src/lib/offerTimer';
-import { bestDiscount, offerBadge, offerConditions, countdownLeftMs, createOffer, listLiveAutomaticOffers, resolveBookingDiscount, parseOfferForm, type Offer } from '../../src/lib/offers';
+import { bestDiscount, countdownCardBadge, liveCountdownOffer, offerBadge, offerConditions, countdownLeftMs, createOffer, listLiveAutomaticOffers, resolveBookingDiscount, parseOfferForm, type Offer } from '../../src/lib/offers';
 
 const raw = new DatabaseSync(':memory:');
 for (const f of ['schema.sql', 'schema_tours.sql', 'schema_offers.sql', 'schema_offer_window.sql']) {
@@ -61,6 +61,11 @@ assert.equal(countdownLeftMs(flash, t0, t0 + 60_000), 29 * 60_000);
 assert.equal(countdownLeftMs(flash, null, t0), null);
 assert.equal(offerBadge([flash], 'SAME_DAY_AGRA_DELHI', 'INR'), null, 'tour cards never show a countdown offer');
 assert.match(offerConditions(flash), /book within 30 minutes/);
+// Home page and tour cards: the deal is flagged on the tours it covers, never on an excluded one.
+assert.equal(countdownCardBadge([flash], 'SAME_DAY_AGRA_DELHI', 'INR'), '20% off · book within 30 min');
+assert.equal(countdownCardBadge([flash], 'TAJ_MAHAL_LUXURY_CAR_TOUR', 'INR'), null);
+assert.equal(liveCountdownOffer([{ ...flash, windowMinutes: null }]), null, 'an ordinary offer is not a countdown deal');
+assert.equal(liveCountdownOffer([flash])?.id, 'flash');
 // A bigger ordinary coupon still wins (one discount per booking).
 const big: Offer = { ...flash, id: 'big', code: 'BIG25', percent: 25, windowMinutes: null };
 assert.equal(bestDiscount(10000, { ...ctx, timerStartedAt: t0, nowMs: t0 }, [flash, big], false)?.offerId, 'big');

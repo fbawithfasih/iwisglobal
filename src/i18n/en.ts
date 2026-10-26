@@ -362,6 +362,12 @@ export const en = {
       countdownEnded: "Your {n}-minute offer has ended.",
       countdownNotStarted: "This offer is for bookings made within {n} minutes of opening a tour page.",
       countdownBanner: "Book in the next {time} and get {value} off. No code needed.",
+      cardCountdown: "{value} off · book within {n} min",
+      heroDeal: "{value} off when you book within {n} minutes",
+      promoKicker: "Limited-time deal",
+      promoBody: "Open an eligible tour and book within {n} minutes: {value} comes off automatically at checkout. No code needed.",
+      promoCta: "See the tours",
+      promoNote: "Your {n} minutes start when you first open a tour page.",
     },
   toursPage: {
       metaTitle: "Private Delhi to Agra Taj Mahal Tours | IWIS Global",

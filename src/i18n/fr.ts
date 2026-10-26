@@ -361,6 +361,12 @@ export const fr: Dictionary = {
       countdownEnded: "Votre offre de {n} minutes est terminée.",
       countdownNotStarted: "Cette offre vaut pour les réservations faites dans les {n} minutes suivant l’ouverture d’une page de circuit.",
       countdownBanner: "Réservez dans les {time} qui viennent et obtenez {value} de réduction. Aucun code nécessaire.",
+      cardCountdown: "{value} de réduction · réservez sous {n} min",
+      heroDeal: "{value} de réduction en réservant sous {n} minutes",
+      promoKicker: "Offre limitée",
+      promoBody: "Ouvrez une visite éligible et réservez dans les {n} minutes : {value} sont déduits automatiquement au paiement. Aucun code nécessaire.",
+      promoCta: "Voir les visites",
+      promoNote: "Vos {n} minutes commencent dès que vous ouvrez une page de visite pour la première fois.",
     },
   toursPage: {
       metaTitle: "Circuits privés de Delhi à Agra au Taj Mahal | IWIS Global",

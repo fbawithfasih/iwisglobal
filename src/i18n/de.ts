@@ -361,6 +361,12 @@ export const de: Dictionary = {
       countdownEnded: "Ihr {n}-Minuten-Angebot ist abgelaufen.",
       countdownNotStarted: "Dieses Angebot gilt für Buchungen innerhalb von {n} Minuten nach dem Öffnen einer Tourseite.",
       countdownBanner: "Buchen Sie in den nächsten {time} und erhalten Sie {value} Rabatt. Kein Code nötig.",
+      cardCountdown: "{value} Rabatt · in {n} Min. buchen",
+      heroDeal: "{value} Rabatt bei Buchung innerhalb von {n} Minuten",
+      promoKicker: "Zeitlich begrenztes Angebot",
+      promoBody: "Öffnen Sie eine teilnehmende Tour und buchen Sie innerhalb von {n} Minuten: {value} werden an der Kasse automatisch abgezogen. Kein Code nötig.",
+      promoCta: "Zu den Touren",
+      promoNote: "Ihre {n} Minuten beginnen, wenn Sie zum ersten Mal eine Tourseite öffnen.",
     },
   toursPage: {
       metaTitle: "Private Taj-Mahal-Touren von Delhi nach Agra | IWIS Global",
