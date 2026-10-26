@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { auditContext, recordAudit } from '../../../../lib/audit';
 import { resolveEnv } from '../../../../lib/env';
 import { isAdminAuthenticated } from '../../../../lib/requireAdmin';
 import { getTourById, updateTour, replaceAddOns, replacePricingTiers, markTourPriceChanged } from '../../../../lib/tours';
@@ -48,6 +49,7 @@ if (Astro.request.method === 'POST') {
         image = uploaded.url;
       }
 
+      await recordAudit(db, auditContext(Astro.request), { action: 'tour.update', resource: 'tour', resourceId: id, summary: existing && existing.amount !== amount ? `Changed the price from ${existing.amount} to ${amount}` : 'Edited a tour', meta: { oldAmount: existing?.amount ?? null, amount } });
       await updateTour(db, id, {
         title,
         summary: String(form.get('summary') ?? ''),

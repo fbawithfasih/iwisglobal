@@ -5,6 +5,7 @@ import { verifyPassword, createSessionToken } from '../../lib/adminAuth';
 import { resolveEnv } from '../../lib/env';
 import { ADMIN_COOKIE } from '../../lib/requireAdmin';
 import { checkLoginLock, recordFailedLogin, clearLoginAttempts } from '../../lib/loginAttempts';
+import { auditContext, recordAudit } from '../../lib/audit';
 
 let error: string | null = null;
 const env = resolveEnv(Astro.locals);
@@ -25,6 +26,7 @@ if (Astro.request.method === 'POST') {
     const valid = await verifyPassword(password, env.ADMIN_PASSWORD_SALT, env.ADMIN_PASSWORD_HASH);
     if (valid) {
       if (db) await clearLoginAttempts(db, ip);
+      await recordAudit(db, auditContext(Astro.request), { action: 'auth.login', resource: 'session', summary: 'Signed in with the owner password' });
       const token = await createSessionToken(env.ADMIN_SESSION_SECRET);
       Astro.cookies.set(ADMIN_COOKIE, token, {
         httpOnly: true,
@@ -36,6 +38,7 @@ if (Astro.request.method === 'POST') {
       return Astro.redirect('/admin');
     }
     if (db) await recordFailedLogin(db, ip);
+    await recordAudit(db, auditContext(Astro.request, 'anonymous'), { action: 'auth.login_failed', resource: 'session', summary: 'Wrong password' });
     error = 'Incorrect password.';
   }
 }

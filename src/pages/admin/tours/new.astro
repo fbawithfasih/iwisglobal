@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { createTour, replaceAddOns, replacePricingTiers } from '../../../lib/tours';
@@ -59,6 +60,7 @@ if (Astro.request.method === 'POST' && db) {
       if (addOns.length > 0) await replaceAddOns(db, id, addOns);
       const pricingTiers = parsePricingTiers(String(form.get('pricingTiers') ?? ''));
       if (pricingTiers.length > 0) await replacePricingTiers(db, id, pricingTiers);
+      await recordAudit(db, auditContext(Astro.request), { action: 'tour.create', resource: 'tour', resourceId: id, summary: 'Created a tour', meta: { amount } });
       return Astro.redirect(`/admin/tours/${id}/edit`);
     } catch (err: any) {
       error = err?.message || 'Failed to create tour.';

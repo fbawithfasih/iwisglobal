@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { FTS_REBUILD_SQL, PRODUCTION_DB, exportableTables, indexStatements, rowsFromExecuteJson } from '../backup/lib.mjs';
+import { FTS_REBUILD_SQL, PRODUCTION_DB, exportableTables, indexStatements, rowsFromExecuteJson, triggerStatements } from '../backup/lib.mjs';
 
 assert.equal(PRODUCTION_DB, 'iwisglobal-bookings');
 
@@ -43,6 +43,18 @@ assert.equal(all.length, expected.size, 'one statement per distinct index name')
 assert.ok(all.length >= 51, `production has 51 indexes, schema files give ${all.length}`);
 for (const s of all) assert.match(s, /^CREATE (UNIQUE )?INDEX IF NOT EXISTS \w+ ON \w+/);
 assert.ok(all.some((s) => /UNIQUE INDEX IF NOT EXISTS idx_identifiers_unique/.test(s) && /WHERE/i.test(s)), 'the partial unique index on person identifiers is included');
+
+// Triggers: BEGIN..END bodies hold semicolons, comments are ignored, IF NOT EXISTS is added, duplicates dropped.
+const trg = triggerStatements([`-- CREATE TRIGGER in_comment BEFORE DELETE ON x BEGIN SELECT 1; END;
+CREATE TRIGGER t_a BEFORE UPDATE ON x
+BEGIN SELECT RAISE(ABORT, 'no'); END;
+CREATE TRIGGER IF NOT EXISTS t_b BEFORE DELETE ON x
+BEGIN SELECT RAISE(ABORT, 'no'); END;
+CREATE TRIGGER t_a BEFORE UPDATE ON x BEGIN SELECT 1; END;`]);
+assert.equal(trg.length, 2);
+assert.match(trg[0], /^CREATE TRIGGER IF NOT EXISTS t_a BEFORE UPDATE ON x\nBEGIN SELECT RAISE\(ABORT, 'no'\); END;$/);
+const realTriggers = triggerStatements(texts);
+assert.ok(realTriggers.some((s) => /admin_audit_no_update/.test(s)) && realTriggers.some((s) => /admin_audit_no_delete/.test(s)), 'audit log triggers are included');
 
 assert.match(FTS_REBUILD_SQL, /CREATE VIRTUAL TABLE IF NOT EXISTS wa_kb_fts USING fts5/);
 assert.match(FTS_REBUILD_SQL, /WHERE status = 'approved'/);

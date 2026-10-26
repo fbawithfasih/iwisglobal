@@ -43,6 +43,25 @@ export function indexStatements(schemaTexts) {
   return out;
 }
 
+/**
+ * Every CREATE TRIGGER statement in the schema files, made idempotent. Like indexes, triggers are not in an export file.
+ * @param {string[]} schemaTexts contents of schema*.sql
+ */
+export function triggerStatements(schemaTexts) {
+  const out = [];
+  const seen = new Set();
+  for (const text of schemaTexts) {
+    const noComments = text.replace(/--[^\n]*/g, '');
+    for (const m of noComments.matchAll(/CREATE\s+TRIGGER\s+(IF\s+NOT\s+EXISTS\s+)?([\s\S]*?\bEND\s*;)/gi)) {
+      const name = /^"?(\w+)"?/.exec(m[2].trim())?.[1];
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      out.push(`CREATE TRIGGER IF NOT EXISTS ${m[2].trim()}`);
+    }
+  }
+  return out;
+}
+
 /** Recreates the WhatsApp knowledge-base search index from the approved entries (mirrors syncIndex in src/lib/waKnowledge.ts). */
 export const FTS_REBUILD_SQL = [
   "CREATE VIRTUAL TABLE IF NOT EXISTS wa_kb_fts USING fts5(text, entry_id UNINDEXED, tokenize = 'porter unicode61');",

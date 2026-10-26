@@ -1,8 +1,15 @@
 ---
 export const prerender = false;
 import { ADMIN_COOKIE } from '../../lib/requireAdmin';
+import { auditContext, recordAudit } from '../../lib/audit';
+import { isAdminAuthenticated } from '../../lib/requireAdmin';
+import { resolveEnv } from '../../lib/env';
 
 if (Astro.request.method === 'POST') {
+  const env = resolveEnv(Astro.locals);
+  if (await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET)) {
+    await recordAudit(env.DB, auditContext(Astro.request), { action: 'auth.logout', resource: 'session', summary: 'Signed out' });
+  }
   Astro.cookies.delete(ADMIN_COOKIE, { path: '/admin' });
   return Astro.redirect('/admin/login');
 }

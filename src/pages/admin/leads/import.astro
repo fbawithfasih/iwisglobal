@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { normaliseEmail, normalisePhone } from '../../../lib/contacts';
@@ -54,6 +55,7 @@ if (Astro.request.method === 'POST' && db) {
       }
     } else if (action === 'import') {
       result = await importLeadRows(db, rows, `imp_${crypto.randomUUID()}`, 'admin');
+      await recordAudit(db, auditContext(Astro.request), { action: 'lead.import', resource: 'lead', summary: 'Imported leads from a CSV file', meta: { imported: result.imported, skipped: result.skipped, duplicates: result.duplicates } });
       step = 'done';
     }
   } else if (action) {

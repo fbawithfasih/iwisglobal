@@ -38,6 +38,9 @@ How to set up and run marketing campaigns from `/admin/campaigns`. Nothing real 
 
 ## Before the first real send
 
+**Blocker (found 26 Oct 2026, owner chose to leave it for now):** since the Astro 5 upgrade (#64), Astro's built-in cross-site form check refuses a POST that has no `Origin` header. Gmail, Yahoo and Apple Mail send exactly that for the one-click unsubscribe button (RFC 8058), so those clicks get a 403 and the person is not unsubscribed. The `/unsubscribe/<token>` page itself (a person clicking the link in the email) still works. **Do not set `MARKETING_SENDING_ENABLED=1` until this is fixed**, because every email carries the one-click header and mailbox providers' bulk-sender rules require it to work. The fix needs the owner's approval because it turns off Astro's built-in check and replaces it with a narrower one (`src/lib/originCheck.ts` approach: admin protected, unsubscribe and Apple sign-in callback left open). Test before sending: `curl -X POST -d 'List-Unsubscribe=One-Click' https://www.iwisglobal.com/unsubscribe/<a real token>` must not return 403.
+
+- [ ] The one-click unsubscribe blocker above is fixed and the curl test passes
 - [ ] Seed-inbox test passed (above)
 - [ ] Preview each language you will send; approve only translations you have read
 - [ ] Audience count and language split look right

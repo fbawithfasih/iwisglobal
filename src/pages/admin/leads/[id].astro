@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { LEAD_STAGES, LOST_REASONS, CHANNEL_LABELS, scoreBucket, setLeadStage, mergePeople, undoMerge, dismissDuplicate, refreshLeadScore, type LeadStage } from '../../../lib/contacts';
@@ -42,9 +43,11 @@ if (Astro.request.method === 'POST') {
     } else if (action === 'merge') {
       const res = await mergePeople(db, String(form.get('keep') ?? ''), String(form.get('drop') ?? ''), 'admin');
       if (!res.ok) error = res.error;
+      else await recordAudit(db, auditContext(Astro.request), { action: 'lead.merge', resource: 'person', resourceId: String(form.get('keep') ?? ''), summary: 'Merged two people into one', meta: { dropped: String(form.get('drop') ?? '') } });
     } else if (action === 'undo') {
       const res = await undoMerge(db, Number(form.get('logId')));
       if (!res.ok) error = res.error;
+      else await recordAudit(db, auditContext(Astro.request), { action: 'lead.merge_undo', resource: 'person', resourceId: String(form.get('logId') ?? ''), summary: 'Undid a merge' });
     } else if (action === 'dismiss') {
       await dismissDuplicate(db, Number(form.get('suggestionId')));
     } else if (action === 'resend_optin' || action === 'unsub' || action === 'erase') {
@@ -61,7 +64,9 @@ if (Astro.request.method === 'POST') {
         }
       } else if (action === 'unsub') {
         await unsubscribePerson(db, pid, 'manual');
+        await recordAudit(db, auditContext(Astro.request), { action: 'person.unsubscribe', resource: 'person', resourceId: pid, summary: 'Marked unsubscribed on request' });
       } else if (String(form.get('confirm') ?? '').trim().toUpperCase() === 'ERASE') {
+        await recordAudit(db, auditContext(Astro.request), { action: 'person.erase', resource: 'person', resourceId: pid, summary: 'Erased a person (right to be forgotten)' });
         await erasePerson(db, pid, env.IMAGES);
         return Astro.redirect('/admin/leads');
       } else {

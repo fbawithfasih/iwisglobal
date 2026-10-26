@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { auditContext, recordAudit } from '../../../lib/audit';
 import OfferForm from '../../../components/OfferForm.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -26,6 +27,7 @@ if (Astro.request.method === 'POST') {
   } else {
     try {
       await createOffer(db, parsed.input);
+      await recordAudit(db, auditContext(Astro.request), { action: 'offer.create', resource: 'offer', summary: 'Created an offer or coupon' });
       return Astro.redirect('/admin/offers');
     } catch (err: any) {
       error = err?.message || 'Could not save the offer.';

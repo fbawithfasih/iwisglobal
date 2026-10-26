@@ -5,6 +5,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { formatDateTimeIst } from '../../../lib/format';
@@ -44,9 +45,13 @@ if (Astro.request.method === 'POST' && db) {
   if (action === 'master_on') {
     const r = await turnOnMaster(db);
     if (!r.ok) error = r.error ?? '';
-    else note = 'Automatic replies are on, for the kinds of message you have enabled.';
+    else {
+      note = 'Automatic replies are on, for the kinds of message you have enabled.';
+      await recordAudit(db, auditContext(Astro.request), { action: 'whatsapp.auto_on', resource: 'setting', summary: 'Turned automatic WhatsApp replies on' });
+    }
   } else if (action === 'master_off') {
     await turnOffMaster(db);
+    await recordAudit(db, auditContext(Astro.request), { action: 'whatsapp.auto_off', resource: 'setting', summary: 'Turned automatic WhatsApp replies off' });
     note = 'Automatic replies are off. Nothing will be sent without a person.';
   } else if (action === 'intent_on' || action === 'intent_off') {
     const r = await setIntentEnabled(db, String(form.get('intent') ?? ''), action === 'intent_on');
