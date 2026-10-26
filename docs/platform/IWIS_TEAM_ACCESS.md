@@ -24,7 +24,11 @@ The owner password stays as emergency access. Every use is written to the audit 
    `https://www.iwisglobal.com/admin/auth/google/callback`
    Keep the existing `/auth/google/callback` one. No new secrets are needed.
 4. **Invite each person** on the admin Team page with the email address of their Google account (Gmail or Google Workspace). They open `https://www.iwisglobal.com/admin/login`, choose "Continue with Google" and pick that account. The first sign-in activates the invite (valid 14 days).
-5. **Stop sharing the owner password.** Change it once all three can sign in with Google (ask me; it is a Cloudflare secret).
+5. **Stop sharing the owner password.** Once all three can sign in with Google, set a new owner password that only you know:
+   1. On your own computer, in a copy of this repository, run `node scripts/admin-password.mjs`. Type the new password (hidden, 12 characters or more) twice. It prints `ADMIN_PASSWORD_SALT=...` and `ADMIN_PASSWORD_HASH=...`; the password itself is never printed or stored.
+   2. In Cloudflare Pages (the iwisglobal project, Settings, Variables and Secrets, Production), replace the two secrets `ADMIN_PASSWORD_SALT` and `ADMIN_PASSWORD_HASH` with those values, and redeploy.
+   3. Test it in a private window. Sessions already signed in with the old password stay valid for up to 12 hours, then end on their own.
+   Keep the new password in your password manager. Never paste it or the secrets into a chat.
 
 ## Day to day
 

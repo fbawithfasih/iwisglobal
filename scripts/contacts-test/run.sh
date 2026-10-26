@@ -34,3 +34,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/staff.ts" --bundle --p
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/staff.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/route-inventory.ts" --bundle --platform=node --format=esm --outfile="$OUT/route-inventory.mjs" --log-level=error
 ROOT="$ROOT" node --no-warnings "$OUT/route-inventory.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/admin-password.ts" --bundle --platform=node --format=esm --outfile="$OUT/admin-password.mjs" --log-level=error
+ROOT="$ROOT" node --no-warnings "$OUT/admin-password.mjs"
