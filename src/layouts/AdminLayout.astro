@@ -16,6 +16,7 @@ const allSections: { label: string; items: NavItem[] }[] = [
   {
     label: 'Work',
     items: [
+      { href: '/admin/today', label: 'Today', active: path === '/admin/today' },
       { href: '/admin', label: 'Bookings', active: path === '/admin' || path.startsWith('/admin/bookings/') },
       { href: '/admin/leads', label: 'Leads', active: path.startsWith('/admin/leads') && !isReport },
       { href: '/admin/whatsapp', label: 'WhatsApp', active: path.startsWith('/admin/whatsapp') },
