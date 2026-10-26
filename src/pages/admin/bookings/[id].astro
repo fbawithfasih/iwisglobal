@@ -5,6 +5,9 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
+import { actorLabel } from '../../../lib/authz';
+import { listStaff } from '../../../lib/staff';
+import { ownerLabel } from '../../../lib/leadsAdmin';
 import {
   getBookingById,
   updateBookingStatus,
@@ -64,7 +67,10 @@ if (Astro.request.method === 'POST') {
     });
   } else if (action === 'note') {
     const note = String(form.get('note') ?? '').trim();
-    if (note) await addBookingNote(db, id, note);
+    if (note) {
+      await addBookingNote(db, id, note, actorLabel(Astro.locals.admin));
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'booking.note', resource: 'booking', resourceId: id, summary: 'Added a note' });
+    }
   } else if (action === 'tickets_purchased') {
     await setTicketsPurchased(db, id, form.get('purchased') === 'on');
   } else if (action === 'ticket_upload' || action === 'ticket_resend') {
@@ -176,6 +182,7 @@ if (Astro.request.method === 'POST') {
 const booking = await getBookingById(db, id);
 if (!booking) return Astro.redirect('/admin');
 const notes = await listBookingNotes(db, id);
+const staffNames: Record<string, string> = Object.fromEntries((await listStaff(db).catch(() => [])).map((s) => [s.email, s.name || s.email]));
 
 const tour = await getTourById(db, booking.tour_id);
 const tickets = tour ? computeTicketsToBuy(tour, booking) : [];
@@ -504,7 +511,7 @@ const addOnNames = booking.add_on_ids
         {notes.map((n) => (
           <li class="border-t border-stone-100 pt-2">
             <p>{n.note}</p>
-            <p class="text-xs text-stone-500">{fmtTime(n.created_at)}</p>
+            <p class="text-xs text-stone-500">{fmtTime(n.created_at)}{n.author ? ` · ${ownerLabel(n.author, staffNames)}` : ''}</p>
           </li>
         ))}
       </ul>

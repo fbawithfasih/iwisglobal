@@ -184,6 +184,8 @@ export interface BookingNoteRow {
   booking_id: string;
   note: string;
   created_at: string;
+  /** '' (older notes), 'owner' or a team member's email; see schema_booking_note_author.sql. */
+  author: string;
 }
 
 export async function listBookingNotes(db: D1Like, bookingId: string): Promise<BookingNoteRow[]> {
@@ -194,10 +196,10 @@ export async function listBookingNotes(db: D1Like, bookingId: string): Promise<B
   return results;
 }
 
-export async function addBookingNote(db: D1Like, bookingId: string, note: string): Promise<void> {
+export async function addBookingNote(db: D1Like, bookingId: string, note: string, author = ''): Promise<void> {
   await db
-    .prepare(`INSERT INTO booking_notes (id, booking_id, note, created_at) VALUES (?, ?, ?, ?)`)
-    .bind(`note_${crypto.randomUUID()}`, bookingId, note, new Date().toISOString())
+    .prepare(`INSERT INTO booking_notes (id, booking_id, note, created_at, author) VALUES (?, ?, ?, ?, ?)`)
+    .bind(`note_${crypto.randomUUID()}`, bookingId, note, new Date().toISOString(), author)
     .run();
 }
 
