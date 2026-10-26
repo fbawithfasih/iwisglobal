@@ -83,7 +83,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Every /admin request is identified and checked here before any page runs (second layer; pages still check themselves).
   // It runs after the database session below is set up, so a suspended person is refused on the very next request.
-  const guarded = async () => (await adminGate(context, resolveEnv(context.locals))) ?? proceed();
+  // Admin responses carry Server-Timing (milliseconds spent in our code, database included) so page speed can be read
+  // in the browser's network panel. Workers clocks move only when I/O completes, so this is the time spent waiting on D1 and fetches.
+  const guarded = async () => {
+    const t0 = Date.now();
+    const response = (await adminGate(context, resolveEnv(context.locals))) ?? (await proceed());
+    if (context.url.pathname.startsWith('/admin')) {
+      try { response.headers.set('Server-Timing', `app;dur=${Date.now() - t0}`); } catch { /* redirect responses have immutable headers */ }
+    }
+    return response;
+  };
 
   // locals.runtime is built fresh per request by the Cloudflare adapter; its
   // env is shared, so swap in a copy rather than mutating it.
