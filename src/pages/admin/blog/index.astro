@@ -7,7 +7,7 @@ import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { listBlogPosts, updateBlogPost, getBlogPostById, deleteBlogPost } from '../../../lib/blog';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 

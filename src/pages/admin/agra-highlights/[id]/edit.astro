@@ -8,7 +8,7 @@ import { getAgraHighlightById, updateAgraHighlight, deleteAgraHighlight } from '
 import { uploadAgraHighlightImage } from '../../../../lib/images';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 

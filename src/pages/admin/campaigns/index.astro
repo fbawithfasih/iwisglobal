@@ -9,7 +9,7 @@ import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 const db: D1Like | undefined = env.DB;

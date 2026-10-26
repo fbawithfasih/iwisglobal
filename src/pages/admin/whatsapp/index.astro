@@ -22,7 +22,7 @@ import { isInlineMime } from '../../../lib/waMedia';
 import { deleteWaMessage, deleteWaChat } from '../../../lib/waDelete';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 
@@ -61,13 +61,13 @@ if (Astro.request.method === 'POST' && db) {
     }
   } else if (form.get('_action') === 'delete_message') {
     if (!(await deleteWaMessage(db, env.IMAGES, Number(form.get('messageId'))))) error = 'That message was already deleted.';
-    else await recordAudit(db, auditContext(Astro.request), { action: 'whatsapp.delete_message', resource: 'wa_message', resourceId: String(form.get('messageId') ?? ''), summary: 'Deleted one WhatsApp message' });
+    else await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'whatsapp.delete_message', resource: 'wa_message', resourceId: String(form.get('messageId') ?? ''), summary: 'Deleted one WhatsApp message' });
   } else if (form.get('_action') === 'delete_chat') {
     if (String(form.get('confirm') ?? '').trim().toUpperCase() !== 'DELETE') {
       error = 'To delete this chat, type DELETE in the box.';
     } else {
       await deleteWaChat(db, env.IMAGES, conversation);
-      await recordAudit(db, auditContext(Astro.request), { action: 'whatsapp.delete_chat', resource: 'wa_conversation', resourceId: conversation, summary: 'Deleted a whole WhatsApp chat' });
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'whatsapp.delete_chat', resource: 'wa_conversation', resourceId: conversation, summary: 'Deleted a whole WhatsApp chat' });
       const back = new URLSearchParams();
       const postedTab = String(form.get('tab') ?? '');
       if (postedTab) back.set('tab', postedTab);

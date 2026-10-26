@@ -3,6 +3,7 @@
 // describes: if the table is missing or the write fails, the failure is logged and the action goes ahead.
 // Rows carry ids and short summaries only, never customer contact details, message text or secrets.
 import type { D1Like } from './db';
+import { actorLabel, type Principal } from './authz';
 
 export type AuditContext = { actor: string; ip: string | null };
 export type AuditEntry = {
@@ -27,8 +28,9 @@ export type AuditRow = {
 const SUMMARY_MAX = 300;
 const META_MAX = 1000;
 
-/** Who is acting. Until staff accounts exist this is always the single owner login. */
-export function auditContext(request: Request, actor = 'owner'): AuditContext {
+/** Who is acting: the signed-in person from `Astro.locals` (their email, or 'owner' for the owner-password sign-in), or a fixed label such as 'anonymous'. */
+export function auditContext(request: Request, who: string | { admin?: Principal } | unknown = 'owner'): AuditContext {
+  const actor = typeof who === 'string' ? who : actorLabel((who as { admin?: Principal } | undefined)?.admin);
   return { actor, ip: request.headers.get('cf-connecting-ip') };
 }
 

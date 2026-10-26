@@ -9,7 +9,7 @@ export const prerender = false;
 // Hotelbeds base URL is the TEST server, so it can never make a free booking on the live one.
 export const POST: APIRoute = async ({ request, locals, cookies }) => {
   const env = resolveEnv(locals);
-  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET))) return new Response('Unauthorized', { status: 401 });
+  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET, locals))) return new Response('Unauthorized', { status: 401 });
   let body: unknown = null;
   try {
     body = await request.json();

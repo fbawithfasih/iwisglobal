@@ -17,7 +17,7 @@ import { clickStats, deliveryStats, unsubscribedSince, type DeliveryStats } from
 import type { D1Like } from '../../../lib/db';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 const db: D1Like | undefined = env.DB;
@@ -64,12 +64,12 @@ if (Astro.request.method === 'POST') {
       return here(err ? `&notice=${encodeURIComponent(err)}` : '&notice=' + encodeURIComponent('Draft translation saved. Read it, fix anything, and tick "approved" when it is right.'));
     } else if (action === 'test') {
       const r = await sendTest(env, db, campaign, str('to').split(/[\s,;]+/), lang);
-      await recordAudit(db, auditContext(Astro.request), { action: 'campaign.test', resource: 'campaign', resourceId: id, summary: 'Sent a test email', meta: { sent: r.sent ?? 0 } });
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'campaign.test', resource: 'campaign', resourceId: id, summary: 'Sent a test email', meta: { sent: r.sent ?? 0 } });
       return here(`&notice=${encodeURIComponent(r.error ?? `Test sent to ${r.sent} address${r.sent === 1 ? '' : 'es'}. Check your inbox.`)}`);
     } else if (action === 'start') {
       problems = await startCampaign(env, db, campaign);
       if (problems.length === 0) {
-        await recordAudit(db, auditContext(Astro.request), { action: 'campaign.send', resource: 'campaign', resourceId: id, summary: `Started sending campaign "${campaign.name}"` });
+        await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'campaign.send', resource: 'campaign', resourceId: id, summary: `Started sending campaign "${campaign.name}"` });
         await sendNextChunk(env, db, id);
         return here('&notice=' + encodeURIComponent('Sending has started.'));
       }
@@ -78,18 +78,18 @@ if (Astro.request.method === 'POST') {
       const iso = when ? new Date(`${when}:00+05:30`) : null;
       if (iso && !Number.isNaN(iso.getTime()) && iso.getTime() > Date.now()) {
         await schedule(db, id, iso.toISOString());
-        await recordAudit(db, auditContext(Astro.request), { action: 'campaign.schedule', resource: 'campaign', resourceId: id, summary: `Scheduled for ${iso.toISOString()}` });
+        await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'campaign.schedule', resource: 'campaign', resourceId: id, summary: `Scheduled for ${iso.toISOString()}` });
       }
       else notice = 'Choose a time in the future.';
     } else if (action === 'unschedule') {
       await schedule(db, id, null);
-      await recordAudit(db, auditContext(Astro.request), { action: 'campaign.unschedule', resource: 'campaign', resourceId: id, summary: 'Removed the schedule' });
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'campaign.unschedule', resource: 'campaign', resourceId: id, summary: 'Removed the schedule' });
     } else if (action === 'cancel') {
       await cancelCampaign(db, id);
-      await recordAudit(db, auditContext(Astro.request), { action: 'campaign.cancel', resource: 'campaign', resourceId: id, summary: 'Cancelled the campaign' });
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'campaign.cancel', resource: 'campaign', resourceId: id, summary: 'Cancelled the campaign' });
     } else if (action === 'next') {
       const r = await sendNextChunk(env, db, id);
-      await recordAudit(db, auditContext(Astro.request), { action: 'campaign.send_batch', resource: 'campaign', resourceId: id, summary: 'Sent the next batch by hand', meta: { sent: r.sent, skipped: r.skipped, failed: r.failed } });
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'campaign.send_batch', resource: 'campaign', resourceId: id, summary: 'Sent the next batch by hand', meta: { sent: r.sent, skipped: r.skipped, failed: r.failed } });
       return here(`&notice=${encodeURIComponent(r.blocked ?? `Sent ${r.sent}, skipped ${r.skipped}, failed ${r.failed}, ${r.remaining} still waiting.`)}`);
     }
   } catch (err) {

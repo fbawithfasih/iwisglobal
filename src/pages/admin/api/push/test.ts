@@ -8,7 +8,7 @@ export const prerender = false;
 // "Send test alert" button on /admin/whatsapp: pushes a harmless message to every saved device.
 export const POST: APIRoute = async ({ locals, cookies }) => {
   const env = resolveEnv(locals);
-  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET))) return new Response('Unauthorized', { status: 401 });
+  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET, locals))) return new Response('Unauthorized', { status: 401 });
   if (!env.DB) return new Response(JSON.stringify({ error: 'No database' }), { status: 500 });
   if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) {
     return new Response(JSON.stringify({ error: 'The VAPID keys are not set in Cloudflare yet.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });

@@ -9,7 +9,7 @@ export const prerender = false;
 // Admin-only copy of /api/hotels/rate for the test page (works while hotels are off).
 export const POST: APIRoute = async ({ request, locals, url, cookies }) => {
   const env = resolveEnv(locals);
-  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET))) return new Response('Unauthorized', { status: 401 });
+  if (!(await isAdminAuthenticated(cookies, env.ADMIN_SESSION_SECRET, locals))) return new Response('Unauthorized', { status: 401 });
   let body: unknown = null;
   try {
     body = await request.json();

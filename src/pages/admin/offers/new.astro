@@ -10,7 +10,7 @@ import { createOffer, parseOfferForm, type OfferInput } from '../../../lib/offer
 import { listTours } from '../../../lib/tours';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 
@@ -27,7 +27,7 @@ if (Astro.request.method === 'POST') {
   } else {
     try {
       await createOffer(db, parsed.input);
-      await recordAudit(db, auditContext(Astro.request), { action: 'offer.create', resource: 'offer', summary: 'Created an offer or coupon' });
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'offer.create', resource: 'offer', summary: 'Created an offer or coupon' });
       return Astro.redirect('/admin/offers');
     } catch (err: any) {
       error = err?.message || 'Could not save the offer.';

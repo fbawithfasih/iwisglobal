@@ -2,6 +2,8 @@ import { defineMiddleware } from 'astro:middleware';
 import { isLocalizedPath, splitLocale, localizedPath } from './lib/localizedPaths.mjs';
 import type { Locale } from './lib/i18n';
 import { isBlockedPath } from './lib/blockedPaths';
+import { adminGate } from './lib/adminGate';
+import { resolveEnv } from './lib/env';
 
 // D1 read replication (turned on 30 Sep 2026): replicas only serve reads
 // made through a session. Public pages may read from the nearest replica;
@@ -79,11 +81,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return new Response(html, { status: response.status, statusText: response.statusText, headers });
   };
 
+  // Every /admin request is identified and checked here before any page runs (second layer; pages still check themselves).
+  // It runs after the database session below is set up, so a suspended person is refused on the very next request.
+  const guarded = async () => (await adminGate(context, resolveEnv(context.locals))) ?? proceed();
+
   // locals.runtime is built fresh per request by the Cloudflare adapter; its
   // env is shared, so swap in a copy rather than mutating it.
   const runtime = (context.locals as { runtime?: { env?: Record<string, unknown> } }).runtime;
   const db = runtime?.env?.DB as Partial<ReplicatedDb> | undefined;
-  if (!runtime?.env || typeof db?.withSession !== 'function') return proceed();
+  if (!runtime?.env || typeof db?.withSession !== 'function') return guarded();
 
   const start = PRIMARY_PATHS.test(pathname)
     ? 'first-primary'
@@ -91,7 +97,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const session = db.withSession(start);
   runtime.env = { ...runtime.env, DB: session };
 
-  const response = await proceed();
+  const response = await guarded();
 
   const method = context.request.method;
   const bookmark = session.getBookmark();

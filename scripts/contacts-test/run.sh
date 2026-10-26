@@ -30,3 +30,7 @@ ROOT="$ROOT" node --no-warnings "$OUT/blocked-paths.mjs"
 node --no-warnings "$ROOT/scripts/contacts-test/backup-tools.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/audit.ts" --bundle --platform=node --format=esm --outfile="$OUT/audit.mjs" --external:node:sqlite --log-level=error
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/audit.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/staff.ts" --bundle --platform=node --format=esm --outfile="$OUT/staff.mjs" --external:node:sqlite --log-level=error
+ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/staff.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/route-inventory.ts" --bundle --platform=node --format=esm --outfile="$OUT/route-inventory.mjs" --log-level=error
+ROOT="$ROOT" node --no-warnings "$OUT/route-inventory.mjs"

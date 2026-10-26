@@ -19,7 +19,7 @@ import {
 import { uploadTourImage } from '../../../../lib/images';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 
@@ -49,7 +49,7 @@ if (Astro.request.method === 'POST') {
         image = uploaded.url;
       }
 
-      await recordAudit(db, auditContext(Astro.request), { action: 'tour.update', resource: 'tour', resourceId: id, summary: existing && existing.amount !== amount ? `Changed the price from ${existing.amount} to ${amount}` : 'Edited a tour', meta: { oldAmount: existing?.amount ?? null, amount } });
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'tour.update', resource: 'tour', resourceId: id, summary: existing && existing.amount !== amount ? `Changed the price from ${existing.amount} to ${amount}` : 'Edited a tour', meta: { oldAmount: existing?.amount ?? null, amount } });
       await updateTour(db, id, {
         title,
         summary: String(form.get('summary') ?? ''),

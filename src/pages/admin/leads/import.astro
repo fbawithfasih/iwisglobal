@@ -9,7 +9,7 @@ import { normaliseEmail, normalisePhone } from '../../../lib/contacts';
 import { IMPORT_ROW_LIMIT, importLeadRows, mapCsvRows, parseCsv, type ImportRow } from '../../../lib/leadsAdmin';
 
 const env = resolveEnv(Astro.locals);
-if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
   return Astro.redirect('/admin/login');
 }
 const db = env.DB;
@@ -55,7 +55,7 @@ if (Astro.request.method === 'POST' && db) {
       }
     } else if (action === 'import') {
       result = await importLeadRows(db, rows, `imp_${crypto.randomUUID()}`, 'admin');
-      await recordAudit(db, auditContext(Astro.request), { action: 'lead.import', resource: 'lead', summary: 'Imported leads from a CSV file', meta: { imported: result.imported, skipped: result.skipped, duplicates: result.duplicates } });
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'lead.import', resource: 'lead', summary: 'Imported leads from a CSV file', meta: { imported: result.imported, skipped: result.skipped, duplicates: result.duplicates } });
       step = 'done';
     }
   } else if (action) {
