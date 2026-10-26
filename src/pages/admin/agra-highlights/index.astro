@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 
+import EmptyState from '../../../components/EmptyState.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -22,7 +23,7 @@ const highlights = db ? await listAgraHighlights(db) : [];
   <p class="text-sm text-stone-500 mb-6">Shown as a carousel on the homepage. Lower sort order shows first.</p>
 
   {highlights.length === 0 ? (
-    <p class="text-stone-500">No cards yet.</p>
+    <EmptyState message="No highlight cards yet" href="/admin/agra-highlights/new" action="+ New card" />
   ) : (
     <>
     <!-- Phones: one card per highlight with a full-size Edit button. -->

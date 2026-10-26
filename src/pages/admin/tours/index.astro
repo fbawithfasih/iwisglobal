@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 
+import EmptyState from '../../../components/EmptyState.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -43,7 +44,7 @@ const cardBtn = 'inline-flex min-h-11 items-center justify-center rounded border
   </div>
 
   {tours.length === 0 ? (
-    <p class="text-stone-500">No tours yet.</p>
+    <EmptyState message="No tours yet" hint="A tour appears on the site once it is published." href="/admin/tours/new" action="+ New Tour" />
   ) : (
     <>
     <!-- Phones: one card per tour with full-size actions. -->

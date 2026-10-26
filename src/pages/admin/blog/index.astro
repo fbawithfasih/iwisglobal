@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 
+import EmptyState from '../../../components/EmptyState.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -49,7 +50,7 @@ const posts = db ? await listBlogPosts(db) : [];
   </div>
 
   {posts.length === 0 ? (
-    <p class="text-stone-500">No posts yet.</p>
+    <EmptyState message="No blog posts yet" hint="Posts you publish show on the blog and in search." href="/admin/blog/new" action="+ New post" />
   ) : (
     <div class="bg-white rounded-xl border border-violet-100 overflow-x-auto">
       <table class="w-full text-sm">

@@ -4,6 +4,7 @@
 // Not the coupon admin (/admin/offers).
 export const prerender = false;
 
+import EmptyState from '../../../components/EmptyState.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -109,7 +110,7 @@ const td = 'px-3 py-2 align-top text-sm';
   <p class="text-stone-500 text-sm mb-4">Created with <code>scripts/offer-seed.mjs</code>. Each guest has their own secret link.</p>
   {!db && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">Database not available.</p>}
   {loadError && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">Could not load private offers. Has schema_private_offers.sql been applied?</p>}
-  {db && !loadError && offers.length === 0 && <p class="text-sm text-stone-500">No private offers yet.</p>}
+  {db && !loadError && offers.length === 0 && <EmptyState message="No private offers yet" hint="A private offer is a price made for one guest, sent as a private link." />}
 
   {offers.map((o) => (
     <section class="mb-5 rounded-xl border border-violet-100 bg-white p-4">

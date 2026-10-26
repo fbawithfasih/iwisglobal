@@ -5,6 +5,7 @@
 // there also invites them to review us on Google.
 export const prerender = false;
 
+import EmptyState from '../../../components/EmptyState.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -78,7 +79,7 @@ const btn = 'min-h-11 rounded px-4 text-sm font-medium';
     abuse, personal details, or text that isn't about the tour.
   </p>
   {reviews.length === 0 ? (
-    <p class="text-stone-500 mb-10">No reviews yet.</p>
+    <EmptyState class="mb-10" message="No guest reviews yet" hint="Reviews guests send appear here for you to check before they show on the site." />
   ) : (
     <ul class="space-y-3 mb-10">
       {reviews.map((r) => (
