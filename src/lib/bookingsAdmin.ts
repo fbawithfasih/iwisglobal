@@ -1,4 +1,6 @@
-import type { BookingRow } from './crm';
+import type { D1Like } from './db';
+import { listBookings, type BookingRow } from './crm';
+import { listTourTicketInfo, type TourTicketInfo } from './tours';
 import { AWAITING_STATUS } from './customTripPayment';
 
 // Views, search and "why this needs you" reasons for the admin Bookings list (src/pages/admin/index.astro).
@@ -65,4 +67,10 @@ export function bookingCounts(rows: BookingRow[], today: string, ticketsNeeded: 
   const out = {} as Record<BookingViewKey, number>;
   for (const v of BOOKING_VIEWS) out[v.key] = viewBookings(rows, v.key, today, ticketsNeeded).length;
   return out;
+}
+
+/** Everything the Bookings list needs from the database, sent together so the page waits for one round trip, not three. */
+export async function loadBookingsAndTours(db: D1Like): Promise<{ bookings: BookingRow[]; tours: TourTicketInfo[] }> {
+  const [bookings, tours] = await Promise.all([listBookings(db, {}), listTourTicketInfo(db)]);
+  return { bookings, tours };
 }

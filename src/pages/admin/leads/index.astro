@@ -71,12 +71,19 @@ let waiting = 0;
 let staffNames: Record<string, string> = {};
 if (db) {
   try {
-    staffNames = Object.fromEntries((await listStaff(db).catch(() => [])).map((s) => [s.email, s.name || s.email]));
-    const page = await listLeadsView(db, { view, channel, stage, q: search, cursor, me });
+    // All four are independent, so they go to the database together (one round trip, not four in a row).
+    const nowIso = new Date().toISOString();
+    const [staff, page, viewTotals, tooLong] = await Promise.all([
+      listStaff(db).catch(() => []),
+      listLeadsView(db, { view, channel, stage, q: search, cursor, me }),
+      viewCounts(db, nowIso, me),
+      waitingTooLong(db),
+    ]);
+    staffNames = Object.fromEntries(staff.map((s) => [s.email, s.name || s.email]));
     rows = page.rows;
     next = page.next;
-    counts = await viewCounts(db, new Date().toISOString(), me);
-    waiting = await waitingTooLong(db);
+    counts = viewTotals;
+    waiting = tooLong;
   } catch (err) {
     failed = true;
     console.error('admin leads: list failed', err instanceof Error ? err.message : 'error');

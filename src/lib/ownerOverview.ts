@@ -58,28 +58,37 @@ export async function loadOwnerOverview(db: D1Like, opts: { today: string; now?:
     }
   };
 
+  // Every query below is independent, so each section sends its queries together (one round trip per section, all
+  // sections together): the database is far from the server and each round trip in a row costs a few hundred milliseconds.
   const [bookings, leads, chats, reviews] = await Promise.all([
     part('bookings', { by: {} as Record<string, number>, paid: [] as MoneyLine[], balance: [] as MoneyLine[], trips: 0 }, async () => {
-      const by = (await db.prepare(`SELECT status, COUNT(*) AS n FROM bookings WHERE created_at >= ? GROUP BY status`).bind(monthIso).all<{ status: string; n: number }>()).results;
-      const paid = (await db.prepare(`SELECT currency, SUM(amount_paid) AS minor FROM bookings WHERE created_at >= ? AND status IN ('confirmed','completed') GROUP BY currency`).bind(monthIso).all<{ currency: string; minor: number | null }>()).results;
-      const balance = (await db.prepare(`SELECT currency, SUM(total_amount - amount_paid) AS minor FROM bookings WHERE status = 'confirmed' AND total_amount > amount_paid GROUP BY currency`).bind().all<{ currency: string; minor: number | null }>()).results;
-      const trips = (await db.prepare(`SELECT COUNT(*) AS n FROM bookings WHERE status = 'confirmed' AND travel_date >= ? AND travel_date <= ?`).bind(opts.today, end30).first<{ n: number }>())?.n ?? 0;
-      return { by: Object.fromEntries(by.map((r) => [r.status, r.n])), paid: money(paid), balance: money(balance), trips };
+      const [by, paid, balance, trips] = await Promise.all([
+        db.prepare(`SELECT status, COUNT(*) AS n FROM bookings WHERE created_at >= ? GROUP BY status`).bind(monthIso).all<{ status: string; n: number }>(),
+        db.prepare(`SELECT currency, SUM(amount_paid) AS minor FROM bookings WHERE created_at >= ? AND status IN ('confirmed','completed') GROUP BY currency`).bind(monthIso).all<{ currency: string; minor: number | null }>(),
+        db.prepare(`SELECT currency, SUM(total_amount - amount_paid) AS minor FROM bookings WHERE status = 'confirmed' AND total_amount > amount_paid GROUP BY currency`).bind().all<{ currency: string; minor: number | null }>(),
+        db.prepare(`SELECT COUNT(*) AS n FROM bookings WHERE status = 'confirmed' AND travel_date >= ? AND travel_date <= ?`).bind(opts.today, end30).first<{ n: number }>(),
+      ]);
+      return { by: Object.fromEntries(by.results.map((r) => [r.status, r.n])), paid: money(paid.results), balance: money(balance.results), trips: trips?.n ?? 0 };
     }),
     part('leads', { created: 0, stillOpen: 0, booked: 0, lost: 0, unassigned: 0, held: [] as Array<{ holder: string; n: number }> }, async () => {
       const q = async (where: string, ...args: unknown[]) => (await db.prepare(`SELECT COUNT(*) AS n FROM leads WHERE created_at >= ? AND ${where}`).bind(since30, ...args).first<{ n: number }>())?.n ?? 0;
-      const created = await q('1 = 1');
-      const stillOpen = await q(`status IN (${open})`, ...OPEN_STAGES);
-      const booked = await q(`status IN ('booked','converted')`);
-      const lost = await q(`status = 'lost'`);
-      const unassigned = (await db.prepare(`SELECT COUNT(*) AS n FROM leads WHERE status IN (${open}) AND owner = ''`).bind(...OPEN_STAGES).first<{ n: number }>())?.n ?? 0;
-      const held = (await db.prepare(`SELECT owner AS holder, COUNT(*) AS n FROM leads WHERE status IN (${open}) AND owner != '' GROUP BY owner`).bind(...OPEN_STAGES).all<{ holder: string; n: number }>()).results;
-      return { created, stillOpen, booked, lost, unassigned, held };
+      const [created, stillOpen, booked, lost, unassigned, held] = await Promise.all([
+        q('1 = 1'),
+        q(`status IN (${open})`, ...OPEN_STAGES),
+        q(`status IN ('booked','converted')`),
+        q(`status = 'lost'`),
+        db.prepare(`SELECT COUNT(*) AS n FROM leads WHERE status IN (${open}) AND owner = ''`).bind(...OPEN_STAGES).first<{ n: number }>(),
+        db.prepare(`SELECT owner AS holder, COUNT(*) AS n FROM leads WHERE status IN (${open}) AND owner != '' GROUP BY owner`).bind(...OPEN_STAGES).all<{ holder: string; n: number }>(),
+      ]);
+      return { created, stillOpen, booked, lost, unassigned: unassigned?.n ?? 0, held: held.results };
     }),
-    part('chats', { started: 0, held: [] as Array<{ holder: string; n: number }> }, async () => ({
-      started: (await db.prepare(`SELECT COUNT(*) AS n FROM wa_conversations WHERE created_at >= ?`).bind(since30).first<{ n: number }>())?.n ?? 0,
-      held: (await db.prepare(`SELECT handled_by AS holder, COUNT(*) AS n FROM wa_conversations WHERE handled_by != '' AND state != 'opted_out' GROUP BY handled_by`).bind().all<{ holder: string; n: number }>()).results,
-    })),
+    part('chats', { started: 0, held: [] as Array<{ holder: string; n: number }> }, async () => {
+      const [started, held] = await Promise.all([
+        db.prepare(`SELECT COUNT(*) AS n FROM wa_conversations WHERE created_at >= ?`).bind(since30).first<{ n: number }>(),
+        db.prepare(`SELECT handled_by AS holder, COUNT(*) AS n FROM wa_conversations WHERE handled_by != '' AND state != 'opted_out' GROUP BY handled_by`).bind().all<{ holder: string; n: number }>(),
+      ]);
+      return { started: started?.n ?? 0, held: held.results };
+    }),
     part('reviews', 0, async () => (await db.prepare(`SELECT COUNT(*) AS n FROM tour_reviews WHERE status = 'pending'`).bind().first<{ n: number }>())?.n ?? 0),
   ]);
 

@@ -5,10 +5,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import EmptyState from '../../components/EmptyState.astro';
 import { resolveEnv } from '../../lib/env';
 import { isAdminAuthenticated } from '../../lib/requireAdmin';
-import { listBookings, updateBookingStatus } from '../../lib/crm';
-import { BOOKING_VIEWS, bookingCounts, bookingReasons, searchBookings, viewBookings, type BookingViewKey } from '../../lib/bookingsAdmin';
+import { updateBookingStatus } from '../../lib/crm';
+import { BOOKING_VIEWS, bookingCounts, loadBookingsAndTours, bookingReasons, searchBookings, viewBookings, type BookingViewKey } from '../../lib/bookingsAdmin';
 import { todayIst } from '../../lib/availability';
-import { listTours } from '../../lib/tours';
 import { computeTicketsToBuy, ticketsOutstanding } from '../../lib/entryTickets';
 import { formatTravelDate, formatMoneyMinor } from '../../lib/format';
 import { AWAITING_STATUS, CUSTOM_TOUR_ID } from '../../lib/customTripPayment';
@@ -36,12 +35,14 @@ const requested = Astro.url.searchParams.get('view') ?? legacyStatus ?? '';
 const view: BookingViewKey = BOOKING_VIEWS.some((v) => v.key === requested)
   ? (requested as BookingViewKey)
   : requested === AWAITING_STATUS ? 'awaiting' : 'attention';
-const allBookings = db ? await listBookings(db, {}) : [];
+// Bookings and the tour names and ticket rules are fetched together: the database is far from the server, so each
+// round trip in a row costs a few hundred milliseconds.
+const { bookings: allBookings, tours } = db ? await loadBookingsAndTours(db) : { bookings: [], tours: [] };
 
 // "Tickets needed": confirmed bookings whose monument tickets aren't marked
 // bought yet (see lib/entryTickets.ts). All tours (drafts too) so older
 // bookings of an unpublished tour still resolve.
-const toursById = new Map((db ? await listTours(db) : []).map((t) => [t.id, t]));
+const toursById = new Map(tours.map((t) => [t.id, t]));
 const needsTickets = (b: (typeof allBookings)[number]) => {
   const tour = toursById.get(b.tour_id);
   return tour ? ticketsOutstanding(b, computeTicketsToBuy(tour, b)) : false;

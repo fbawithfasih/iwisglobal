@@ -57,27 +57,32 @@ export async function loadToday(db: D1Like, opts: { today: string; me: string; n
   };
 
   const [trips, chats, leads] = await Promise.all([
-    part('trips', { rows: [] as BookingRow[], awaiting: 0 }, async () => ({
-      rows: (await db.prepare(`SELECT * FROM bookings WHERE status = 'confirmed' AND travel_date IN (?, ?) ORDER BY travel_date, pickup_time, created_at`).bind(opts.today, tomorrow).all<BookingRow>()).results,
-      awaiting: (await db.prepare(`SELECT COUNT(*) AS n FROM bookings WHERE status = ?`).bind(AWAITING_STATUS).first<{ n: number }>())?.n ?? 0,
-    })),
+    part('trips', { rows: [] as BookingRow[], awaiting: 0 }, async () => {
+      const [rows, awaiting] = await Promise.all([
+        db.prepare(`SELECT * FROM bookings WHERE status = 'confirmed' AND travel_date IN (?, ?) ORDER BY travel_date, pickup_time, created_at`).bind(opts.today, tomorrow).all<BookingRow>(),
+        db.prepare(`SELECT COUNT(*) AS n FROM bookings WHERE status = ?`).bind(AWAITING_STATUS).first<{ n: number }>(),
+      ]);
+      return { rows: rows.results, awaiting: awaiting?.n ?? 0 };
+    }),
     part('chats', { waiting: [] as InboxRow[], handedOff: 0, mine: 0 }, async () => {
-      const inbox = await listInbox(db, 'all', now, opts.me);
-      const counts = await inboxCounts(db, opts.me);
+      const [inbox, counts] = await Promise.all([listInbox(db, 'all', now, opts.me), inboxCounts(db, opts.me)]);
       return {
         waiting: inbox.filter((c) => c.waiting && c.state !== 'opted_out').sort((a, b) => b.waitingMs - a.waitingMs),
         handedOff: counts.handed_off ?? 0,
         mine: counts.mine ?? 0,
       };
     }),
-    part('leads', { counts: {} as Record<string, number>, unanswered: [] as UnansweredLead[], mine: [] as { id: string; name: string; next_action_at: string }[] }, async () => ({
-      counts: await viewCounts(db, nowIso, opts.me),
-      unanswered: (await db.prepare(`SELECT id, name, channel, created_at FROM leads WHERE status = 'new' ORDER BY created_at LIMIT ?`).bind(TOP).all<UnansweredLead>()).results,
-      mine: opts.me
-        ? (await db.prepare(`SELECT id, name, next_action_at FROM leads WHERE status IN (${stages}) AND owner = ? AND next_action_at IS NOT NULL AND next_action_at <= ? ORDER BY next_action_at LIMIT 10`)
-            .bind(...OPEN_STAGES, opts.me, nowIso).all<{ id: string; name: string; next_action_at: string }>()).results
-        : [],
-    })),
+    part('leads', { counts: {} as Record<string, number>, unanswered: [] as UnansweredLead[], mine: [] as { id: string; name: string; next_action_at: string }[] }, async () => {
+      const [counts, unanswered, mine] = await Promise.all([
+        viewCounts(db, nowIso, opts.me),
+        db.prepare(`SELECT id, name, channel, created_at FROM leads WHERE status = 'new' ORDER BY created_at LIMIT ?`).bind(TOP).all<UnansweredLead>(),
+        opts.me
+          ? db.prepare(`SELECT id, name, next_action_at FROM leads WHERE status IN (${stages}) AND owner = ? AND next_action_at IS NOT NULL AND next_action_at <= ? ORDER BY next_action_at LIMIT 10`)
+              .bind(...OPEN_STAGES, opts.me, nowIso).all<{ id: string; name: string; next_action_at: string }>()
+          : Promise.resolve({ results: [] as { id: string; name: string; next_action_at: string }[] }),
+      ]);
+      return { counts, unanswered: unanswered.results, mine: mine.results };
+    }),
   ]);
 
   return {

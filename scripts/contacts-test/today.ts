@@ -105,7 +105,7 @@ assert.deepEqual([z.trips.length, z.awaitingConfirmation, z.chatsWaiting.total, 
 assert.deepEqual(z.failed, []);
 
 // One failing section does not take the others down, and is named.
-const broken: any = { prepare: (q: string) => (/FROM leads|viewCounts|l\.status/.test(q) ? { bind: () => { throw new Error('no such table'); } } : db.prepare(q)) };
+const broken: any = { prepare: (q: string) => (/FROM leads|viewCounts|l\.status/.test(q) ? { bind: () => ({ first: async () => { throw new Error('no such table'); }, all: async () => { throw new Error('no such table'); }, run: async () => { throw new Error('no such table'); } }) } : db.prepare(q)) };
 const partial = await loadToday(broken, { today: TODAY, me: asha, now: NOW });
 assert.deepEqual(partial.failed, ['leads']);
 assert.equal(partial.trips.length, 3, 'trips still load');
