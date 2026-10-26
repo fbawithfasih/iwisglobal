@@ -1,6 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { isLocalizedPath, splitLocale, localizedPath } from './lib/localizedPaths.mjs';
 import type { Locale } from './lib/i18n';
+import { isBlockedPath } from './lib/blockedPaths';
 
 // D1 read replication (turned on 30 Sep 2026): replicas only serve reads
 // made through a session. Public pages may read from the nearest replica;
@@ -15,6 +16,11 @@ type Session = { getBookmark(): string | null };
 type ReplicatedDb = { withSession(constraintOrBookmark?: string): Session };
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  // Framework endpoints this site does not use (see src/lib/blockedPaths.ts): refused before any routing.
+  if (isBlockedPath(context.url.pathname)) {
+    return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store', 'Content-Type': 'text/plain; charset=utf-8' } });
+  }
+
   // Every page is server-rendered and BaseLayout builds its canonical from the
   // request path, so /help and /help/ both answered 200 and each claimed to be
   // canonical. One URL per page: 301 any trailing-slash path to its bare form.
