@@ -136,7 +136,7 @@ const note = Astro.url.searchParams.get('note');
 const prefillQuestion = Astro.url.searchParams.get('q') ?? '';
 
 const btn = 'min-h-11 rounded px-4 text-sm font-medium';
-const field = 'w-full rounded-lg border border-stone-300 bg-white p-2 text-sm';
+const field = 'w-full rounded-lg border border-violet-200 bg-white p-2 text-sm';
 const sourceLabel: Record<string, string> = {
   faq: 'FAQ', policy: 'Policy page', guide: 'Guide', attraction: 'Attraction', tour: 'Tour', blog: 'Blog post',
   staff: 'Written by staff', staff_edit: 'Staff edited a draft', staff_reply: 'Staff reply in the app', gap: 'Drafted for an unanswered question', import: 'Imported chat',
@@ -177,8 +177,8 @@ const sections = [
   ) : null}
 
   <form method="POST" class="my-4 flex flex-wrap items-center gap-3">
-    <button type="submit" name="_action" value="suggest" class={`${btn} bg-amber-800 text-white`}>Find suggestions</button>
-    <button type="submit" name="_action" value="build" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Build from site only</button>
+    <button type="submit" name="_action" value="suggest" class={`${btn} btn-primary text-white`}>Find suggestions</button>
+    <button type="submit" name="_action" value="build" class={`${btn} border border-violet-200 bg-white text-stone-700`}>Build from site only</button>
     <span class="text-xs text-stone-500">Looks at the site, drafts staff edited, replies typed in the WhatsApp Business app and unanswered questions. Safe to press again: nothing is duplicated.</span>
   </form>
 
@@ -197,7 +197,7 @@ const sections = [
   )}
 
   <h2 class="text-lg font-semibold mt-8 mb-2" id="add">Add an answer</h2>
-  <form method="POST" class="space-y-2 max-w-2xl rounded-xl border border-stone-200 bg-white p-4">
+  <form method="POST" class="space-y-2 max-w-2xl rounded-xl border border-violet-100 bg-white p-4">
     <input type="hidden" name="_action" value="add" />
     <label class="block text-sm" for="new-q">Question a guest might ask</label>
     <input id="new-q" name="question" required value={prefillQuestion} class={field} />
@@ -209,7 +209,7 @@ const sections = [
   <nav class="mt-8 flex flex-wrap gap-2" aria-label="Filter proposals by source">
     {filters.map(([id, label]) => (
       <a href={`/admin/whatsapp/knowledge?source=${id}`} aria-current={sourceFilter === id ? 'page' : undefined}
-        class={`min-h-11 inline-flex items-center rounded-full px-4 text-sm ${sourceFilter === id ? 'bg-brand-800 text-white' : 'border border-stone-300 bg-white text-stone-700'}`}>{label}</a>
+        class={`min-h-11 inline-flex items-center rounded-full px-4 text-sm ${sourceFilter === id ? 'bg-brand-800 text-white' : 'border border-violet-200 bg-white text-stone-700'}`}>{label}</a>
     ))}
   </nav>
 
@@ -219,10 +219,10 @@ const sections = [
       <p class="text-stone-500 text-sm mb-3">{section.hint}</p>
       <ul class="space-y-3">
         {section.list.map((e: KbEntry) => (
-          <li id={`entry-${e.id}`} class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+          <li id={`entry-${e.id}`} class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
             <p class="text-xs text-stone-400 mb-1">{sourceLabel[e.source] ?? e.source}{e.source_ref && !/^\d+$/.test(e.source_ref) && e.source_ref.length < 40 ? ` · ${e.source_ref}` : ''}</p>
             {(e.flag ?? '').split(',').filter(Boolean).map((f) => (
-              <p class="mb-2 rounded bg-amber-100 px-2 py-1 text-xs text-amber-900">{flagLabel[f] ?? f}</p>
+              <p class="mb-2 rounded bg-brand-100 px-2 py-1 text-xs text-amber-900">{flagLabel[f] ?? f}</p>
             ))}
             {e.prev_answer && (
               <div class="mb-3 grid gap-2 md:grid-cols-2">
@@ -254,8 +254,8 @@ const sections = [
               <textarea id={`a-${e.id}`} name="answer" rows="4" class={field}>{e.answer}</textarea>
               <div class="flex flex-wrap gap-2">
                 {section.canApprove && <button type="submit" name="_action" value="save_approve" class={`${btn} bg-green-700 text-white`}>Approve</button>}
-                <button type="submit" name="_action" value="save" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Save edits</button>
-                <button type="submit" name="_action" value="retire" formnovalidate class={`${btn} border border-stone-300 bg-white text-stone-700`}>{section.canApprove ? 'Reject' : 'Retire'}</button>
+                <button type="submit" name="_action" value="save" class={`${btn} border border-violet-200 bg-white text-stone-700`}>Save edits</button>
+                <button type="submit" name="_action" value="retire" formnovalidate class={`${btn} border border-violet-200 bg-white text-stone-700`}>{section.canApprove ? 'Reject' : 'Retire'}</button>
               </div>
             </form>
           </li>
@@ -276,7 +276,7 @@ const sections = [
     In WhatsApp open the chat, choose Export chat, Without media, and save the .txt file. Names, numbers, emails and references are removed before anything is shown, and
     chats about money, bookings and health are skipped. You see a preview and pick what to keep; picked pairs become proposals, not live answers.
   </p>
-  <form method="POST" enctype="multipart/form-data" class="max-w-xl space-y-2 rounded-xl border border-stone-200 bg-white p-4 text-sm">
+  <form method="POST" enctype="multipart/form-data" class="max-w-xl space-y-2 rounded-xl border border-violet-100 bg-white p-4 text-sm">
     <input type="hidden" name="_action" value="import_preview" />
     <label class="block" for="export-file">Exported chat file (.txt, up to 2 MB)</label>
     <input id="export-file" name="export" type="file" accept=".txt,text/plain" class="block w-full" />
@@ -308,7 +308,7 @@ const sections = [
   <p class="text-stone-500 text-sm mb-3 max-w-2xl">
     Message text is deleted after {RETENTION_DAYS} days. This happens by itself at most once a day when a message arrives; you can also run it here. Knowledge entries are never deleted by this.
   </p>
-  <form method="POST" class="max-w-xl space-y-2 rounded-xl border border-stone-200 bg-white p-4 text-sm">
+  <form method="POST" class="max-w-xl space-y-2 rounded-xl border border-violet-100 bg-white p-4 text-sm">
     <input type="hidden" name="_action" value="purge" />
     <p>Ready to delete now: {retention.messages} messages, {retention.drafts} drafts, {retention.conversations} conversations.</p>
     <label class="flex items-center gap-2"><input type="checkbox" name="confirm" value="yes" /> I understand this cannot be undone</label>

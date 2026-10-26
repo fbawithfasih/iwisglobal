@@ -224,8 +224,8 @@ const pickupMessage = pickupParts.length
   : null;
 const pickupWa = pickupMessage && booking.traveler_phone ? waHref(booking.traveler_phone, pickupMessage) : null;
 const contactWa = booking.traveler_phone ? waHref(booking.traveler_phone) : null;
-const contactBtn = 'inline-flex min-h-11 items-center rounded border border-stone-300 bg-white px-3 text-sm text-stone-800';
-const actionBtn = 'min-h-11 rounded bg-amber-800 text-white px-4 text-sm';
+const contactBtn = 'inline-flex min-h-11 items-center rounded border border-violet-200 bg-white px-3 text-sm text-stone-800';
+const actionBtn = 'min-h-11 rounded btn-primary text-white px-4 text-sm';
 // Add-on names for display. IDs gained a "<TOUR_ID>_" prefix when a tour is
 // re-saved (tours.ts replaceAddOns), so match both forms; an add-on since
 // removed from the tour falls back to its stored id.
@@ -240,7 +240,7 @@ const addOnNames = booking.add_on_ids
   <h1 class="text-2xl font-semibold mt-2 mb-6">{booking.traveler_name} — {isCustom ? 'Custom Agra tour' : tour?.title ?? booking.tour_id}</h1>
 
   <div class="grid md:grid-cols-2 gap-6">
-    <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-2 text-sm">
+    <div class="bg-white rounded-xl border border-violet-100 p-6 space-y-2 text-sm">
       <h2 class="font-semibold mb-2">Booking details</h2>
       <p><span class="text-stone-500">Date:</span> {formatTravelDate(booking.travel_date)}</p>
       <p><span class="text-stone-500">Travelers:</span> {booking.travelers}</p>
@@ -268,7 +268,7 @@ const addOnNames = booking.add_on_ids
       {!isCustom && (
       <form method="POST" class="pt-4 flex items-center gap-2">
         <input type="hidden" name="_action" value="status" />
-        <select name="status" class="min-h-11 rounded border border-stone-300 px-2">
+        <select name="status" aria-label="Booking status" class="min-h-11 rounded border border-violet-200 px-2">
           <option value="confirmed" selected={booking.status === 'confirmed'}>Confirmed</option>
           <option value="completed" selected={booking.status === 'completed'}>Completed</option>
           <option value="cancelled" selected={booking.status === 'cancelled'}>Cancelled</option>
@@ -279,7 +279,7 @@ const addOnNames = booking.add_on_ids
     </div>
 
     {(owed > 0 || paidLink) && (
-      <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-3 text-sm">
+      <div class="bg-white rounded-xl border border-violet-100 p-6 space-y-3 text-sm">
         <h2 class="font-semibold mb-2">Balance payment</h2>
         {balanceResult && balanceMessages[balanceResult] && (
           <p class={`rounded px-3 py-2 ${balanceMessages[balanceResult].ok ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>{balanceMessages[balanceResult].text}</p>
@@ -291,7 +291,7 @@ const addOnNames = booking.add_on_ids
             {openLink && (
               <label class="block">
                 <span class="text-stone-500">Guest's payment link</span>
-                <input type="text" readonly value={balanceLinkUrl(openLink.id, emailLocale(booking.locale))} onclick="this.select()" class="mt-1 w-full rounded border border-stone-300 px-2 py-2 text-xs" />
+                <input type="text" readonly value={balanceLinkUrl(openLink.id, emailLocale(booking.locale))} onclick="this.select()" class="mt-1 w-full rounded border border-violet-200 px-2 py-2 text-xs" />
               </label>
             )}
             <div class="flex flex-wrap gap-2 pt-1">
@@ -307,7 +307,7 @@ const addOnNames = booking.add_on_ids
     )}
 
     {isCustom && (
-      <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-3 text-sm md:col-span-2">
+      <div class="bg-white rounded-xl border border-violet-100 p-6 space-y-3 text-sm md:col-span-2">
         <h2 class="font-semibold mb-2">Custom Agra tour</h2>
         {customResult && customMessages[customResult] && (
           <p class={`rounded px-3 py-2 ${customMessages[customResult].ok ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>{customMessages[customResult].text}</p>
@@ -363,21 +363,21 @@ const addOnNames = booking.add_on_ids
       </div>
     )}
 
-    <div class="bg-white rounded-xl border border-stone-200 p-6 space-y-3 text-sm">
+    <div class="bg-white rounded-xl border border-violet-100 p-6 space-y-3 text-sm">
       <h2 class="font-semibold mb-2">Itinerary / logistics</h2>
       <form method="POST" class="space-y-3">
         <input type="hidden" name="_action" value="itinerary" />
         <div>
           <label class="block text-stone-500 mb-1">Pickup time</label>
-          <input name="pickupTime" value={booking.pickup_time} class="w-full rounded border border-stone-300 px-3 py-2" placeholder="e.g. 5:30 AM" />
+          <input name="pickupTime" value={booking.pickup_time} class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. 5:30 AM" />
         </div>
         <div>
           <label class="block text-stone-500 mb-1">Guide assigned</label>
-          <input name="guideAssigned" value={booking.guide_assigned} class="w-full rounded border border-stone-300 px-3 py-2" />
+          <input name="guideAssigned" aria-label="Guide assigned" value={booking.guide_assigned} class="w-full rounded border border-violet-200 px-3 py-2" />
         </div>
         <div>
           <label class="block text-stone-500 mb-1">Vehicle</label>
-          <input name="vehicle" value={booking.vehicle} class="w-full rounded border border-stone-300 px-3 py-2" placeholder="e.g. Innova, plate no." />
+          <input name="vehicle" value={booking.vehicle} class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. Innova, plate no." />
         </div>
         <button type="submit" class={actionBtn}>Save itinerary</button>
       </form>
@@ -391,13 +391,13 @@ const addOnNames = booking.add_on_ids
     </div>
   </div>
 
-  <div class="bg-white rounded-xl border border-stone-200 p-6 mt-6 text-sm">
+  <div class="bg-white rounded-xl border border-violet-100 p-6 mt-6 text-sm">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-semibold">Entry tickets</h2>
       {tickets.length > 0 && (
         booking.tickets_purchased_at
           ? <span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-800">Bought {fmtTime(booking.tickets_purchased_at)}</span>
-          : <span class="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-800">Tickets needed</span>
+          : <span class="px-2 py-0.5 rounded text-xs bg-brand-100 text-brand-700">Tickets needed</span>
       )}
     </div>
 
@@ -414,7 +414,7 @@ const addOnNames = booking.add_on_ids
           <ul class="list-disc list-inside">
             {tickets.map((t) => <li><strong>{t.quantity} ×</strong> {t.name}</li>)}
           </ul>
-          <a href={ASI_BOOKING_URL} target="_blank" rel="noopener noreferrer" class="inline-block mt-2 rounded bg-amber-800 text-white px-3 py-1.5">Open ASI ticket booking ↗</a>
+          <a href={ASI_BOOKING_URL} target="_blank" rel="noopener noreferrer" class="inline-block mt-2 rounded btn-primary text-white px-3 py-1.5">Open ASI ticket booking ↗</a>
         </div>
 
         <form method="POST" class="flex items-center gap-2">
@@ -423,7 +423,7 @@ const addOnNames = booking.add_on_ids
             <input type="checkbox" name="purchased" checked={!!booking.tickets_purchased_at} onchange="this.form.submit()" class="h-4 w-4" />
             Tickets bought
           </label>
-          <noscript><button type="submit" class="rounded border border-stone-300 px-2 py-0.5">Save</button></noscript>
+          <noscript><button type="submit" class="rounded border border-violet-200 px-2 py-0.5">Save</button></noscript>
         </form>
 
         <form method="POST" enctype="multipart/form-data" class="border-t border-stone-100 pt-4 space-y-2">
@@ -435,11 +435,11 @@ const addOnNames = booking.add_on_ids
 
         {booking.ticket_file_key && (
           <div class="flex flex-wrap items-center gap-3 text-stone-600">
-            <a href={`/admin/bookings/${booking.id}/ticket`} class="text-amber-800 hover:underline">Download e-ticket</a>
+            <a href={`/admin/bookings/${booking.id}/ticket`} class="text-brand-700 hover:underline">Download e-ticket</a>
             <span>{booking.ticket_emailed_at ? `Emailed ${fmtTime(booking.ticket_emailed_at)}` : 'Not emailed yet'}</span>
             <form method="POST">
               <input type="hidden" name="_action" value="ticket_resend" />
-              <button type="submit" class="text-amber-800 hover:underline">Resend email</button>
+              <button type="submit" class="text-brand-700 hover:underline">Resend email</button>
             </form>
           </div>
         )}
@@ -447,11 +447,11 @@ const addOnNames = booking.add_on_ids
     )}
   </div>
 
-  <div class="bg-white rounded-xl border border-stone-200 p-6 mt-6 text-sm">
+  <div class="bg-white rounded-xl border border-violet-100 p-6 mt-6 text-sm">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-semibold">Review</h2>
       {review ? (
-        <span class="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-800">{'★'.repeat(review.rating)} · {review.status}</span>
+        <span class="px-2 py-0.5 rounded text-xs bg-brand-100 text-brand-700">{'★'.repeat(review.rating)} · {review.status}</span>
       ) : booking.review_requested_at ? (
         <span class="px-2 py-0.5 rounded text-xs bg-stone-100 text-stone-700">Requested {fmtTime(booking.review_requested_at)}</span>
       ) : null}
@@ -463,7 +463,7 @@ const addOnNames = booking.add_on_ids
       <div class="mb-4 rounded-lg bg-stone-50 p-3">
         <p class="text-amber-500" aria-label={`${review.rating} out of 5`}>{'★'.repeat(review.rating)}<span class="text-stone-300">{'★'.repeat(5 - review.rating)}</span></p>
         {review.comment && <p class="mt-1 whitespace-pre-line text-stone-700">{review.comment}</p>}
-        <a href="/admin/reviews" class="inline-flex min-h-11 items-center text-amber-800 hover:underline">Approve or hide on the Reviews page</a>
+        <a href="/admin/reviews" class="inline-flex min-h-11 items-center text-brand-700 hover:underline">Approve or hide on the Reviews page</a>
       </div>
     )}
     {!reviewOpen ? (
@@ -487,11 +487,11 @@ const addOnNames = booking.add_on_ids
     {reviewOpen && !review && !booking.traveler_email && <p class="mt-2 text-xs text-stone-500">No email on file, so use WhatsApp.</p>}
   </div>
 
-  <div class="bg-white rounded-xl border border-stone-200 p-6 mt-6 text-sm">
+  <div class="bg-white rounded-xl border border-violet-100 p-6 mt-6 text-sm">
     <h2 class="font-semibold mb-3">Notes</h2>
     <form method="POST" class="flex gap-2 mb-4">
       <input type="hidden" name="_action" value="note" />
-      <input name="note" placeholder="Add a note…" class="flex-1 rounded border border-stone-300 px-3 py-2" required />
+      <input name="note" placeholder="Add a note…" class="flex-1 rounded border border-violet-200 px-3 py-2" required />
       <button type="submit" class={actionBtn}>Add</button>
     </form>
     {notes.length === 0 ? (

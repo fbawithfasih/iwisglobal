@@ -100,7 +100,7 @@ const targets = metrics
     {allPass ? 'All seven gates pass. Automatic replies can be switched on, starting with greetings only.' : 'Not ready yet. Automatic replies stay off until every gate passes.'}
   </p>
 
-  <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white">
+  <div class="overflow-x-auto rounded-xl border border-violet-100 bg-white">
     <table class="w-full text-sm">
       <thead class="bg-stone-50 text-left text-stone-600"><tr><th class="px-3 py-2">Gate</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Now</th><th class="px-3 py-2">Needed</th></tr></thead>
       <tbody>
@@ -108,7 +108,7 @@ const targets = metrics
           <tr class="border-t border-stone-100 align-top">
             <td class="px-3 py-2 font-medium">{g.id}. {g.name}</td>
             <td class="px-3 py-2"><span class={`rounded px-2 py-0.5 text-xs ${light[g.status].style}`}>{light[g.status].text}</span></td>
-            <td class="px-3 py-2">{g.value}{g.status !== 'pass' && <span class="mt-1 block text-xs text-amber-800">Next: {g.next}</span>}</td>
+            <td class="px-3 py-2">{g.value}{g.status !== 'pass' && <span class="mt-1 block text-xs text-brand-700">Next: {g.next}</span>}</td>
             <td class="px-3 py-2 text-stone-500">{g.target}</td>
           </tr>
         ))}
@@ -146,16 +146,16 @@ const targets = metrics
   <form method="POST" class="max-w-2xl space-y-2">
     <input type="hidden" name="_action" value="record_eval" />
     <label class="sr-only" for="record">RECORD line</label>
-    <textarea id="record" name="record" rows="3" class="w-full rounded-lg border border-stone-300 bg-white p-2 text-xs" placeholder='RECORD {"date":"2026-10-20T10:00:00.000Z","questions":144,...}'></textarea>
+    <textarea id="record" name="record" rows="3" class="w-full rounded-lg border border-violet-200 bg-white p-2 text-xs" placeholder='RECORD {"date":"2026-10-20T10:00:00.000Z","questions":144,...}'></textarea>
     <div class="flex flex-wrap gap-3">
-      <button type="submit" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Record result</button>
-      <a href="/admin/whatsapp/test-questions.json" class={`${btn} inline-flex items-center border border-stone-300 bg-white text-stone-700`}>Download real questions (redacted)</a>
+      <button type="submit" class={`${btn} border border-violet-200 bg-white text-stone-700`}>Record result</button>
+      <a href="/admin/whatsapp/test-questions.json" class={`${btn} inline-flex items-center border border-violet-200 bg-white text-stone-700`}>Download real questions (redacted)</a>
     </div>
   </form>
 
   <h2 class="text-lg font-semibold mt-8 mb-1">Pilot targets (last {PILOT_DAYS} days)</h2>
   <p class="text-stone-500 text-sm mb-3">Measured from real chats. "Resolved" counts automatic replies and drafts you sent unedited together.</p>
-  <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white">
+  <div class="overflow-x-auto rounded-xl border border-violet-100 bg-white">
     <table class="w-full text-sm">
       <thead class="bg-stone-50 text-left text-stone-600"><tr><th class="px-3 py-2">Target</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Now</th><th class="px-3 py-2">Goal</th></tr></thead>
       <tbody>
@@ -191,7 +191,7 @@ const targets = metrics
   )}
 
   <form method="POST" class="mt-8">
-    <button type="submit" name="_action" value="report" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Email me this week's report</button>
+    <button type="submit" name="_action" value="report" class={`${btn} border border-violet-200 bg-white text-stone-700`}>Email me this week's report</button>
     <span class="ml-2 text-xs text-stone-500">Suggested every Monday, with the audit.</span>
   </form>
 </AdminLayout>

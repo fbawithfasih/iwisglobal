@@ -1,0 +1,77 @@
+---
+// Living reference for the admin's shared look: colours, buttons, badges, cards, tables and form fields.
+// Admin only; nothing on this page writes data. New admin pages should use these classes.
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { resolveEnv } from '../../lib/env';
+import { isAdminAuthenticated } from '../../lib/requireAdmin';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET))) {
+  return Astro.redirect('/admin/login');
+}
+
+const swatches = [
+  ['Brand 950', '#2e1065', 'Page titles, sidebar top'],
+  ['Brand 900', '#4c1d95', 'Sidebar, secondary button text'],
+  ['Brand 700', '#6d28d9', 'Primary buttons, links, focus ring on light'],
+  ['Brand 300', '#a78bfa', 'Fills and rings on dark only, never text'],
+  ['Background', '#f7f5ff', 'Page background'],
+  ['Text', '#1e1b2e', 'Body text'],
+  ['Muted text', '#64748b', 'Secondary text on white only'],
+];
+---
+<AdminLayout title="Style guide">
+  <h1 class="mb-1 text-2xl font-semibold">Style guide</h1>
+  <p class="mb-6 text-sm text-stone-600">What the admin is built from. Violet is the brand (same as the public site); orange and rose are kept for offers and coupons.</p>
+
+  <h2 class="mb-2 text-lg font-semibold">Colours</h2>
+  <div class="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    {swatches.map(([name, hex, use]) => (
+      <div class="rounded-xl border bg-white p-3">
+        <div class="mb-2 h-10 rounded-lg border border-violet-100" style={`background:${hex}`}></div>
+        <p class="font-semibold">{name}</p>
+        <p class="text-sm text-stone-700">{hex}</p>
+        <p class="text-sm text-stone-700">{use}</p>
+      </div>
+    ))}
+  </div>
+
+  <h2 class="mb-2 text-lg font-semibold">Buttons</h2>
+  <div class="mb-8 flex flex-wrap items-center gap-3">
+    <button type="button" class="btn-primary min-h-11 px-4 text-white">Primary</button>
+    <button type="button" class="btn-secondary min-h-11 px-4">Secondary</button>
+    <button type="button" class="btn-danger min-h-11 px-4">Danger</button>
+  </div>
+
+  <h2 class="mb-2 text-lg font-semibold">Badges</h2>
+  <div class="mb-8 flex flex-wrap gap-2">
+    <span class="badge badge-info">New</span>
+    <span class="badge badge-success">Paid</span>
+    <span class="badge badge-warn">Follow-up due</span>
+    <span class="badge badge-danger">Failed</span>
+    <span class="badge badge-neutral">Draft</span>
+  </div>
+
+  <h2 class="mb-2 text-lg font-semibold">Card and table</h2>
+  <div class="mb-8 rounded-xl border bg-white p-4">
+    <p class="mb-3 font-semibold">A card holds one thing</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead><tr class="border-b border-violet-100"><th class="py-2 pr-4">Guest</th><th class="py-2 pr-4">Tour</th><th class="py-2">Status</th></tr></thead>
+        <tbody>
+          <tr class="border-b border-violet-100"><td class="py-2 pr-4">Example guest</td><td class="py-2 pr-4">Sunrise tour</td><td class="py-2"><span class="badge badge-success">Paid</span></td></tr>
+          <tr><td class="py-2 pr-4">Another guest</td><td class="py-2 pr-4">Same-day Agra</td><td class="py-2"><span class="badge badge-warn">Balance due</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2 class="mb-2 text-lg font-semibold">Form fields</h2>
+  <div class="mb-8 grid max-w-xl gap-3 rounded-xl border bg-white p-4">
+    <label class="grid gap-1 text-sm font-medium">Name<input class="rounded border border-violet-200 px-3 py-2 font-normal" placeholder="Full name" /></label>
+    <label class="grid gap-1 text-sm font-medium">Stage<select class="rounded border border-violet-200 px-3 py-2 font-normal"><option>New</option><option>Contacted</option></select></label>
+    <label class="grid gap-1 text-sm font-medium">Note<textarea class="rounded border border-violet-200 px-3 py-2 font-normal" rows="2"></textarea></label>
+  </div>
+</AdminLayout>

@@ -45,13 +45,13 @@ const posts = db ? await listBlogPosts(db) : [];
 <AdminLayout title="Blog">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-semibold">Blog</h1>
-    <a href="/admin/blog/new" class="rounded bg-amber-800 text-white px-4 py-2 text-sm">+ New post</a>
+    <a href="/admin/blog/new" class="rounded btn-primary text-white px-4 py-2 text-sm">+ New post</a>
   </div>
 
   {posts.length === 0 ? (
     <p class="text-stone-500">No posts yet.</p>
   ) : (
-    <div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+    <div class="bg-white rounded-xl border border-violet-100 overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="bg-stone-50 text-left">
           <tr>
@@ -65,7 +65,7 @@ const posts = db ? await listBlogPosts(db) : [];
           {posts.map((p) => (
             <tr class="border-t border-stone-100">
               <td class="px-4 py-2">
-                <a href={`/admin/blog/${p.id}/edit`} class="text-amber-800 hover:underline">{p.title}</a>
+                <a href={`/admin/blog/${p.id}/edit`} class="text-brand-700 hover:underline">{p.title}</a>
               </td>
               <td class="px-4 py-2 text-stone-600">{p.category}</td>
               <td class="px-4 py-2">

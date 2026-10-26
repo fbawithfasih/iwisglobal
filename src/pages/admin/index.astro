@@ -51,18 +51,18 @@ const statusClass = (status: string) =>
     : status === 'completed'
       ? 'bg-green-100 text-green-800'
       : status === AWAITING_STATUS
-        ? 'bg-amber-100 text-amber-900'
+        ? 'bg-brand-100 text-amber-900'
         : 'bg-red-100 text-red-800';
 ---
 <AdminLayout title="Bookings">
   <h1 class="text-2xl font-semibold mb-6">Bookings</h1>
 
   <div class="flex flex-wrap gap-2 mb-6 text-sm">
-    <a href="/admin" class={`px-3 py-1 rounded ${!statusFilter ? 'bg-amber-800 text-white' : 'bg-white border border-stone-300'}`}>All</a>
-    <a href="/admin?status=awaiting_confirmation" class={`px-3 py-1 rounded ${statusFilter === AWAITING_STATUS ? 'bg-amber-800 text-white' : 'bg-white border border-stone-300'}`}>Waiting for you</a>
-    <a href="/admin?status=confirmed" class={`px-3 py-1 rounded ${statusFilter === 'confirmed' ? 'bg-amber-800 text-white' : 'bg-white border border-stone-300'}`}>Confirmed</a>
-    <a href="/admin?status=completed" class={`px-3 py-1 rounded ${statusFilter === 'completed' ? 'bg-amber-800 text-white' : 'bg-white border border-stone-300'}`}>Completed</a>
-    <a href="/admin?status=cancelled" class={`px-3 py-1 rounded ${statusFilter === 'cancelled' ? 'bg-amber-800 text-white' : 'bg-white border border-stone-300'}`}>Cancelled</a>
+    <a href="/admin" class={`px-3 py-1 rounded ${!statusFilter ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>All</a>
+    <a href="/admin?status=awaiting_confirmation" class={`px-3 py-1 rounded ${statusFilter === AWAITING_STATUS ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>Waiting for you</a>
+    <a href="/admin?status=confirmed" class={`px-3 py-1 rounded ${statusFilter === 'confirmed' ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>Confirmed</a>
+    <a href="/admin?status=completed" class={`px-3 py-1 rounded ${statusFilter === 'completed' ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>Completed</a>
+    <a href="/admin?status=cancelled" class={`px-3 py-1 rounded ${statusFilter === 'cancelled' ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>Cancelled</a>
   </div>
 
   {bookings.length === 0 ? (
@@ -73,14 +73,14 @@ const statusClass = (status: string) =>
     <ul class="md:hidden space-y-3">
       {bookings.map((b) => (
         <li>
-          <a href={`/admin/bookings/${b.id}`} class="block rounded-xl border border-stone-200 bg-white p-4">
+          <a href={`/admin/bookings/${b.id}`} class="block rounded-xl border border-violet-100 bg-white p-4">
             <span class="flex items-start justify-between gap-3">
               <span class="font-semibold text-stone-900">{formatTravelDate(b.travel_date)}</span>
               <span class={`shrink-0 px-2 py-0.5 rounded text-xs ${statusClass(b.status)}`}>{statusLabel(b.status)}</span>
             </span>
             <span class="block text-sm text-stone-700 mt-1">{tourName(b.tour_id)}</span>
             <span class="block text-sm mt-2">
-              <span class="text-amber-800 font-medium">{b.traveler_name}</span>
+              <span class="text-brand-700 font-medium">{b.traveler_name}</span>
               <span class="text-stone-500"> · {b.travelers} pax · {b.source}</span>
             </span>
             <span class="block text-sm mt-1">
@@ -90,13 +90,13 @@ const statusClass = (status: string) =>
               )}
             </span>
             {ticketsNeeded.has(b.id) && (
-              <span class="inline-block mt-2 px-1.5 py-0.5 rounded text-[11px] bg-amber-100 text-amber-800">Tickets needed</span>
+              <span class="inline-block mt-2 px-1.5 py-0.5 rounded text-[11px] bg-brand-100 text-brand-700">Tickets needed</span>
             )}
           </a>
         </li>
       ))}
     </ul>
-    <div class="hidden md:block bg-white rounded-xl border border-stone-200 overflow-hidden">
+    <div class="hidden md:block bg-white rounded-xl border border-violet-100 overflow-hidden">
       <table class="w-full text-sm">
         <thead class="bg-stone-50 text-left">
           <tr>
@@ -116,9 +116,9 @@ const statusClass = (status: string) =>
               <td class="px-4 py-2 whitespace-nowrap">{formatTravelDate(b.travel_date)}</td>
               <td class="px-4 py-2">{tourName(b.tour_id)}</td>
               <td class="px-4 py-2">
-                <a href={`/admin/bookings/${b.id}`} class="text-amber-800 hover:underline">{b.traveler_name}</a>
+                <a href={`/admin/bookings/${b.id}`} class="text-brand-700 hover:underline">{b.traveler_name}</a>
                 {ticketsNeeded.has(b.id) && (
-                  <span class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-amber-100 text-amber-800 whitespace-nowrap">Tickets needed</span>
+                  <span class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-brand-100 text-brand-700 whitespace-nowrap">Tickets needed</span>
                 )}
               </td>
               <td class="px-4 py-2">{b.travelers}</td>

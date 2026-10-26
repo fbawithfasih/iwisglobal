@@ -38,16 +38,16 @@ if (db) {
 }
 ---
 <AdminLayout title="Email subscribers">
-  <p class="mb-2 text-sm"><a href="/admin/leads" class="text-amber-800 hover:underline">&larr; All leads</a></p>
+  <p class="mb-2 text-sm"><a href="/admin/leads" class="text-brand-700 hover:underline">&larr; All leads</a></p>
   <h1 class="mb-4 text-2xl font-semibold">Email subscribers</h1>
   {failed && <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">The lists could not be read.</p>}
   <nav class="mb-4 flex flex-wrap gap-2 text-sm">
     {Object.entries(LABEL).map(([k, label]) => (
-      <a href={`/admin/leads/subscribers?status=${k}`} class={`rounded-full border px-3 py-1.5 ${k === status ? 'border-amber-800 bg-amber-800 text-white' : 'border-stone-300 bg-white text-stone-700'}`}>{label} ({counts[k] ?? 0})</a>
+      <a href={`/admin/leads/subscribers?status=${k}`} class={`rounded-full border px-3 py-1.5 ${k === status ? 'border-amber-800 btn-primary text-white' : 'border-violet-200 bg-white text-stone-700'}`}>{label} ({counts[k] ?? 0})</a>
     ))}
   </nav>
   <p class="mb-4 text-xs text-stone-500">Only people who confirmed by email are "Subscribed" and can receive marketing. Waiting for confirmation means they ticked the box but have not pressed the button in the email yet.</p>
-  <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white text-sm">
+  <div class="overflow-x-auto rounded-xl border border-violet-100 bg-white text-sm">
     <table class="w-full text-left">
       <thead class="bg-stone-50"><tr><th class="px-3 py-2">Name</th><th class="px-3 py-2">Email</th><th class="px-3 py-2">Language</th><th class="px-3 py-2">Last consent change</th></tr></thead>
       <tbody>

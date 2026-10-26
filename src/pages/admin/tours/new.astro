@@ -72,38 +72,38 @@ if (Astro.request.method === 'POST' && db) {
 
   {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
 
-  <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-stone-200 p-6 space-y-4 max-w-2xl text-sm">
+  <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-violet-100 p-6 space-y-4 max-w-2xl text-sm">
     <div>
       <label class="block text-stone-500 mb-1">Title *</label>
-      <input name="title" required class="w-full rounded border border-stone-300 px-3 py-2" placeholder="e.g. Sunset Agra Fort & Taj Mahal Tour" />
+      <input name="title" required class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. Sunset Agra Fort & Taj Mahal Tour" />
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Summary (shown on cards/meta description)</label>
-      <textarea name="summary" rows="2" class="w-full rounded border border-stone-300 px-3 py-2"></textarea>
+      <textarea name="summary" rows="2" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Description ("About this tour" — blank line between paragraphs; "## Heading" for a bullet heading; "Know before you go: …", "What to bring: …", "Not allowed: …" paragraphs go to "Good to know"; [text](/link) for links)</label>
-      <textarea name="description" rows="14" class="w-full rounded border border-stone-300 px-3 py-2 md:font-mono md:text-xs leading-relaxed"></textarea>
+      <textarea name="description" rows="14" class="w-full rounded border border-violet-200 px-3 py-2 md:font-mono md:text-xs leading-relaxed"></textarea>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <label class="block text-stone-500 mb-1">Price per traveler (INR) *</label>
-        <input type="number" name="amount" min="1" required class="w-full rounded border border-stone-300 px-3 py-2" />
+        <input type="number" name="amount" min="1" required class="w-full rounded border border-violet-200 px-3 py-2" />
       </div>
       <div>
         <label class="block text-stone-500 mb-1">Price per traveler (USD, optional)</label>
-        <input type="number" name="usdAmount" min="1" class="w-full rounded border border-stone-300 px-3 py-2" placeholder="Leave blank to hide USD for this tour" />
+        <input type="number" name="usdAmount" min="1" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="Leave blank to hide USD for this tour" />
       </div>
     </div>
     <input type="hidden" name="currency" value="INR" />
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <label class="block text-stone-500 mb-1">Duration label</label>
-        <input name="durationLabel" placeholder="e.g. Same-day (12–14 hrs)" class="w-full rounded border border-stone-300 px-3 py-2" />
+        <input name="durationLabel" placeholder="e.g. Same-day (12–14 hrs)" class="w-full rounded border border-violet-200 px-3 py-2" />
       </div>
       <div>
         <label class="block text-stone-500 mb-1">Start point</label>
-        <input name="startPoint" placeholder="e.g. Delhi Airport" class="w-full rounded border border-stone-300 px-3 py-2" />
+        <input name="startPoint" placeholder="e.g. Delhi Airport" class="w-full rounded border border-violet-200 px-3 py-2" />
       </div>
     </div>
     <div>
@@ -114,33 +114,33 @@ if (Astro.request.method === 'POST' && db) {
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Image URL (used only if no file is uploaded above)</label>
-      <input name="image" placeholder="https://…" class="w-full rounded border border-stone-300 px-3 py-2" />
+      <input name="image" placeholder="https://…" class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Highlights (one per line)</label>
-      <textarea name="highlights" rows="4" class="w-full rounded border border-stone-300 px-3 py-2"></textarea>
+      <textarea name="highlights" rows="4" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Entry tickets included in the price (one per line — only tickets NOT sold as an add-on below; staff buy these on ASI's site for every booking)</label>
-      <textarea name="entryTicketsInPrice" rows="2" class="w-full rounded border border-stone-300 px-3 py-2" placeholder="Agra Fort entry ticket"></textarea>
+      <textarea name="entryTicketsInPrice" rows="2" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="Agra Fort entry ticket"></textarea>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Itinerary (one step per line: "Time | Activity | Details (optional, shown when the stop is tapped)")</label>
-      <textarea name="itinerary" rows="5" class="w-full rounded border border-stone-300 px-3 py-2" placeholder="5:30 AM | Pickup from hotel"></textarea>
+      <textarea name="itinerary" rows="5" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="5:30 AM | Pickup from hotel"></textarea>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Includes (one per line)</label>
-      <textarea name="includes" rows="3" class="w-full rounded border border-stone-300 px-3 py-2"></textarea>
+      <textarea name="includes" rows="3" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Excludes (one per line)</label>
-      <textarea name="excludes" rows="3" class="w-full rounded border border-stone-300 px-3 py-2"></textarea>
+      <textarea name="excludes" rows="3" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
     </div>
     <div>
       <label class="block text-stone-500 mb-1">
         Group-size pricing tiers (one per line: "Travelers | INR price per traveler | USD price (optional)")
       </label>
-      <textarea name="pricingTiers" rows="4" class="w-full rounded border border-stone-300 px-3 py-2" placeholder={'1 | 11999\n2 | 6499\n3 | 5499\n4 | 4499'}></textarea>
+      <textarea name="pricingTiers" rows="4" class="w-full rounded border border-violet-200 px-3 py-2" placeholder={'1 | 11999\n2 | 6499\n3 | 5499\n4 | 4499'}></textarea>
       <p class="text-xs text-stone-500 mt-1">
         Optional. Leave blank to keep the flat "Price per traveler" above for every group size.
       </p>
@@ -149,7 +149,7 @@ if (Astro.request.method === 'POST' && db) {
       <label class="block text-stone-500 mb-1">
         Add-ons (one per line: "Name | INR price | USD price (optional) | yes-if-included-by-default | each-if-per-traveler")
       </label>
-      <textarea name="addOns" rows="3" class="w-full rounded border border-stone-300 px-3 py-2" placeholder="Taj Mahal entry ticket (foreign visitor) | 1300 | 16 | | each"></textarea>
+      <textarea name="addOns" rows="3" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="Taj Mahal entry ticket (foreign visitor) | 1300 | 16 | | each"></textarea>
       <p class="text-xs text-stone-500 mt-1">
         Optional extras the customer can tick, e.g. "Taj Mahal entry ticket (foreign visitor) | 1300 | 16 | | each"
         (₹1,300 / $16 per traveler). Tickets that are part of the tour price go in "Entry tickets included in the
@@ -159,7 +159,7 @@ if (Astro.request.method === 'POST' && db) {
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Guide language</label>
-      <input name="guideLanguage" value="English" class="w-full rounded border border-stone-300 px-3 py-2" />
+      <input name="guideLanguage" value="English" class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <label class="flex items-center gap-2">
       <input type="checkbox" name="pickupIncluded" />
@@ -174,8 +174,8 @@ if (Astro.request.method === 'POST' && db) {
       Featured on homepage
     </label>
     <!-- Phones: pinned to the bottom of the screen while scrolling the form. -->
-    <div class="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-white/95 border-t border-stone-200 md:static md:m-0 md:p-0 md:bg-transparent md:border-0">
-      <button type="submit" class="w-full md:w-auto min-h-11 rounded bg-amber-800 text-white px-4 py-2">Create tour</button>
+    <div class="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-white/95 border-t border-violet-100 md:static md:m-0 md:p-0 md:bg-transparent md:border-0">
+      <button type="submit" class="w-full md:w-auto min-h-11 rounded btn-primary text-white px-4 py-2">Create tour</button>
     </div>
   </form>
 </AdminLayout>
