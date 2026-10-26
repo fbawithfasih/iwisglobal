@@ -33,7 +33,7 @@ const highlights = db ? await listAgraHighlights(db) : [];
           {h.image ? (
             <img src={h.image} alt="" class="w-20 shrink-0 aspect-[4/3] object-cover rounded" />
           ) : (
-            <div class="w-20 shrink-0 aspect-[4/3] rounded bg-stone-100 flex items-center justify-center text-[10px] text-stone-400">No image</div>
+            <div class="w-20 shrink-0 aspect-[4/3] rounded bg-stone-100 flex items-center justify-center text-[10px] text-stone-600">No image</div>
           )}
           <div class="min-w-0 flex-1">
             <div class="flex items-start justify-between gap-2">
@@ -64,7 +64,7 @@ const highlights = db ? await listAgraHighlights(db) : [];
                 {h.image ? (
                   <img src={h.image} alt={h.name} class="w-16 aspect-[4/3] object-cover rounded" />
                 ) : (
-                  <div class="w-16 aspect-[4/3] rounded bg-stone-100 flex items-center justify-center text-[10px] text-stone-400">No image</div>
+                  <div class="w-16 aspect-[4/3] rounded bg-stone-100 flex items-center justify-center text-[10px] text-stone-600">No image</div>
                 )}
               </td>
               <td class="px-4 py-2">
