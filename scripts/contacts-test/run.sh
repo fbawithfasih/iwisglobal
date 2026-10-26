@@ -27,3 +27,4 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/ga-session.ts" --bundl
 ROOT="$ROOT" node --no-warnings "$OUT/ga-session.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/blocked-paths.ts" --bundle --platform=node --format=esm --outfile="$OUT/blocked-paths.mjs" --log-level=error
 ROOT="$ROOT" node --no-warnings "$OUT/blocked-paths.mjs"
+node --no-warnings "$ROOT/scripts/contacts-test/backup-tools.mjs"

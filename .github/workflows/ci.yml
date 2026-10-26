@@ -1,0 +1,38 @@
+name: Checks
+
+# Runs on every pull request, so a change that does not type-check, build or pass the tests is visible
+# before anyone merges it. It deploys nothing and is given no secrets: the build's sitemap step reads D1
+# only when a token exists, and without one it logs a notice and carries on (tour and blog URLs are left
+# out of that throwaway build, which is fine here). deploy.yml is separate and runs only on main.
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type check
+        run: npx astro check
+
+      - name: Build
+        run: npm run build
+
+      - name: Tests
+        run: sh scripts/contacts-test/run.sh

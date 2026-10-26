@@ -14,3 +14,6 @@ dist/
 
 # Hotelbeds certification run output (scripts/hotelbeds-cert)
 hotelbeds-cert-logs/
+
+# Local database backups hold customer data
+backups/

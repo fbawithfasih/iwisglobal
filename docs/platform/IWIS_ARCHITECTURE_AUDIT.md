@@ -112,7 +112,7 @@ Severity is my judgement for a business that handles customer names, phone numbe
 
 | ID | Finding | Severity | Status |
 |---|---|---|---|
-| E1 | **No automated checks in CI.** The only workflow that runs on pushes builds and deploys; nothing runs `astro check` or the test suites. Pull requests show only the GitGuardian secret scan. Checks have been run by hand before each merge. | High | **[Verified]** |
+| E1 | **No automated checks in CI.** The only workflow that runs on pushes builds and deploys; nothing runs `astro check` or the test suites. Pull requests show only the GitGuardian secret scan. Checks have been run by hand before each merge. | High | **[Verified]**. Addressed by `.github/workflows/ci.yml` (M0). |
 | E2 | **No tests for authentication or authorization.** The 11 suites cover contacts, email, campaigns, WhatsApp, offers, events and booking logic. | High for the planned work | **[Verified]** |
 | E3 | **Large page files mix data access, form handling and markup** (`whatsapp/index.astro` 513 lines, `bookings/[id].astro` 510, `leads/[id].astro` 247, `campaigns/[id].astro` 247). | Medium | **[Verified]** |
 | E4 | **Schema changes are hand-applied SQL files** with no migration table, so there is no record of which file ran where. They have been applied one at a time, always before deploy, on the owner's explicit yes. | Medium | **[Verified]** |
@@ -162,6 +162,6 @@ I did not measure admin page speed. Two things are known: the middleware pins ad
 - Every admin page's mobile layout and keyboard behaviour.
 - A full sweep of admin routes for state-changing GET requests.
 - Cloudflare account settings (WAF, Access, secrets inventory, backups / D1 Time Travel retention).
-- Backup and restore procedure for D1 and R2. (The Cloudflare command-line tool is not logged in in the audit environment, so an export from production cannot be run or rehearsed from here.)
+- Backup and restore for D1 and R2: procedure and tools now exist (`docs/platform/IWIS_BACKUP_AND_RECOVERY.md`) and were rehearsed on a local copy. A real export from production and the R2 backup still need the owner's Cloudflare login.
 - Dependency vulnerability scan (`npm audit`).
 - Admin performance under realistic data volumes.
