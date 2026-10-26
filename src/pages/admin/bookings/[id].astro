@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 
+import EmptyState from '../../../components/EmptyState.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
@@ -505,7 +506,7 @@ const addOnNames = booking.add_on_ids
       <button type="submit" class={actionBtn}>Add</button>
     </form>
     {notes.length === 0 ? (
-      <p class="text-stone-500">No notes yet.</p>
+      <EmptyState message="No notes yet" hint="Notes are for the team. Guests never see them." />
     ) : (
       <ul class="space-y-2">
         {notes.map((n) => (

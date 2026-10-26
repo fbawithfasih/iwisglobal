@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import EmptyState from '../../components/EmptyState.astro';
 import { resolveEnv } from '../../lib/env';
 import { isAdminAuthenticated } from '../../lib/requireAdmin';
 import { listBookings, updateBookingStatus } from '../../lib/crm';
@@ -88,7 +89,7 @@ const emptyText = q
   </nav>
 
   {bookings.length === 0 ? (
-    <p class="rounded-xl border border-dashed border-violet-200 bg-white px-4 py-8 text-center text-stone-500">{emptyText}</p>
+    <EmptyState message={emptyText} />
   ) : (
     <>
     <!-- Phones: one card per booking; the 8-column table below doesn't fit. -->

@@ -1,0 +1,16 @@
+---
+// Admin empty state: what is missing, why that is fine, and the one thing to do next. Used on every admin list.
+interface Props {
+  message: string;
+  hint?: string;
+  href?: string;
+  action?: string;
+  class?: string;
+}
+const { message, hint, href, action, class: extra = '' } = Astro.props;
+---
+<div class={`rounded-xl border border-dashed border-violet-200 bg-white px-4 py-8 text-center ${extra}`}>
+  <p class="font-medium text-stone-800">{message}</p>
+  {hint && <p class="mx-auto mt-1 max-w-md text-sm text-stone-500">{hint}</p>}
+  {href && action && <a href={href} class="btn-primary mt-4 inline-flex min-h-11 items-center rounded px-4 text-sm text-white">{action}</a>}
+</div>

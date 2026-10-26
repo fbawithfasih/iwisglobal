@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 
+import EmptyState from '../../../components/EmptyState.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -49,7 +50,7 @@ const rows = offers
   </p>
 
   {rows.length === 0 ? (
-    <p class="text-stone-500">No offers yet.</p>
+    <EmptyState message="No offers yet" hint="An offer is a discount guests see at checkout." href="/admin/offers/new" action="+ New offer" />
   ) : (
     <ul class="space-y-3">
       {rows.map(({ o, status, value, window, conditions, tours }) => (

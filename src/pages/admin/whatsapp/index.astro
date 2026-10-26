@@ -6,6 +6,7 @@
 // Give back buttons come from src/lib/waInbox.ts.
 export const prerender = false;
 
+import EmptyState from '../../../components/EmptyState.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
@@ -215,7 +216,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
   </nav>
 
   {conversations.length === 0 && !selected ? (
-    <p class="text-stone-500">{tab === 'all' ? 'No messages yet. Once the webhook is connected in Meta, chats appear here.' : 'Nothing here right now.'}</p>
+    <EmptyState message={tab === 'all' ? 'No messages yet' : 'Nothing here right now'} hint={tab === 'all' ? 'Once the webhook is connected in Meta, chats appear here.' : undefined} />
   ) : (
     <div class="grid gap-6 md:grid-cols-[18rem_1fr]">
       <ul class={`space-y-2 ${chatOpen ? 'max-md:hidden' : ''}`} aria-label="Conversations">
