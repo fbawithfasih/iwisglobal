@@ -6,7 +6,7 @@ import type { Currency } from '../currency';
 import { getCatalogItem } from '../tours';
 import { countBookings } from '../db';
 import type { BookingRequest, OrderResult, VerifyRequest, VerifiedBooking, PaymentProvider } from './index';
-import { packAttribution, packGuest, packMeta, unpackAttribution, unpackGuest, unpackMeta } from './orderNotes';
+import { packAttribution, packGa, packGuest, packMeta, unpackAttribution, unpackGuest, unpackMeta } from './orderNotes';
 
 function getCreds(env: Record<string, unknown>) {
   const keyId = (env.PUBLIC_RAZORPAY_KEY_ID ?? env.RAZORPAY_KEY_ID) as string | undefined;
@@ -270,6 +270,7 @@ export const razorpayProvider: PaymentProvider = {
     if (!keyId || !keySecret) throw new Error('Payment gateway is misconfigured. Please contact support.');
 
     const auth = btoa(`${keyId}:${keySecret}`);
+    const gaNote = packGa(req.gaClientId, req.gaSessionId);
     const res = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
       headers: {
@@ -295,7 +296,8 @@ export const razorpayProvider: PaymentProvider = {
           foundingGuestDiscount: String(discount?.offerId === FOUNDING_GUEST_OFFER_ID),
           discount: String(discount?.amount ?? 0),
           ...(discount ? { offerId: discount.offerId, discountLabel: discount.label } : {}),
-          ...(req.gaClientId ? { gaClientId: req.gaClientId } : {}),
+          // Client and session id share one key (packGa): a tour order has no spare note key.
+          ...(gaNote ? { gaClientId: gaNote } : {}),
           // So the webhook can create the booking if the browser never comes back (one key each, see orderNotes.ts).
           guest: packGuest(req.guest),
           attr: packAttribution(req.attribution),

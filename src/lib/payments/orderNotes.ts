@@ -86,3 +86,19 @@ export function unpackMeta(note: unknown): MetaContext {
   if (v.k !== 1) return { consent: false, fbp: '', fbc: '', ip: '', userAgent: '' };
   return { consent: true, fbp: s(v.b, 120), fbc: s(v.c, 300), ip: s(v.i, 45), userAgent: s(v.u, 400) };
 }
+
+// GA4's client id and session id share the gaClientId note ("<client id>|<session id>"), because the order has no
+// spare key. The session id lets GA4 put the purchase in the visitor's session, so it is credited to the ad or
+// search that brought them; without it the Measurement Protocol purchase lands in "Unassigned".
+const GA_CLIENT = /^\d{1,20}\.\d{1,20}$/;
+const GA_SESSION = /^\d{1,20}$/;
+
+export function packGa(clientId: unknown, sessionId: unknown): string | undefined {
+  if (typeof clientId !== 'string' || !GA_CLIENT.test(clientId)) return undefined;
+  return typeof sessionId === 'string' && GA_SESSION.test(sessionId) ? `${clientId}|${sessionId}` : clientId;
+}
+
+export function unpackGa(note: unknown): { clientId: string; sessionId: string } {
+  const [clientId = '', sessionId = ''] = typeof note === 'string' ? note.split('|') : [];
+  return { clientId: GA_CLIENT.test(clientId) ? clientId : '', sessionId: GA_SESSION.test(sessionId) ? sessionId : '' };
+}

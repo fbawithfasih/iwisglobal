@@ -19,6 +19,8 @@ export interface BookingRequest {
   // the same GA4 user/session (backlog 2.8). Optional: absent if GA4
   // hasn't loaded yet, or for a return visitor without the cookie.
   gaClientId?: string;
+  // GA4 session id (from the _ga_<id> cookie), stored with the client id so the purchase joins the visitor's session.
+  gaSessionId?: string;
   // Backlog 0.4 — pay the full amount now, or a 25% deposit with the
   // balance due on pickup. Defaults to 'full' when omitted.
   paymentType?: 'full' | 'deposit';
