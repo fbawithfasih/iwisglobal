@@ -5,6 +5,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../lib/env';
 import { isAdminAuthenticated } from '../../lib/requireAdmin';
 import { listBookings, updateBookingStatus } from '../../lib/crm';
+import { BOOKING_VIEWS, bookingCounts, bookingReasons, searchBookings, viewBookings, type BookingViewKey } from '../../lib/bookingsAdmin';
+import { todayIst } from '../../lib/availability';
 import { listTours } from '../../lib/tours';
 import { computeTicketsToBuy, ticketsOutstanding } from '../../lib/entryTickets';
 import { formatTravelDate, formatMoneyMinor } from '../../lib/format';
@@ -27,46 +29,66 @@ if (Astro.request.method === 'POST') {
   return Astro.redirect('/admin');
 }
 
-const statusFilter = Astro.url.searchParams.get('status') ?? undefined;
-const bookings = db ? await listBookings(db, { status: statusFilter }) : [];
+const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 80);
+const legacyStatus = Astro.url.searchParams.get('status'); // old bookmarks: /admin?status=confirmed
+const requested = Astro.url.searchParams.get('view') ?? legacyStatus ?? '';
+const view: BookingViewKey = BOOKING_VIEWS.some((v) => v.key === requested)
+  ? (requested as BookingViewKey)
+  : requested === AWAITING_STATUS ? 'awaiting' : 'attention';
+const allBookings = db ? await listBookings(db, {}) : [];
 
 // "Tickets needed": confirmed bookings whose monument tickets aren't marked
 // bought yet (see lib/entryTickets.ts). All tours (drafts too) so older
 // bookings of an unpublished tour still resolve.
 const toursById = new Map((db ? await listTours(db) : []).map((t) => [t.id, t]));
-const ticketsNeeded = new Set(
-  bookings
-    .filter((b) => {
-      const tour = toursById.get(b.tour_id);
-      return tour ? ticketsOutstanding(b, computeTicketsToBuy(tour, b)) : false;
-    })
-    .map((b) => b.id)
-);
+const needsTickets = (b: (typeof allBookings)[number]) => {
+  const tour = toursById.get(b.tour_id);
+  return tour ? ticketsOutstanding(b, computeTicketsToBuy(tour, b)) : false;
+};
+const ticketsNeeded = new Set(allBookings.filter(needsTickets).map((b) => b.id));
 
 const tourName = (id: string) => (id === CUSTOM_TOUR_ID ? 'Custom Agra tour' : toursById.get(id)?.title ?? id);
 const statusLabel = (status: string) => (status === AWAITING_STATUS ? 'waiting for you' : status);
 const statusClass = (status: string) =>
   status === 'confirmed'
-    ? 'bg-blue-100 text-blue-800'
+    ? 'badge-info'
     : status === 'completed'
-      ? 'bg-green-100 text-green-800'
+      ? 'badge-success'
       : status === AWAITING_STATUS
-        ? 'bg-brand-100 text-amber-900'
-        : 'bg-red-100 text-red-800';
+        ? 'badge-warn'
+        : 'badge-danger';
+
+const today = todayIst();
+const counts = bookingCounts(allBookings, today, needsTickets);
+const bookings = searchBookings(viewBookings(allBookings, view, today, needsTickets), q, tourName);
+const reasonsOf = (b: (typeof allBookings)[number]) => bookingReasons(b, today, ticketsNeeded.has(b.id));
+const viewHref = (key: string) => `/admin?view=${key}${q ? `&q=${encodeURIComponent(q)}` : ''}`;
+const emptyText = q
+  ? `No bookings match "${q}" in this view.`
+  : view === 'attention'
+    ? 'Nothing needs you right now.'
+    : 'No bookings in this view yet.';
 ---
 <AdminLayout title="Bookings">
-  <h1 class="text-2xl font-semibold mb-6">Bookings</h1>
+  <h1 class="text-2xl font-semibold mb-4">Bookings</h1>
 
-  <div class="flex flex-wrap gap-2 mb-6 text-sm">
-    <a href="/admin" class={`px-3 py-1 rounded ${!statusFilter ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>All</a>
-    <a href="/admin?status=awaiting_confirmation" class={`px-3 py-1 rounded ${statusFilter === AWAITING_STATUS ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>Waiting for you</a>
-    <a href="/admin?status=confirmed" class={`px-3 py-1 rounded ${statusFilter === 'confirmed' ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>Confirmed</a>
-    <a href="/admin?status=completed" class={`px-3 py-1 rounded ${statusFilter === 'completed' ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>Completed</a>
-    <a href="/admin?status=cancelled" class={`px-3 py-1 rounded ${statusFilter === 'cancelled' ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>Cancelled</a>
-  </div>
+  <form method="get" action="/admin" class="mb-4 flex gap-2">
+    <input type="hidden" name="view" value={view} />
+    <input type="search" name="q" value={q} placeholder="Search name, email, phone, tour or booking id" aria-label="Search bookings" class="min-w-0 flex-1 rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm" />
+    <button type="submit" class="btn-secondary px-4 py-2 text-sm">Search</button>
+  </form>
+
+  <nav aria-label="Booking views" class="flex flex-wrap gap-2 mb-6 text-sm">
+    {BOOKING_VIEWS.map((v) => (
+      <a href={viewHref(v.key)} aria-current={view === v.key ? 'page' : undefined} class={`px-3 py-1 rounded ${view === v.key ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>
+        {v.label}
+        {counts[v.key] > 0 && v.key !== 'all' && <span class="ml-1 opacity-80">{counts[v.key]}</span>}
+      </a>
+    ))}
+  </nav>
 
   {bookings.length === 0 ? (
-    <p class="text-stone-500">No bookings found.</p>
+    <p class="rounded-xl border border-dashed border-violet-200 bg-white px-4 py-8 text-center text-stone-500">{emptyText}</p>
   ) : (
     <>
     <!-- Phones: one card per booking; the 8-column table below doesn't fit. -->
@@ -89,25 +111,26 @@ const statusClass = (status: string) =>
                 <span class="text-amber-700"> · {formatMoneyMinor(b.total_amount - b.amount_paid, b.currency)} due</span>
               )}
             </span>
-            {ticketsNeeded.has(b.id) && (
-              <span class="inline-block mt-2 px-1.5 py-0.5 rounded text-[11px] bg-brand-100 text-brand-700">Tickets needed</span>
-            )}
+            {reasonsOf(b).filter((r) => r.key !== 'awaiting').map((r) => (
+              <span class="badge-warn mr-1 mt-2 inline-block rounded px-1.5 py-0.5 text-[11px]">{r.label}</span>
+            ))}
           </a>
         </li>
       ))}
     </ul>
     <div class="hidden md:block bg-white rounded-xl border border-violet-100 overflow-hidden">
       <table class="w-full text-sm">
+        <caption class="sr-only">Bookings</caption>
         <thead class="bg-stone-50 text-left">
           <tr>
-            <th class="px-4 py-2">Date</th>
-            <th class="px-4 py-2">Tour</th>
-            <th class="px-4 py-2">Traveler</th>
-            <th class="px-4 py-2">Pax</th>
-            <th class="px-4 py-2">Amount</th>
-            <th class="px-4 py-2">Source</th>
-            <th class="px-4 py-2">Status</th>
-            <th class="px-4 py-2"></th>
+            <th scope="col" class="px-4 py-2">Date</th>
+            <th scope="col" class="px-4 py-2">Tour</th>
+            <th scope="col" class="px-4 py-2">Traveler</th>
+            <th scope="col" class="px-4 py-2">Pax</th>
+            <th scope="col" class="px-4 py-2">Amount</th>
+            <th scope="col" class="px-4 py-2">Source</th>
+            <th scope="col" class="px-4 py-2">Status</th>
+            <th scope="col" class="px-4 py-2"><span class="sr-only">Manage</span></th>
           </tr>
         </thead>
         <tbody>
@@ -117,9 +140,9 @@ const statusClass = (status: string) =>
               <td class="px-4 py-2">{tourName(b.tour_id)}</td>
               <td class="px-4 py-2">
                 <a href={`/admin/bookings/${b.id}`} class="text-brand-700 hover:underline">{b.traveler_name}</a>
-                {ticketsNeeded.has(b.id) && (
-                  <span class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-brand-100 text-brand-700 whitespace-nowrap">Tickets needed</span>
-                )}
+                {reasonsOf(b).filter((r) => r.key !== 'awaiting').map((r) => (
+                  <span class="badge-warn ml-1 rounded px-1.5 py-0.5 text-[11px] whitespace-nowrap">{r.label}</span>
+                ))}
               </td>
               <td class="px-4 py-2">{b.travelers}</td>
               <td class="px-4 py-2">
