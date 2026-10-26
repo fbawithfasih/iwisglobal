@@ -93,17 +93,53 @@ const itemClass = (active: boolean) =>
       @media (min-width: 1024px) {
         #admin-sidebar { transform: none; visibility: visible; transition: none; }
       }
-      /* Violet admin theme, applied here so every admin page picks it up
-         without editing each one. Colours are Tailwind's violet scale (the
-         site's "brand"). The pages' amber primary buttons and links become
-         violet; inputs and cards get violet borders. */
+      /* Shared admin component classes. Pages use these (and Tailwind's violet scale) instead of the old amber classes. */
+      /* Written after Tailwind's utilities so it wins ties (a page's own rounded / px classes still apply to size and spacing). */
+      .btn-primary,
+      main .bg-amber-800 {
+        background-image: linear-gradient(to right, var(--brand-900), var(--brand-700), #7c3aed);
+        background-color: var(--brand-700);
+        border-radius: 9999px;
+        box-shadow: 0 4px 10px rgba(76, 29, 149, 0.2);
+        transition: filter var(--motion);
+      }
+      .btn-primary:hover,
+      main .bg-amber-800:hover { filter: brightness(1.1); }
+      .btn-secondary {
+        border: 1px solid #ddd6fe;
+        border-radius: 9999px;
+        background: var(--surface);
+        color: var(--brand-900);
+        transition: background-color var(--motion);
+      }
+      .btn-secondary:hover { background: #f5f3ff; }
+      .btn-danger {
+        border-radius: 9999px;
+        background: #be123c;
+        color: #fff;
+        transition: filter var(--motion);
+      }
+      .btn-danger:hover { filter: brightness(1.1); }
+      /* Status badges: dark text on a pastel fill (contrast of each pair is checked in /admin/style-guide). */
+      .badge { display: inline-block; border-radius: 9999px; padding: 0.125rem 0.625rem; font-size: 0.75rem; font-weight: 600; line-height: 1.25rem; }
+      .badge-info { background: #dbeafe; color: #1e3a8a; }
+      .badge-success { background: #d1fae5; color: #065f46; }
+      .badge-warn { background: #ffedd5; color: #9a3412; }
+      .badge-danger { background: #ffe4e6; color: #9f1239; }
+      .badge-neutral { background: #ede9fe; color: var(--brand-900); }
+      /* Remaining page-wide restyles for markup that predates the component classes (retired page by page). */
       body { background: var(--bg); }
       main h1 { color: var(--brand-950); }
       main .rounded-xl { border-radius: 1rem; }
       main .bg-white.border,
-      main .bg-white.border-stone-200 { border-color: #ede9fe; box-shadow: 0 1px 2px rgba(76, 29, 149, 0.06); }
+      main .bg-white.border-violet-100 { border-color: #ede9fe; box-shadow: 0 1px 2px rgba(76, 29, 149, 0.06); }
+      /* Components shared with the public site (PhoneInput, OfferForm) still carry the old classes; recoloured here until they get admin variants. */
       main .border-stone-200 { border-color: #ede9fe; }
       main .border-stone-300 { border-color: #ddd6fe; }
+      main .text-amber-800 { color: var(--brand-700); }
+      main .bg-amber-100 { background-color: #ede9fe; }
+      /* Tailwind stone-500 on the page background is 4.4:1, just under the 4.5:1 AA line; this is 5.3:1. */
+      main .text-stone-500 { color: #6a645f; }
       main .bg-stone-50 { background-color: #faf9ff; }
       main input.border:not([type='checkbox']):not([type='radio']),
       main select.border,
@@ -111,16 +147,6 @@ const itemClass = (active: boolean) =>
       main input.border:focus,
       main select.border:focus,
       main textarea.border:focus { outline: none; border-color: #8b5cf6; box-shadow: 0 0 0 2px #c4b5fd; }
-      main .bg-amber-800 {
-        background-image: linear-gradient(to right, #4c1d95, #6d28d9, #7c3aed);
-        background-color: #6d28d9;
-        border-radius: 9999px;
-        box-shadow: 0 4px 10px rgba(76, 29, 149, 0.2);
-        transition: filter 0.15s;
-      }
-      main .bg-amber-800:hover { filter: brightness(1.1); }
-      main .text-amber-800 { color: #6d28d9; }
-      main .bg-amber-100 { background-color: #ede9fe; }
       main .hover\:underline:hover { text-decoration: underline; }
       /* Phones: 16px form text, or iOS zooms in on every field tap.
          !important so it also beats per-field size utilities (text-xs etc). */

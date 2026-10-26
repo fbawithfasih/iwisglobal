@@ -86,7 +86,7 @@ const blockers = db ? await enableBlockers(db) : [];
 const error = Astro.url.searchParams.get('err');
 const note = Astro.url.searchParams.get('note');
 const btn = 'min-h-11 rounded px-4 text-sm font-medium';
-const field = 'w-full rounded border border-stone-300 bg-white px-2 py-1.5 text-sm';
+const field = 'w-full rounded border border-violet-200 bg-white px-2 py-1.5 text-sm';
 const label = 'block text-xs text-stone-500 mb-1';
 const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Indian', saarc: 'SAARC / BIMSTEC' };
 ---
@@ -100,14 +100,14 @@ const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Ind
 
   {rates && (
     <>
-      <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+      <section class="mt-6 rounded-xl border border-violet-100 bg-white p-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="text-lg font-semibold">Switch
               <span class={`ml-2 rounded px-2 py-0.5 text-xs font-medium ${rates.enabled ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>{rates.enabled ? 'On' : 'Off'}</span>
             </h2>
             {blockers.length > 0 && !rates.enabled && (
-              <ul class="mt-1 list-disc pl-5 text-sm text-amber-800">
+              <ul class="mt-1 list-disc pl-5 text-sm text-brand-700">
                 {blockers.map((b) => <li>{b}</li>)}
               </ul>
             )}
@@ -121,7 +121,7 @@ const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Ind
         </div>
       </section>
 
-      <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+      <section class="mt-6 rounded-xl border border-violet-100 bg-white p-4">
         <h2 class="text-lg font-semibold">Guide and limits</h2>
         <p class="text-sm text-stone-500 mb-3">Whole numbers. A blank dollar rate is the rupee rate converted at the rate below, rounded up.</p>
         <form method="POST" class="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -130,7 +130,7 @@ const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Ind
           <div><label class={label} for="maxDays">Most days in a trip</label><input id="maxDays" name="maxDays" inputmode="numeric" value={rates.maxDays} class={field} /></div>
           <div><label class={label} for="dayMinutes">Most minutes in a day</label><input id="dayMinutes" name="dayMinutes" inputmode="numeric" value={rates.dayMinutes} class={field} /></div>
           <div><label class={label} for="usdRate">Rupees per dollar</label><input id="usdRate" name="usdRate" inputmode="numeric" value={rates.usdRate} class={field} /></div>
-          <div class="col-span-2 sm:col-span-5"><button type="submit" name="_action" value="settings" class={`${btn} bg-amber-800 text-white`}>Save</button></div>
+          <div class="col-span-2 sm:col-span-5"><button type="submit" name="_action" value="settings" class={`${btn} btn-primary text-white`}>Save</button></div>
         </form>
       </section>
 
@@ -141,7 +141,7 @@ const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Ind
         </p>
         <div class="space-y-3">
           {rates.vehicles.map((v) => (
-            <form method="POST" class="rounded-xl border border-stone-200 bg-white p-4">
+            <form method="POST" class="rounded-xl border border-violet-100 bg-white p-4">
               <input type="hidden" name="id" value={v.id} />
               <h3 class="mb-2 font-medium">{v.name}</h3>
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-6">
@@ -152,7 +152,7 @@ const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Ind
                 <div><label class={label} for={`du-${v.id}`}>Delhi round trip ($)</label><input id={`du-${v.id}`} name="delhiReturnUsd" inputmode="numeric" value={v.delhiReturn.usd ?? ''} class={field} /></div>
                 <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="active" checked={v.active} /> Offer to guests</label>
               </div>
-              <button type="submit" name="_action" value="vehicle" class={`${btn} mt-3 bg-amber-800 text-white`}>Save {v.name}</button>
+              <button type="submit" name="_action" value="vehicle" class={`${btn} mt-3 btn-primary text-white`}>Save {v.name}</button>
             </form>
           ))}
         </div>
@@ -166,7 +166,7 @@ const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Ind
         </p>
         <div class="space-y-4">
           {rates.stops.map((s) => (
-            <div class="rounded-xl border border-stone-200 bg-white p-4">
+            <div class="rounded-xl border border-violet-100 bg-white p-4">
               <form method="POST">
                 <input type="hidden" name="id" value={s.id} />
                 <h3 class="mb-2 font-medium">{s.name}</h3>
@@ -177,7 +177,7 @@ const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Ind
                   <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="nightOnly" checked={s.nightOnly} /> Full-moon nights only</label>
                   <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="active" checked={s.active} /> Offer to guests</label>
                 </div>
-                <button type="submit" name="_action" value="stop" class={`${btn} mt-3 bg-amber-800 text-white`}>Save stop</button>
+                <button type="submit" name="_action" value="stop" class={`${btn} mt-3 btn-primary text-white`}>Save stop</button>
               </form>
               <div class="mt-4 overflow-x-auto">
                 <table class="w-full text-sm">
@@ -194,7 +194,7 @@ const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Ind
                           <td class="py-1 pr-3"><input form={`fee-${s.id}-${c}`} name="friday" aria-label={`${s.name} Friday fee, ${categoryLabel[c]}`} inputmode="numeric" value={f?.friday ?? ''} class={`${field} w-24`} /></td>
                           <td class="py-1 pr-3"><input form={`fee-${s.id}-${c}`} name="afterTaj" aria-label={`${s.name} after-Taj fee, ${categoryLabel[c]}`} inputmode="numeric" value={f?.afterTaj ?? ''} class={`${field} w-24`} /></td>
                           <td class="py-1 pr-3 text-stone-500">{f?.checkedOn || 'not set'}</td>
-                          <td class="py-1"><button form={`fee-${s.id}-${c}`} type="submit" name="_action" value="fee" class="min-h-11 rounded border border-stone-300 px-3 text-sm">Save</button></td>
+                          <td class="py-1"><button form={`fee-${s.id}-${c}`} type="submit" name="_action" value="fee" class="min-h-11 rounded border border-violet-200 px-3 text-sm">Save</button></td>
                         </tr>
                       );
                     })}
@@ -215,12 +215,12 @@ const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Ind
           ))}
         </div>
 
-        <form method="POST" class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+        <form method="POST" class="mt-6 rounded-xl border border-violet-100 bg-white p-4">
           <h3 class="mb-2 font-medium">Add a stop</h3>
           <div class="grid gap-3 sm:grid-cols-3">
             <div><label class={label} for="newStopName">Name</label><input id="newStopName" name="name" required class={field} placeholder="e.g. Akbar's Tomb, Sikandra" /></div>
             <div><label class={label} for="newStopSlug">Page under /agra (optional)</label><input id="newStopSlug" name="attractionSlug" class={field} placeholder="e.g. akbars-tomb" /></div>
-            <div class="flex items-end"><button type="submit" name="_action" value="add_stop" class={`${btn} bg-amber-800 text-white`}>Add stop</button></div>
+            <div class="flex items-end"><button type="submit" name="_action" value="add_stop" class={`${btn} btn-primary text-white`}>Add stop</button></div>
           </div>
         </form>
       </section>

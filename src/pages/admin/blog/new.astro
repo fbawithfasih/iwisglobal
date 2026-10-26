@@ -54,19 +54,19 @@ if (Astro.request.method === 'POST' && db) {
 
   {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
 
-  <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-stone-200 p-6 space-y-4 max-w-2xl text-sm">
+  <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-violet-100 p-6 space-y-4 max-w-2xl text-sm">
     <div>
       <label class="block text-stone-500 mb-1">Title *</label>
-      <input name="title" required class="w-full rounded border border-stone-300 px-3 py-2" placeholder="e.g. Agra in Monsoon: What Actually Changes" />
+      <input name="title" required class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. Agra in Monsoon: What Actually Changes" />
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Description (shown on the blog list and as meta description)</label>
-      <textarea name="description" required rows="2" class="w-full rounded border border-stone-300 px-3 py-2"></textarea>
+      <textarea name="description" required rows="2" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <label class="block text-stone-500 mb-1">Category</label>
-        <select name="category" class="w-full rounded border border-stone-300 px-3 py-2">
+        <select name="category" class="w-full rounded border border-violet-200 px-3 py-2">
           <option value="news">News</option>
           <option value="travel-tips">Travel Tips</option>
           <option value="seasonal">Seasonal</option>
@@ -74,7 +74,7 @@ if (Astro.request.method === 'POST' && db) {
       </div>
       <div>
         <label class="block text-stone-500 mb-1">Status</label>
-        <select name="status" class="w-full rounded border border-stone-300 px-3 py-2">
+        <select name="status" class="w-full rounded border border-violet-200 px-3 py-2">
           <option value="draft">Draft (not visible on the site)</option>
           <option value="published">Published (live immediately)</option>
         </select>
@@ -82,7 +82,7 @@ if (Astro.request.method === 'POST' && db) {
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Author name</label>
-      <input name="authorName" value="IWIS Global" class="w-full rounded border border-stone-300 px-3 py-2" />
+      <input name="authorName" value="IWIS Global" class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Upload image (optional)</label>
@@ -93,7 +93,7 @@ if (Astro.request.method === 'POST' && db) {
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Image URL (used only if no file is uploaded above)</label>
-      <input name="image" placeholder="https://…" class="w-full rounded border border-stone-300 px-3 py-2" />
+      <input name="image" placeholder="https://…" class="w-full rounded border border-violet-200 px-3 py-2" />
       <label class="flex items-start gap-2 min-h-11 py-2">
         <input type="checkbox" name="imageIsIllustration" class="mt-1" />
         <span>Cover is an illustration (AI-generated or artwork), not a real photo — the site labels it "Illustration".</span>
@@ -101,11 +101,11 @@ if (Astro.request.method === 'POST' && db) {
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Body (Markdown)</label>
-      <textarea name="body" rows="14" class="w-full rounded border border-stone-300 px-3 py-2 md:font-mono md:text-xs" placeholder={"## A heading\n\nA paragraph. **Bold** and _italic_ and [links](https://example.com) work."}></textarea>
+      <textarea name="body" rows="14" class="w-full rounded border border-violet-200 px-3 py-2 md:font-mono md:text-xs" placeholder={"## A heading\n\nA paragraph. **Bold** and _italic_ and [links](https://example.com) work."}></textarea>
     </div>
     <!-- Phones: pinned to the bottom of the screen while scrolling the form. -->
-    <div class="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-white/95 border-t border-stone-200 md:static md:m-0 md:p-0 md:bg-transparent md:border-0">
-      <button type="submit" class="w-full md:w-auto min-h-11 rounded bg-amber-800 text-white px-4 py-2">Create post</button>
+    <div class="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-white/95 border-t border-violet-100 md:static md:m-0 md:p-0 md:bg-transparent md:border-0">
+      <button type="submit" class="w-full md:w-auto min-h-11 rounded btn-primary text-white px-4 py-2">Create post</button>
     </div>
   </form>
 </AdminLayout>

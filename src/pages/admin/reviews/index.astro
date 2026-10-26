@@ -60,7 +60,7 @@ const tourNames = new Map((db ? await listTours(db) : []).map((t) => [t.id, t.ti
 const sent = Astro.url.searchParams.get('sent');
 const pendingCount = reviews.filter((r) => r.status === 'pending').length;
 const statusStyle: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-800',
+  pending: 'bg-brand-100 text-brand-700',
   approved: 'bg-green-100 text-green-800',
   hidden: 'bg-stone-200 text-stone-700',
 };
@@ -72,7 +72,7 @@ const btn = 'min-h-11 rounded px-4 text-sm font-medium';
     <p class={`mb-4 ${REVIEW_REQUEST_MESSAGES[sent].ok ? 'text-green-700' : 'text-red-600'}`}>{REVIEW_REQUEST_MESSAGES[sent].text}</p>
   )}
 
-  <h2 class="text-lg font-semibold mt-6 mb-1">Guest reviews {pendingCount > 0 && <span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">{pendingCount} to check</span>}</h2>
+  <h2 class="text-lg font-semibold mt-6 mb-1">Guest reviews {pendingCount > 0 && <span class="ml-1 rounded-full bg-brand-100 px-2 py-0.5 text-xs text-brand-700">{pendingCount} to check</span>}</h2>
   <p class="text-stone-500 text-sm mb-4">
     Approved reviews show on the tour page and on /reviews. Approve every genuine review, good or bad. Hide only
     abuse, personal details, or text that isn't about the tour.
@@ -82,7 +82,7 @@ const btn = 'min-h-11 rounded px-4 text-sm font-medium';
   ) : (
     <ul class="space-y-3 mb-10">
       {reviews.map((r) => (
-        <li class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+        <li class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <p class="text-lg text-amber-500" aria-label={`${r.rating} out of 5`}>{'★'.repeat(r.rating)}<span class="text-stone-300">{'★'.repeat(5 - r.rating)}</span></p>
             <span class={`rounded px-2 py-0.5 text-xs ${statusStyle[r.status]}`}>{r.status}</span>
@@ -107,7 +107,7 @@ const btn = 'min-h-11 rounded px-4 text-sm font-medium';
                 <input type="hidden" name="_action" value="status" />
                 <input type="hidden" name="reviewId" value={r.id} />
                 <input type="hidden" name="status" value="hidden" />
-                <button type="submit" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Hide</button>
+                <button type="submit" class={`${btn} border border-violet-200 bg-white text-stone-700`}>Hide</button>
               </form>
             )}
           </div>
@@ -126,7 +126,7 @@ const btn = 'min-h-11 rounded px-4 text-sm font-medium';
   ) : (
     <ul class="space-y-3">
       {candidates.map((b) => (
-        <li class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+        <li class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
           <p class="font-semibold text-base"><a href={`/admin/bookings/${b.id}`} class="hover:underline">{b.traveler_name}</a></p>
           <p class="text-stone-700">{tourNames.get(b.tour_id) ?? b.tour_id}</p>
           <p class="text-stone-500">Traveled {formatTravelDate(b.travel_date)}</p>
@@ -135,7 +135,7 @@ const btn = 'min-h-11 rounded px-4 text-sm font-medium';
               <form method="POST">
                 <input type="hidden" name="_action" value="email" />
                 <input type="hidden" name="bookingId" value={b.id} />
-                <button type="submit" class={`${btn} bg-amber-800 text-white`}>Email</button>
+                <button type="submit" class={`${btn} btn-primary text-white`}>Email</button>
               </form>
             )}
             {waHref(b.traveler_phone) && (
@@ -148,7 +148,7 @@ const btn = 'min-h-11 rounded px-4 text-sm font-medium';
             <form method="POST">
               <input type="hidden" name="_action" value="skip" />
               <input type="hidden" name="bookingId" value={b.id} />
-              <button type="submit" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Skip</button>
+              <button type="submit" class={`${btn} border border-violet-200 bg-white text-stone-700`}>Skip</button>
             </form>
           </div>
         </li>

@@ -86,11 +86,11 @@ const unit = (spendBy: Record<string, number>, n: number) => {
   return u ? money(u) : '-';
 };
 const minutes = (m: number | null) => (m == null ? '-' : m < 90 ? `${m} min` : m < 2880 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`);
-const card = 'rounded-xl border border-stone-200 bg-white text-sm';
-const field = 'rounded border border-stone-300 px-3 py-2';
+const card = 'rounded-xl border border-violet-100 bg-white text-sm';
+const field = 'rounded border border-violet-200 px-3 py-2';
 ---
 <AdminLayout title="Lead report">
-  <p class="mb-2 text-sm"><a href="/admin/leads" class="text-amber-800 hover:underline">&larr; All leads</a></p>
+  <p class="mb-2 text-sm"><a href="/admin/leads" class="text-brand-700 hover:underline">&larr; All leads</a></p>
   <h1 class="mb-4 text-2xl font-semibold">Where leads come from</h1>
   {notice && <p class="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">{notice}</p>}
   {failed && <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">The report could not be read.</p>}
@@ -98,14 +98,14 @@ const field = 'rounded border border-stone-300 px-3 py-2';
   <form method="GET" class="mb-4 flex flex-wrap items-end gap-2 text-sm">
     <label>From <input type="date" name="from" value={from} class={field} /></label>
     <label>To <input type="date" name="to" value={to} class={field} /></label>
-    <button class="min-h-11 rounded bg-amber-800 px-4 text-white">Show</button>
+    <button class="min-h-11 rounded btn-primary px-4 text-white">Show</button>
   </form>
   <p class="mb-4 text-xs text-stone-500">A lead counts at every stage it reached. Revenue is what was paid on the linked booking. Cost figures use the spend you enter below, so they are only as complete as that.</p>
 
   {[['By channel', byChannel], ['By campaign', byCampaign]].map(([title, lines]) => (
     <section class="mb-6">
       <h2 class="mb-2 text-lg font-semibold">{title as string}</h2>
-      <div class={`${card} overflow-x-auto`}>
+      <div class={`${card} overflow-x-auto`} tabindex="0" role="region" aria-label="Report table, scrolls sideways">
         <table class="w-full text-left">
           <thead class="bg-stone-50"><tr>
             <th class="px-3 py-2">{title === 'By channel' ? 'Channel' : 'Campaign'}</th><th class="px-3 py-2">Leads</th><th class="px-3 py-2">Quotes</th><th class="px-3 py-2">Deposits</th><th class="px-3 py-2">Bookings</th><th class="px-3 py-2">Revenue</th><th class="px-3 py-2">Spend</th><th class="px-3 py-2">Per lead</th><th class="px-3 py-2">Per booking</th><th class="px-3 py-2">First reply</th>
@@ -128,14 +128,14 @@ const field = 'rounded border border-stone-300 px-3 py-2';
 
   <section class="mb-6">
     <h2 class="mb-2 text-lg font-semibold">Email campaigns</h2>
-    <div class={`${card} overflow-x-auto`}>
+    <div class={`${card} overflow-x-auto`} tabindex="0" role="region" aria-label="Report table, scrolls sideways">
       <table class="w-full text-left">
         <thead class="bg-stone-50"><tr><th class="px-3 py-2">Campaign</th><th class="px-3 py-2">Sent</th><th class="px-3 py-2">Delivered</th><th class="px-3 py-2">Bounced</th><th class="px-3 py-2">Spam</th><th class="px-3 py-2">Unsubscribed</th><th class="px-3 py-2">Link clicks</th></tr></thead>
         <tbody>
           {campaigns.length === 0 && <tr><td class="px-3 py-3 text-stone-500" colspan="7">No campaign has been sent yet.</td></tr>}
           {campaigns.map((c) => (
             <tr class="border-t border-stone-100">
-              <td class="px-3 py-2"><a href={`/admin/campaigns/${c.id}`} class="text-amber-800 hover:underline">{c.name}</a></td>
+              <td class="px-3 py-2"><a href={`/admin/campaigns/${c.id}`} class="text-brand-700 hover:underline">{c.name}</a></td>
               <td class="px-3 py-2">{c.sent}</td><td class="px-3 py-2">{c.delivered}</td><td class="px-3 py-2">{c.bounced}</td><td class="px-3 py-2">{c.complained}</td><td class="px-3 py-2">{c.unsubscribed}</td><td class="px-3 py-2">{c.clicks}</td>
             </tr>
           ))}
@@ -148,16 +148,16 @@ const field = 'rounded border border-stone-300 px-3 py-2';
     <h2 class="mb-2 text-lg font-semibold">Marketing spend</h2>
     <form method="POST" class={`${card} mb-3 grid gap-2 p-4 sm:grid-cols-6`}>
       <input type="hidden" name="_action" value="add_spend" />
-      <input type="date" name="date" value={day(new Date())} required class={field} />
+      <input type="date" name="date" aria-label="Date" value={day(new Date())} required class={field} />
       <input name="channel" list="spend-channels" placeholder="Channel (facebook_ads)" required class={field} />
       <datalist id="spend-channels">{byChannel.map((l) => <option value={l.key} />)}</datalist>
       <input name="campaign" placeholder="Campaign (optional)" class={field} />
       <input name="amount" type="number" step="0.01" min="0" placeholder="Amount" required class={field} />
-      <select name="currency" class={field}><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option></select>
-      <button class="min-h-11 rounded bg-amber-800 text-white">Add spend</button>
+      <select name="currency" aria-label="Currency" class={field}><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option></select>
+      <button class="min-h-11 rounded btn-primary text-white">Add spend</button>
       <input name="note" placeholder="Note (optional)" class={`${field} sm:col-span-6`} />
     </form>
-    <div class={`${card} overflow-x-auto`}>
+    <div class={`${card} overflow-x-auto`} tabindex="0" role="region" aria-label="Report table, scrolls sideways">
       <table class="w-full text-left">
         <tbody>
           {spend.length === 0 && <tr><td class="px-3 py-3 text-stone-500">No spend entered for this period.</td></tr>}

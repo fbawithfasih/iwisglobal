@@ -95,7 +95,7 @@ const usedQuestions = db ? await entryQuestions(db, sent.flatMap((r) => idsOf(r.
 const error = Astro.url.searchParams.get('err');
 const note = Astro.url.searchParams.get('note');
 const btn = 'min-h-11 rounded px-4 text-sm font-medium';
-const field = 'rounded-lg border border-stone-300 bg-white p-2 text-sm';
+const field = 'rounded-lg border border-violet-200 bg-white p-2 text-sm';
 const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : '–');
 const intentLabel: Record<string, string> = {
   greeting: 'Greetings',
@@ -125,7 +125,7 @@ const intentLabel: Record<string, string> = {
 
   {settings && (
     <>
-      <section class="mt-6 rounded-xl border border-stone-200 bg-white p-4">
+      <section class="mt-6 rounded-xl border border-violet-100 bg-white p-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="text-lg font-semibold">Master switch
@@ -152,7 +152,7 @@ const intentLabel: Record<string, string> = {
         A kind can be enabled once at least {MIN_REVIEWED_PER_INTENT} of its drafts were reviewed and {Math.round(MIN_UNEDITED_RATE * 100)}% were sent exactly as drafted.
         "Would send" counts drafts the agent judged good enough to send alone, so you can see the effect before switching anything on.
       </p>
-      <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white">
+      <div class="overflow-x-auto rounded-xl border border-violet-100 bg-white">
         <table class="w-full text-sm">
           <thead class="bg-stone-50 text-left text-stone-600">
             <tr><th class="px-3 py-2">Kind</th><th class="px-3 py-2">Reviewed</th><th class="px-3 py-2">Sent unedited</th><th class="px-3 py-2">Would send</th><th class="px-3 py-2">Sent automatically</th><th class="px-3 py-2"><span class="sr-only">Switch</span></th></tr>
@@ -172,7 +172,7 @@ const intentLabel: Record<string, string> = {
                     <form method="POST">
                       <input type="hidden" name="intent" value={intent} />
                       {on
-                        ? <button type="submit" name="_action" value="intent_off" class={`${btn} border border-stone-300 bg-white text-stone-700`}>Disable</button>
+                        ? <button type="submit" name="_action" value="intent_off" class={`${btn} border border-violet-200 bg-white text-stone-700`}>Disable</button>
                         : <button type="submit" name="_action" value="intent_on" class={`${btn} bg-brand-800 text-white`}>Enable</button>}
                     </form>
                   </td>
@@ -184,7 +184,7 @@ const intentLabel: Record<string, string> = {
       </div>
 
       <h2 class="text-lg font-semibold mt-8 mb-2">Limits</h2>
-      <form method="POST" class="max-w-xl space-y-3 rounded-xl border border-stone-200 bg-white p-4 text-sm">
+      <form method="POST" class="max-w-xl space-y-3 rounded-xl border border-violet-100 bg-white p-4 text-sm">
         <input type="hidden" name="_action" value="limits" />
         <label class="flex items-center justify-between gap-3">Minimum confidence (0.5 to 0.99)
           <input name="minConfidence" type="number" step="0.01" min="0.5" max="0.99" value={settings.minConfidence} class={`${field} w-24`} />
@@ -218,7 +218,7 @@ const intentLabel: Record<string, string> = {
       ) : (
         <ul class="space-y-3">
           {sent.map((r) => (
-            <li class="rounded-xl border border-stone-200 bg-white p-4 text-sm">
+            <li class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
               <p class="text-xs text-stone-500">{formatDateTimeIst(r.sent_at)} · {intentLabel[r.intent] ?? r.intent} · <a href={`/admin/whatsapp?c=${r.conversation_id}`} class="hover:underline">open chat</a></p>
               <p class="mt-1"><span class="font-medium">Guest:</span> {r.guest}</p>
               <p class="mt-1 whitespace-pre-line"><span class="font-medium">Sent:</span> {r.body}</p>
@@ -237,7 +237,7 @@ const intentLabel: Record<string, string> = {
                 {r.audit === 'wrong' && <span class="rounded bg-red-100 px-2 py-0.5 text-xs text-red-800">Marked wrong</span>}
                 {!r.audit && (
                   <>
-                    <button type="submit" name="verdict" value="ok" class={`${btn} border border-stone-300 bg-white text-stone-700`}>OK</button>
+                    <button type="submit" name="verdict" value="ok" class={`${btn} border border-violet-200 bg-white text-stone-700`}>OK</button>
                     <button type="submit" name="verdict" value="wrong" class={`${btn} bg-red-700 text-white`}>Wrong</button>
                   </>
                 )}

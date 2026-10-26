@@ -65,19 +65,19 @@ if (!highlight) return Astro.redirect('/admin/agra-highlights');
 
   {error && <p class="text-red-600 text-sm mb-4">{error}</p>}
 
-  <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-stone-200 p-6 space-y-4 max-w-xl text-sm">
+  <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-violet-100 p-6 space-y-4 max-w-xl text-sm">
     <div>
       <label class="block text-stone-500 mb-1">Name *</label>
-      <input name="name" required value={highlight.name} class="w-full rounded border border-stone-300 px-3 py-2" />
+      <input name="name" required value={highlight.name} class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Description</label>
-      <textarea name="description" rows="3" class="w-full rounded border border-stone-300 px-3 py-2">{highlight.description}</textarea>
+      <textarea name="description" rows="3" class="w-full rounded border border-violet-200 px-3 py-2">{highlight.description}</textarea>
     </div>
     {highlight.image && (
       <div>
         <label class="block text-stone-500 mb-1">Current image</label>
-        <img src={highlight.image} alt={highlight.name} class="w-48 aspect-[4/3] object-cover rounded border border-stone-200" />
+        <img src={highlight.image} alt={highlight.name} class="w-48 aspect-[4/3] object-cover rounded border border-violet-100" />
       </div>
     )}
     <div>
@@ -90,13 +90,13 @@ if (!highlight) return Astro.redirect('/admin/agra-highlights');
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Image URL (used only if a new file isn't uploaded above)</label>
-      <input name="image" placeholder="https://…" class="w-full rounded border border-stone-300 px-3 py-2" />
+      <input name="image" placeholder="https://…" class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <div>
       <label class="block text-stone-500 mb-1">Sort order (lower numbers show first)</label>
-      <input type="number" name="sortOrder" value={highlight.sortOrder} class="w-full rounded border border-stone-300 px-3 py-2" />
+      <input type="number" name="sortOrder" value={highlight.sortOrder} class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
-    <button type="submit" class="rounded bg-amber-800 text-white px-4 py-2">Save changes</button>
+    <button type="submit" class="rounded btn-primary text-white px-4 py-2">Save changes</button>
   </form>
 
   <form method="POST" class="mt-4 max-w-xl">
