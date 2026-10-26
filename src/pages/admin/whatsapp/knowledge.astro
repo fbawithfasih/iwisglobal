@@ -9,6 +9,7 @@ export const prerender = false;
 
 import { getCollection } from 'astro:content';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import type { D1Like } from '../../../lib/db';
@@ -116,6 +117,7 @@ if (Astro.request.method === 'POST' && db) {
     note = `Imported: ${r.created} new proposals, ${r.duplicate} matched an existing entry, ${r.skipped} skipped.`;
   } else if (action === 'purge' && form.get('confirm') === 'yes') {
     const r = await purgeOld(db, new Date(), false, env.IMAGES);
+    await recordAudit(db, auditContext(Astro.request), { action: 'whatsapp.purge', resource: 'wa_conversation', summary: 'Deleted old WhatsApp conversations', meta: { messages: r.messages, drafts: r.drafts, conversations: r.conversations } });
     note = `Deleted ${r.messages} messages, ${r.drafts} drafts and ${r.conversations} old conversations. Knowledge entries were not touched.`;
   }
   if (!preview && !error) {

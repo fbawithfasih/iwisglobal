@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import {
@@ -54,6 +55,7 @@ if (Astro.request.method === 'POST') {
 
   if (action === 'status') {
     await updateBookingStatus(db, id, String(form.get('status') ?? ''));
+    await recordAudit(db, auditContext(Astro.request), { action: 'booking.status', resource: 'booking', resourceId: id, summary: `Set status to ${String(form.get('status') ?? '')}` });
   } else if (action === 'itinerary') {
     await updateBookingItinerary(db, id, {
       pickupTime: String(form.get('pickupTime') ?? ''),
@@ -114,6 +116,7 @@ if (Astro.request.method === 'POST') {
     if (!found) return Astro.redirect(`/admin/bookings/${id}`);
     const done = action === 'confirm_custom' ? await confirmCustomTrip(env, db, found.id) : await cancelCustomTrip(env, db, found.id);
     const result = done.ok ? (action === 'confirm_custom' ? 'confirmed' : 'refunded') : 'error';
+    if (done.ok) await recordAudit(db, auditContext(Astro.request), { action: action === 'confirm_custom' ? 'booking.confirm_custom' : 'booking.cancel_refund', resource: 'booking', resourceId: id, summary: action === 'confirm_custom' ? 'Confirmed a custom trip' : 'Cancelled a custom trip and refunded the deposit' });
     return Astro.redirect(`/admin/bookings/${id}?custom=${result}${done.ok ? '' : `&msg=${encodeURIComponent(done.error)}`}`);
   } else if (action === 'balance_link' || action === 'balance_email' || action === 'balance_whatsapp') {
     // Pay-the-balance link (src/lib/balancePayment.ts): make or reuse the private

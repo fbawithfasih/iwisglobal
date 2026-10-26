@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { auditContext, recordAudit } from '../../../../lib/audit';
 import OfferForm from '../../../../components/OfferForm.astro';
 import { resolveEnv } from '../../../../lib/env';
 import { isAdminAuthenticated } from '../../../../lib/requireAdmin';
@@ -24,6 +25,7 @@ if (Astro.request.method === 'POST') {
   if (form.get('_action') === 'delete') {
     // Bookings keep their own copy of the offer name and amount saved.
     await deleteOffer(db, id);
+    await recordAudit(db, auditContext(Astro.request), { action: 'offer.delete', resource: 'offer', resourceId: id, summary: 'Deleted an offer or coupon' });
     return Astro.redirect('/admin/offers');
   }
   const parsed = parseOfferForm(form);
@@ -33,6 +35,7 @@ if (Astro.request.method === 'POST') {
   } else {
     try {
       await updateOffer(db, id, parsed.input);
+      await recordAudit(db, auditContext(Astro.request), { action: 'offer.update', resource: 'offer', resourceId: id, summary: 'Changed an offer or coupon' });
       return Astro.redirect('/admin/offers');
     } catch (err: any) {
       error = err?.message || 'Could not save the offer.';

@@ -38,6 +38,12 @@ const sections: { label: string; items: NavItem[] }[] = [
       { href: '/admin/leads/report', label: 'Lead report', active: isReport },
     ],
   },
+  {
+    label: 'System',
+    items: [
+      { href: '/admin/audit', label: 'Audit log', active: path.startsWith('/admin/audit') },
+    ],
+  },
 ];
 const itemClass = (active: boolean) =>
   active

@@ -5,6 +5,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import type { D1Like } from '../../../lib/db';
@@ -56,6 +57,7 @@ if (Astro.request.method === 'POST' && db) {
   } catch (e) {
     result = { ok: false, error: e instanceof Error ? e.message : 'Could not complete that.' };
   }
+  if (result.ok && action !== 'refresh') await recordAudit(db, auditContext(Astro.request), { action: `hotels.${action}`, resource: 'hotels', resourceId: text('id') || text('stopId') || text('bookingId') || undefined, summary: note || undefined });
   const query = new URLSearchParams();
   if (!result.ok) query.set('err', result.error ?? 'Could not complete that.');
   else if (note) query.set('note', note);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Restores a backup written by d1-backup.mjs into an EMPTY database: tables and rows, then every index from the
-// repo's schema files, then the WhatsApp search index. It never targets the production database.
+// repo's schema files, then the triggers (audit log append-only rules), then the WhatsApp search index. It never targets the production database.
 //
 //   node scripts/backup/d1-restore.mjs --file backup.sql --local [--cwd <dir>]
 //   node scripts/backup/d1-restore.mjs --file backup.sql --remote --db iwisglobal-restore-test
@@ -16,7 +16,7 @@ import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FTS_REBUILD_SQL, PRODUCTION_DB, indexStatements, rowsFromExecuteJson } from './lib.mjs';
+import { FTS_REBUILD_SQL, PRODUCTION_DB, indexStatements, rowsFromExecuteJson, triggerStatements } from './lib.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(name);
@@ -49,14 +49,18 @@ if (existing.length > 0) {
 const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const schemaTexts = readdirSync(root).filter((f) => /^schema.*\.sql$/.test(f)).sort().map((f) => readFileSync(join(root, f), 'utf8'));
 const indexes = indexStatements(schemaTexts);
+const triggers = triggerStatements(schemaTexts);
 const work = mkdtempSync(join(tmpdir(), 'iwis-restore-'));
 writeFileSync(join(work, 'indexes.sql'), indexes.join('\n') + '\n');
+writeFileSync(join(work, 'triggers.sql'), triggers.join('\n') + '\n');
 writeFileSync(join(work, 'fts.sql'), FTS_REBUILD_SQL);
 
 console.log(`1/3 Restoring tables and rows from ${file} into "${db}" (${remote ? 'remote' : 'local'}) ...`);
 run(['--file', resolve(file)]);
 console.log(`2/3 Re-creating ${indexes.length} indexes from the schema files ...`);
 run(['--file', join(work, 'indexes.sql')]);
+console.log(`2b/3 Re-creating ${triggers.length} trigger(s) (the audit log's append-only rules) ...`);
+if (triggers.length > 0) run(['--file', join(work, 'triggers.sql')]);
 console.log('3/3 Rebuilding the WhatsApp knowledge-base search index ...');
 run(['--file', join(work, 'fts.sql')]);
 
