@@ -56,6 +56,11 @@ export function canDo(principal: Principal | undefined | null, area: string, act
   return !OWNER_ONLY_ACTIONS.some(([a, b]) => a === area && b === action);
 }
 
+/** Who may hold a lead or a chat: nobody (''), the owner login, or a team member's email. */
+export function isValidHolder(value: string): boolean {
+  return value === '' || value === 'owner' || (value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
+}
+
 export const ownerPrincipal = (): Principal => ({ source: 'owner_password', role: 'owner', email: null, name: 'Owner', staffId: null });
 
 /** The label written to the audit log as the actor. */

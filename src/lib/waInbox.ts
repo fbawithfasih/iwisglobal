@@ -1,7 +1,8 @@
 // Who owns each WhatsApp chat (milestone 4): the agent, a person, or nobody
 // because the guest opted out. This file holds every state change and the inbox
 // queries; the webhook, sendDraft and the admin pages call it and never set
-// `state` themselves. Columns: schema_whatsapp.sql and schema_whatsapp_inbox.sql.
+// `state` themselves. Columns: schema_whatsapp.sql, schema_whatsapp_inbox.sql and schema_whatsapp_handler.sql
+// (handled_by: which person has a chat, so two people do not answer the same guest).
 //
 //   agent       the agent drafts replies; staff review and send them
 //   handed_off  a draft said a person is needed; staff have been alerted
@@ -9,6 +10,7 @@
 //   opted_out   the guest asked us to stop; no drafts, no alerts
 import type { D1Like } from './db';
 import type { WaMessage } from './whatsapp';
+import { isValidHolder } from './authz';
 
 export type ChatState = 'agent' | 'handed_off' | 'staff' | 'opted_out';
 
@@ -50,14 +52,14 @@ export async function routeIncoming(db: D1Like, m: WaMessage, now: Date = new Da
   }
   if (state === 'opted_out') {
     if (intent === 'start') {
-      await db.prepare(`UPDATE wa_conversations SET state = 'agent', handoff_reason = '', handed_off_at = NULL WHERE id = ?`).bind(m.phone).run();
+      await db.prepare(`UPDATE wa_conversations SET state = 'agent', handoff_reason = '', handed_off_at = NULL, handled_by = '' WHERE id = ?`).bind(m.phone).run();
     }
     return 'skip';
   }
   if (state === 'staff') {
     const active = conv?.staff_active_at ? Date.parse(conv.staff_active_at) : 0;
     if (now.getTime() - active < STAFF_HOLD_MS) return 'skip';
-    await db.prepare(`UPDATE wa_conversations SET state = 'agent', staff_active_at = NULL WHERE id = ? AND state = 'staff'`).bind(m.phone).run();
+    await db.prepare(`UPDATE wa_conversations SET state = 'agent', staff_active_at = NULL, handled_by = '' WHERE id = ? AND state = 'staff'`).bind(m.phone).run();
   }
   return 'draft';
 }
@@ -112,11 +114,53 @@ export async function takeOver(db: D1Like, phone: string, now: Date = new Date()
     .run();
 }
 
+// A person takes a chat: it becomes staff-handled (the agent stops drafting) and is theirs. The first person wins and
+// nobody is overwritten: if someone else already has it, that person is returned. An opted-out guest cannot be taken.
+export async function takeChat(db: D1Like, phone: string, me: string, now: Date = new Date()): Promise<{ ok: true } | { ok: false; heldBy: string } | { ok: false; reason: 'opted_out' | 'missing' }> {
+  const who = me.trim().toLowerCase();
+  const row = await db.prepare(`SELECT state, handled_by FROM wa_conversations WHERE id = ?`).bind(phone).first<{ state: ChatState; handled_by: string }>();
+  if (!row) return { ok: false, reason: 'missing' };
+  if (row.state === 'opted_out') return { ok: false, reason: 'opted_out' };
+  if (row.handled_by === who) return { ok: true };
+  const r = await db
+    .prepare(`UPDATE wa_conversations SET handled_by = ?, state = 'staff', staff_active_at = ? WHERE id = ? AND handled_by = '' AND state != 'opted_out'`)
+    .bind(who, now.toISOString(), phone)
+    .run();
+  if (r.meta?.changes) return { ok: true };
+  const now2 = await db.prepare(`SELECT handled_by FROM wa_conversations WHERE id = ?`).bind(phone).first<{ handled_by: string }>();
+  return now2?.handled_by === who ? { ok: true } : { ok: false, heldBy: now2?.handled_by ?? '' };
+}
+
+// Passes a chat to a named person (the owner login or a team member), whoever has it now. Returns false for an invalid
+// target, an unknown chat or an opted-out guest.
+export async function handOverChat(db: D1Like, phone: string, to: string, now: Date = new Date()): Promise<boolean> {
+  const who = to.trim().toLowerCase();
+  if (!who || !isValidHolder(who)) return false;
+  const r = await db
+    .prepare(`UPDATE wa_conversations SET handled_by = ?, state = 'staff', staff_active_at = ? WHERE id = ? AND state != 'opted_out' AND handled_by != ?`)
+    .bind(who, now.toISOString(), phone, who)
+    .run();
+  return Boolean(r.meta?.changes);
+}
+
+// Records who sent an outgoing message and, if nobody has the chat, makes it theirs. Best effort: a failure here
+// (for example before schema_whatsapp_handler.sql is applied) must never turn a message that was sent into an error.
+export async function attributeSend(db: D1Like, phone: string, waMessageId: string, person: string): Promise<void> {
+  const who = person.trim().toLowerCase();
+  if (!who) return;
+  try {
+    await db.prepare(`UPDATE wa_messages SET sent_by = ? WHERE wa_message_id = ?`).bind(who, waMessageId).run();
+    await db.prepare(`UPDATE wa_conversations SET handled_by = ? WHERE id = ? AND handled_by = '' AND state = 'staff'`).bind(who, phone).run();
+  } catch (err) {
+    console.error('whatsapp: could not record who sent a message', err instanceof Error ? err.message : 'error');
+  }
+}
+
 // Hands the chat back to the agent. An opted-out guest stays opted out until they write START.
 export async function giveBack(db: D1Like, phone: string): Promise<void> {
   await db
     .prepare(
-      `UPDATE wa_conversations SET state = 'agent', handoff_reason = '', handed_off_at = NULL, staff_active_at = NULL
+      `UPDATE wa_conversations SET state = 'agent', handoff_reason = '', handed_off_at = NULL, staff_active_at = NULL, handled_by = ''
        WHERE id = ? AND state != 'opted_out'`
     )
     .bind(phone)
@@ -125,13 +169,15 @@ export async function giveBack(db: D1Like, phone: string): Promise<void> {
 
 // ----------------------------------------------------------------------- inbox
 
-export type InboxFilter = 'attention' | 'staff' | 'all';
+export type InboxFilter = 'attention' | 'staff' | 'mine' | 'all';
 
 export interface InboxRow {
   id: string;
   profile_name: string | null;
   state: ChatState;
   handoff_reason: string;
+  /** '' (nobody), 'owner' or a team member's email. */
+  handled_by: string;
   last_in: string | null;
   last_reply: string | null;
   // The guest has written and nobody has replied since.
@@ -142,23 +188,26 @@ export interface InboxRow {
   tone: 'red' | 'amber' | 'none';
 }
 
-export async function inboxCounts(db: D1Like): Promise<Record<string, number>> {
+// Chats per state, plus `mine`: chats the given person is handling.
+export async function inboxCounts(db: D1Like, me = ''): Promise<Record<string, number>> {
   const { results } = await db.prepare(`SELECT state, COUNT(*) AS n FROM wa_conversations GROUP BY state`).bind().all<{ state: string; n: number }>();
-  return Object.fromEntries(results.map((r) => [r.state, r.n]));
+  const mine = me ? await db.prepare(`SELECT COUNT(*) AS n FROM wa_conversations WHERE handled_by = ? AND state != 'opted_out'`).bind(me).first<{ n: number }>() : null;
+  return { ...Object.fromEntries(results.map((r) => [r.state, r.n])), mine: mine?.n ?? 0 };
 }
 
-export async function listInbox(db: D1Like, filter: InboxFilter, now: Date = new Date()): Promise<InboxRow[]> {
-  const where = filter === 'attention' ? `WHERE c.state = 'handed_off'` : filter === 'staff' ? `WHERE c.state = 'staff'` : '';
+export async function listInbox(db: D1Like, filter: InboxFilter, now: Date = new Date(), me = ''): Promise<InboxRow[]> {
+  const where = filter === 'attention' ? `WHERE c.state = 'handed_off'` : filter === 'staff' ? `WHERE c.state = 'staff'` : filter === 'mine' ? `WHERE c.handled_by = ? AND c.state != 'opted_out'` : '';
+  const args = filter === 'mine' ? [me || '\u0000'] : [];
   const { results } = await db
     .prepare(
-      `SELECT c.id, c.profile_name, c.state, c.handoff_reason,
+      `SELECT c.id, c.profile_name, c.state, c.handoff_reason, c.handled_by,
          (SELECT MAX(m.sent_at) FROM wa_messages m WHERE m.conversation_id = c.id AND m.direction = 'in') AS last_in,
          (SELECT MAX(m.sent_at) FROM wa_messages m WHERE m.conversation_id = c.id AND m.direction != 'in') AS last_reply
        FROM wa_conversations c ${where}
        ORDER BY c.last_message_at DESC LIMIT 200`
     )
-    .bind()
-    .all<Pick<InboxRow, 'id' | 'profile_name' | 'state' | 'handoff_reason' | 'last_in' | 'last_reply'>>();
+    .bind(...args)
+    .all<Pick<InboxRow, 'id' | 'profile_name' | 'state' | 'handoff_reason' | 'handled_by' | 'last_in' | 'last_reply'>>();
 
   const rows: InboxRow[] = results.map((r) => {
     const lastIn = r.last_in ? Date.parse(r.last_in) : null;
@@ -193,7 +242,7 @@ export async function inboxSignature(db: D1Like): Promise<string> {
          (SELECT COUNT(*) FROM wa_messages) AS messages,
          (SELECT COALESCE(MAX(last_message_at), '') FROM wa_conversations) AS lastMessage,
          (SELECT COUNT(*) || ':' || COALESCE(MAX(updated_at), '') FROM wa_drafts) AS drafts,
-         (SELECT COALESCE(group_concat(id || state, ','), '') FROM (SELECT id, state FROM wa_conversations ORDER BY id)) AS states`
+         (SELECT COALESCE(group_concat(id || state || handled_by, ','), '') FROM (SELECT id, state, handled_by FROM wa_conversations ORDER BY id)) AS states`
     )
     .bind()
     .first<{ messages: number; lastMessage: string; drafts: string; states: string }>();

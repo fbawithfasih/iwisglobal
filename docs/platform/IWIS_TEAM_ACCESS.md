@@ -44,6 +44,13 @@ The owner password stays as emergency access. Every use is written to the audit 
 - **Mine** lists your leads; **Unassigned** lists open leads nobody holds. On a lead's page, **Hand over** passes it to someone else or back to nobody.
 - The history of a lead shows who did each note, follow-up, stage change and hand-over.
 
+## Working WhatsApp chats together
+
+- Each chat shows **Handled by** once someone has it. **Take it** makes a chat yours (the agent stops drafting for it); the first person wins and nobody can take a chat someone else holds. Sending a typed reply or a template to a chat nobody holds takes it too.
+- **Hand over** passes a chat to the owner or a team member whoever holds it now. **Give back to agent** clears the holder.
+- The **Mine** tab lists your chats. Every message you send shows "by your name" in the chat.
+- A chat the team has held for 12 hours without the guest writing back returns to the agent on its own, and the holder is cleared.
+
 ## How it is protected
 
 - Every `/admin` request is identified in one place (`src/lib/adminGate.ts`) before any page runs, and every page and action also checks for itself. A test (`scripts/contacts-test/route-inventory.ts`) fails the build if a new admin page forgets its check.
