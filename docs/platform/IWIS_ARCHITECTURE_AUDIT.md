@@ -101,10 +101,12 @@ Severity is my judgement for a business that handles customer names, phone numbe
 | S3 | **Authentication is opt-in per file, not deny-by-default.** A new admin page that forgets the check is publicly reachable. | High (design risk, no current gap found) | **[Verified]** that all 46 existing protected admin files call the check |
 | S4 | **No second factor** on the admin login. | Medium | **[Verified]** |
 | S5 | **Login throttling is per IP only.** Because the password is shared and single, an attacker rotating IP addresses is not slowed by account lockout. PBKDF2 is capped at 100,000 iterations by the Workers runtime (documented in `adminAuth.ts`). | Medium | **[Verified]** |
-| S6 | **No CSRF token on admin forms.** Mitigated today by `sameSite=lax` and the `/admin` cookie path: cross-site POSTs do not carry the cookie. The pages I sampled (leads, login, logout) only change data on POST. A full sweep for any state change on GET has not been done. | Low to medium | **[Verified]** for the sample, **[Assumed]** for the rest |
+| S6 | **No CSRF token on admin forms.** Mitigated today by `sameSite=lax` and the `/admin` cookie path: cross-site POSTs do not carry the cookie. A sweep of every admin route (26 October 2026) found no state change on GET: all writes sit behind a POST handler, the seven admin GET handlers (`poll`, WhatsApp media, e-ticket download, lead export, campaign preview, test questions) only read, and the six pages with no POST guard contain no forms. | Low to medium (becomes higher if S10 is exploited, since same-origin script is not blocked by `SameSite`) | **[Verified]** |
 | S7 | **No audit trail** for sensitive actions (exports, role-like changes, price changes, campaign sends, lead merges are recorded without a real actor). | High once there is a team | **[Verified]** |
 | S8 | **Secret reuse:** `OFFER_TIMER_SECRET` falls back to `ADMIN_SESSION_SECRET` (`src/lib/offerTimer.ts`). The two HMACs sign different message formats, so there is no known practical attack, but one secret should not serve two purposes. | Low | **[Verified]** |
 | S9 | **Customer data in admin has no field-level restriction.** Every logged-in admin sees full phone numbers, emails and message content. Fine for one owner; not acceptable for a larger team without roles. | Depends on the team | **[Verified]** |
+| S10 | **A framework endpoint relays any web page from our own domain.** The Astro Cloudflare adapter adds `/_image`, which downloads whatever address it is given and returns it from `www.iwisglobal.com` with the original content type, so a link on our domain can serve an attacker's HTML or SVG and run its script in our origin. Nothing in the site uses it. The live site answers an empty request with `400 Missing 'href' query parameter`, so the endpoint is present. Several spellings reach it (`/%5Fimage`, `//_image`, `/./_image`). From a page running on our domain, a logged-in admin could be made to fetch or submit admin pages, and admin forms have no CSRF token (S6). | **High** | **[Verified]** on a local build of the production code; relay behaviour was deliberately **not** tested against the live site. Fix prepared: the middleware answers 404 for it. |
+| S11 | **Framework and adapter are far behind.** Installed: Astro 4.16.19 and `@astrojs/cloudflare` 11.2.0. `npm audit` reports 20 issues in the production dependency tree (1 critical, 14 high, 5 moderate); every fix is a major upgrade (Astro 5 to 7, adapter 12 to 14). See section 4.1. | Medium to high | **[Verified]** by `npm audit`; reachability **[Assumed]** as analysed in 4.1 |
 
 ### Engineering and delivery
 
@@ -127,6 +129,20 @@ Severity is my judgement for a business that handles customer names, phone numbe
 | U4 | **Accessibility basics are partial.** The layout has 7 `aria-` attributes, no skip-to-content link, and relies on the browser default for focus on dropdowns. Contrast and keyboard behaviour of individual pages were not tested. | **[Verified]** for the layout, **[Not audited]** for pages |
 | U5 | **Data tables are not responsive in a consistent way** (some pages use cards on phones, others scroll horizontally). | **[Assumed]** from the sampled pages |
 
+### 4.1 Dependency audit (`npm audit`, 26 October 2026) **[Verified]**
+
+20 findings in production dependencies (22 including dev tools). Grouped by whether they can reach the deployed site:
+
+| Group | Packages | Reachable on the live site? |
+|---|---|---|
+| **Build and dev tooling only** | `wrangler`, `miniflare`, `ws`, `undici`, `@fastify/busboy`, `esbuild`, `vite` dev server, `source-map-js`, `postcss-selector-parser`, `http-cache-semantics` | **No** (not part of the deployed Worker) **[Assumed]** from how they are used |
+| **Image optimisation** | the critical one (remote code execution through AVIF optimisation, Astro below 7.2.8) and `sharp` | **Probably not**: nothing imports `astro:assets`, and Workers cannot run `sharp`. **[Assumed]**; the upgrade removes the question |
+| **`/_image` endpoint** | adapter advisories for SSRF and stored XSS on `/_image` | **Yes**, see S10 |
+| **Middleware path bypass** | Astro advisories for URL-encoded and double-encoded paths bypassing authentication checks written in middleware (fixed in Astro 5.15.8) | **Not today**: admin authentication is per route, not in middleware, and the middleware's own path checks only choose a database replica. **It decides the design of Milestone 2**, see the blueprint |
+| **Template and rendering** | XSS advisories (spread attributes, `define:vars`, view transitions, slot names, server islands) | **Not assessed** against our templates **[Not audited]** |
+
+Fixing these means moving Astro 4 to a current major and the adapter 11 to a current major. These are breaking upgrades and need their own milestone (M0b in the blueprint), not an `npm audit fix`.
+
 ### Performance **[Not measured]**
 
 I did not measure admin page speed. Two things are known: the middleware pins admin to the primary D1 database (correct for read-after-write, costs latency from distant locations), and the home page batches its D1 queries (already optimised). Anything beyond that would be guessing, so the roadmap makes measurement a first step.
@@ -146,6 +162,6 @@ I did not measure admin page speed. Two things are known: the middleware pins ad
 - Every admin page's mobile layout and keyboard behaviour.
 - A full sweep of admin routes for state-changing GET requests.
 - Cloudflare account settings (WAF, Access, secrets inventory, backups / D1 Time Travel retention).
-- Backup and restore procedure for D1 and R2.
+- Backup and restore procedure for D1 and R2. (The Cloudflare command-line tool is not logged in in the audit environment, so an export from production cannot be run or rehearsed from here.)
 - Dependency vulnerability scan (`npm audit`).
 - Admin performance under realistic data volumes.
