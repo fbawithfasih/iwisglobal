@@ -42,3 +42,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/wa-handler.ts" --bundl
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/wa-handler.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/bookings-admin.ts" --bundle --platform=node --format=esm --outfile="$OUT/bookings-admin.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/bookings-admin.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/booking-notes.ts" --bundle --platform=node --format=esm --outfile="$OUT/booking-notes.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
+ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/booking-notes.mjs"
