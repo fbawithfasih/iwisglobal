@@ -50,3 +50,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/overview.ts" --bundle 
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/overview.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/access-matrix.ts" --bundle --platform=node --format=esm --outfile="$OUT/access-matrix.mjs" --log-level=error
 ROOT="$ROOT" node --no-warnings "$OUT/access-matrix.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/origin-check.ts" --bundle --platform=node --format=esm --outfile="$OUT/origin-check.mjs" --log-level=error
+ROOT="$ROOT" node --no-warnings "$OUT/origin-check.mjs"
