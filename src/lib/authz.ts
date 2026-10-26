@@ -22,6 +22,7 @@ export type Principal = {
 export const OWNER_ONLY_PAGES = [
   'team', // staff accounts
   'audit', // audit log
+  'overview', // owner overview: money totals and each person's workload
   'custom-trips', // "Customise your tour" prices, vehicles, fees and on/off switch
   'leads/meta', // Meta (Facebook, Instagram) connection and conversion settings
   'leads/backfill', // bulk rebuild of the contact records
