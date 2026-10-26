@@ -8,7 +8,7 @@ import { isAdminAuthenticated } from '../../lib/requireAdmin';
 import { actorLabel } from '../../lib/authz';
 import { todayIst } from '../../lib/availability';
 import { loadToday } from '../../lib/todayBoard';
-import { listTours } from '../../lib/tours';
+import { listTourTicketInfo } from '../../lib/tours';
 import { computeTicketsToBuy, ticketsOutstanding } from '../../lib/entryTickets';
 import { formatTravelDate } from '../../lib/format';
 import { formatDuration } from '../../lib/waInbox';
@@ -23,16 +23,18 @@ const me = actorLabel(Astro.locals.admin);
 const today = todayIst();
 
 let board = null;
+let tours: Awaited<ReturnType<typeof listTourTicketInfo>> = [];
 let loadError = false;
 if (db) {
   try {
-    board = await loadToday(db, { today, me });
+    // The board and the tour list are independent: one round trip, not two in a row.
+    [board, tours] = await Promise.all([loadToday(db, { today, me }), listTourTicketInfo(db).catch(() => [])]);
   } catch (err) {
     console.error('today board failed', err instanceof Error ? err.message : 'error');
     loadError = true;
   }
 }
-const toursById = new Map((db && board ? await listTours(db).catch(() => []) : []).map((t) => [t.id, t]));
+const toursById = new Map(tours.map((t) => [t.id, t]));
 const tourName = (id: string) => (id === CUSTOM_TOUR_ID ? 'Custom Agra tour' : toursById.get(id)?.title ?? id);
 const ticketsToBuy = (b: NonNullable<typeof board>['trips'][number]) => {
   const tour = toursById.get(b.tour_id);

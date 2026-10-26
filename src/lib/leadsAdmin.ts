@@ -141,13 +141,11 @@ export async function listLeadsView(db: D1Like, query: ListQuery, nowIso = new D
 }
 
 export async function viewCounts(db: D1Like, nowIso = new Date().toISOString(), me = ''): Promise<Record<string, number>> {
-  const out: Record<string, number> = {};
-  for (const v of VIEWS) {
-    const w = viewWhere(v.key, nowIso, me);
-    const row = await db.prepare(`SELECT COUNT(*) AS n FROM leads l WHERE ${w.sql}`).bind(...w.args).first<{ n: number }>();
-    out[v.key] = row?.n ?? 0;
-  }
-  return out;
+  // One query for all the views (a conditional count per view) instead of one round trip each.
+  const parts = VIEWS.map((v) => viewWhere(v.key, nowIso, me));
+  const select = parts.map((w, i) => `COALESCE(SUM(CASE WHEN ${w.sql} THEN 1 ELSE 0 END), 0) AS v${i}`).join(', ');
+  const row = await db.prepare(`SELECT ${select} FROM leads l`).bind(...parts.flatMap((w) => w.args)).first<Record<string, number>>();
+  return Object.fromEntries(VIEWS.map((v, i) => [v.key, row?.[`v${i}`] ?? 0]));
 }
 
 // Leads that have waited more than an hour for a first reply.

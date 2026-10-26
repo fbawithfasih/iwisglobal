@@ -190,9 +190,11 @@ export interface InboxRow {
 
 // Chats per state, plus `mine`: chats the given person is handling.
 export async function inboxCounts(db: D1Like, me = ''): Promise<Record<string, number>> {
-  const { results } = await db.prepare(`SELECT state, COUNT(*) AS n FROM wa_conversations GROUP BY state`).bind().all<{ state: string; n: number }>();
-  const mine = me ? await db.prepare(`SELECT COUNT(*) AS n FROM wa_conversations WHERE handled_by = ? AND state != 'opted_out'`).bind(me).first<{ n: number }>() : null;
-  return { ...Object.fromEntries(results.map((r) => [r.state, r.n])), mine: mine?.n ?? 0 };
+  const [byState, mine] = await Promise.all([
+    db.prepare(`SELECT state, COUNT(*) AS n FROM wa_conversations GROUP BY state`).bind().all<{ state: string; n: number }>(),
+    me ? db.prepare(`SELECT COUNT(*) AS n FROM wa_conversations WHERE handled_by = ? AND state != 'opted_out'`).bind(me).first<{ n: number }>() : Promise.resolve(null),
+  ]);
+  return { ...Object.fromEntries(byState.results.map((r) => [r.state, r.n])), mine: mine?.n ?? 0 };
 }
 
 export async function listInbox(db: D1Like, filter: InboxFilter, now: Date = new Date(), me = ''): Promise<InboxRow[]> {

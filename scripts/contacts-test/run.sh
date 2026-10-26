@@ -52,3 +52,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/access-matrix.ts" --bu
 ROOT="$ROOT" node --no-warnings "$OUT/access-matrix.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/origin-check.ts" --bundle --platform=node --format=esm --outfile="$OUT/origin-check.mjs" --log-level=error
 ROOT="$ROOT" node --no-warnings "$OUT/origin-check.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/speed.ts" --bundle --platform=node --format=esm --outfile="$OUT/speed.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
+ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/speed.mjs"

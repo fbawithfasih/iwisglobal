@@ -171,6 +171,35 @@ export async function localizeTours(db: D1Like, tours: ParsedTour[], locale: Loc
   });
 }
 
+/** What the admin lists need to name a tour and work out which entry tickets to buy: no prices tiers, no texts, no translations.
+ *  Two queries sent together (one round trip), instead of one per tour for add-ons and again for prices. */
+export type TourTicketInfo = Pick<ParsedTour, 'id' | 'title' | 'entryTicketsInPrice' | 'addOns'>;
+
+export async function listTourTicketInfo(db: D1Like): Promise<TourTicketInfo[]> {
+  const [tours, addOns] = await Promise.all([
+    db.prepare(`SELECT id, title, entry_tickets_in_price FROM tours ORDER BY featured DESC, created_at DESC`).bind().all<{ id: string; title: string; entry_tickets_in_price: string }>(),
+    db
+      .prepare(
+        `SELECT tour_id AS tourId, id, name, amount, usd_amount as usdAmount, included_by_default as includedByDefault, per_traveler as perTraveler
+         FROM tour_addons ORDER BY created_at ASC`
+      )
+      .bind()
+      .all<AddOnRow & { tourId: string }>(),
+  ]);
+  const byTour = new Map<string, AddOn[]>();
+  for (const { tourId, ...a } of addOns.results) {
+    const list = byTour.get(tourId) ?? [];
+    list.push({ ...a, includedByDefault: !!a.includedByDefault, perTraveler: !!a.perTraveler });
+    byTour.set(tourId, list);
+  }
+  return tours.results.map((t) => ({
+    id: t.id,
+    title: t.title,
+    entryTicketsInPrice: safeJsonParse(t.entry_tickets_in_price, []),
+    addOns: byTour.get(t.id) ?? [],
+  }));
+}
+
 export interface TourFilters {
   status?: string;
 }

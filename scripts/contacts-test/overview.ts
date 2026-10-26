@@ -85,7 +85,7 @@ assert.equal(o.reviewsToCheck, 1);
 assert.deepEqual(o.workload, [{ holder: 'asha@example.com', leads: 2, chats: 2 }, { holder: 'ravi@example.com', leads: 1, chats: 1 }]);
 
 // Failure isolation: a missing table leaves the other sections intact and is named.
-const broken: any = { prepare: (q: string) => (/tour_reviews/.test(q) ? { bind: () => { throw new Error('no such table'); } } : db.prepare(q)) };
+const broken: any = { prepare: (q: string) => (/tour_reviews/.test(q) ? { bind: () => ({ first: async () => { throw new Error('no such table'); }, all: async () => { throw new Error('no such table'); }, run: async () => { throw new Error('no such table'); } }) } : db.prepare(q)) };
 const p = await loadOwnerOverview(broken, { today: TODAY, now: NOW });
 assert.deepEqual(p.failed, ['reviews']);
 assert.equal(p.leads30.created, 5);
