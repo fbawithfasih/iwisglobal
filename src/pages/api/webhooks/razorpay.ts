@@ -6,6 +6,7 @@ import { ensureOfferEmails, finalizeOfferPayment } from '../../../lib/offerPayme
 import { finalizeBalancePayment } from '../../../lib/balancePayment';
 import { bookingFromOrder, fetchRazorpayOrder } from '../../../lib/payments/razorpay';
 import { finalizeTourBooking } from '../../../lib/tourBooking';
+import { unpackGa } from '../../../lib/payments/orderNotes';
 
 export const prerender = false;
 
@@ -230,7 +231,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // with no known client) if the buyer's browser never captured a _ga
     // cookie — still records the purchase, just not tied to their earlier
     // on-site browsing.
-    const clientId = notes.gaClientId || crypto.randomUUID();
+    const ga = unpackGa(notes.gaClientId ?? orderNotes.gaClientId);
+    const clientId = ga.clientId || crypto.randomUUID();
     const kind = notes.kind ?? orderNotes.kind;
     const kindItem = kind === 'custom' ? 'CUSTOM_AGRA' : kind === 'hotel' ? 'HOTEL' : kind === 'offer' ? 'OFFER' : kind === 'balance' ? 'BALANCE' : undefined;
 
@@ -246,6 +248,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
                 name: 'purchase',
                 params: {
                   transaction_id: payment.id,
+                  // Joins the purchase to the visitor's GA4 session, so it is credited to the ad or search that
+                  // brought them instead of "Unassigned".
+                  ...(ga.sessionId ? { session_id: ga.sessionId, engagement_time_msec: 1 } : {}),
                   value: (payment.amount ?? 0) / 100,
                   currency: payment.currency,
                   items: [

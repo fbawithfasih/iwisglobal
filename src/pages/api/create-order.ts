@@ -21,7 +21,7 @@ export const prerender = false;
 
 export const POST: APIRoute = async ({ request, locals, cookies }) => {
   try {
-    const { tourId, date, travelers, addOnIds, currency, receipt, gaClientId, paymentType, couponCode, guest, attribution } = await request.json();
+    const { tourId, date, travelers, addOnIds, currency, receipt, gaClientId, gaSessionId, paymentType, couponCode, guest, attribution } = await request.json();
 
     if (!tourId || !date || !Number.isInteger(travelers) || travelers < 1) {
       return new Response(JSON.stringify({ error: 'Missing tourId, date, or travelers' }), {
@@ -75,6 +75,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
         currency: currency === 'USD' ? 'USD' : 'INR',
         receipt,
         gaClientId: typeof gaClientId === 'string' ? gaClientId : undefined,
+        gaSessionId: typeof gaSessionId === 'string' ? gaSessionId : undefined,
         paymentType: paymentType === 'deposit' ? 'deposit' : 'full',
         couponCode: typeof couponCode === 'string' ? couponCode.slice(0, 40) : undefined,
         // A countdown offer counts from the signed cookie only, never from anything the browser sends in the body.

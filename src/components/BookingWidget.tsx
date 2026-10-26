@@ -47,6 +47,18 @@ function getGaClientId(): string | undefined {
   return parts.length >= 4 ? `${parts[2]}.${parts[3]}` : undefined;
 }
 
+// GA4's current session id, from the _ga_<measurement id> cookie: "GS1.1.<session id>.<count>..." or the newer
+// "GS2.1.s<session id>$o<count>$...". Sent with the order so the server-side purchase joins this session in GA4
+// (and so Google Ads can credit the click that started it). Undefined if the cookie is missing or unrecognised.
+function getGaSessionId(): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const match = document.cookie.match(/(?:^|;\s*)_ga_[A-Z0-9]+=([^;]+)/);
+  if (!match) return undefined;
+  const value = decodeURIComponent(match[1]);
+  const id = value.startsWith('GS2.') ? /^GS2\.\d+\.s(\d+)/.exec(value)?.[1] : value.split('.')[2];
+  return id && /^\d{1,20}$/.test(id) ? id : undefined;
+}
+
 interface AddOnOption {
   id: string;
   name: string;
@@ -299,6 +311,7 @@ export default function BookingWidget({
           currency,
           receipt: `rcpt_${Date.now()}`,
           gaClientId: getGaClientId(),
+          gaSessionId: getGaSessionId(),
           paymentType,
           // Only a code that fits this booking; the server re-checks it.
           couponCode: coupon && !couponProblem ? coupon.code : undefined,
