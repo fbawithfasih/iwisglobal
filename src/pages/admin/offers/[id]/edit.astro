@@ -55,14 +55,6 @@ const tours = await listTours(db);
 
   <form method="POST" class="mt-4 max-w-2xl">
     <input type="hidden" name="_action" value="delete" />
-    <button type="submit" class="min-h-11 text-sm text-red-600 hover:underline" data-confirm="delete">Delete this offer</button>
+    <button type="submit" class="min-h-11 text-sm text-red-600 hover:underline" data-confirm="Delete this offer? Past bookings keep their discount record. To stop it for now, untick On instead." data-confirm-type="DELETE" data-confirm-label="Delete offer">Delete this offer</button>
   </form>
 </AdminLayout>
-
-<script>
-  document.querySelectorAll<HTMLButtonElement>('[data-confirm="delete"]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      if (!confirm('Delete this offer? Past bookings keep their discount record. To stop it for now, untick "On" instead.')) e.preventDefault();
-    });
-  });
-</script>

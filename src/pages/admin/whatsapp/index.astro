@@ -378,7 +378,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
                   <input type="hidden" name="c" value={selectedId} />
                   <input type="hidden" name="tab" value={tab} />
                   <input type="hidden" name="messageId" value={m.id} />
-                  <button type="submit" name="_action" value="delete_message" class="min-h-8 text-stone-600 underline hover:text-red-700" onclick="return confirm('Delete this message from the site? It stays in WhatsApp itself.')">Delete message</button>
+                  <button type="submit" name="_action" value="delete_message" class="min-h-8 text-stone-600 underline hover:text-red-700" data-confirm="Delete this message from the site? It stays in WhatsApp itself." data-confirm-label="Delete message">Delete message</button>
                 </form>
                 {open && (
                   <form method="POST" class="mt-2 max-w-xl rounded-xl border border-violet-200 bg-violet-50 p-3 text-sm">

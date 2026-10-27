@@ -120,10 +120,10 @@ const btn = 'min-h-11 rounded-full px-4 text-sm';
                 {p.status === 'suspended' ? (
                   <form method="POST"><input type="hidden" name="_action" value="reactivate" /><input type="hidden" name="id" value={p.id} /><button class={`btn-secondary ${btn}`}>Reactivate</button></form>
                 ) : (
-                  <form method="POST" onsubmit="return confirm('Suspend this person? They are signed out everywhere straight away.')"><input type="hidden" name="_action" value="suspend" /><input type="hidden" name="id" value={p.id} /><button class={`btn-secondary ${btn}`}>Suspend</button></form>
+                  <form method="POST" data-confirm="Suspend this person? They are signed out everywhere straight away." data-confirm-label="Suspend"><input type="hidden" name="_action" value="suspend" /><input type="hidden" name="id" value={p.id} /><button class={`btn-secondary ${btn}`}>Suspend</button></form>
                 )}
                 {p.status === 'active' && (
-                  <form method="POST"><input type="hidden" name="_action" value="sign_out" /><input type="hidden" name="id" value={p.id} /><button class={`btn-secondary ${btn}`}>Sign out everywhere</button></form>
+                  <form method="POST" data-confirm="Sign this person out of every device? They will have to sign in again." data-confirm-label="Sign out"><input type="hidden" name="_action" value="sign_out" /><input type="hidden" name="id" value={p.id} /><button class={`btn-secondary ${btn}`}>Sign out everywhere</button></form>
                 )}
                 <form method="POST" class="flex items-center gap-2">
                   <input type="hidden" name="_action" value="remove" /><input type="hidden" name="id" value={p.id} />

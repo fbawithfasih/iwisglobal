@@ -53,6 +53,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3c.4 | The browser tab title starts with the number, for example "(3) Today" | | |
 | 3c.5 | On a phone the top bar (Menu, Search, bell, + Booking) fits on one line | | |
 
+## 3d. Confirm dialog
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3d.1 | Campaign page: "Send now" opens a dialog naming the number of subscribers; Cancel and Esc send nothing | | |
+| 3d.2 | Tours list: Unpublish on a published tour asks first; publishing a draft does not | | |
+| 3d.3 | Blog post, offer, Agra card: "Delete" asks you to type DELETE; the button stays grey until you do | | |
+| 3d.4 | Booking page: cancelling a custom trip asks you to type CANCEL | | |
+| 3d.5 | After closing the dialog the cursor is back on the button you pressed; it works with the keyboard only | | |
+
 ## 4. Bookings
 
 | # | Check | Who | Result |

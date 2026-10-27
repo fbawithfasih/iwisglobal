@@ -117,7 +117,7 @@ const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Ind
           </div>
           <form method="POST">
             {rates.enabled
-              ? <button type="submit" name="_action" value="switch_off" class={`${btn} bg-red-700 text-white`}>Switch off now</button>
+              ? <button type="submit" name="_action" value="switch_off" data-confirm="Switch this off? Guests will no longer be able to use it until you switch it on again." data-confirm-label="Switch off" class={`${btn} bg-red-700 text-white`}>Switch off now</button>
               : <button type="submit" name="_action" value="switch_on" disabled={blockers.length > 0} class={`${btn} bg-green-700 text-white disabled:opacity-50`}>Switch on</button>}
           </form>
         </div>
