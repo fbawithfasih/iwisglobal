@@ -22,7 +22,7 @@ const currency = resolveCurrency(Astro.url.searchParams, Astro.cookies.get('curr
 ---
 <BaseLayout title={t.meta.title} description={t.meta.description} noindex={true} floatingWhatsApp={false}>
   <section class="mx-auto max-w-5xl px-4 py-10 min-[300px]:px-6 md:py-14">
-    <p class="mb-5 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">Admin test page. Real searches and real payments, visible only to you. <a href="/admin/hotels" class="font-semibold underline">Back to Hotels settings</a></p>
+    <p class="notice notice-warn mb-5" role="status">Admin test page. Real searches and real payments, visible only to you. <a href="/admin/hotels" class="font-semibold underline">Back to Hotels settings</a></p>
     <h1 class="font-serif text-3xl font-semibold text-brand-900 md:text-4xl">{t.heading}</h1>
     <p class="mt-3 max-w-3xl text-stone-700">{t.intro}</p>
     <div class="mt-8">

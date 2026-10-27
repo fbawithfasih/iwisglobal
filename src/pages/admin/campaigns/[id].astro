@@ -138,7 +138,7 @@ const card = 'rounded-xl border border-violet-100 bg-white p-4 text-sm';
   </div>
   {notice && <p class="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">{notice}</p>}
   {problems.length > 0 && <ul class="mb-4 list-disc rounded-lg bg-red-50 p-3 pl-7 text-sm text-red-800">{problems.map((p) => <li>{p}</li>)}</ul>}
-  {campaign.last_error && <p class="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Last problem: {campaign.last_error}</p>}
+  {campaign.last_error && <p class="notice notice-warn mb-4">Last problem: {campaign.last_error}</p>}
 
   <div class="grid gap-4 lg:grid-cols-3">
     <div class="space-y-4 lg:col-span-2">

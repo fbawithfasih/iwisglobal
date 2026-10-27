@@ -70,6 +70,8 @@ Automated checks (run on every pull request, no action needed): type check with 
 |---|---|---|---|
 | 3e.1 | Tours, Blog, Offers, Campaigns show the title with a count in brackets and the main button on the right | | |
 | 3e.2 | Status pills use the same colours: green live/sent/approved, grey draft/off/hidden, blue scheduled, orange sending/pending, red cancelled/stuck | | |
+| 3e.4 | Today: a tile with a number above zero has a soft tint (orange for waiting, blue for follow-ups, green for bookings to confirm); at zero it is white | | |
+| 3e.5 | Owner overview: confirmed, paid and booked are green, cancelled is rose, upcoming and chats are blue, still open and still to collect are orange | | |
 | 3e.3 | Each list shows a helpful empty message when it has nothing | | |
 
 ## 3f. Keyboard and screen reader (do this with a person; 20 minutes)

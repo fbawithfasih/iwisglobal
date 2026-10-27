@@ -48,7 +48,7 @@ const tone = { draft: 'muted', scheduled: 'info', sending: 'warn', sent: 'ok', c
 ---
 <AdminLayout title="Campaigns">
   <PageHeader title="Email campaigns" count={campaigns.length} href="/admin/leads/subscribers" action="Email subscribers" />
-  {failed && <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">The campaign tables are not in the database yet (schema_campaigns.sql).</p>}
+  {failed && <p class="notice notice-danger mb-4">The campaign tables are not in the database yet (schema_campaigns.sql).</p>}
   <form method="POST" class="mb-6 flex flex-wrap gap-2 rounded-xl border border-violet-100 bg-white p-4 text-sm">
     <input type="hidden" name="_action" value="create" />
     <input name="name" required placeholder="Campaign name (only you see this)" class="min-w-60 flex-1 rounded border border-violet-200 px-3 py-2" />

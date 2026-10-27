@@ -125,7 +125,7 @@ const marketing: Record<string, string> = { none: 'Not asked', pending: 'Asked, 
     </div>
   </div>
 
-  {error && <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+  {error && <p class="notice notice-danger mb-4">{error}</p>}
 
   {d.duplicates.map((dup) => (
     <div class="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">

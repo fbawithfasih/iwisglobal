@@ -120,12 +120,12 @@ const intentLabel: Record<string, string> = {
     <a href="/admin/whatsapp/launch" class="ml-2 text-brand-800 underline">Launch readiness</a>
   </p>
   {overdue > 0 && (
-    <p class="my-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">
+    <p class="notice notice-warn my-3" role="status">
       {overdue} automatic message{overdue === 1 ? ' is' : 's are'} more than a week old and not yet audited.
       Scroll to the audit list below.
     </p>
   )}
-  {error && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+  {error && <p class="notice notice-danger my-3" role="alert">{error}</p>}
   {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
 
   {settings && (

@@ -97,7 +97,7 @@ const categoryLabel: Record<string, string> = { foreign: 'Foreign', indian: 'Ind
   <p class="text-stone-500 text-sm mb-1">
     Rates and stops for the page where guests build their own Agra trip. Guests see nothing until you switch it on below.
   </p>
-  {error && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+  {error && <p class="notice notice-danger my-3" role="alert">{error}</p>}
   {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
 
   {rates && (

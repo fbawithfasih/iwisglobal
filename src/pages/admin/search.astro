@@ -37,7 +37,7 @@ const row = 'block rounded-xl border border-violet-100 bg-white p-3 transition-c
     <button type="submit" class="btn-secondary px-4 py-2 text-sm">Search</button>
   </form>
 
-  {failed && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">The search could not run. Try again in a moment.</p>}
+  {failed && <p class="notice notice-danger my-3" role="alert">The search could not run. Try again in a moment.</p>}
 
   {!q && <EmptyState message="Find a guest in one place" hint="Search across bookings, leads and WhatsApp chats by name, email, phone number, booking id or WhatsApp name. Phone numbers match however they were typed." />}
 

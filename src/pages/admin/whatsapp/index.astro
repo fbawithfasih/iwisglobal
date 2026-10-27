@@ -193,12 +193,12 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
     </div>
   </div>
   {overdue > 0 && (
-    <p class="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">
+    <p class="notice notice-warn mb-4" role="status">
       {overdue} automatic message{overdue === 1 ? ' is' : 's are'} more than a week old and not yet audited.
       <a href="/admin/whatsapp/auto#audit" class="ml-1 font-medium underline">Audit them now</a>
     </p>
   )}
-  {error && <p class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+  {error && <p class="notice notice-danger mb-4" role="alert">{error}</p>}
 
   <div id="live" data-sig={signature} class="hidden mb-4 rounded-xl bg-violet-50 p-3 text-sm text-violet-900" role="status">
     New messages arrived. <a href="" class="font-semibold underline">Show them</a>
@@ -297,7 +297,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
             <label class="mb-1 block text-xs font-medium text-stone-600" for="staff-reply">{selectedWindowLeft <= 0 ? 'Message the guest' : 'Write your own reply'}</label>
             {selectedWindowLeft <= 0 ? (
               <div>
-                <p class="rounded bg-amber-50 p-2 text-xs text-amber-900">
+                <p class="notice notice-warn">
                   The guest last wrote more than 24 hours ago, so WhatsApp only allows an approved template message now. They can then reply and the chat reopens.
                 </p>
                 <fieldset class="mt-3 grid gap-2">

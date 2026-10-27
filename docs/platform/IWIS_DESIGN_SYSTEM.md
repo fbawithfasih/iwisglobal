@@ -7,7 +7,7 @@ and `src/components/`.
 ## 1. Rules of thumb
 
 1. Use a shared piece before writing a new one. If you need something twice, make it a shared piece.
-2. Brand colour is the site's violet (`brand-*`, Tailwind's violet scale). Amber is kept for **warning notes only**.
+2. Brand colour is the site's violet (`brand-*`, Tailwind's violet scale). Pastels carry meaning (blue info, green done, orange needs a look, rose failed); never use one only for decoration.
 3. Every control is at least 44 px tall on a phone (`min-h-11`).
 4. Never colour alone: status always has a word, errors say what to do.
 5. Anything risky asks first (section 5). Anything empty explains itself (section 4).
@@ -21,6 +21,7 @@ and `src/components/`.
 | `--brand-300` | #a78bfa | borders and focus rings on dark only, never text |
 | `--bg` / `--surface` | #f7f5ff / #ffffff | page background / cards |
 | `--text` / `--text-muted` | #1e1b2e / #64748b | body text / secondary text (stone-500 is raised to 5.3:1 for AA) |
+| `--info-*`, `--success-*`, `--warn-*`, `--danger-*` | each has `-bg` (pill and border fill), `-soft` (quiet tile or notice background) and `-ink` (dark text): blue #dbeafe/#eff6ff/#1e3a8a, green #d1fae5/#ecfdf5/#065f46, orange #ffedd5/#fff7ed/#9a3412, rose #ffe4e6/#fff1f2/#9f1239 | the four pastel meanings. Ink on its fills is 6.4:1 or better; body text on the soft fills is 16:1 |
 | `--radius-sm` / `-md` / `-lg` | 6 / 10 / 16 px | corners |
 | `--motion` | 180 ms | transitions (switched off for people who ask for reduced motion) |
 
@@ -32,6 +33,8 @@ and `src/components/`.
 | `.btn-secondary` | AdminLayout | other actions |
 | `.btn-danger` | AdminLayout | destructive actions (red) |
 | `.badge-*` | AdminLayout | status colours; use through `StatusBadge` |
+| `.tint-info/-success/-warn/-danger` | AdminLayout | quiet pastel tile. A "needs you" tile takes its tint only while its count is above zero; at zero it stays white. Do not put `bg-white` on the same element |
+| `.notice` + `.notice-info/-success/-warn/-danger` | AdminLayout | one notice style for every message banner (use on a `<p>` with `role="alert"` or `"status"`); replaces ad-hoc amber and red boxes |
 | `PageHeader` | `components/PageHeader.astro` | title, count in brackets, optional intro and main action. Pass `class="mb-2"` when a section follows immediately |
 | `StatusBadge` | `components/StatusBadge.astro` | `tone`: `ok` green (live, sent, approved), `info` blue (scheduled), `warn` orange (needs a look, pending, sending), `danger` red (failed, stuck, cancelled), `muted` grey (draft, off, hidden) |
 | `EmptyState` | `components/EmptyState.astro` | what is missing, why that is fine, the one next step |
