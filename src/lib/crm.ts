@@ -23,6 +23,9 @@ export interface BookingRow {
   pickup_time: string;
   guide_assigned: string;
   vehicle: string;
+  // schema_booking_driver.sql: the driver is the guest's first contact at pickup. Rows read before it is applied have neither.
+  driver_name?: string;
+  driver_phone?: string;
   created_at: string;
   review_requested_at: string | null;
   review_token: string | null; // src/lib/reviews.ts — private /review link
@@ -122,11 +125,11 @@ export async function markReviewRequested(db: D1Like, id: string): Promise<void>
 export async function updateBookingItinerary(
   db: D1Like,
   id: string,
-  fields: { pickupTime: string; guideAssigned: string; vehicle: string }
+  fields: { pickupTime: string; guideAssigned: string; vehicle: string; driverName: string; driverPhone: string }
 ): Promise<void> {
   await db
-    .prepare(`UPDATE bookings SET pickup_time = ?, guide_assigned = ?, vehicle = ? WHERE id = ?`)
-    .bind(fields.pickupTime, fields.guideAssigned, fields.vehicle, id)
+    .prepare(`UPDATE bookings SET pickup_time = ?, guide_assigned = ?, vehicle = ?, driver_name = ?, driver_phone = ? WHERE id = ?`)
+    .bind(fields.pickupTime, fields.guideAssigned, fields.vehicle, fields.driverName.trim().slice(0, 80), fields.driverPhone.trim().slice(0, 40), id)
     .run();
 }
 
