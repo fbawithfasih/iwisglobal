@@ -109,18 +109,16 @@ const itemClass = (active: boolean) =>
       @media (min-width: 1024px) {
         #admin-sidebar { transform: none; visibility: visible; transition: none; }
       }
-      /* Shared admin component classes. Pages use these (and Tailwind's violet scale) instead of the old amber classes. */
+      /* Shared admin component classes. Pages use these and the brand / violet scale; amber is kept only for warning notes. */
       /* Written after Tailwind's utilities so it wins ties (a page's own rounded / px classes still apply to size and spacing). */
-      .btn-primary,
-      main .bg-amber-800 {
+      .btn-primary {
         background-image: linear-gradient(to right, var(--brand-900), var(--brand-700), #7c3aed);
         background-color: var(--brand-700);
         border-radius: 9999px;
         box-shadow: 0 4px 10px rgba(76, 29, 149, 0.2);
         transition: filter var(--motion);
       }
-      .btn-primary:hover,
-      main .bg-amber-800:hover { filter: brightness(1.1); }
+      .btn-primary:hover { filter: brightness(1.1); }
       .btn-secondary {
         border: 1px solid #ddd6fe;
         border-radius: 9999px;
@@ -143,17 +141,12 @@ const itemClass = (active: boolean) =>
       .badge-warn { background: #ffedd5; color: #9a3412; }
       .badge-danger { background: #ffe4e6; color: #9f1239; }
       .badge-neutral { background: #ede9fe; color: var(--brand-900); }
-      /* Remaining page-wide restyles for markup that predates the component classes (retired page by page). */
+      /* Page-wide defaults every admin page relies on (card edge and shadow, heading colour, form fields, the AA-contrast grey). */
       body { background: var(--bg); }
       main h1 { color: var(--brand-950); }
       main .rounded-xl { border-radius: 1rem; }
       main .bg-white.border,
       main .bg-white.border-violet-100 { border-color: #ede9fe; box-shadow: 0 1px 2px rgba(76, 29, 149, 0.06); }
-      /* Components shared with the public site (PhoneInput, OfferForm) still carry the old classes; recoloured here until they get admin variants. */
-      main .border-stone-200 { border-color: #ede9fe; }
-      main .border-stone-300 { border-color: #ddd6fe; }
-      main .text-amber-800 { color: var(--brand-700); }
-      main .bg-amber-100 { background-color: #ede9fe; }
       /* Tailwind stone-500 on the page background is 4.4:1, just under the 4.5:1 AA line; this is 5.3:1. */
       main .text-stone-500 { color: #6a645f; }
       main .bg-stone-50 { background-color: #faf9ff; }

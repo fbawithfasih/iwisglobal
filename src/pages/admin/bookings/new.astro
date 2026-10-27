@@ -76,31 +76,31 @@ if (Astro.request.method === 'POST' && db) {
 
   <form method="POST" class="bg-white rounded-xl border border-violet-100 p-6 space-y-4 max-w-lg text-sm">
     <div>
-      <label class="block text-stone-500 mb-1">Tour</label>
-      <select name="tourId" required class="w-full rounded border border-violet-200 px-3 py-2">
+      <label for="tourId" class="block text-stone-500 mb-1">Tour</label>
+      <select id="tourId" name="tourId" required class="w-full rounded border border-violet-200 px-3 py-2">
         {tours.map((t) => <option value={t.id}>{t.title} {t.status === 'draft' ? '(draft)' : ''}</option>)}
       </select>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Travel date</label>
-      <input type="date" name="travelDate" required class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="travelDate" class="block text-stone-500 mb-1">Travel date</label>
+      <input id="travelDate" type="date" name="travelDate" required class="w-full rounded border border-violet-200 px-3 py-2" />
       <p class="text-xs text-stone-500 mt-1">No tours on Fridays (Taj Mahal closed).</p>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Travelers</label>
-      <input type="number" name="travelers" min="1" value="2" required class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="travelers" class="block text-stone-500 mb-1">Travelers</label>
+      <input id="travelers" type="number" name="travelers" min="1" value="2" required class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Traveler name</label>
-      <input name="travelerName" required class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="travelerName" class="block text-stone-500 mb-1">Traveler name</label>
+      <input id="travelerName" name="travelerName" required class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Email</label>
-      <input type="email" name="travelerEmail" class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="travelerEmail" class="block text-stone-500 mb-1">Email</label>
+      <input id="travelerEmail" type="email" name="travelerEmail" class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <div>
       <label for="travelerPhone" class="block text-stone-500 mb-1">Phone</label>
-      <PhoneInput client:load id="travelerPhone" name="travelerPhone" />
+      <PhoneInput client:load tone="admin" id="travelerPhone" name="travelerPhone" />
     </div>
     <button type="submit" class="rounded btn-primary text-white px-4 py-2">Create booking</button>
   </form>

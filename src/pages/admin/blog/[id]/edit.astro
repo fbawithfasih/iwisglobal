@@ -75,58 +75,58 @@ if (!post) return Astro.redirect('/admin/blog');
 
   <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-violet-100 p-6 space-y-4 max-w-2xl text-sm">
     <div>
-      <label class="block text-stone-500 mb-1">Title *</label>
-      <input name="title" required value={post.title} class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="title" class="block text-stone-500 mb-1">Title *</label>
+      <input id="title" name="title" required value={post.title} class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Description</label>
-      <textarea name="description" required rows="2" class="w-full rounded border border-violet-200 px-3 py-2">{post.description}</textarea>
+      <label for="description" class="block text-stone-500 mb-1">Description</label>
+      <textarea id="description" name="description" required rows="2" class="w-full rounded border border-violet-200 px-3 py-2">{post.description}</textarea>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <label class="block text-stone-500 mb-1">Category</label>
-        <select name="category" class="w-full rounded border border-violet-200 px-3 py-2">
+        <label for="category" class="block text-stone-500 mb-1">Category</label>
+        <select id="category" name="category" class="w-full rounded border border-violet-200 px-3 py-2">
           <option value="news" selected={post.category === 'news'}>News</option>
           <option value="travel-tips" selected={post.category === 'travel-tips'}>Travel Tips</option>
           <option value="seasonal" selected={post.category === 'seasonal'}>Seasonal</option>
         </select>
       </div>
       <div>
-        <label class="block text-stone-500 mb-1">Status</label>
-        <select name="status" class="w-full rounded border border-violet-200 px-3 py-2">
+        <label for="status" class="block text-stone-500 mb-1">Status</label>
+        <select id="status" name="status" class="w-full rounded border border-violet-200 px-3 py-2">
           <option value="draft" selected={post.status === 'draft'}>Draft (not visible on the site)</option>
           <option value="published" selected={post.status === 'published'}>Published (live immediately)</option>
         </select>
       </div>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Author name</label>
-      <input name="authorName" value={post.authorName} class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="authorName" class="block text-stone-500 mb-1">Author name</label>
+      <input id="authorName" name="authorName" value={post.authorName} class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     {post.image && (
       <div>
-        <label class="block text-stone-500 mb-1">Current image</label>
+        <p class="block text-stone-500 mb-1">Current image</p>
         <img src={post.image} alt={post.title} class="w-48 aspect-[4/3] object-cover rounded border border-violet-100" />
       </div>
     )}
     <div>
-      <label class="block text-stone-500 mb-1">Upload new image (replaces current)</label>
+      <label for="imageFile" class="block text-stone-500 mb-1">Upload new image (replaces current)</label>
       <input id="imageFile" type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
       <p class="text-xs text-stone-500 mt-1">JPEG/PNG/WebP/GIF, up to 5MB. Leave blank to keep the current image.</p>
       <p id="imageOptimizeStatus" class="text-xs text-emerald-700 mt-1"></p>
       <input id="imageThumb" type="file" name="imageThumb" hidden />
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Image URL (only used if no new file is uploaded above)</label>
-      <input name="image" value={post.image ?? ''} class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="image" class="block text-stone-500 mb-1">Image URL (only used if no new file is uploaded above)</label>
+      <input id="image" name="image" value={post.image ?? ''} class="w-full rounded border border-violet-200 px-3 py-2" />
       <label class="flex items-start gap-2 min-h-11 py-2">
         <input type="checkbox" name="imageIsIllustration" checked={post.imageIsIllustration} class="mt-1" />
         <span>Cover is an illustration (AI-generated or artwork), not a real photo — the site labels it "Illustration".</span>
       </label>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Body (Markdown)</label>
-      <textarea name="body" rows="14" class="w-full rounded border border-violet-200 px-3 py-2 md:font-mono md:text-xs">{post.body}</textarea>
+      <label for="body" class="block text-stone-500 mb-1">Body (Markdown)</label>
+      <textarea id="body" name="body" rows="14" class="w-full rounded border border-violet-200 px-3 py-2 md:font-mono md:text-xs">{post.body}</textarea>
     </div>
     <!-- Phones: pinned to the bottom of the screen while scrolling the form. -->
     <div class="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-white/95 border-t border-violet-100 md:static md:m-0 md:p-0 md:bg-transparent md:border-0">

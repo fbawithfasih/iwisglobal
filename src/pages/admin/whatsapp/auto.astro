@@ -116,8 +116,8 @@ const intentLabel: Record<string, string> = {
   <h1 class="text-2xl font-semibold mb-2">Automatic WhatsApp replies</h1>
   <p class="text-stone-500 text-sm mb-1">
     By default the agent only drafts and you press Send. Here you can let it send routine kinds of message by itself, one kind at a time.
-    <a href="/admin/whatsapp" class="ml-2 text-brand-800 hover:underline">Back to chats</a>
-    <a href="/admin/whatsapp/launch" class="ml-2 text-brand-800 hover:underline">Launch readiness</a>
+    <a href="/admin/whatsapp" class="ml-2 text-brand-800 underline">Back to chats</a>
+    <a href="/admin/whatsapp/launch" class="ml-2 text-brand-800 underline">Launch readiness</a>
   </p>
   {overdue > 0 && (
     <p class="my-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">
@@ -231,7 +231,7 @@ const intentLabel: Record<string, string> = {
                 <p class="mt-1 text-xs text-stone-500">
                   Used knowledge:
                   {idsOf(r.kb_ids).map((id) => (
-                    <a href={`/admin/whatsapp/knowledge#entry-${id}`} class="ml-2 text-brand-800 hover:underline">{usedQuestions.get(id) ?? `entry ${id}`}</a>
+                    <a href={`/admin/whatsapp/knowledge#entry-${id}`} class="ml-2 text-brand-800 underline">{usedQuestions.get(id) ?? `entry ${id}`}</a>
                   ))}
                 </p>
               )}

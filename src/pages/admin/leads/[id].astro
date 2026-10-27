@@ -116,7 +116,7 @@ const marketing: Record<string, string> = { none: 'Not asked', pending: 'Asked, 
       <p class="text-sm text-stone-500">
         {CHANNEL_LABELS[l.channel] ?? l.channel} · added {formatDateTimeIst(l.created_at)}
         {l.first_response_at && <span> · first reply {formatDateTimeIst(l.first_response_at)}</span>}
-        {waiting && <span class="font-semibold text-amber-800"> · {waiting}</span>}
+        {waiting && <span class="font-semibold text-brand-700"> · {waiting}</span>}
       </p>
     </div>
     <div class="flex gap-1">

@@ -379,16 +379,16 @@ const addOnNames = booking.add_on_ids
       <form method="POST" class="space-y-3">
         <input type="hidden" name="_action" value="itinerary" />
         <div>
-          <label class="block text-stone-500 mb-1">Pickup time</label>
-          <input name="pickupTime" value={booking.pickup_time} class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. 5:30 AM" />
+          <label for="pickupTime" class="block text-stone-500 mb-1">Pickup time</label>
+          <input id="pickupTime" name="pickupTime" value={booking.pickup_time} class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. 5:30 AM" />
         </div>
         <div>
-          <label class="block text-stone-500 mb-1">Guide assigned</label>
-          <input name="guideAssigned" aria-label="Guide assigned" value={booking.guide_assigned} class="w-full rounded border border-violet-200 px-3 py-2" />
+          <label for="guideAssigned" class="block text-stone-500 mb-1">Guide assigned</label>
+          <input id="guideAssigned" name="guideAssigned" aria-label="Guide assigned" value={booking.guide_assigned} class="w-full rounded border border-violet-200 px-3 py-2" />
         </div>
         <div>
-          <label class="block text-stone-500 mb-1">Vehicle</label>
-          <input name="vehicle" value={booking.vehicle} class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. Innova, plate no." />
+          <label for="vehicle" class="block text-stone-500 mb-1">Vehicle</label>
+          <input id="vehicle" name="vehicle" value={booking.vehicle} class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. Innova, plate no." />
         </div>
         <button type="submit" class={actionBtn}>Save itinerary</button>
       </form>
@@ -439,8 +439,8 @@ const addOnNames = booking.add_on_ids
 
         <form method="POST" enctype="multipart/form-data" class="border-t border-stone-100 pt-4 space-y-2">
           <input type="hidden" name="_action" value="ticket_upload" />
-          <label class="block text-stone-500">Upload the e-ticket (PDF or image, up to 5MB) — it's emailed to {booking.traveler_email || 'the customer'} automatically</label>
-          <input type="file" name="ticketFile" accept="application/pdf,image/jpeg,image/png,image/webp" required class="text-sm" />
+          <label for="ticketFile" class="block text-stone-500">Upload the e-ticket (PDF or image, up to 5MB) — it's emailed to {booking.traveler_email || 'the customer'} automatically</label>
+          <input id="ticketFile" type="file" name="ticketFile" accept="application/pdf,image/jpeg,image/png,image/webp" required class="text-sm" />
           <button type="submit" class={actionBtn}>Upload &amp; email</button>
         </form>
 

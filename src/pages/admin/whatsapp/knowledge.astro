@@ -170,7 +170,7 @@ const sections = [
   <h1 class="text-2xl font-semibold mb-2">WhatsApp knowledge base</h1>
   <p class="text-stone-500 text-sm mb-1">
     The reply agent answers only from approved entries here and from the live tour list. Proposed entries are never used.
-    <a href="/admin/whatsapp" class="ml-2 text-brand-800 hover:underline">Back to chats</a>
+    <a href="/admin/whatsapp" class="ml-2 text-brand-800 underline">Back to chats</a>
   </p>
   {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
   {error && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
@@ -195,7 +195,7 @@ const sections = [
       {gaps.map((g) => (
         <li>
           <span class="rounded bg-stone-200 px-2 py-0.5 text-xs">{g.count}×</span> {g.question}
-          <a href={`/admin/whatsapp/knowledge?q=${encodeURIComponent(g.question)}#add`} class="ml-2 text-brand-800 hover:underline">Answer this</a>
+          <a href={`/admin/whatsapp/knowledge?q=${encodeURIComponent(g.question)}#add`} class="ml-2 text-brand-800 underline">Answer this</a>
         </li>
       ))}
     </ul>

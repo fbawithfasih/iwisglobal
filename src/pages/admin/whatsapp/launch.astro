@@ -90,8 +90,8 @@ const targets = metrics
   <h1 class="text-2xl font-semibold mb-2">Launch readiness</h1>
   <p class="text-stone-500 text-sm mb-1">
     Every gate that must pass before automatic replies are switched on, and how the pilot is going. Nothing here sends a message to a guest.
-    <a href="/admin/whatsapp/auto" class="ml-2 text-brand-800 hover:underline">Automatic reply settings</a>
-    <a href="/admin/whatsapp" class="ml-2 text-brand-800 hover:underline">Chats</a>
+    <a href="/admin/whatsapp/auto" class="ml-2 text-brand-800 underline">Automatic reply settings</a>
+    <a href="/admin/whatsapp" class="ml-2 text-brand-800 underline">Chats</a>
   </p>
   {error && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
   {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
@@ -100,7 +100,7 @@ const targets = metrics
     {allPass ? 'All seven gates pass. Automatic replies can be switched on, starting with greetings only.' : 'Not ready yet. Automatic replies stay off until every gate passes.'}
   </p>
 
-  <div class="overflow-x-auto rounded-xl border border-violet-100 bg-white">
+  <div class="overflow-x-auto rounded-xl border border-violet-100 bg-white" tabindex="0" role="region" aria-label="Table, scrolls sideways on small screens">
     <table class="w-full text-sm">
       <thead class="bg-stone-50 text-left text-stone-600"><tr><th class="px-3 py-2">Gate</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Now</th><th class="px-3 py-2">Needed</th></tr></thead>
       <tbody>
@@ -155,7 +155,7 @@ const targets = metrics
 
   <h2 class="text-lg font-semibold mt-8 mb-1">Pilot targets (last {PILOT_DAYS} days)</h2>
   <p class="text-stone-500 text-sm mb-3">Measured from real chats. "Resolved" counts automatic replies and drafts you sent unedited together.</p>
-  <div class="overflow-x-auto rounded-xl border border-violet-100 bg-white">
+  <div class="overflow-x-auto rounded-xl border border-violet-100 bg-white" tabindex="0" role="region" aria-label="Table, scrolls sideways on small screens">
     <table class="w-full text-sm">
       <thead class="bg-stone-50 text-left text-stone-600"><tr><th class="px-3 py-2">Target</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Now</th><th class="px-3 py-2">Goal</th></tr></thead>
       <tbody>

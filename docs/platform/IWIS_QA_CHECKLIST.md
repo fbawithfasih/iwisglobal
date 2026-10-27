@@ -72,6 +72,24 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3e.2 | Status pills use the same colours: green live/sent/approved, grey draft/off/hidden, blue scheduled, orange sending/pending, red cancelled/stuck | | |
 | 3e.3 | Each list shows a helpful empty message when it has nothing | | |
 
+## 3f. Keyboard and screen reader (do this with a person; 20 minutes)
+
+Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) or TalkBack (Android) for the second half.
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3f.1 | Press Tab once on any admin page: "Skip to main content" appears; Enter jumps past the menu | | |
+| 3f.2 | Tab through the sidebar: every link shows a clear white ring; the order matches what you see | | |
+| 3f.3 | Press `/`: the cursor lands in the search box; type a name and press Enter; results open with the keyboard | | |
+| 3f.4 | Open the bell with Enter; Tab moves inside it; Esc closes it and the cursor returns to the bell | | |
+| 3f.5 | On Leads, open a lead, change its stage and add a note using only the keyboard | | |
+| 3f.6 | On Tours, press Unpublish: the dialog opens with the cursor on the red button; Esc cancels and the cursor returns | | |
+| 3f.7 | On a blog post press "Delete this post": the red button stays disabled until DELETE is typed | | |
+| 3f.8 | Create a booking from the keyboard: every field reachable, errors named next to the field | | |
+| 3f.9 | VoiceOver / TalkBack: the Today board reads as headings and lists; the bell says how many are waiting | | |
+| 3f.10 | VoiceOver / TalkBack: status pills are read as words (published, draft, scheduled), not colours | | |
+| 3f.11 | Anything that traps the cursor, hides it, or cannot be reached: write it down here with the page | | |
+
 ## 4. Bookings
 
 | # | Check | Who | Result |
