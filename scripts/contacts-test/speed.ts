@@ -11,6 +11,7 @@ import { inboxCounts } from '../../src/lib/waInbox';
 import { loadToday } from '../../src/lib/todayBoard';
 import { loadOwnerOverview } from '../../src/lib/ownerOverview';
 import { searchAdmin } from '../../src/lib/adminSearch';
+import { loadNotifications } from '../../src/lib/notifications';
 
 // Every schema file, twice: they depend on each other and a file whose table is not there yet fails the first time.
 const raw = new DatabaseSync(':memory:');
@@ -64,5 +65,10 @@ assert.ok(o.rounds <= 3, `Owner overview needs at most 3 rounds, took ${o.rounds
 const sr = await rounds('Global search', () => searchAdmin(db, 'anna'));
 assert.equal(sr.calls, 3, 'search is one query per kind of record');
 assert.ok(sr.rounds <= 2, `Global search needs at most 2 rounds, took ${sr.rounds}`);
+
+// The bell is refreshed every minute by every open page, so it must stay cheap: one round, a handful of queries.
+const nb = await rounds('Notifications bell', () => loadNotifications(db, { me: 'owner', now: NOW }));
+assert.ok(nb.rounds <= 2, `The bell needs at most 2 rounds, took ${nb.rounds}`);
+assert.ok(nb.calls <= 5, `The bell should stay at 5 queries or fewer, ran ${nb.calls}`);
 
 console.log('speed guard ok');

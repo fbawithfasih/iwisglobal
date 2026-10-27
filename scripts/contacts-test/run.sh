@@ -56,3 +56,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/speed.ts" --bundle --p
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/speed.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/admin-search.ts" --bundle --platform=node --format=esm --outfile="$OUT/admin-search.mjs" --external:node:sqlite --log-level=error
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/admin-search.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/notifications.ts" --bundle --platform=node --format=esm --outfile="$OUT/notifications.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
+ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/notifications.mjs"
