@@ -10,6 +10,7 @@ import { viewCounts } from '../../src/lib/leadsAdmin';
 import { inboxCounts } from '../../src/lib/waInbox';
 import { loadToday } from '../../src/lib/todayBoard';
 import { loadOwnerOverview } from '../../src/lib/ownerOverview';
+import { searchAdmin } from '../../src/lib/adminSearch';
 
 // Every schema file, twice: they depend on each other and a file whose table is not there yet fails the first time.
 const raw = new DatabaseSync(':memory:');
@@ -59,5 +60,9 @@ assert.ok(t.rounds <= 3, `Today board needs at most 3 rounds, took ${t.rounds}`)
 
 const o = await rounds('Owner overview', () => loadOwnerOverview(db, { today: '2026-10-27', now: NOW }));
 assert.ok(o.rounds <= 3, `Owner overview needs at most 3 rounds, took ${o.rounds}`);
+
+const sr = await rounds('Global search', () => searchAdmin(db, 'anna'));
+assert.equal(sr.calls, 3, 'search is one query per kind of record');
+assert.ok(sr.rounds <= 2, `Global search needs at most 2 rounds, took ${sr.rounds}`);
 
 console.log('speed guard ok');
