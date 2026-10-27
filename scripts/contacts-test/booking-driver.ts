@@ -33,8 +33,8 @@ assert.equal(after?.vehicle, 'Innova CRYSTA');
 
 await updateBookingItinerary(db, 'bk1', { pickupTime: '7:30 AM', guideAssigned: '', vehicle: '', driverName: 'x'.repeat(200), driverPhone: '9'.repeat(100) });
 const capped = await getBookingById(db, 'bk1');
-assert.equal(capped?.driver_name.length, 80, 'name is capped');
-assert.equal(capped?.driver_phone.length, 40, 'phone is capped');
+assert.equal(capped?.driver_name?.length, 80, 'name is capped');
+assert.equal(capped?.driver_phone?.length, 40, 'phone is capped');
 
 await updateBookingItinerary(db, 'bk1', { pickupTime: '', guideAssigned: '', vehicle: '', driverName: '', driverPhone: '' });
 const cleared = await getBookingById(db, 'bk1');
