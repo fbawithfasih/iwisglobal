@@ -31,17 +31,18 @@ if (db) {
 const staffNames: Record<string, string> = db ? Object.fromEntries((await listStaff(db).catch(() => [])).map((s) => [s.email, s.name || s.email])) : {};
 const shown = (part: 'bookings' | 'leads' | 'chats' | 'reviews', n: number) => (o?.failed.includes(part) ? '–' : n);
 const card = 'rounded-xl border border-violet-100 bg-white p-4';
+const tinted = (tone: 'info' | 'success' | 'warn' | 'danger') => `rounded-xl border p-4 tint-${tone}`;
 const big = 'block text-3xl font-semibold text-stone-900';
 ---
 <AdminLayout title="Owner overview">
   <h1 class="text-2xl font-semibold">Owner overview</h1>
   <p class="mb-6 text-sm text-stone-600">Only you can see this page. Counts and money from your own records, as of {formatTravelDate(today)} (India time). Nothing here is a forecast.</p>
 
-  {!db && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">Database not available.</p>}
-  {loadError && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">Could not load the overview. The other pages still work; try again in a moment.</p>}
+  {!db && <p class="notice notice-danger my-3" role="alert">Database not available.</p>}
+  {loadError && <p class="notice notice-danger my-3" role="alert">Could not load the overview. The other pages still work; try again in a moment.</p>}
 
   {o && o.failed.length > 0 && (
-    <p class="my-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+    <p class="notice notice-warn my-3" role="alert">
       Could not load {o.failed.map((f) => ({ bookings: 'bookings and money', leads: 'leads', chats: 'WhatsApp chats', reviews: 'reviews' })[f]).join(', ')}. Those numbers show a dash, not zero.
     </p>
   )}
@@ -52,19 +53,19 @@ const big = 'block text-3xl font-semibold text-stone-900';
         <h2 id="money" class="mb-1 text-lg font-semibold">Bookings and money, this month</h2>
         <p class="mb-3 text-xs text-stone-500">Since {formatTravelDate(o.monthFrom)}. Money is what guests have paid so far on confirmed or completed bookings made this month; cancelled bookings and custom trips still waiting for you are not counted.</p>
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <a href="/admin?view=confirmed" class={card}><span class={big}>{shown('bookings', o.bookingsThisMonth.confirmed)}</span><span class="block text-sm text-stone-700">Confirmed</span></a>
+          <a href="/admin?view=confirmed" class={tinted('success')}><span class={big}>{shown('bookings', o.bookingsThisMonth.confirmed)}</span><span class="block text-sm text-stone-700">Confirmed</span></a>
           <a href="/admin?view=completed" class={card}><span class={big}>{shown('bookings', o.bookingsThisMonth.completed)}</span><span class="block text-sm text-stone-700">Completed</span></a>
-          <a href="/admin?view=cancelled" class={card}><span class={big}>{shown('bookings', o.bookingsThisMonth.cancelled)}</span><span class="block text-sm text-stone-700">Cancelled</span></a>
-          <a href="/admin?view=upcoming" class={card}><span class={big}>{shown('bookings', o.tripsNext30Days)}</span><span class="block text-sm text-stone-700">Trips in the next 30 days</span></a>
+          <a href="/admin?view=cancelled" class={tinted('danger')}><span class={big}>{shown('bookings', o.bookingsThisMonth.cancelled)}</span><span class="block text-sm text-stone-700">Cancelled</span></a>
+          <a href="/admin?view=upcoming" class={tinted('info')}><span class={big}>{shown('bookings', o.tripsNext30Days)}</span><span class="block text-sm text-stone-700">Trips in the next 30 days</span></a>
         </div>
         <div class="mt-3 grid gap-3 md:grid-cols-2">
-          <div class={card}>
+          <div class={tinted('success')}>
             <h3 class="mb-1 text-sm font-semibold text-stone-700">Paid so far this month</h3>
             {o.failed.includes('bookings') ? <p class="text-stone-500">–</p> : o.paidThisMonth.length === 0 ? <p class="text-stone-500">Nothing paid yet this month.</p> : (
               <ul>{o.paidThisMonth.map((m) => <li class="text-2xl font-semibold text-stone-900">{formatMoneyMinor(m.minor, m.currency)}</li>)}</ul>
             )}
           </div>
-          <div class={card}>
+          <div class={tinted('warn')}>
             <h3 class="mb-1 text-sm font-semibold text-stone-700">Still to collect on confirmed bookings</h3>
             {o.failed.includes('bookings') ? <p class="text-stone-500">–</p> : o.balanceOutstanding.length === 0 ? <p class="text-stone-500">No balances outstanding.</p> : (
               <ul>{o.balanceOutstanding.map((m) => <li class="text-2xl font-semibold text-stone-900">{formatMoneyMinor(m.minor, m.currency)}</li>)}</ul>
@@ -79,9 +80,9 @@ const big = 'block text-3xl font-semibold text-stone-900';
         <p class="mb-3 text-xs text-stone-500">Leads created in the last 30 days and where they stand today. Detail by source and cost is in the <a href="/admin/leads/report" class="underline">Lead report</a>.</p>
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <a href="/admin/leads?view=all" class={card}><span class={big}>{shown('leads', o.leads30.created)}</span><span class="block text-sm text-stone-700">New leads</span></a>
-          <a href="/admin/leads?view=open" class={card}><span class={big}>{shown('leads', o.leads30.stillOpen)}</span><span class="block text-sm text-stone-700">Of those, still open</span></a>
-          <a href="/admin/leads?view=closed" class={card}><span class={big}>{shown('leads', o.leads30.booked)}</span><span class="block text-sm text-stone-700">Of those, booked</span></a>
-          <a href="/admin/whatsapp?tab=all" class={card}><span class={big}>{shown('chats', o.chats30)}</span><span class="block text-sm text-stone-700">WhatsApp chats started</span></a>
+          <a href="/admin/leads?view=open" class={tinted('warn')}><span class={big}>{shown('leads', o.leads30.stillOpen)}</span><span class="block text-sm text-stone-700">Of those, still open</span></a>
+          <a href="/admin/leads?view=closed" class={tinted('success')}><span class={big}>{shown('leads', o.leads30.booked)}</span><span class="block text-sm text-stone-700">Of those, booked</span></a>
+          <a href="/admin/whatsapp?tab=all" class={tinted('info')}><span class={big}>{shown('chats', o.chats30)}</span><span class="block text-sm text-stone-700">WhatsApp chats started</span></a>
         </div>
         <p class="mt-2 text-sm text-stone-600">{shown('leads', o.leads30.lost)} lost in that group. {shown('leads', o.leadsUnassigned)} open leads have nobody on them (<a href="/admin/leads?view=unassigned" class="underline">see them</a>). {shown('reviews', o.reviewsToCheck)} guest reviews are waiting for you to check (<a href="/admin/reviews" class="underline">Reviews</a>).</p>
       </section>

@@ -69,14 +69,14 @@ const shown = rows.slice(0, 10);
   <p class="mb-2 text-sm"><a href="/admin/leads" class="text-brand-700 hover:underline">&larr; All leads</a></p>
   <h1 class="mb-4 text-2xl font-semibold">Import leads from a CSV file</h1>
 
-  {error && <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+  {error && <p class="notice notice-danger mb-4">{error}</p>}
 
   {step === 'upload' && (
     <form method="POST" enctype="multipart/form-data" class="max-w-xl space-y-3 rounded-xl border border-violet-100 bg-white p-6 text-sm">
       <input type="hidden" name="_action" value="preview" />
       <p>The first row must be column names. Recognised: <b>name</b> (or first name and last name), <b>email</b>, <b>phone</b> or <b>whatsapp</b>, <b>country</b>, <b>tour</b>, <b>message</b> or <b>notes</b>, <b>source</b>, <b>language</b>. Other columns are ignored.</p>
       <p>Each row needs an email or a phone number. Up to {IMPORT_ROW_LIMIT} rows per file; split bigger lists.</p>
-      <p class="rounded bg-amber-50 p-3 text-amber-900">Imported people are filed as leads but are <b>not</b> marked as agreeing to marketing email. A list is not proof of consent, and they cannot be emailed as marketing until they opt in.</p>
+      <p class="notice notice-warn">Imported people are filed as leads but are <b>not</b> marked as agreeing to marketing email. A list is not proof of consent, and they cannot be emailed as marketing until they opt in.</p>
       <input type="file" name="file" aria-label="CSV file" accept=".csv,text/csv" required class={`block w-full ${field}`} />
       <button class="min-h-11 rounded btn-primary px-4 text-white">Check the file</button>
     </form>

@@ -90,6 +90,11 @@ const itemClass = (active: boolean) =>
         --surface: #ffffff;
         --text: #1e1b2e;
         --text-muted: #64748b;
+        /* Pastel meanings. -bg is the pill/border fill, -soft the quiet tile or notice background, -ink the dark text that sits on them. */
+        --info-bg: #dbeafe; --info-soft: #eff6ff; --info-ink: #1e3a8a;
+        --success-bg: #d1fae5; --success-soft: #ecfdf5; --success-ink: #065f46;
+        --warn-bg: #ffedd5; --warn-soft: #fff7ed; --warn-ink: #9a3412;
+        --danger-bg: #ffe4e6; --danger-soft: #fff1f2; --danger-ink: #9f1239;
         --radius-sm: 6px;
         --radius-md: 10px;
         --radius-lg: 16px;
@@ -136,10 +141,20 @@ const itemClass = (active: boolean) =>
       .btn-danger:hover { filter: brightness(1.1); }
       /* Status badges: dark text on a pastel fill (contrast of each pair is checked in /admin/style-guide). */
       .badge { display: inline-block; border-radius: 9999px; padding: 0.125rem 0.625rem; font-size: 0.75rem; font-weight: 600; line-height: 1.25rem; }
-      .badge-info { background: #dbeafe; color: #1e3a8a; }
-      .badge-success { background: #d1fae5; color: #065f46; }
-      .badge-warn { background: #ffedd5; color: #9a3412; }
-      .badge-danger { background: #ffe4e6; color: #9f1239; }
+      .badge-info { background: var(--info-bg); color: var(--info-ink); }
+      .badge-success { background: var(--success-bg); color: var(--success-ink); }
+      .badge-warn { background: var(--warn-bg); color: var(--warn-ink); }
+      .badge-danger { background: var(--danger-bg); color: var(--danger-ink); }
+      /* Quiet tinted surfaces for tiles (.tint-*) and notices (.notice-*). Written after the page-wide card rule so they win its border. */
+      .tint-info { background: var(--info-soft); border-color: var(--info-bg) !important; }
+      .tint-success { background: var(--success-soft); border-color: var(--success-bg) !important; }
+      .tint-warn { background: var(--warn-soft); border-color: var(--warn-bg) !important; }
+      .tint-danger { background: var(--danger-soft); border-color: var(--danger-bg) !important; }
+      .notice { border: 1px solid; border-radius: 0.75rem; padding: 0.75rem; font-size: 0.875rem; }
+      .notice-info { background: var(--info-soft); border-color: var(--info-bg); color: var(--info-ink); }
+      .notice-success { background: var(--success-soft); border-color: var(--success-bg); color: var(--success-ink); }
+      .notice-warn { background: var(--warn-soft); border-color: var(--warn-bg); color: var(--warn-ink); }
+      .notice-danger { background: var(--danger-soft); border-color: var(--danger-bg); color: var(--danger-ink); }
       .badge-neutral { background: #ede9fe; color: var(--brand-900); }
       /* Page-wide defaults every admin page relies on (card edge and shadow, heading colour, form fields, the AA-contrast grey). */
       body { background: var(--bg); }

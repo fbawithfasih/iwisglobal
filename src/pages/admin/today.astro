@@ -43,16 +43,19 @@ const ticketsToBuy = (b: NonNullable<typeof board>['trips'][number]) => {
 const shown = (part: 'trips' | 'chats' | 'leads', n: number) => (board?.failed.includes(part) ? '–' : n);
 const days = board ? [{ label: 'Today', ymd: board.today }, { label: 'Tomorrow', ymd: board.tomorrow }] : [];
 const tile = 'block rounded-xl border border-violet-100 bg-white p-4 transition-colors hover:border-violet-300';
+// A "needs you" tile takes a soft tint only while it has something to do; at zero it stays plain white and calm.
+const counted = (tone: 'warn' | 'info' | 'success', n: number | string) =>
+  typeof n === 'number' && n > 0 ? `block rounded-xl border p-4 transition-colors hover:border-violet-300 tint-${tone}` : tile;
 ---
 <AdminLayout title="Today">
   <h1 class="text-2xl font-semibold">Today</h1>
   <p class="mb-6 text-sm text-stone-600">{formatTravelDate(today)} (India time). Every number below is a count of the list it opens.</p>
 
-  {!db && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">Database not available.</p>}
-  {loadError && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">Could not load today's board. The other pages still work; try again in a moment.</p>}
+  {!db && <p class="notice notice-danger my-3" role="alert">Database not available.</p>}
+  {loadError && <p class="notice notice-danger my-3" role="alert">Could not load today's board. The other pages still work; try again in a moment.</p>}
 
   {board && board.failed.length > 0 && (
-    <p class="my-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+    <p class="notice notice-warn my-3" role="alert">
       Could not load {board.failed.map((f) => ({ trips: 'trips and bookings', chats: 'WhatsApp chats', leads: 'leads' })[f]).join(', ')}. Those numbers show a dash below, not zero. The other pages still work.
     </p>
   )}
@@ -62,22 +65,22 @@ const tile = 'block rounded-xl border border-violet-100 bg-white p-4 transition-
       <section aria-labelledby="needs-you" class="mb-8">
         <h2 id="needs-you" class="mb-3 text-lg font-semibold">Needs you now</h2>
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <a href="/admin/whatsapp?tab=attention" class={tile}>
+          <a href="/admin/whatsapp?tab=attention" class={counted('warn', shown('chats', board.chatsWaiting.total))}>
             <span class="block text-3xl font-semibold text-stone-900">{shown('chats', board.chatsWaiting.total)}</span>
             <span class="block font-medium text-stone-800">WhatsApp chats waiting</span>
             <span class="block text-xs text-stone-500">The guest wrote last and nobody has replied{board.chatsHandedOff > 0 ? `. ${board.chatsHandedOff} handed to a person` : ''}.</span>
           </a>
-          <a href="/admin/leads?view=unanswered" class={tile}>
+          <a href="/admin/leads?view=unanswered" class={counted('warn', shown('leads', board.leadsUnanswered.total))}>
             <span class="block text-3xl font-semibold text-stone-900">{shown('leads', board.leadsUnanswered.total)}</span>
             <span class="block font-medium text-stone-800">Leads with no reply</span>
             <span class="block text-xs text-stone-500">Leads still at New.</span>
           </a>
-          <a href="/admin/leads?view=followups" class={tile}>
+          <a href="/admin/leads?view=followups" class={counted('info', shown('leads', board.followUpsDue))}>
             <span class="block text-3xl font-semibold text-stone-900">{shown('leads', board.followUpsDue)}</span>
             <span class="block font-medium text-stone-800">Follow-ups due</span>
             <span class="block text-xs text-stone-500">Open leads whose follow-up date has come, anyone's.</span>
           </a>
-          <a href="/admin?view=awaiting" class={tile}>
+          <a href="/admin?view=awaiting" class={counted('success', shown('trips', board.awaitingConfirmation))}>
             <span class="block text-3xl font-semibold text-stone-900">{shown('trips', board.awaitingConfirmation)}</span>
             <span class="block font-medium text-stone-800">Bookings to confirm</span>
             <span class="block text-xs text-stone-500">Custom trips waiting for you.</span>

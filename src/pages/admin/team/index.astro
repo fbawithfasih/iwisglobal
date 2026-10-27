@@ -88,7 +88,7 @@ const btn = 'min-h-11 rounded-full px-4 text-sm';
     </div>
   ) : (
     <>
-      {!googleReady && <p class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">Google sign-in is not configured on this site, so invited people cannot sign in yet.</p>}
+      {!googleReady && <p class="notice notice-warn mb-4">Google sign-in is not configured on this site, so invited people cannot sign in yet.</p>}
 
       <form method="POST" class="mb-6 grid gap-3 rounded-xl border bg-white p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
         <input type="hidden" name="_action" value="invite" />

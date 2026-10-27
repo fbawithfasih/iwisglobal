@@ -93,7 +93,7 @@ const field = 'rounded border border-violet-200 px-3 py-2';
   <p class="mb-2 text-sm"><a href="/admin/leads" class="text-brand-700 hover:underline">&larr; All leads</a></p>
   <h1 class="mb-4 text-2xl font-semibold">Where leads come from</h1>
   {notice && <p class="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">{notice}</p>}
-  {failed && <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">The report could not be read.</p>}
+  {failed && <p class="notice notice-danger mb-4">The report could not be read.</p>}
 
   <form method="GET" class="mb-4 flex flex-wrap items-end gap-2 text-sm">
     <label>From <input type="date" name="from" value={from} class={field} /></label>

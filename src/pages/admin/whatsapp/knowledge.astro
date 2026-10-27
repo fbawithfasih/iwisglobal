@@ -173,10 +173,10 @@ const sections = [
     <a href="/admin/whatsapp" class="ml-2 text-brand-800 underline">Back to chats</a>
   </p>
   {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
-  {error && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+  {error && <p class="notice notice-danger my-3" role="alert">{error}</p>}
 
   {(changes.added || changes.changed || changes.removed) ? (
-    <p class="my-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">
+    <p class="notice notice-warn my-3" role="status">
       The site has changed since the last build: {changes.added} new, {changes.changed} changed, {changes.removed} removed. Press Find suggestions to bring it in.
     </p>
   ) : null}

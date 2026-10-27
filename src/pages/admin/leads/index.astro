@@ -121,10 +121,10 @@ const back = Astro.url.pathname + Astro.url.search;
   </div>
 
   {failed && (
-    <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">The leads could not be read. If the lead tables have not been added to the database yet, they need to be applied first.</p>
+    <p class="notice notice-danger mb-4">The leads could not be read. If the lead tables have not been added to the database yet, they need to be applied first.</p>
   )}
   {waiting > 0 && (
-    <p class="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{waiting} new {waiting === 1 ? 'lead has' : 'leads have'} waited more than an hour for a first reply.</p>
+    <p class="notice notice-warn mb-4">{waiting} new {waiting === 1 ? 'lead has' : 'leads have'} waited more than an hour for a first reply.</p>
   )}
 
   <nav class="mb-4 flex flex-wrap gap-2 text-sm" aria-label="Saved views">
