@@ -1,0 +1,94 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import EmptyState from '../../components/EmptyState.astro';
+import { resolveEnv } from '../../lib/env';
+import { isAdminAuthenticated } from '../../lib/requireAdmin';
+import { MIN_QUERY, searchAdmin, type SearchResults } from '../../lib/adminSearch';
+import { STAGE_LABELS } from '../../lib/leadsAdmin';
+import { formatTravelDate } from '../../lib/format';
+
+const env = resolveEnv(Astro.locals);
+if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
+  return Astro.redirect('/admin/login');
+}
+const db = env.DB;
+const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 80);
+
+let results: SearchResults | null = null;
+let failed = false;
+if (db && q) {
+  try {
+    results = await searchAdmin(db, q);
+  } catch (err) {
+    console.error('admin search failed', err instanceof Error ? err.message : 'error');
+    failed = true;
+  }
+}
+const total = results ? results.bookings.length + results.leads.length + results.chats.length : 0;
+const row = 'block rounded-xl border border-violet-100 bg-white p-3 transition-colors hover:border-violet-300';
+---
+<AdminLayout title={q ? `Search: ${q}` : 'Search'}>
+  <h1 class="mb-4 text-2xl font-semibold">Search</h1>
+
+  <form method="get" action="/admin/search" role="search" class="mb-6 flex gap-2">
+    <input type="search" name="q" value={q} autofocus={!q} placeholder="Name, email, phone, booking id or WhatsApp name" aria-label="Search guests, bookings, leads and chats" maxlength="80" class="min-w-0 flex-1 rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm" />
+    <button type="submit" class="btn-secondary px-4 py-2 text-sm">Search</button>
+  </form>
+
+  {failed && <p class="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">The search could not run. Try again in a moment.</p>}
+
+  {!q && <EmptyState message="Find a guest in one place" hint="Search across bookings, leads and WhatsApp chats by name, email, phone number, booking id or WhatsApp name. Phone numbers match however they were typed." />}
+
+  {results?.tooShort && <EmptyState message={`Type at least ${MIN_QUERY} characters`} />}
+
+  {results && !results.tooShort && total === 0 && <EmptyState message={`Nothing found for "${q}"`} hint="Check the spelling, or try part of an email or the last digits of a phone number (at least 4)." />}
+
+  {results && total > 0 && (
+    <div class="grid gap-8">
+      {results.bookings.length > 0 && (
+        <section aria-labelledby="s-bookings">
+          <h2 id="s-bookings" class="mb-2 text-lg font-semibold">Bookings <span class="text-sm font-normal text-stone-600">({results.bookings.length}{results.more.bookings ? '+' : ''})</span></h2>
+          <ul class="grid gap-2">
+            {results.bookings.map((b) => (
+              <li><a href={`/admin/bookings/${b.id}`} class={row}>
+                <span class="font-medium text-stone-900">{b.traveler_name}</span>
+                <span class="block text-sm text-stone-600">{b.traveler_email} · travels {formatTravelDate(b.travel_date)} · {b.status === 'awaiting_confirmation' ? 'waiting for you' : b.status}</span>
+              </a></li>
+            ))}
+          </ul>
+          {results.more.bookings && <p class="mt-2 text-sm text-stone-600">More bookings match. Narrow the search, or <a class="underline" href={`/admin?view=all&q=${encodeURIComponent(q)}`}>see them all in Bookings</a>.</p>}
+        </section>
+      )}
+      {results.leads.length > 0 && (
+        <section aria-labelledby="s-leads">
+          <h2 id="s-leads" class="mb-2 text-lg font-semibold">Leads <span class="text-sm font-normal text-stone-600">({results.leads.length}{results.more.leads ? '+' : ''})</span></h2>
+          <ul class="grid gap-2">
+            {results.leads.map((l) => (
+              <li><a href={`/admin/leads/${l.id}`} class={row}>
+                <span class="font-medium text-stone-900">{l.name || 'Lead'}</span>
+                <span class="block text-sm text-stone-600">{[l.email, l.phone].filter(Boolean).join(' · ') || 'no contact details'} · {STAGE_LABELS[l.status] ?? l.status} · {l.channel}</span>
+              </a></li>
+            ))}
+          </ul>
+          {results.more.leads && <p class="mt-2 text-sm text-stone-600">More leads match. Narrow the search, or <a class="underline" href={`/admin/leads?view=all&q=${encodeURIComponent(q)}`}>see them all in Leads</a>.</p>}
+        </section>
+      )}
+      {results.chats.length > 0 && (
+        <section aria-labelledby="s-chats">
+          <h2 id="s-chats" class="mb-2 text-lg font-semibold">WhatsApp chats <span class="text-sm font-normal text-stone-600">({results.chats.length}{results.more.chats ? '+' : ''})</span></h2>
+          <ul class="grid gap-2">
+            {results.chats.map((c) => (
+              <li><a href={`/admin/whatsapp?c=${encodeURIComponent(c.id)}`} class={row}>
+                <span class="font-medium text-stone-900">{c.profile_name || 'WhatsApp guest'}</span>
+                <span class="block text-sm text-stone-600">{/^\d+$/.test(c.id) ? `+${c.id}` : c.id} · last message {new Date(c.last_message_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })}</span>
+              </a></li>
+            ))}
+          </ul>
+          {results.more.chats && <p class="mt-2 text-sm text-stone-600">More chats match. Narrow the search.</p>}
+        </section>
+      )}
+    </div>
+  )}
+</AdminLayout>

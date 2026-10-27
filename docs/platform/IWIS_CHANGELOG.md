@@ -4,6 +4,13 @@ What shipped, newest first, taken from the merged pull requests (#62 onward). Ea
 
 ## 2026-10-27
 
+- Docs: draft first test campaign (English) with sources for each claim (#84)
+- Docs: one-click unsubscribe confirmed on the live site (#83)
+- One-click unsubscribe: replace Astro's cross-site form check with the same rule plus one narrow exemption for mail apps (#82)
+- Docs: M4 closed by the owner; Bookings server time 1.12 s to 249 ms (#81)
+- M4 speed: send database calls together (Bookings 3 rounds to 1, Leads 15 to 1), speed guard test, measured baseline (#80)
+- Prepare one-click unsubscribe fix: origin check with a single exemption, tested, not yet wired in (#79)
+- M6: accessibility fixes (0 axe violations), release and rollback runbook, QA checklist, access matrix, migration plan, changelog (#78)
 - M5 (Owner overview): owner-only month and 30-day counts, money per currency, workload (#77)
 - M5 (Today): admin Today board, landing page after sign-in (#76)
 - M4: page speed baseline and Server-Timing on admin responses (#75)

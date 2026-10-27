@@ -33,6 +33,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3.3 | Owner overview money matches the booking amounts for the month | | |
 | 3.4 | No section shows a dash or a warning banner | | |
 
+## 3b. Search and the sidebar
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3b.1 | The sidebar shows your name and role (Owner or Team) above Log out | | |
+| 3b.2 | Type a guest's name in the sidebar search: bookings, leads and WhatsApp chats for that person are listed, each opens the right page | | |
+| 3b.3 | Search a phone number two ways (with +91 and without): the same person is found | | |
+| 3b.4 | Press `/` on a desktop page: the search box is focused; typing `/` inside a form field still types a slash | | |
+| 3b.5 | On a phone the top bar has a Search link and the menu has the search box | | |
+
 ## 4. Bookings
 
 | # | Check | Who | Result |
