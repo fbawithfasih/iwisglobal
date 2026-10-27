@@ -136,3 +136,14 @@ WhatsApp only lets the business send an approved template to a guest who last wr
 - Meta decides the category (utility or marketing) and may reclassify; marketing templates cost more per message. Every template message is billed by WhatsApp.
 - One template per guest per 24 hours; never to a guest who opted out. Sending one moves the chat to Staff handling. When the guest replies, the 24-hour window reopens and the normal reply box returns.
 - To add a language or a new template, add it to `WA_TEMPLATES` and submit the same text in Meta.
+
+### Pickup details (booking page)
+
+"Send pickup details on WhatsApp" on a booking now sends through the Business API (so the message is in this inbox) instead of opening WhatsApp on a phone.
+
+- Guest wrote in the last 24 hours: a normal message with the pickup time, vehicle, guide and driver (name and phone).
+- Otherwise (usual for a guest who booked on the website): the template `iwis_pickup_details` (English, UTILITY), six parameters: `{{1}}` first name, `{{2}}` tour, `{{3}}` date, `{{4}}` pickup time, `{{5}}` vehicle, `{{6}}` driver name and phone. Empty values are sent as "to be confirmed". Body to submit in Meta, exactly:
+  `Hello {{1}}, here are your pickup details for {{2}} on {{3}}. Pickup time: {{4}}. Vehicle: {{5}}. Driver: {{6}}. Your driver is your first contact at pickup, so please keep your phone on. IWIS Global`
+  Sample values for review: Dzemal / Same-Day Taj Mahal Tour from Delhi / Thu, 29 Oct 2026 / 7:30 AM / Innova CRYSTA / Sanjeev Kumar +91 98710 33440.
+- Until the template is approved, a send outside the 24-hour window shows what WhatsApp said; the small "open it in WhatsApp on this phone" link under the button still works as a fallback.
+- Same rules as any template: one per guest per 24 hours, never to a guest who opted out, billed by WhatsApp. A note "Pickup details sent on WhatsApp" is added to the booking and the send is in the audit log.
