@@ -107,7 +107,8 @@ Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) o
 |---|---|---|---|
 | 4b.1 | Open a booking: under Itinerary / logistics there is a "Driver" box with Driver name and Driver phone | | |
 | 4b.2 | Save a driver; "Call driver" (and "WhatsApp driver" for a number with +) appear and work on a phone | | |
-| 4b.3 | "Send pickup details on WhatsApp" now includes "driver Name (+91 ...)" | | |
+| 4b.3 | "Send pickup details on WhatsApp" asks first, then sends through the WhatsApp Business API; the message appears in the WhatsApp inbox and a note is added to the booking (it must not open WhatsApp on the phone) | | |
+| 4b.5 | For a guest who has not written in 24 hours the approved template `iwis_pickup_details` goes out; the message includes the driver's name and phone | | |
 | 4b.4 | Today: the trip card shows the driver and phone; "Assign driver" shows only when no driver is set | | |
 
 ## 5. Leads

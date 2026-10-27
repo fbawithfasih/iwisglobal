@@ -47,3 +47,49 @@ export function cleanTemplateName(raw: string): string | null {
   const v = raw.replace(/[\r\n\t]+/g, ' ').replace(/ {2,}/g, ' ').trim();
   return v && v.length <= 60 ? v : null;
 }
+
+// The pickup details template: how pickup details reach a guest who has not written in the last 24 hours (a guest who
+// booked on the website usually has not). Six parameters. Must be created and approved in Meta under this exact name and
+// language before it can be sent; until then WhatsApp refuses it and staff see why.
+export const PICKUP_TEMPLATE = {
+  name: 'iwis_pickup_details',
+  language: 'en',
+  category: 'UTILITY' as const,
+  body:
+    'Hello {{1}}, here are your pickup details for {{2}} on {{3}}. Pickup time: {{4}}. Vehicle: {{5}}. Driver: {{6}}. ' +
+    'Your driver is your first contact at pickup, so please keep your phone on. IWIS Global',
+};
+
+export interface PickupFacts {
+  guestName: string;
+  tourTitle: string;
+  dateLabel: string;
+  pickupTime: string;
+  vehicle: string;
+  driverName: string;
+  driverPhone: string;
+  guide?: string;
+}
+
+// WhatsApp rejects empty parameters and parameters with line breaks, tabs or runs of spaces.
+const param = (raw: string, fallback: string, max = 120): string => {
+  const v = raw.replace(/[\r\n\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max).trim();
+  return v || fallback;
+};
+
+export function pickupTemplateParams(f: PickupFacts): string[] {
+  const driver = f.driverName.trim()
+    ? param(f.driverName, '', 60) + (f.driverPhone.trim() ? ` ${param(f.driverPhone, '', 30)}` : '')
+    : 'to be confirmed';
+  return [
+    param(f.guestName.trim().split(/\s+/)[0] ?? '', 'there', 60),
+    param(f.tourTitle, 'your tour'),
+    param(f.dateLabel, 'your travel date', 40),
+    param(f.pickupTime, 'to be confirmed', 40),
+    param(f.vehicle, 'to be confirmed', 80),
+    driver,
+  ];
+}
+
+export const renderPickupTemplate = (params: string[]): string =>
+  params.reduce((text, p, i) => text.replace(`{{${i + 1}}}`, p), PICKUP_TEMPLATE.body);

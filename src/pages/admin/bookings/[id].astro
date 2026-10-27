@@ -26,6 +26,8 @@ import { fmt, getDictionary } from '../../../i18n/dictionaries';
 import { formatTravelDate, formatMoneyMinor, formatDateTimeIst } from '../../../lib/format';
 import { telHref, waHref } from '../../../lib/contact';
 import PhoneInput from '../../../components/PhoneInput';
+import { sendPickupDetails, pickupText } from '../../../lib/waPickup';
+import type { PickupFacts } from '../../../lib/waTemplates';
 import { computeTicketsToBuy, ASI_BOOKING_URL } from '../../../lib/entryTickets';
 import { uploadTicketFile } from '../../../lib/images';
 import { sendEntryTicketEmail } from '../../../lib/email';
@@ -69,6 +71,28 @@ if (Astro.request.method === 'POST') {
       driverName: String(form.get('driverName') ?? ''),
       driverPhone: String(form.get('driverPhone') ?? ''),
     });
+  } else if (action === 'pickup_send') {
+    // Pickup details to the guest through the WhatsApp Business API (so it lands in the backend inbox), not a phone app.
+    const current = await getBookingById(db, id);
+    if (!current) return Astro.redirect('/admin');
+    const found = await getTourById(db, current.tour_id);
+    const facts: PickupFacts = {
+      guestName: current.traveler_name,
+      tourTitle: found?.title ?? 'your tour',
+      dateLabel: formatTravelDate(current.travel_date),
+      pickupTime: current.pickup_time,
+      vehicle: current.vehicle,
+      driverName: current.driver_name ?? '',
+      driverPhone: current.driver_phone ?? '',
+      guide: current.guide_assigned,
+    };
+    const result = await sendPickupDetails(env, db, current.traveler_phone, facts, current.payment_id, actorLabel(Astro.locals.admin));
+    if (result.ok) {
+      await addBookingNote(db, id, `Pickup details sent on WhatsApp (${result.via === 'template' ? 'approved template' : 'message'}).`, actorLabel(Astro.locals.admin));
+      await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'booking.pickup_sent', resource: 'booking', resourceId: id, summary: `Sent pickup details on WhatsApp (${result.via})` });
+      return Astro.redirect(`/admin/bookings/${id}?pickup=sent_${result.via}`);
+    }
+    return Astro.redirect(`/admin/bookings/${id}?pickup=error&msg=${encodeURIComponent(result.error ?? 'Could not send.')}`);
   } else if (action === 'note') {
     const note = String(form.get('note') ?? '').trim();
     if (note) {
@@ -227,16 +251,23 @@ const reviewResult = Astro.url.searchParams.get('review');
 // Pickup details for the customer on WhatsApp, built only from what's been
 // filled in under Itinerary / logistics (nothing when all three are empty).
 const firstName = booking.traveler_name.trim().split(/\s+/)[0] || 'there';
-const pickupParts = [
-  booking.pickup_time && 'pickup ' + booking.pickup_time,
-  booking.vehicle && 'vehicle ' + booking.vehicle,
-  booking.guide_assigned && 'guide ' + booking.guide_assigned,
-  booking.driver_name && 'driver ' + booking.driver_name + (booking.driver_phone ? ' (' + booking.driver_phone + ')' : ''),
-].filter(Boolean);
-const pickupMessage = pickupParts.length
-  ? 'Hi ' + firstName + ', here are the details for your ' + (tour?.title ?? 'tour') + ' on ' +
-    formatTravelDate(booking.travel_date) + ': ' + pickupParts.join(', ') + '. Payment reference: ' + booking.payment_id
-  : null;
+const pickupFacts: PickupFacts = {
+  guestName: booking.traveler_name,
+  tourTitle: tour?.title ?? 'tour',
+  dateLabel: formatTravelDate(booking.travel_date),
+  pickupTime: booking.pickup_time,
+  vehicle: booking.vehicle,
+  driverName: booking.driver_name ?? '',
+  driverPhone: booking.driver_phone ?? '',
+  guide: booking.guide_assigned,
+};
+const pickupMessage = pickupText(pickupFacts, booking.payment_id);
+const pickupResult = Astro.url.searchParams.get('pickup');
+const pickupNotice: Record<string, { text: string; ok: boolean }> = {
+  sent_text: { text: 'Pickup details sent on WhatsApp. They are in the WhatsApp inbox.', ok: true },
+  sent_template: { text: 'Pickup details sent on WhatsApp with the approved template (the guest has not written in the last 24 hours). They are in the WhatsApp inbox.', ok: true },
+  error: { text: Astro.url.searchParams.get('msg') ?? 'Could not send the pickup details.', ok: false },
+};
 const pickupWa = pickupMessage && booking.traveler_phone ? waHref(booking.traveler_phone, pickupMessage) : null;
 const contactWa = booking.traveler_phone ? waHref(booking.traveler_phone) : null;
 const contactBtn = 'inline-flex min-h-11 items-center rounded border border-violet-200 bg-white px-3 text-sm text-stone-800';
@@ -413,10 +444,23 @@ const addOnNames = booking.add_on_ids
         </fieldset>
         <button type="submit" class={actionBtn}>Save itinerary</button>
       </form>
-      {pickupWa ? (
-        <a href={pickupWa} target="_blank" rel="noopener noreferrer" class="flex min-h-11 items-center justify-center rounded bg-emerald-700 px-4 font-medium text-white">
-          Send pickup details on WhatsApp
-        </a>
+      {pickupResult && pickupNotice[pickupResult] && (
+        <p class={`notice ${pickupNotice[pickupResult].ok ? 'notice-success' : 'notice-danger'}`} role={pickupNotice[pickupResult].ok ? 'status' : 'alert'}>{pickupNotice[pickupResult].text}</p>
+      )}
+      {pickupMessage && booking.traveler_phone ? (
+        <>
+          <details class="rounded border border-violet-100 p-2 text-xs text-stone-600">
+            <summary class="cursor-pointer">Preview the message</summary>
+            <p class="mt-1 whitespace-pre-line">{pickupMessage}</p>
+          </details>
+          <form method="POST">
+            <input type="hidden" name="_action" value="pickup_send" />
+            <button type="submit" class="flex min-h-11 w-full items-center justify-center rounded bg-emerald-700 px-4 font-medium text-white" data-confirm={`Send the pickup details to ${booking.traveler_name} (${booking.traveler_phone}) on WhatsApp now?`} data-confirm-label="Send on WhatsApp">
+              Send pickup details on WhatsApp
+            </button>
+          </form>
+          {pickupWa && <a href={pickupWa} target="_blank" rel="noopener noreferrer" class="block text-center text-xs text-stone-500 underline">Or open it in WhatsApp on this phone instead</a>}
+        </>
       ) : pickupMessage ? (
         <p class="text-xs text-stone-500">To send these on WhatsApp, the customer's phone number needs its country code (+).</p>
       ) : null}
