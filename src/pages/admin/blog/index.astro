@@ -2,6 +2,8 @@
 export const prerender = false;
 
 import EmptyState from '../../../components/EmptyState.astro';
+import PageHeader from '../../../components/PageHeader.astro';
+import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -44,10 +46,7 @@ if (Astro.request.method === 'POST' && db) {
 const posts = db ? await listBlogPosts(db) : [];
 ---
 <AdminLayout title="Blog">
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-semibold">Blog</h1>
-    <a href="/admin/blog/new" class="rounded btn-primary text-white px-4 py-2 text-sm">+ New post</a>
-  </div>
+  <PageHeader title="Blog" count={posts.length} href="/admin/blog/new" action="+ New post" />
 
   {posts.length === 0 ? (
     <EmptyState message="No blog posts yet" hint="Posts you publish show on the blog and in search." href="/admin/blog/new" action="+ New post" />
@@ -70,16 +69,14 @@ const posts = db ? await listBlogPosts(db) : [];
               </td>
               <td class="px-4 py-2 text-stone-600">{p.category}</td>
               <td class="px-4 py-2">
-                <span class={`px-2 py-0.5 rounded text-xs ${p.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>
-                  {p.status}
-                </span>
+                <StatusBadge tone={p.status === 'published' ? 'ok' : 'muted'}>{p.status}</StatusBadge>
               </td>
               <td class="px-4 py-2 flex items-center gap-3">
                 <a href={`/admin/blog/${p.id}/edit`} class="text-stone-500 hover:underline">Edit</a>
                 <form method="POST">
                   <input type="hidden" name="postId" value={p.id} />
                   <input type="hidden" name="status" value={p.status === 'published' ? 'draft' : 'published'} />
-                  <button type="submit" class="text-stone-500 hover:underline">
+                  <button type="submit" class="text-stone-500 hover:underline" data-confirm={p.status === 'published' ? `Unpublish "${p.title}"? It will disappear from the blog and can't be found in search.` : undefined} data-confirm-label="Unpublish">
                     {p.status === 'published' ? 'Unpublish' : 'Publish'}
                   </button>
                 </form>
