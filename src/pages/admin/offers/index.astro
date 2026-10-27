@@ -2,6 +2,8 @@
 export const prerender = false;
 
 import EmptyState from '../../../components/EmptyState.astro';
+import PageHeader from '../../../components/PageHeader.astro';
+import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -20,12 +22,7 @@ const tours = db ? await listTours(db) : [];
 const today = todayIst();
 const tourNames = (ids: string[]) =>
   ids.length === 0 ? 'All tours' : ids.map((id) => tours.find((t) => t.id === id)?.title ?? 'Deleted tour').join(', ');
-const pill: Record<string, string> = {
-  Running: 'bg-emerald-100 text-emerald-800',
-  Scheduled: 'bg-sky-100 text-sky-800',
-  Ended: 'bg-stone-200 text-stone-600',
-  Off: 'bg-stone-200 text-stone-600',
-};
+const tone = { Running: 'ok', Scheduled: 'info', Ended: 'muted', Off: 'muted' } as const;
 // Live offers first, then upcoming, then finished or paused.
 const STATUS_ORDER = { Running: 0, Scheduled: 1, Ended: 2, Off: 3 } as const;
 const rows = offers
@@ -40,14 +37,7 @@ const rows = offers
   .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
 ---
 <AdminLayout title="Offers & coupons">
-  <div class="flex items-center justify-between gap-3 mb-2">
-    <h1 class="text-2xl font-semibold">Offers &amp; coupons</h1>
-    <a href="/admin/offers/new" class="inline-flex min-h-11 items-center rounded btn-primary text-white px-4 text-sm">+ New offer</a>
-  </div>
-  <p class="text-sm text-stone-500 mb-6">
-    Automatic offers show on tour pages and apply without a code; coupons need the customer to enter the code. One discount per
-    booking — the biggest wins, including the Founding Guest Offer.
-  </p>
+  <PageHeader title="Offers & coupons" count={rows.length} href="/admin/offers/new" action="+ New offer" intro="Automatic offers show on tour pages and apply without a code; coupons need the customer to enter the code. One discount per booking — the biggest wins, including the Founding Guest Offer." />
 
   {rows.length === 0 ? (
     <EmptyState message="No offers yet" hint="An offer is a discount guests see at checkout." href="/admin/offers/new" action="+ New offer" />
@@ -56,7 +46,7 @@ const rows = offers
       {rows.map(({ o, status, value, window, conditions, tours }) => (
         <li class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
           <div class="flex items-center justify-between gap-2 mb-1.5">
-            <span class={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${pill[status]}`}>{status}</span>
+            <StatusBadge tone={tone[status]}>{status}</StatusBadge>
             <span class="text-xs text-stone-500">Used on {o.uses} {o.uses === 1 ? 'booking' : 'bookings'}</span>
           </div>
           <p class="font-semibold text-base">{o.name} <span class="font-normal text-stone-600">· {value}</span></p>

@@ -61,7 +61,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3d.2 | Tours list: Unpublish on a published tour asks first; publishing a draft does not | | |
 | 3d.3 | Blog post, offer, Agra card: "Delete" asks you to type DELETE; the button stays grey until you do | | |
 | 3d.4 | Booking page: cancelling a custom trip asks you to type CANCEL | | |
+| 3d.6 | Blog list: Unpublish asks first; Publish does not | | |
 | 3d.5 | After closing the dialog the cursor is back on the button you pressed; it works with the keyboard only | | |
+
+## 3e. Lists look the same
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3e.1 | Tours, Blog, Offers, Campaigns show the title with a count in brackets and the main button on the right | | |
+| 3e.2 | Status pills use the same colours: green live/sent/approved, grey draft/off/hidden, blue scheduled, orange sending/pending, red cancelled/stuck | | |
+| 3e.3 | Each list shows a helpful empty message when it has nothing | | |
 
 ## 4. Bookings
 

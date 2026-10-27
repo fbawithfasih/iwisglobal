@@ -2,6 +2,8 @@
 export const prerender = false;
 
 import EmptyState from '../../../components/EmptyState.astro';
+import PageHeader from '../../../components/PageHeader.astro';
+import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
@@ -34,14 +36,11 @@ const fromPrice = (t: (typeof tours)[number]) => {
   const usd = t.usdAmount != null ? resolveFromPrice(t, 'USD') : null;
   return `₹${inr.amount.toLocaleString('en-IN')}` + (usd ? ` · $${usd.amount.toLocaleString('en-US')}` : '');
 };
-const statusClass = (status: string) => (status === 'published' ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700');
+const statusTone = (status: string) => (status === 'published' ? 'ok' : 'muted');
 const cardBtn = 'inline-flex min-h-11 items-center justify-center rounded border border-violet-200 bg-white px-3 text-sm text-stone-800';
 ---
 <AdminLayout title="Tours">
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-semibold">Tours</h1>
-    <a href="/admin/tours/new" class="rounded btn-primary text-white px-4 py-2 text-sm">+ New Tour</a>
-  </div>
+  <PageHeader title="Tours" count={tours.length} href="/admin/tours/new" action="+ New Tour" />
 
   {tours.length === 0 ? (
     <EmptyState message="No tours yet" hint="A tour appears on the site once it is published." href="/admin/tours/new" action="+ New Tour" />
@@ -53,7 +52,7 @@ const cardBtn = 'inline-flex min-h-11 items-center justify-center rounded border
         <li class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
           <div class="flex items-start justify-between gap-3">
             <a href={`/admin/tours/${t.id}/edit`} class="font-semibold text-base text-stone-900">{t.title}</a>
-            <span class={`shrink-0 px-2 py-0.5 rounded text-xs ${statusClass(t.status)}`}>{t.status}</span>
+            <StatusBadge tone={statusTone(t.status)}>{t.status}</StatusBadge>
           </div>
           <p class="mt-1 text-stone-700">
             From {fromPrice(t)} /person
@@ -95,9 +94,7 @@ const cardBtn = 'inline-flex min-h-11 items-center justify-center rounded border
               <td class="px-4 py-2 whitespace-nowrap">From {fromPrice(t)}</td>
               <td class="px-4 py-2">{t.featured ? 'Yes' : '—'}</td>
               <td class="px-4 py-2">
-                <span class={`px-2 py-0.5 rounded text-xs ${statusClass(t.status)}`}>
-                  {t.status}
-                </span>
+                <StatusBadge tone={statusTone(t.status)}>{t.status}</StatusBadge>
               </td>
               <td class="px-4 py-2 flex items-center gap-3">
                 <a href={`/admin/tours/${t.id}/edit`} class="text-stone-500 hover:underline">Edit</a>
