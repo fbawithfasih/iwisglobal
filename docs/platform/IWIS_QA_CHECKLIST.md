@@ -43,6 +43,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3b.4 | Press `/` on a desktop page: the search box is focused; typing `/` inside a form field still types a slash | | |
 | 3b.5 | On a phone the top bar has a Search link and the menu has the search box | | |
 
+## 3c. The bell ("waiting for you")
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3c.1 | The bell shows a red number equal to chats waiting + leads needing attention + bookings to confirm on the Today page | | |
+| 3c.2 | Click the bell: a panel lists each kind with its count; each line opens the right list; Esc or a click elsewhere closes it | | |
+| 3c.3 | Reply to the waiting WhatsApp chat: within about a minute the number goes down without reloading | | |
+| 3c.4 | The browser tab title starts with the number, for example "(3) Today" | | |
+| 3c.5 | On a phone the top bar (Menu, Search, bell, + Booking) fits on one line | | |
+
 ## 4. Bookings
 
 | # | Check | Who | Result |
