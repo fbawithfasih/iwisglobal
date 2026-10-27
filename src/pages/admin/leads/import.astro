@@ -77,7 +77,7 @@ const shown = rows.slice(0, 10);
       <p>The first row must be column names. Recognised: <b>name</b> (or first name and last name), <b>email</b>, <b>phone</b> or <b>whatsapp</b>, <b>country</b>, <b>tour</b>, <b>message</b> or <b>notes</b>, <b>source</b>, <b>language</b>. Other columns are ignored.</p>
       <p>Each row needs an email or a phone number. Up to {IMPORT_ROW_LIMIT} rows per file; split bigger lists.</p>
       <p class="rounded bg-amber-50 p-3 text-amber-900">Imported people are filed as leads but are <b>not</b> marked as agreeing to marketing email. A list is not proof of consent, and they cannot be emailed as marketing until they opt in.</p>
-      <input type="file" name="file" accept=".csv,text/csv" required class={`block w-full ${field}`} />
+      <input type="file" name="file" aria-label="CSV file" accept=".csv,text/csv" required class={`block w-full ${field}`} />
       <button class="min-h-11 rounded btn-primary px-4 text-white">Check the file</button>
     </form>
   )}

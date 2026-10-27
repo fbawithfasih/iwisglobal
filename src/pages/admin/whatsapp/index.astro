@@ -179,9 +179,9 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
   <p class="text-sm mb-6">
     Automatic replies:
     <span class={`ml-1 rounded px-2 py-0.5 text-xs font-medium ${autoReply === 'on' ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>{autoReply === 'on' ? 'On' : 'Off'}</span>
-    <a href="/admin/whatsapp/auto" class="ml-2 text-brand-800 hover:underline">Settings</a>
-    <a href="/admin/whatsapp/launch" class="ml-2 text-brand-800 hover:underline">Launch readiness</a>
-    <a href="/admin/whatsapp/knowledge" class="ml-4 text-brand-800 hover:underline">Knowledge base</a>
+    <a href="/admin/whatsapp/auto" class="ml-2 text-brand-800 underline">Settings</a>
+    <a href="/admin/whatsapp/launch" class="ml-2 text-brand-800 underline">Launch readiness</a>
+    <a href="/admin/whatsapp/knowledge" class="ml-4 text-brand-800 underline">Knowledge base</a>
   </p>
   <div id="push-box" class="mb-6 max-w-xl rounded-xl border border-violet-100 bg-white p-3 text-sm" data-key={env.VAPID_PUBLIC_KEY ?? ''}>
     <p class="font-medium text-stone-800">Phone alerts</p>

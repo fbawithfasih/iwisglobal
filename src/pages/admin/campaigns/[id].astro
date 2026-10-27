@@ -145,7 +145,7 @@ const card = 'rounded-xl border border-violet-100 bg-white p-4 text-sm';
       <section class={card}>
         <div class="mb-3 flex flex-wrap gap-2">
           {CAMPAIGN_LANGS.map((l) => (
-            <a href={`/admin/campaigns/${id}?lang=${l}`} class={`rounded-full border px-3 py-1.5 ${l === lang ? 'border-amber-800 btn-primary text-white' : 'border-violet-200 bg-white text-stone-700'}`}>
+            <a href={`/admin/campaigns/${id}?lang=${l}`} class={`rounded-full border px-3 py-1.5 ${l === lang ? 'border-brand-700 btn-primary text-white' : 'border-violet-200 bg-white text-stone-700'}`}>
               {LANG_NAMES[l]}{l !== 'en' && contentComplete(content[l]) ? (content[l].reviewed ? ' ✓' : ' (draft)') : ''}
             </a>
           ))}

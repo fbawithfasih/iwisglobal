@@ -67,21 +67,21 @@ if (!highlight) return Astro.redirect('/admin/agra-highlights');
 
   <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-violet-100 p-6 space-y-4 max-w-xl text-sm">
     <div>
-      <label class="block text-stone-500 mb-1">Name *</label>
-      <input name="name" required value={highlight.name} class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="name" class="block text-stone-500 mb-1">Name *</label>
+      <input id="name" name="name" required value={highlight.name} class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Description</label>
-      <textarea name="description" rows="3" class="w-full rounded border border-violet-200 px-3 py-2">{highlight.description}</textarea>
+      <label for="description" class="block text-stone-500 mb-1">Description</label>
+      <textarea id="description" name="description" rows="3" class="w-full rounded border border-violet-200 px-3 py-2">{highlight.description}</textarea>
     </div>
     {highlight.image && (
       <div>
-        <label class="block text-stone-500 mb-1">Current image</label>
+        <p class="block text-stone-500 mb-1">Current image</p>
         <img src={highlight.image} alt={highlight.name} class="w-48 aspect-[4/3] object-cover rounded border border-violet-100" />
       </div>
     )}
     <div>
-      <label class="block text-stone-500 mb-1">Upload new image</label>
+      <label for="imageFile" class="block text-stone-500 mb-1">Upload new image</label>
       <input id="imageFile" type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
       <p class="text-xs text-stone-500 mt-1">
         Recommended: <strong>1200 × 900px (4:3 ratio)</strong> — matches the card frame on the homepage exactly, so nothing gets cropped oddly. JPEG/PNG/WebP/GIF, up to 5MB. Leave blank to keep the current image.
@@ -89,12 +89,12 @@ if (!highlight) return Astro.redirect('/admin/agra-highlights');
       <p id="imageOptimizeStatus" class="text-xs text-emerald-700 mt-1"></p>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Image URL (used only if a new file isn't uploaded above)</label>
-      <input name="image" placeholder="https://…" class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="image" class="block text-stone-500 mb-1">Image URL (used only if a new file isn't uploaded above)</label>
+      <input id="image" name="image" placeholder="https://…" class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Sort order (lower numbers show first)</label>
-      <input type="number" name="sortOrder" value={highlight.sortOrder} class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="sortOrder" class="block text-stone-500 mb-1">Sort order (lower numbers show first)</label>
+      <input id="sortOrder" type="number" name="sortOrder" value={highlight.sortOrder} class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <button type="submit" class="rounded btn-primary text-white px-4 py-2">Save changes</button>
   </form>

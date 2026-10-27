@@ -28,6 +28,8 @@ interface Props {
   describedBy?: string;
   // Taller, rounder box for the sign-in and sign-up pages.
   roomy?: boolean;
+  /** 'admin' uses the admin palette (violet borders); the public site keeps the neutral one. */
+  tone?: 'public' | 'admin';
 }
 
 function Flag({ iso }: { iso: string }) {
@@ -49,7 +51,7 @@ function Flag({ iso }: { iso: string }) {
 
 type Row = { kind: 'country'; key: string; country: Country } | { kind: 'heading'; key: string; label: string };
 
-export default function PhoneInput({ id, value, defaultValue, onChange, name, invalid = false, describedBy, roomy = false }: Props) {
+export default function PhoneInput({ id, value, defaultValue, onChange, name, invalid = false, describedBy, roomy = false, tone = 'public' }: Props) {
   const listId = useId();
   const { all, popular } = useMemo(getCountries, []);
   const initial = useMemo(
@@ -165,7 +167,9 @@ export default function PhoneInput({ id, value, defaultValue, onChange, name, in
     }
   }
 
-  const border = invalid ? 'border-red-500' : 'border-stone-300';
+  const line = tone === 'admin' ? 'border-violet-200' : 'border-stone-300';
+  const lineSoft = tone === 'admin' ? 'border-violet-100' : 'border-stone-200';
+  const border = invalid ? 'border-red-500' : line;
 
   return (
     <div ref={rootRef} className="relative">
@@ -178,7 +182,7 @@ export default function PhoneInput({ id, value, defaultValue, onChange, name, in
           aria-expanded={open}
           aria-controls={open ? listId : undefined}
           aria-label={`Country code: ${country.name}, plus ${country.dial}. Change country`}
-          className={`flex shrink-0 items-center gap-1.5 border-r border-stone-300 px-2.5 text-base hover:bg-stone-50 focus:outline-none ${roomy ? 'rounded-l-lg py-3' : 'rounded-l py-2'}`}
+          className={`flex shrink-0 items-center gap-1.5 border-r ${line} px-2.5 text-base hover:bg-stone-50 focus:outline-none ${roomy ? 'rounded-l-lg py-3' : 'rounded-l py-2'}`}
         >
           <Flag iso={country.iso} />
           <span className="tabular-nums text-stone-800">+{country.dial}</span>
@@ -204,7 +208,7 @@ export default function PhoneInput({ id, value, defaultValue, onChange, name, in
       {name && <input type="hidden" name={name} value={formatPhone(country, national)} />}
 
       {open && (
-        <div className="absolute left-0 right-0 z-30 mt-1 overflow-hidden rounded-lg border border-stone-200 bg-white shadow-xl">
+        <div className={`absolute left-0 right-0 z-30 mt-1 overflow-hidden rounded-lg border ${lineSoft} bg-white shadow-xl`}>
           <div className="border-b border-stone-100 p-2">
             <input
               ref={searchRef}
@@ -222,7 +226,7 @@ export default function PhoneInput({ id, value, defaultValue, onChange, name, in
               }}
               onKeyDown={onSearchKey}
               autoComplete="off"
-              className="w-full rounded border border-stone-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-brand-400"
+              className={`w-full rounded border ${line} px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-brand-400`}
             />
           </div>
           <ul id={listId} role="listbox" aria-label="Countries" className="max-h-64 overflow-y-auto overscroll-contain py-1">

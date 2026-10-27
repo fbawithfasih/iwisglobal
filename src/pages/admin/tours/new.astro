@@ -76,82 +76,82 @@ if (Astro.request.method === 'POST' && db) {
 
   <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl border border-violet-100 p-6 space-y-4 max-w-2xl text-sm">
     <div>
-      <label class="block text-stone-500 mb-1">Title *</label>
-      <input name="title" required class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. Sunset Agra Fort & Taj Mahal Tour" />
+      <label for="title" class="block text-stone-500 mb-1">Title *</label>
+      <input id="title" name="title" required class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. Sunset Agra Fort & Taj Mahal Tour" />
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Summary (shown on cards/meta description)</label>
-      <textarea name="summary" rows="2" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
+      <label for="summary" class="block text-stone-500 mb-1">Summary (shown on cards/meta description)</label>
+      <textarea id="summary" name="summary" rows="2" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Description ("About this tour" — blank line between paragraphs; "## Heading" for a bullet heading; "Know before you go: …", "What to bring: …", "Not allowed: …" paragraphs go to "Good to know"; [text](/link) for links)</label>
-      <textarea name="description" rows="14" class="w-full rounded border border-violet-200 px-3 py-2 md:font-mono md:text-xs leading-relaxed"></textarea>
+      <label for="description" class="block text-stone-500 mb-1">Description ("About this tour" — blank line between paragraphs; "## Heading" for a bullet heading; "Know before you go: …", "What to bring: …", "Not allowed: …" paragraphs go to "Good to know"; [text](/link) for links)</label>
+      <textarea id="description" name="description" rows="14" class="w-full rounded border border-violet-200 px-3 py-2 md:font-mono md:text-xs leading-relaxed"></textarea>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <label class="block text-stone-500 mb-1">Price per traveler (INR) *</label>
-        <input type="number" name="amount" min="1" required class="w-full rounded border border-violet-200 px-3 py-2" />
+        <label for="amount" class="block text-stone-500 mb-1">Price per traveler (INR) *</label>
+        <input id="amount" type="number" name="amount" min="1" required class="w-full rounded border border-violet-200 px-3 py-2" />
       </div>
       <div>
-        <label class="block text-stone-500 mb-1">Price per traveler (USD, optional)</label>
-        <input type="number" name="usdAmount" min="1" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="Leave blank to hide USD for this tour" />
+        <label for="usdAmount" class="block text-stone-500 mb-1">Price per traveler (USD, optional)</label>
+        <input id="usdAmount" type="number" name="usdAmount" min="1" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="Leave blank to hide USD for this tour" />
       </div>
     </div>
     <input type="hidden" name="currency" value="INR" />
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <label class="block text-stone-500 mb-1">Duration label</label>
-        <input name="durationLabel" placeholder="e.g. Same-day (12–14 hrs)" class="w-full rounded border border-violet-200 px-3 py-2" />
+        <label for="durationLabel" class="block text-stone-500 mb-1">Duration label</label>
+        <input id="durationLabel" name="durationLabel" placeholder="e.g. Same-day (12–14 hrs)" class="w-full rounded border border-violet-200 px-3 py-2" />
       </div>
       <div>
-        <label class="block text-stone-500 mb-1">Start point</label>
-        <input name="startPoint" placeholder="e.g. Delhi Airport" class="w-full rounded border border-violet-200 px-3 py-2" />
+        <label for="startPoint" class="block text-stone-500 mb-1">Start point</label>
+        <input id="startPoint" name="startPoint" placeholder="e.g. Delhi Airport" class="w-full rounded border border-violet-200 px-3 py-2" />
       </div>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Upload image</label>
+      <label for="imageFile" class="block text-stone-500 mb-1">Upload image</label>
       <input id="imageFile" type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-sm" />
       <p class="text-xs text-stone-500 mt-1">JPEG/PNG/WebP/GIF, up to 5MB. Or paste a URL below instead.</p>
       <p id="imageOptimizeStatus" class="text-xs text-emerald-700 mt-1"></p>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Image URL (used only if no file is uploaded above)</label>
-      <input name="image" placeholder="https://…" class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="image" class="block text-stone-500 mb-1">Image URL (used only if no file is uploaded above)</label>
+      <input id="image" name="image" placeholder="https://…" class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Highlights (one per line)</label>
-      <textarea name="highlights" rows="4" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
+      <label for="highlights" class="block text-stone-500 mb-1">Highlights (one per line)</label>
+      <textarea id="highlights" name="highlights" rows="4" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Entry tickets included in the price (one per line — only tickets NOT sold as an add-on below; staff buy these on ASI's site for every booking)</label>
-      <textarea name="entryTicketsInPrice" rows="2" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="Agra Fort entry ticket"></textarea>
+      <label for="entryTicketsInPrice" class="block text-stone-500 mb-1">Entry tickets included in the price (one per line — only tickets NOT sold as an add-on below; staff buy these on ASI's site for every booking)</label>
+      <textarea id="entryTicketsInPrice" name="entryTicketsInPrice" rows="2" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="Agra Fort entry ticket"></textarea>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Itinerary (one step per line: "Time | Activity | Details (optional, shown when the stop is tapped)")</label>
-      <textarea name="itinerary" rows="5" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="5:30 AM | Pickup from hotel"></textarea>
+      <label for="itinerary" class="block text-stone-500 mb-1">Itinerary (one step per line: "Time | Activity | Details (optional, shown when the stop is tapped)")</label>
+      <textarea id="itinerary" name="itinerary" rows="5" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="5:30 AM | Pickup from hotel"></textarea>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Includes (one per line)</label>
-      <textarea name="includes" rows="3" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
+      <label for="includes" class="block text-stone-500 mb-1">Includes (one per line)</label>
+      <textarea id="includes" name="includes" rows="3" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Excludes (one per line)</label>
-      <textarea name="excludes" rows="3" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
+      <label for="excludes" class="block text-stone-500 mb-1">Excludes (one per line)</label>
+      <textarea id="excludes" name="excludes" rows="3" class="w-full rounded border border-violet-200 px-3 py-2"></textarea>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">
+      <label for="pricingTiers" class="block text-stone-500 mb-1">
         Group-size pricing tiers (one per line: "Travelers | INR price per traveler | USD price (optional)")
       </label>
-      <textarea name="pricingTiers" rows="4" class="w-full rounded border border-violet-200 px-3 py-2" placeholder={'1 | 11999\n2 | 6499\n3 | 5499\n4 | 4499'}></textarea>
+      <textarea id="pricingTiers" name="pricingTiers" rows="4" class="w-full rounded border border-violet-200 px-3 py-2" placeholder={'1 | 11999\n2 | 6499\n3 | 5499\n4 | 4499'}></textarea>
       <p class="text-xs text-stone-500 mt-1">
         Optional. Leave blank to keep the flat "Price per traveler" above for every group size.
       </p>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">
+      <label for="addOns" class="block text-stone-500 mb-1">
         Add-ons (one per line: "Name | INR price | USD price (optional) | yes-if-included-by-default | each-if-per-traveler")
       </label>
-      <textarea name="addOns" rows="3" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="Taj Mahal entry ticket (foreign visitor) | 1300 | 16 | | each"></textarea>
+      <textarea id="addOns" name="addOns" rows="3" class="w-full rounded border border-violet-200 px-3 py-2" placeholder="Taj Mahal entry ticket (foreign visitor) | 1300 | 16 | | each"></textarea>
       <p class="text-xs text-stone-500 mt-1">
         Optional extras the customer can tick, e.g. "Taj Mahal entry ticket (foreign visitor) | 1300 | 16 | | each"
         (₹1,300 / $16 per traveler). Tickets that are part of the tour price go in "Entry tickets included in the
@@ -160,8 +160,8 @@ if (Astro.request.method === 'POST' && db) {
       </p>
     </div>
     <div>
-      <label class="block text-stone-500 mb-1">Guide language</label>
-      <input name="guideLanguage" value="English" class="w-full rounded border border-violet-200 px-3 py-2" />
+      <label for="guideLanguage" class="block text-stone-500 mb-1">Guide language</label>
+      <input id="guideLanguage" name="guideLanguage" value="English" class="w-full rounded border border-violet-200 px-3 py-2" />
     </div>
     <label class="flex items-center gap-2">
       <input type="checkbox" name="pickupIncluded" />
