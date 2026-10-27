@@ -101,6 +101,15 @@ Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) o
 | 4.3 | Open a booking, change status, add a note: the note shows your name; the change appears in the audit log | | |
 | 4.4 | Set pickup time, guide and vehicle; they show on Today | | |
 
+## 4b. Driver details
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 4b.1 | Open a booking: under Itinerary / logistics there is a "Driver" box with Driver name and Driver phone | | |
+| 4b.2 | Save a driver; "Call driver" (and "WhatsApp driver" for a number with +) appear and work on a phone | | |
+| 4b.3 | "Send pickup details on WhatsApp" now includes "driver Name (+91 ...)" | | |
+| 4b.4 | Today: the trip card shows the driver and phone; "Assign driver" shows only when no driver is set | | |
+
 ## 5. Leads
 
 | # | Check | Who | Result |

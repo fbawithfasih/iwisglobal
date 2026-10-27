@@ -25,6 +25,7 @@ import { emailLocale, intlLocale } from '../../../lib/i18n';
 import { fmt, getDictionary } from '../../../i18n/dictionaries';
 import { formatTravelDate, formatMoneyMinor, formatDateTimeIst } from '../../../lib/format';
 import { telHref, waHref } from '../../../lib/contact';
+import PhoneInput from '../../../components/PhoneInput';
 import { computeTicketsToBuy, ASI_BOOKING_URL } from '../../../lib/entryTickets';
 import { uploadTicketFile } from '../../../lib/images';
 import { sendEntryTicketEmail } from '../../../lib/email';
@@ -65,6 +66,8 @@ if (Astro.request.method === 'POST') {
       pickupTime: String(form.get('pickupTime') ?? ''),
       guideAssigned: String(form.get('guideAssigned') ?? ''),
       vehicle: String(form.get('vehicle') ?? ''),
+      driverName: String(form.get('driverName') ?? ''),
+      driverPhone: String(form.get('driverPhone') ?? ''),
     });
   } else if (action === 'note') {
     const note = String(form.get('note') ?? '').trim();
@@ -228,6 +231,7 @@ const pickupParts = [
   booking.pickup_time && 'pickup ' + booking.pickup_time,
   booking.vehicle && 'vehicle ' + booking.vehicle,
   booking.guide_assigned && 'guide ' + booking.guide_assigned,
+  booking.driver_name && 'driver ' + booking.driver_name + (booking.driver_phone ? ' (' + booking.driver_phone + ')' : ''),
 ].filter(Boolean);
 const pickupMessage = pickupParts.length
   ? 'Hi ' + firstName + ', here are the details for your ' + (tour?.title ?? 'tour') + ' on ' +
@@ -390,6 +394,23 @@ const addOnNames = booking.add_on_ids
           <label for="vehicle" class="block text-stone-500 mb-1">Vehicle</label>
           <input id="vehicle" name="vehicle" value={booking.vehicle} class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. Innova, plate no." />
         </div>
+        <fieldset class="space-y-3 rounded-lg border border-violet-100 p-3">
+          <legend class="px-1 font-medium text-stone-800">Driver (the guest's first contact at pickup)</legend>
+          <div>
+            <label for="driverName" class="block text-stone-500 mb-1">Driver name</label>
+            <input id="driverName" name="driverName" maxlength="80" value={booking.driver_name ?? ''} class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. Sanjeev Kumar" />
+          </div>
+          <div>
+            <label for="driverPhone" class="block text-stone-500 mb-1">Driver phone</label>
+            <PhoneInput client:load tone="admin" id="driverPhone" name="driverPhone" defaultValue={booking.driver_phone || undefined} />
+          </div>
+          {booking.driver_phone && (
+            <div class="flex flex-wrap gap-2">
+              <a href={telHref(booking.driver_phone)} class={contactBtn}>Call driver</a>
+              {waHref(booking.driver_phone) && <a href={waHref(booking.driver_phone) ?? '#'} target="_blank" rel="noopener noreferrer" class={contactBtn}>WhatsApp driver</a>}
+            </div>
+          )}
+        </fieldset>
         <button type="submit" class={actionBtn}>Save itinerary</button>
       </form>
       {pickupWa ? (

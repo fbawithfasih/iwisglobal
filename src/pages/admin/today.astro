@@ -111,10 +111,14 @@ const counted = (tone: 'warn' | 'info' | 'success', n: number | string) =>
                           <span class="block text-xs text-stone-500">
                             Guide: {b.guide_assigned || 'not assigned'} · Vehicle: {b.vehicle || 'not assigned'}
                           </span>
-                          {(!b.guide_assigned || !b.pickup_time || ticketsToBuy(b) || b.total_amount > b.amount_paid) && (
+                          <span class="block text-xs text-stone-500">
+                            Driver: {b.driver_name || 'not assigned'}{b.driver_phone ? ` · ${b.driver_phone}` : ''}
+                          </span>
+                          {(!b.guide_assigned || !b.driver_name || !b.pickup_time || ticketsToBuy(b) || b.total_amount > b.amount_paid) && (
                             <span class="mt-1 block">
                               {!b.pickup_time && <span class="badge-warn mr-1 rounded px-1.5 py-0.5 text-[11px]">Set pickup time</span>}
                               {!b.guide_assigned && <span class="badge-warn mr-1 rounded px-1.5 py-0.5 text-[11px]">Assign guide</span>}
+                              {!b.driver_name && <span class="badge-warn mr-1 rounded px-1.5 py-0.5 text-[11px]">Assign driver</span>}
                               {ticketsToBuy(b) && <span class="badge-warn mr-1 rounded px-1.5 py-0.5 text-[11px]">Tickets needed</span>}
                               {b.total_amount > b.amount_paid && <span class="badge-warn mr-1 rounded px-1.5 py-0.5 text-[11px]">Balance due</span>}
                             </span>
