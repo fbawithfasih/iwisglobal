@@ -67,7 +67,7 @@ const cardBtn = 'inline-flex min-h-11 items-center justify-center rounded border
             <form method="POST">
               <input type="hidden" name="tourId" value={t.id} />
               <input type="hidden" name="status" value={t.status === 'published' ? 'draft' : 'published'} />
-              <button type="submit" class={cardBtn} data-unpublish={t.status === 'published' ? t.title : undefined}>
+              <button type="submit" class={cardBtn} data-confirm={t.status === 'published' ? `Unpublish "${t.title}"? It will disappear from the website and can't be booked.` : undefined} data-confirm-label="Unpublish">
                 {t.status === 'published' ? 'Unpublish' : 'Publish'}
               </button>
             </form>
@@ -104,7 +104,7 @@ const cardBtn = 'inline-flex min-h-11 items-center justify-center rounded border
                 <form method="POST">
                   <input type="hidden" name="tourId" value={t.id} />
                   <input type="hidden" name="status" value={t.status === 'published' ? 'draft' : 'published'} />
-                  <button type="submit" class="text-stone-500 hover:underline" data-unpublish={t.status === 'published' ? t.title : undefined}>
+                  <button type="submit" class="text-stone-500 hover:underline" data-confirm={t.status === 'published' ? `Unpublish "${t.title}"? It will disappear from the website and can't be booked.` : undefined} data-confirm-label="Unpublish">
                     {t.status === 'published' ? 'Unpublish' : 'Publish'}
                   </button>
                 </form>
@@ -117,13 +117,3 @@ const cardBtn = 'inline-flex min-h-11 items-center justify-center rounded border
     </>
   )}
 </AdminLayout>
-
-<script>
-  // Unpublishing takes the tour off the live site; publishing is harmless.
-  document.querySelectorAll<HTMLButtonElement>('[data-unpublish]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      const title = btn.dataset.unpublish;
-      if (!confirm(`Unpublish "${title}"? It will disappear from the website and can't be booked.`)) e.preventDefault();
-    });
-  });
-</script>

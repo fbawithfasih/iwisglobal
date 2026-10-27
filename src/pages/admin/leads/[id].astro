@@ -136,7 +136,7 @@ const marketing: Record<string, string> = { none: 'Not asked', pending: 'Asked, 
           <input type="hidden" name="_action" value="merge" />
           <input type="hidden" name="keep" value={l.person_id ?? ''} />
           <input type="hidden" name="drop" value={dup.other_id} />
-          <button class="min-h-11 rounded btn-primary px-4 text-white" onclick="return confirm('Merge these two people into this one? You can undo it.')">Merge into this person</button>
+          <button class="min-h-11 rounded btn-primary px-4 text-white" data-confirm="Merge these two people into this one? You can undo it." data-confirm-label="Merge">Merge into this person</button>
         </form>
         <form method="POST">
           <input type="hidden" name="_action" value="dismiss" />
@@ -174,7 +174,7 @@ const marketing: Record<string, string> = { none: 'Not asked', pending: 'Asked, 
             <summary class="cursor-pointer text-stone-600">Email consent and data</summary>
             <div class="mt-2 space-y-2">
               <form method="POST"><input type="hidden" name="_action" value="resend_optin" /><button class="w-full rounded border border-violet-200 bg-white px-3 py-2">Send the confirmation email again</button></form>
-              <form method="POST"><input type="hidden" name="_action" value="unsub" /><button class="w-full rounded border border-violet-200 bg-white px-3 py-2" onclick="return confirm('Stop all marketing email to this person?')">Mark unsubscribed (they asked us)</button></form>
+              <form method="POST"><input type="hidden" name="_action" value="unsub" /><button class="w-full rounded border border-violet-200 bg-white px-3 py-2" data-confirm="Stop all marketing email to this person?" data-confirm-label="Mark unsubscribed">Mark unsubscribed (they asked us)</button></form>
               {canDo(Astro.locals.admin, 'person', 'erase') && <form method="POST" class="space-y-1 rounded border border-red-200 bg-red-50 p-2">
                 <input type="hidden" name="_action" value="erase" />
                 <p class="text-red-900">Erase this person: names, contact details, history, consent records and their WhatsApp chats on this site (with photos and voice notes) are deleted. Only a scrambled copy of the email and phone stays so they are never contacted again. The chat stays in the WhatsApp Business app; delete it there too. This cannot be undone.</p>

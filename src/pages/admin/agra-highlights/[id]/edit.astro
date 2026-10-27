@@ -101,18 +101,12 @@ if (!highlight) return Astro.redirect('/admin/agra-highlights');
 
   <form method="POST" class="mt-4 max-w-xl">
     <input type="hidden" name="_action" value="delete" />
-    <button type="submit" class="text-sm text-red-600 hover:underline" data-confirm="delete">Delete this card</button>
+    <button type="submit" class="text-sm text-red-600 hover:underline" data-confirm="Delete this card? This cannot be undone." data-confirm-type="DELETE" data-confirm-label="Delete card">Delete this card</button>
   </form>
 </AdminLayout>
 
 <script>
   import { attachImageOptimizer } from '../../../../lib/imageOptimizeClient';
-
-  document.querySelectorAll<HTMLButtonElement>('[data-confirm="delete"]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      if (!confirm('Delete this card? This cannot be undone.')) e.preventDefault();
-    });
-  });
 
   const input = document.getElementById('imageFile') as HTMLInputElement | null;
   const status = document.getElementById('imageOptimizeStatus');

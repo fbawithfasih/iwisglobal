@@ -165,7 +165,7 @@ const field = 'rounded border border-violet-200 px-3 py-2';
             <tr class="border-t border-stone-100 first:border-0">
               <td class="px-3 py-2 whitespace-nowrap">{s.spend_date}</td><td class="px-3 py-2">{s.channel}</td><td class="px-3 py-2">{s.campaign}</td>
               <td class="px-3 py-2 whitespace-nowrap">{formatMoneyMinor(s.amount_minor, s.currency)}</td><td class="px-3 py-2">{s.note}</td>
-              <td class="px-3 py-2"><form method="POST"><input type="hidden" name="_action" value="delete_spend" /><input type="hidden" name="id" value={s.id} /><button class="text-red-700 hover:underline" aria-label="Remove this spend entry">Remove</button></form></td>
+              <td class="px-3 py-2"><form method="POST"><input type="hidden" name="_action" value="delete_spend" /><input type="hidden" name="id" value={s.id} /><button class="text-red-700 hover:underline" aria-label="Remove this spend entry" data-confirm="Remove this spend entry? Cost per lead and per booking will change." data-confirm-label="Remove">Remove</button></form></td>
             </tr>
           ))}
         </tbody>

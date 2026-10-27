@@ -365,7 +365,7 @@ const addOnNames = booking.add_on_ids
                 <button type="submit" class={actionBtn}>Confirm this trip</button>
               </form>
             )}
-            <form method="POST" onsubmit="return confirm('Cancel this trip and refund the full deposit to the guest? This cannot be undone.')">
+            <form method="POST" data-confirm="Cancel this trip and refund the full deposit to the guest? This cannot be undone." data-confirm-type="CANCEL" data-confirm-label="Cancel trip and refund">
               <input type="hidden" name="_action" value="cancel_custom" />
               <button type="submit" class="min-h-11 rounded border border-red-300 bg-white px-4 text-sm text-red-700">Cancel and refund deposit</button>
             </form>

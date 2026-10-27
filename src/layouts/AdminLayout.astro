@@ -238,6 +238,71 @@ const itemClass = (active: boolean) =>
         </main>
       </div>
     </div>
+    <dialog id="confirm-dialog" aria-labelledby="confirm-title" class="w-[min(28rem,calc(100vw-2rem))] rounded-xl border border-violet-200 bg-white p-0 text-stone-800 shadow-xl backdrop:bg-black/40">
+      <form method="dialog" class="space-y-3 p-5">
+        <h2 id="confirm-title" class="text-base font-semibold text-stone-900">Are you sure?</h2>
+        <p data-confirm-message class="text-sm text-stone-700"></p>
+        <div data-confirm-typed class="hidden space-y-1">
+          <label for="confirm-typed" class="block text-sm text-stone-700">Type <strong data-confirm-word></strong> to confirm</label>
+          <input id="confirm-typed" autocomplete="off" class="min-h-11 w-full rounded border border-red-300 px-3 text-sm" />
+        </div>
+        <div class="flex flex-wrap justify-end gap-2 pt-1">
+          <button value="cancel" class="btn-secondary min-h-11 rounded px-4 text-sm">Cancel</button>
+          <button type="button" data-confirm-ok class="btn-danger min-h-11 rounded px-4 text-sm">Confirm</button>
+        </div>
+      </form>
+    </dialog>
+    <script>
+      // One confirmation for every risky button. Put data-confirm="what will happen" on a button (or a form); add
+      // data-confirm-type="WORD" to make the person type a word first (for things that cannot be undone) and
+      // data-confirm-label="Delete" to name the button. Cancel or Esc leaves everything as it was.
+      const dlg = document.getElementById('confirm-dialog') as HTMLDialogElement | null;
+      if (dlg && typeof dlg.showModal === 'function') {
+        const msg = dlg.querySelector<HTMLElement>('[data-confirm-message]')!;
+        const typedBox = dlg.querySelector<HTMLElement>('[data-confirm-typed]')!;
+        const word = dlg.querySelector<HTMLElement>('[data-confirm-word]')!;
+        const input = dlg.querySelector<HTMLInputElement>('#confirm-typed')!;
+        const ok = dlg.querySelector<HTMLButtonElement>('[data-confirm-ok]')!;
+        let pending: { form: HTMLFormElement; submitter: HTMLElement | null; opener: HTMLElement | null } | null = null;
+        let approved = new WeakSet<HTMLFormElement>();
+        const need = () => (typedBox.classList.contains('hidden') ? '' : (word.textContent ?? ''));
+        const sync = () => { ok.disabled = need() !== '' && input.value.trim().toUpperCase() !== need().toUpperCase(); };
+        input.addEventListener('input', sync);
+        document.addEventListener('submit', (e) => {
+          const form = e.target as HTMLFormElement;
+          if (approved.has(form)) { approved.delete(form); return; }
+          const submitter = (e as SubmitEvent).submitter as HTMLElement | null;
+          const holder = submitter?.closest<HTMLElement>('[data-confirm]') ?? form.closest<HTMLElement>('[data-confirm]');
+          const text = holder?.dataset.confirm;
+          if (!holder || !text) return;
+          e.preventDefault();
+          e.stopPropagation();
+          pending = { form, submitter, opener: submitter ?? (document.activeElement as HTMLElement | null) };
+          msg.textContent = text;
+          const type = holder.dataset.confirmType ?? '';
+          typedBox.classList.toggle('hidden', !type);
+          word.textContent = type;
+          input.value = '';
+          ok.textContent = holder.dataset.confirmLabel ?? 'Confirm';
+          sync();
+          dlg.showModal();
+          (type ? input : ok).focus();
+        }, true);
+        ok.addEventListener('click', () => {
+          const p = pending;
+          pending = null;
+          dlg.close('ok');
+          if (!p) return;
+          approved.add(p.form);
+          p.form.requestSubmit(p.submitter as HTMLElement | null as HTMLButtonElement | null);
+        });
+        dlg.addEventListener('close', () => {
+          if (dlg.returnValue !== 'ok') pending?.opener?.focus();
+          pending = null;
+          dlg.returnValue = '';
+        });
+      }
+    </script>
     <script>
       // Phone drawer: opens from the Menu button, closes on Close, overlay click, Escape, or choosing a link.
       const sidebar = document.getElementById('admin-sidebar');

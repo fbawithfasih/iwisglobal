@@ -137,7 +137,7 @@ const label = 'block text-xs text-stone-500 mb-1';
           </div>
           <form method="POST">
             {settings.enabled
-              ? <button type="submit" name="_action" value="switch_off" class={`${btn} bg-red-700 text-white`}>Switch off now</button>
+              ? <button type="submit" name="_action" value="switch_off" data-confirm="Switch this off? Guests will no longer be able to use it until you switch it on again." data-confirm-label="Switch off" class={`${btn} bg-red-700 text-white`}>Switch off now</button>
               : <button type="submit" name="_action" value="switch_on" class={`${btn} bg-green-700 text-white`}>Switch on</button>}
           </form>
         </div>
@@ -184,7 +184,7 @@ const label = 'block text-xs text-stone-500 mb-1';
                       <td class="pr-3 text-right whitespace-nowrap">{money(b.refunded, b.currency)}</td>
                       <td class="py-2">
                         {b.status === 'booked' && v.preview && (
-                          <form method="POST" onsubmit={`return confirm(${JSON.stringify(`Cancel this booking now? The guest will be refunded ${money(v.preview.refund, b.currency)} and ${money(v.preview.fee, b.currency)} is kept as the cancellation fee. This cannot be undone.`)})`}>
+                          <form method="POST" data-confirm={`Cancel this booking now? The guest will be refunded ${money(v.preview.refund, b.currency)} and ${money(v.preview.fee, b.currency)} is kept as the cancellation fee. This cannot be undone.`} data-confirm-type="CANCEL" data-confirm-label="Cancel and refund">
                             <input type="hidden" name="bookingId" value={b.id} />
                             <button type="submit" name="_action" value="cancel_booking" class={`${btn} bg-red-700 text-white`}>Cancel and refund</button>
                           </form>
