@@ -134,8 +134,8 @@ const counted = (tone: 'warn' | 'info' | 'success', n: number | string) =>
         </div>
       </section>
 
-      <section aria-labelledby="waiting" class="mb-8 grid gap-6 md:grid-cols-2">
-        <div>
+      <div class="mb-8 grid gap-6 md:grid-cols-2">
+        <section aria-labelledby="waiting">
           <h2 id="waiting" class="mb-3 text-lg font-semibold">Longest waiting</h2>
           {board.chatsWaiting.top.length === 0 && board.leadsUnanswered.top.length === 0 ? (
             <EmptyState message="Nobody is waiting for a reply" />
@@ -159,10 +159,10 @@ const counted = (tone: 'warn' | 'info' | 'success', n: number | string) =>
               ))}
             </ul>
           )}
-        </div>
+        </section>
 
-        <div>
-          <h2 class="mb-3 text-lg font-semibold">Mine</h2>
+        <section aria-labelledby="mine">
+          <h2 id="mine" class="mb-3 text-lg font-semibold">Mine</h2>
           <div class="mb-3 grid grid-cols-2 gap-3">
             <a href="/admin/leads?view=mine" class={tile}>
               <span class="block text-2xl font-semibold text-stone-900">{shown('leads', board.myLeads)}</span>
@@ -188,8 +188,8 @@ const counted = (tone: 'warn' | 'info' | 'success', n: number | string) =>
               ))}
             </ul>
           )}
-        </div>
-      </section>
+        </section>
+      </div>
     </>
   )}
 </AdminLayout>

@@ -78,7 +78,7 @@ Automated checks (run on every pull request, no action needed): type check with 
 
 Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) or TalkBack (Android) for the second half.
 
-Pre-checked on 28 Oct 2026 by a scripted keyboard run in a real browser (3f.1 to 3f.4, 3f.6, 3f.8 and the phone menu: skip link, focus ring on every stop, order, `/` search, bell open and close, dialog focus trap and return, every field named, closed phone menu skipped by Tab). The part only a person can do is the screen reader half (3f.9 to 3f.11) and a quick human look at the rest.
+Pre-checked on 28 Oct 2026 by a scripted keyboard run in a real browser (3f.1 to 3f.4, 3f.6, 3f.8 and the phone menu: skip link, focus ring on every stop, order, `/` search, bell open and close, dialog focus trap and return, every field named, closed phone menu skipped by Tab). The browser's accessibility tree (what a screen reader reads from) was also checked on Today, Tours, Campaigns, New booking and a booking page: headings in order, landmarks present, every field and button named, and the findings fixed (row buttons now name their item, list titles read "Tours (1)", review stars are announced as "4 out of 5", Today's regions are separate). The part only a person can do is the screen reader half (3f.9 to 3f.11) and a quick human look at the rest.
 
 | # | Check | Who | Result |
 |---|---|---|---|
