@@ -156,6 +156,10 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3o.3 | The cookie banner and the privacy page (all four languages) name OpenAI next to Google, Meta and Metricool | | |
 | 3o.4 | In OpenAI Ads, the data source shows the pixel as receiving page views (allow a few minutes) | | |
 | 3o.5 | Private pages (sign-in, account, private offers) do not load it | | |
+| 3o.6 | With debug on, each page load sends one `page_viewed`; submitting the enquiry form sends `lead_created`; a tour page sends `contents_viewed`; starting checkout sends `checkout_started`; a paid booking sends `order_created` once (amount in whole minor units, e.g. 1200050 for 12,000.50) | | |
+| 3o.7 | A tap on the WhatsApp button sends the custom event `whatsapp_clicked`, not `lead_created` | | |
+| 3o.8 | After Reject in Cookie settings, no more events are sent and the `__oppref` / `__obref` cookies are gone | | |
+| 3o.9 | In OpenAI Ads Manager, create conversion events from the base events Lead created, Order created, Checkout started, Contents viewed and the custom `whatsapp_clicked`, then link them to the campaign (owner step) | | |
 
 ## 3f. Keyboard and screen reader (do this with a person; 20 minutes)
 
