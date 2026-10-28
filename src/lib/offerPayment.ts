@@ -25,6 +25,7 @@ import { getOffer, listPaid, readOffer } from './offerData';
 import { planPayment, type GuideLanguage, type PaidPayment, type PaymentKind } from './offerPricing';
 import { createOfferOrder, fetchRazorpayOrder, verifyRazorpaySignature } from './payments/razorpay';
 import { sendHotelAlertEmail, sendOfferAdminEmail, sendOfferReceiptEmail } from './email';
+import { offerBookingId, recordOfferBookingSafe } from './offerBooking';
 
 export interface HandlerResult {
   status: number;
@@ -204,7 +205,11 @@ export async function finalizeOfferPayment(
 
   if (!claimed) {
     const now = await db.prepare(`SELECT status, payment_id FROM offer_payments WHERE id = ?`).bind(row.id).first<{ status: string; payment_id: string }>();
-    if (!conflict && now?.status === 'paid' && now.payment_id === paid.paymentId) return 'duplicate';
+    if (!conflict && now?.status === 'paid' && now.payment_id === paid.paymentId) {
+      // A repeat of a payment already recorded: make sure its booking exists too (a first attempt may have stopped before it).
+      await recordOfferBookingSafe(env, db, row.offer_id);
+      return 'duplicate';
+    }
     await alertOwner(env, row.id, [
       ...ids,
       `Row status: ${now?.status ?? 'missing'}, holds payment ${now?.payment_id || '(none)'}`,
@@ -238,12 +243,17 @@ export async function finalizeOfferPayment(
     console.error('private offer: could not check for a double payment', row.id, e instanceof Error ? e.message : 'error');
   }
 
+  // A paid offer is a booking (the first payment creates it, the balance updates it). Never fails the payment.
+  const booked = await recordOfferBookingSafe(env, db, row.offer_id);
+
   await trackLeadEvent(db, {
     channel: 'offer',
     identifiers: [{ type: 'email', value: row.payer_email }, { type: 'phone', value: row.payer_phone }],
     name: row.payer_name,
     externalRef: `offerpaid:${row.id}`,
-    stage: row.kind === 'balance' ? 'booked' : 'deposit_paid',
+    // Paid in full (the whole amount, or the balance) is booked; only a booking amount alone is a deposit.
+    stage: row.kind === 'deposit' ? 'deposit_paid' : 'booked',
+    bookingId: booked === 'created' || booked === 'updated' ? offerBookingId(row.offer_id) : undefined,
     note: `Private offer ${row.kind} paid`,
   });
 

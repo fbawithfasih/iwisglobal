@@ -56,6 +56,8 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/offers-admin.ts" --bun
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/offers-admin.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/private-offers-admin.ts" --bundle --platform=node --format=esm --outfile="$OUT/private-offers-admin.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/private-offers-admin.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/offer-booking.ts" --bundle --platform=node --format=esm --outfile="$OUT/offer-booking.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
+ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/offer-booking.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/campaigns-admin.ts" --bundle --platform=node --format=esm --outfile="$OUT/campaigns-admin.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/campaigns-admin.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/reviews-admin.ts" --bundle --platform=node --format=esm --outfile="$OUT/reviews-admin.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"

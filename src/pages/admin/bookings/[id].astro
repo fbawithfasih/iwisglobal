@@ -46,6 +46,7 @@ import {
 import { todayIst } from '../../../lib/availability';
 import { balanceLinkUrl, balanceOwed, createBalanceLink, openBalanceLinkFor, paidBalanceLinkFor } from '../../../lib/balancePayment';
 import { sendBalanceLinkEmail } from '../../../lib/email';
+import { PRIVATE_OFFER_SOURCE, tourLabel } from '../../../lib/offerBooking';
 import { AWAITING_STATUS, CUSTOM_TOUR_ID, cancelCustomTrip, confirmCustomTrip, getCustomTripByBooking, readStoredTrip } from '../../../lib/customTripPayment';
 
 const env = resolveEnv(Astro.locals);
@@ -254,7 +255,8 @@ const customMessages: Record<string, { text: string; ok: boolean }> = {
   refunded: { text: 'Trip cancelled and the deposit refunded. The guest has been emailed.', ok: true },
   error: { text: Astro.url.searchParams.get('msg') ?? 'Something went wrong.', ok: false },
 };
-const owed = balanceOwed(booking);
+// A private offer's balance is paid on the guest's offer link, never through a tour balance link.
+const owed = booking.source === PRIVATE_OFFER_SOURCE ? 0 : balanceOwed(booking);
 const openLink = owed > 0 ? await openBalanceLinkFor(db, id) : null;
 const paidLink = await paidBalanceLinkFor(db, id);
 const balanceResult = Astro.url.searchParams.get('balance');
@@ -315,7 +317,7 @@ const addOnNames = booking.add_on_ids
 ---
 <AdminLayout title={`Booking ${booking.id}`}>
   <a href="/admin" class="text-sm text-stone-500 hover:underline">&larr; Back to bookings</a>
-  <h1 class="text-2xl font-semibold mt-2 mb-6">{booking.traveler_name} — {isCustom ? 'Custom Agra tour' : tour?.title ?? booking.tour_id}</h1>
+  <h1 class="text-2xl font-semibold mt-2 mb-6">{booking.traveler_name} — {isCustom ? 'Custom Agra tour' : tourLabel(booking.tour_id, tour?.title)}</h1>
 
   <div class="grid md:grid-cols-2 gap-6">
     <div class="min-w-0 bg-white rounded-xl border border-violet-100 p-6 space-y-2 text-sm">
@@ -325,7 +327,7 @@ const addOnNames = booking.add_on_ids
       <p><span class="text-stone-500">Add-ons:</span> {addOnNames.length ? addOnNames.join(', ') : '—'}</p>
       <p><span class="text-stone-500">Email:</span> {booking.traveler_email}</p>
       <p><span class="text-stone-500">Phone:</span> {booking.traveler_phone}</p>
-      <p><span class="text-stone-500">Amount paid:</span> {formatMoneyMinor(booking.amount_paid, booking.currency)} ({booking.payment_type === 'deposit' ? '25% deposit' : 'full'})</p>
+      <p><span class="text-stone-500">Amount paid:</span> {formatMoneyMinor(booking.amount_paid, booking.currency)} ({booking.payment_type === 'deposit' ? (booking.source === PRIVATE_OFFER_SOURCE ? 'booking amount' : '25% deposit') : 'full'})</p>
       {booking.discount_label && booking.discount_amount ? (
         <p><span class="text-stone-500">Discount:</span> {booking.discount_label}, −{formatMoneyMinor(booking.discount_amount, booking.currency)}</p>
       ) : null}

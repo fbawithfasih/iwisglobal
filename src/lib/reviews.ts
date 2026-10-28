@@ -217,7 +217,7 @@ export async function requestReview(env: Record<string, any>, db: D1Like, bookin
   const sent = await sendReviewRequestEmail(env, {
     to: booking.traveler_email,
     travelerName: booking.traveler_name,
-    tourTitle: tour?.title ?? booking.tour_id,
+    tourTitle: tour?.title ?? (booking.tour_id === 'private-offer' ? 'your private tour' : booking.tour_id),
     travelDate: booking.travel_date,
     reviewUrl: reviewUrl(SITE_URL, token),
     googleReviewUrl: GOOGLE_REVIEW_URL,

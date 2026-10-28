@@ -21,6 +21,10 @@ export interface OfferContent {
   cancellation: string;
   contactWhatsapp: string;
   pdf?: boolean;
+  // The one travel day as YYYY-MM-DD (dateLabel is free text for the guest). Optional: without it the day is read from dateLabel.
+  travelDate?: string;
+  // An internal test offer: paying it never creates a booking.
+  internal?: boolean;
 }
 
 export interface OfferRow {
@@ -79,6 +83,8 @@ function readContent(text: unknown): OfferContent | null {
   if (!Array.isArray(c.includes) || !c.includes.every(isStr)) return null;
   if (!Array.isArray(c.excludes) || !c.excludes.every(isStr)) return null;
   if (c.pdf !== undefined && typeof c.pdf !== 'boolean') return null;
+  if (c.travelDate !== undefined && !isStr(c.travelDate)) return null;
+  if (c.internal !== undefined && typeof c.internal !== 'boolean') return null;
   const content: OfferContent = {
     title: c.title as string,
     summary: c.summary as string,
@@ -93,6 +99,8 @@ function readContent(text: unknown): OfferContent | null {
     contactWhatsapp: c.contactWhatsapp as string,
   };
   if (c.pdf !== undefined) content.pdf = c.pdf as boolean;
+  if (c.travelDate !== undefined) content.travelDate = c.travelDate as string;
+  if (c.internal !== undefined) content.internal = c.internal as boolean;
   return content;
 }
 
