@@ -2,12 +2,12 @@
 export const prerender = false;
 
 import EmptyState from '../../../components/EmptyState.astro';
-import PageHeader from '../../../components/PageHeader.astro';
 import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { listOffers, offerStatus, offerValueLabel, offerConditions, offerBookingWindow } from '../../../lib/offers';
+import { offerTiming, offerSummary, usesBar, ENDING_SOON_DAYS } from '../../../lib/offersAdmin';
 import { listTours } from '../../../lib/tours';
 import { todayIst } from '../../../lib/availability';
 
@@ -23,41 +23,126 @@ const today = todayIst();
 const tourNames = (ids: string[]) =>
   ids.length === 0 ? 'All tours' : ids.map((id) => tours.find((t) => t.id === id)?.title ?? 'Deleted tour').join(', ');
 const tone = { Running: 'ok', Scheduled: 'info', Ended: 'muted', Off: 'muted' } as const;
-// Live offers first, then upcoming, then finished or paused.
+const edge = { Running: 'border-l-emerald-500', Scheduled: 'border-l-sky-500', Ended: 'border-l-stone-300', Off: 'border-l-stone-300' } as const;
+// Live offers first (the one ending soonest on top), then upcoming, then finished or paused.
 const STATUS_ORDER = { Running: 0, Scheduled: 1, Ended: 2, Off: 3 } as const;
 const rows = offers
-  .map((o) => ({
-    o,
-    status: offerStatus(o, today),
-    value: offerValueLabel(o, 'INR') + (o.kind === 'fixed' && o.amountUsd ? ` / ${offerValueLabel(o, 'USD')}` : ''),
-    window: offerBookingWindow(o),
-    conditions: offerConditions(o, { includeBookBy: false }),
-    tours: tourNames(o.tourIds),
-  }))
-  .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+  .map((o) => {
+    const status = offerStatus(o, today);
+    return {
+      o,
+      status,
+      timing: offerTiming(o, status, today),
+      value: offerValueLabel(o, 'INR') + (o.kind === 'fixed' && o.amountUsd ? ` / ${offerValueLabel(o, 'USD')}` : ''),
+      window: offerBookingWindow(o),
+      conditions: offerConditions(o, { includeBookBy: false }),
+      tours: tourNames(o.tourIds),
+    };
+  })
+  .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || (a.timing.days ?? 1e9) - (b.timing.days ?? 1e9));
+
+const sum = offerSummary(rows.map((r) => ({ offer: r.o, state: r.status, uses: r.o.uses })), today);
+const ranked = [...rows].sort((a, b) => b.o.uses - a.o.uses || a.o.name.localeCompare(b.o.name));
+const usesMax = Math.max(1, ...rows.map((r) => r.o.uses));
+const cardBtn = 'inline-flex min-h-11 items-center justify-center rounded border border-violet-200 bg-white px-4 text-sm text-stone-800';
+const tiles = [
+  { label: 'Running', n: sum.running, hint: sum.running ? 'Guests can get these discounts now.' : 'No discount is live right now.', tone: sum.running ? 'success' : 'info' },
+  { label: 'Ending soon', n: sum.endingSoon, hint: sum.endingSoon ? `Running offers that end within ${ENDING_SOON_DAYS} days.` : `✓ None ends within ${ENDING_SOON_DAYS} days.`, tone: sum.endingSoon ? 'warn' : 'success' },
+  { label: 'Scheduled', n: sum.scheduled, hint: 'Start on a later date.', tone: 'info' },
+  { label: 'Bookings with an offer', n: sum.uses, hint: `${sum.coupons} ${sum.coupons === 1 ? 'coupon' : 'coupons'} and ${sum.automatic} automatic.`, tone: 'brand' },
+] as const;
 ---
 <AdminLayout title="Offers & coupons">
-  <PageHeader title="Offers & coupons" count={rows.length} href="/admin/offers/new" action="+ New offer" intro="Automatic offers show on tour pages and apply without a code; coupons need the customer to enter the code. One discount per booking — the biggest wins, including the Founding Guest Offer." />
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">Offers &amp; coupons</h1>
+      <p class="text-sm text-stone-600">{rows.length} {rows.length === 1 ? 'offer' : 'offers'}{sum.running ? ` · ${sum.running} running` : ''}{sum.idle ? ` · ${sum.idle} not used yet` : ''}</p>
+    </div>
+    <a href="/admin/offers/new" class="btn-primary inline-flex min-h-11 items-center rounded px-4 text-sm text-white">+ New offer</a>
+  </div>
+  <p class="mb-5 max-w-3xl text-sm text-stone-600">Automatic offers show on tour pages and apply without a code; coupons need the customer to enter the code. One discount per booking — the biggest wins, including the Founding Guest Offer.</p>
 
   {rows.length === 0 ? (
     <EmptyState message="No offers yet" hint="An offer is a discount guests see at checkout." href="/admin/offers/new" action="+ New offer" />
   ) : (
-    <ul class="space-y-3">
-      {rows.map(({ o, status, value, window, conditions, tours }) => (
-        <li class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
-          <div class="flex items-center justify-between gap-2 mb-1.5">
-            <StatusBadge tone={tone[status]}>{status}</StatusBadge>
-            <span class="text-xs text-stone-500">Used on {o.uses} {o.uses === 1 ? 'booking' : 'bookings'}</span>
+    <>
+    <section aria-label="Overview" class="mb-6">
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {tiles.map((t) => (
+          <div class={`rounded-xl border p-4 tint-${t.tone}`}>
+            <span class="block text-4xl font-semibold leading-none text-stone-900">{t.n}</span>
+            <span class="mt-2 block font-medium text-stone-800">{t.label}</span>
+            <span class="block text-xs text-stone-600">{t.hint}</span>
           </div>
-          <p class="font-semibold text-base">{o.name} <span class="font-normal text-stone-600">· {value}</span></p>
-          <p class="text-stone-600 mt-0.5">
+        ))}
+      </div>
+    </section>
+
+    <section aria-labelledby="usage" class="mb-6 rounded-xl border border-violet-100 bg-white p-4">
+      <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="usage" class="text-lg font-semibold">Which offers guests use</h2>
+        <p class="text-sm text-stone-600">Bookings that carry each offer, all time. Pick one to edit it.</p>
+      </div>
+      <ul class="space-y-2.5">
+        {ranked.map((r) => (
+          <li>
+            <a href={`/admin/offers/${r.o.id}/edit`} data-tip={`${r.o.name}: ${r.o.uses} ${r.o.uses === 1 ? 'booking' : 'bookings'}. ${r.status}. ${r.timing.label}.`} class="block rounded-md px-1 py-0.5 hover:bg-violet-50">
+              <span class="flex items-center justify-between gap-3 text-sm">
+                <span class={`truncate ${r.status === 'Running' ? 'text-stone-900' : 'text-stone-600'}`}>{r.o.name}{r.status !== 'Running' && <span class="badge-neutral ml-2 rounded-full px-2 py-0.5 text-[11px] font-medium">{r.status}</span>}</span>
+                <span class="shrink-0 text-stone-700"><span class="font-semibold text-stone-900">{r.o.uses}</span> <span class="text-xs">{r.o.uses === 1 ? 'booking' : 'bookings'}</span></span>
+              </span>
+              <span class="mt-1 block h-2.5 rounded-full bg-stone-100" aria-hidden="true"><span class="block h-full rounded-full bg-violet-500" style={`width:${usesBar(r.o.uses, usesMax)}%`}></span></span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <h2 class="mb-3 text-lg font-semibold">All offers</h2>
+    <ul class="grid gap-3 lg:grid-cols-2">
+      {rows.map(({ o, status, timing, value, window, conditions, tours }) => (
+        <li class={`rounded-xl border border-l-4 border-violet-100 bg-white p-4 text-sm transition hover:shadow-md ${edge[status]}`}>
+          <div class="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+            <span class="flex flex-wrap items-center gap-1.5">
+              <StatusBadge tone={tone[status]}>{status}</StatusBadge>
+              <span class={`rounded-full px-2 py-0.5 text-[11px] font-medium ${timing.urgent ? 'badge-warn' : 'badge-neutral'}`}>{timing.label}</span>
+            </span>
+            <span class="text-xs text-stone-600">Used on {o.uses} {o.uses === 1 ? 'booking' : 'bookings'}</span>
+          </div>
+          <p class="text-base font-semibold">{o.name} <span class="font-normal text-stone-600">· {value}</span></p>
+          <p class="mt-0.5 text-stone-700">
             {o.code ? <>Code <span class="font-mono font-semibold text-stone-900">{o.code}</span></> : 'Automatic (no code)'} · {tours}
           </p>
-          {window && <p class="text-stone-500 mt-0.5">{window}</p>}
-          {conditions && <p class="text-stone-500 mt-0.5">{conditions}</p>}
-          <a href={`/admin/offers/${o.id}/edit`} class="mt-3 inline-flex min-h-11 items-center rounded border border-violet-200 bg-white px-4 text-stone-800" aria-label={`Edit ${o.name}`}>Edit</a>
+          {window && <p class="mt-0.5 text-stone-600">{window}</p>}
+          {conditions && <p class="mt-0.5 text-stone-600">{conditions}</p>}
+          {status === 'Running' && o.uses === 0 && <p class="mt-1.5"><span class="badge-info rounded px-1.5 py-0.5 text-[11px]">Nobody has used it yet</span></p>}
+          <a href={`/admin/offers/${o.id}/edit`} class={`${cardBtn} mt-3`} aria-label={`Edit ${o.name}`}>Edit</a>
         </li>
       ))}
     </ul>
+    </>
   )}
+
+  <div id="viz-tip" role="tooltip" hidden class="pointer-events-none fixed z-50 max-w-xs rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-stone-800 shadow-lg"></div>
 </AdminLayout>
+
+<script is:inline>
+  (function () {
+    // One tooltip for the usage bars. The text is set with textContent, never as HTML.
+    var tip = document.getElementById('viz-tip');
+    if (!tip) return;
+    document.querySelectorAll('[data-tip]').forEach(function (el) {
+      var show = function (x, y) {
+        tip.textContent = el.getAttribute('data-tip');
+        tip.hidden = false;
+        var w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 12)) + 'px';
+        tip.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, y - h - 12)) + 'px';
+      };
+      el.addEventListener('pointermove', function (e) { show(e.clientX, e.clientY); });
+      el.addEventListener('focus', function () { var b = el.getBoundingClientRect(); show(b.left + b.width / 2, b.top); });
+      el.addEventListener('pointerleave', function () { tip.hidden = true; });
+      el.addEventListener('blur', function () { tip.hidden = true; });
+    });
+  })();
+</script>
