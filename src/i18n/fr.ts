@@ -44,7 +44,7 @@ export const fr: Dictionary = {
   chat: { label: 'Écrivez-nous', aria: 'Écrivez-nous sur WhatsApp', menu: 'Menu' },
   cookie: {
     region: 'Choix des cookies',
-    message: "Pouvons-nous utiliser les cookies de Google, Meta et Metricool pour les statistiques et la publicité ? Le site fonctionne de la même façon dans les deux cas.",
+    message: "Pouvons-nous utiliser les cookies de Google, Meta, OpenAI et Metricool pour les statistiques et la publicité ? Le site fonctionne de la même façon dans les deux cas.",
     details: 'Détails',
     reject: 'Refuser',
     accept: 'Accepter',
@@ -967,6 +967,8 @@ export const fr: Dictionary = {
       k62: "<strong>Mesure publicitaire :</strong> si vous acceptez les cookies, nous informons aussi Meta depuis notre serveur lorsque vous réservez ou envoyez une demande, afin de mesurer nos publicités Facebook et Instagram. Nous n'envoyons votre adresse e-mail et votre numéro de téléphone que sous forme brouillée (hachée), avec le montant de la réservation. Si vous refusez les cookies, rien n'est envoyé à Meta.",
       k63: "<strong>Votre lieu de connexion compte.</strong> Si vous visitez le site depuis l'Union européenne, le reste de l'Espace économique européen (Islande, Liechtenstein, Norvège), le Royaume-Uni ou la Suisse, les cookies et outils d'analyse et de publicité décrits dans cette politique ne sont utilisés que si vous touchez Accepter sur notre bandeau de cookies. Depuis tous les autres pays, ils sont activés par défaut, et vous pouvez les désactiver à tout moment avec « Paramètres des cookies » en bas de chaque page ; votre choix est alors mémorisé et s'applique exactement comme décrit pour Refuser. Lorsque cette politique indique « seulement si vous acceptez », c'est en ce sens. Nous déterminons d'où vous visitez à partir du pays de votre connexion internet, que nous ne conservons pas.",
       k64: "<strong>Offres à compte à rebours :</strong> lorsqu’une page de circuit propose une offre pour une réservation dans un délai donné (par exemple 20 % de réduction si vous réservez sous 30 minutes), nous enregistrons un petit cookie (<code>offer_timer</code>) indiquant le moment où votre délai a commencé, afin que l’offre se termine comme annoncé et ne recommence pas à votre prochaine visite. Il ne contient que cette heure, signée pour ne pas pouvoir être modifiée, et est conservé 90 jours. Dans les régions ci-dessus, il n’est déposé que si vous acceptez les cookies ; sans lui, vous voyez simplement nos prix normaux.",
+      k65: "<strong>OpenAI</strong> — via le pixel OpenAI Ads, uniquement si vous acceptez les cookies publicitaires, pour mesurer les résultats de nos annonces dans les produits d'OpenAI : il enregistre les pages que vous consultez et la façon dont vous êtes arrivé.",
+      k66: "Le pixel publicitaire d'OpenAI — ne se charge que si vous acceptez, et peut déposer ses propres cookies ou utiliser le stockage local pour mesurer nos annonces.",
     },
   help: {
       foundingLine: " En ce moment, nos {cap} premiers clients bénéficient automatiquement de {percent} % de réduction, sans code (l'offre Founding Guest).",

@@ -44,7 +44,7 @@ export const de: Dictionary = {
   chat: { label: 'Schreiben Sie uns', aria: 'Schreiben Sie uns per WhatsApp', menu: 'Menü' },
   cookie: {
     region: 'Cookie-Auswahl',
-    message: 'Dürfen wir Cookies von Google, Meta und Metricool für Statistik und Werbung verwenden? Die Website funktioniert in beiden Fällen gleich.',
+    message: 'Dürfen wir Cookies von Google, Meta, OpenAI und Metricool für Statistik und Werbung verwenden? Die Website funktioniert in beiden Fällen gleich.',
     details: 'Details',
     reject: 'Ablehnen',
     accept: 'Akzeptieren',
@@ -967,6 +967,8 @@ export const de: Dictionary = {
       k62: "<strong>Anzeigenmessung:</strong> Wenn Sie Cookies akzeptieren, teilen wir Meta auch von unserem Server aus mit, wenn Sie buchen oder eine Anfrage senden, damit wir unsere Facebook- und Instagram-Anzeigen messen können. Ihre E-Mail-Adresse und Telefonnummer senden wir nur in verschlüsselter (gehashter) Form, zusammen mit dem Buchungswert. Wenn Sie Cookies ablehnen, wird nichts an Meta gesendet.",
       k63: "<strong>Ihr Standort ist entscheidend.</strong> Wenn Sie die Website aus der Europäischen Union, dem übrigen Europäischen Wirtschaftsraum (Island, Liechtenstein, Norwegen), dem Vereinigten Königreich oder der Schweiz besuchen, werden die in dieser Erklärung beschriebenen Analyse- und Werbe-Cookies und -Dienste nur verwendet, wenn Sie in unserem Cookie-Banner auf Akzeptieren tippen. Aus allen anderen Ländern sind sie standardmäßig aktiv, und Sie können sie jederzeit über „Cookie-Einstellungen“ unten auf jeder Seite ausschalten; Ihre Wahl wird dann gespeichert und gilt genau wie bei Ablehnen beschrieben. Wo in dieser Erklärung „nur wenn Sie akzeptieren“ steht, ist es so zu verstehen. Ihren Standort erkennen wir am Land Ihrer Internetverbindung, das wir nicht speichern.",
       k64: "<strong>Countdown-Angebote:</strong> Zeigt eine Tourseite ein Angebot für eine Buchung innerhalb einer bestimmten Zeit (zum Beispiel 20 % Rabatt bei Buchung innerhalb von 30 Minuten), speichern wir ein kleines Cookie (<code>offer_timer</code>) mit dem Zeitpunkt, zu dem Ihre Zeit begann, damit das Angebot wie angegeben endet und bei Ihrem nächsten Besuch nicht neu startet. Es enthält nur diesen Zeitpunkt, ist gegen Änderungen signiert und wird 90 Tage gespeichert. In den oben genannten Regionen wird es nur gesetzt, wenn Sie Cookies akzeptieren; ohne es sehen Sie einfach unsere normalen Preise.",
+      k65: "<strong>OpenAI</strong> — über den OpenAI-Ads-Pixel, nur wenn Sie Werbe-Cookies akzeptieren, um die Wirkung unserer Anzeigen in den Produkten von OpenAI zu messen: Er erfasst, welche Seiten Sie besuchen und wie Sie auf die Website gelangt sind.",
+      k66: "Der Werbe-Pixel von OpenAI — wird nur geladen, wenn Sie zustimmen, und kann eigene Cookies oder lokalen Speicher setzen, um unsere Anzeigen zu messen.",
     },
   help: {
       foundingLine: " Derzeit erhalten unsere ersten {cap} Gäste automatisch {percent} % Rabatt, ohne dass ein Code nötig ist (das Founding-Guest-Angebot).",

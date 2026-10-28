@@ -76,6 +76,25 @@ const { t } = pageI18n(Astro);
     window.fbq('track', 'PageView');
   };
 
+  // OpenAI Ads pixel (the dataset created in OpenAI Ads; pixel IDs are public by design). OpenAI's standard
+  // loader, run only after consent, like the Meta Pixel. Page views are sent by the pixel itself. Set debug to
+  // true only while testing the setup in OpenAI Ads: it logs to the browser console.
+  const OPENAI_PIXEL_ID = 'AG2t5xN1b69gQk9Eds3Le8';
+  const loadOpenAiPixel = () => {
+    const w = window as unknown as { oaiq?: any };
+    if (w.oaiq) return;
+    const q: any = function (...args: unknown[]) {
+      q.q.push(args);
+    };
+    q.q = [];
+    w.oaiq = q;
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://bzrcdn.openai.com/sdk/oaiq.min.js';
+    document.head.appendChild(s);
+    w.oaiq('init', { pixelId: OPENAI_PIXEL_ID, debug: false });
+  };
+
   // Metricool's web tracker (their standard snippet), run only after consent.
   const METRICOOL_HASH = '860620e00517a44a2e296fb43e355688';
   const loadMetricool = () => {
@@ -121,6 +140,7 @@ const { t } = pageI18n(Astro);
     if (choice === 'granted') {
       loadPixel();
       sendQueued();
+      loadOpenAiPixel();
       loadMetricool();
     }
   };
