@@ -388,6 +388,11 @@ const itemClass = (active: boolean) =>
         const t = e.target as Node;
         if (panel && !panel.hidden && !panel.contains(t) && !buttons.some((b) => b.contains(t))) setOpen(false);
       });
+      // Tabbing away from the panel closes it too, so it never stays open behind where the keyboard is now.
+      document.addEventListener('focusin', (e) => {
+        const t = e.target as Node;
+        if (panel && !panel.hidden && !panel.contains(t) && !buttons.some((b) => b.contains(t))) setOpen(false);
+      });
 
       type Item = { key: string; label: string; count: number; detail: string; href: string };
       const render = (data: { total: number; items: Item[] }) => {

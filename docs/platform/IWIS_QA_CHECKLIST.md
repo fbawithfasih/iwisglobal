@@ -78,6 +78,8 @@ Automated checks (run on every pull request, no action needed): type check with 
 
 Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) or TalkBack (Android) for the second half.
 
+Pre-checked on 28 Oct 2026 by a scripted keyboard run in a real browser (3f.1 to 3f.4, 3f.6, 3f.8 and the phone menu: skip link, focus ring on every stop, order, `/` search, bell open and close, dialog focus trap and return, every field named, closed phone menu skipped by Tab). The part only a person can do is the screen reader half (3f.9 to 3f.11) and a quick human look at the rest.
+
 | # | Check | Who | Result |
 |---|---|---|---|
 | 3f.1 | Press Tab once on any admin page: "Skip to main content" appears; Enter jumps past the menu | | |
