@@ -14,6 +14,7 @@ import { computeTicketsToBuy, ticketsOutstanding } from '../../lib/entryTickets'
 import { formatTravelDate } from '../../lib/format';
 import { formatDuration } from '../../lib/waInbox';
 import { CUSTOM_TOUR_ID } from '../../lib/customTripPayment';
+import { tourLabel } from '../../lib/offerBooking';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
@@ -37,7 +38,7 @@ if (db) {
   }
 }
 const toursById = new Map(tours.map((t) => [t.id, t]));
-const tourName = (id: string) => (id === CUSTOM_TOUR_ID ? 'Custom Agra tour' : toursById.get(id)?.title ?? id);
+const tourName = (id: string) => (id === CUSTOM_TOUR_ID ? 'Custom Agra tour' : tourLabel(id, toursById.get(id)?.title));
 type Trip = NonNullable<typeof trends>['week'][number];
 const ticketsToBuy = (b: Trip) => {
   const tour = toursById.get(b.tour_id);

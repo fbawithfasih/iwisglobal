@@ -198,6 +198,17 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3t.5 | Order: sending, scheduled, drafts, sent, cancelled; newest first inside each. "New campaign" and "Email subscribers" still work; the campaign page itself is unchanged | | |
 | 3t.6 | 320 px: no sideways scroll; bars and cards reachable by keyboard | | |
 
+## 3u. A paid private offer is a booking
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3u.1 | Pay a test private offer in full: one booking appears in Bookings with the guest's name, email and phone, the travel day, the number of travellers, the amount paid, source "private_offer" and the tour shown as "Private offer" | | |
+| 3u.2 | Pay a booking amount, then the balance on the same offer: still one booking; "Amount paid" goes from the booking amount to the full amount and it shows as full; status and pickup time you set are kept | | |
+| 3u.3 | The booking page for it shows no "Balance payment" box (the balance is paid on the guest's offer link) and says "booking amount", not "25% deposit" | | |
+| 3u.4 | It appears on Today on its travel day and in review requests after the trip ("Private offer" as the tour) | | |
+| 3u.5 | The lead for the guest moves to Booked after a full or balance payment, and links to the booking | | |
+| 3u.6 | An offer made with `"internal": true` creates no booking when paid; an offer with two different days in its date label and no `travelDate` creates none and emails you about it | | |
+
 ## 3o. OpenAI Ads pixel
 
 | # | Check | Who | Result |

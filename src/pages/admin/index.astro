@@ -11,6 +11,7 @@ import { todayIst } from '../../lib/availability';
 import { computeTicketsToBuy, ticketsOutstanding } from '../../lib/entryTickets';
 import { formatTravelDate, formatMoneyMinor } from '../../lib/format';
 import { AWAITING_STATUS, CUSTOM_TOUR_ID } from '../../lib/customTripPayment';
+import { tourLabel } from '../../lib/offerBooking';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
@@ -49,7 +50,7 @@ const needsTickets = (b: (typeof allBookings)[number]) => {
 };
 const ticketsNeeded = new Set(allBookings.filter(needsTickets).map((b) => b.id));
 
-const tourName = (id: string) => (id === CUSTOM_TOUR_ID ? 'Custom Agra tour' : toursById.get(id)?.title ?? id);
+const tourName = (id: string) => (id === CUSTOM_TOUR_ID ? 'Custom Agra tour' : tourLabel(id, toursById.get(id)?.title));
 const statusLabel = (status: string) => (status === AWAITING_STATUS ? 'waiting for you' : status);
 const statusClass = (status: string) =>
   status === 'confirmed'
