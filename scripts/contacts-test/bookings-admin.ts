@@ -52,4 +52,24 @@ assert.deepEqual(B.searchBookings(all, quiet.id, name), [quiet]);
 assert.equal(B.searchBookings(all, 'sunrise', name).length, 8);
 assert.equal(B.searchBookings(all, '987 65-432', name).length, 8, 'phone digits match regardless of spaces and dashes');
 assert.equal(B.searchBookings(all, '12', name).length, 0, 'short digit strings do not match every phone');
+
+// The picture helpers: the next 14 days, the status mix, how near a trip is, the one-day filter.
+const ol = B.outlook(all, TODAY, needsTickets);
+assert.equal(ol.length, 14);
+assert.equal(ol[0].day, TODAY);
+assert.equal(ol[13].day, '2026-11-09');
+const day = (d: string) => ol.find((x) => x.day === d)!;
+assert.deepEqual([day('2026-10-30').count, day('2026-10-30').pax, day('2026-10-30').toPrepare], [1, 2, 1], 'the trip in three days needs tickets');
+assert.deepEqual([day('2026-11-05').count, day('2026-11-05').toPrepare], [1, 1], 'a balance still to pay needs preparing');
+assert.equal(day('2026-11-02').count, 0, 'a cancelled trip is not in the outlook');
+assert.equal(ol.reduce((t, d) => t + d.count, 0), 2, 'only the two live trips inside the 14 days');
+const quietDone = bk({ travel_date: '2026-10-28', pickup_time: '6 AM', guide_assigned: 'Sunny', driver_name: 'Raj' });
+assert.deepEqual([B.outlook([quietDone], TODAY, () => false)[1].count, B.outlook([quietDone], TODAY, () => false)[1].toPrepare], [1, 0], 'everything settled: nothing to prepare');
+assert.deepEqual(B.statusMix(all), { confirmed: 5, completed: 1, awaiting: 1, cancelled: 1, total: 8 });
+assert.deepEqual(B.statusMix([bk({ status: 'pending' })]), { confirmed: 0, completed: 0, awaiting: 0, cancelled: 0, total: 1 }, 'an unknown status only counts in the total');
+assert.deepEqual([B.whenLabel('2026-10-27', TODAY), B.whenLabel('2026-10-28', TODAY), B.whenLabel('2026-11-01', TODAY), B.whenLabel('2026-12-01', TODAY), B.whenLabel('2026-10-26', TODAY), B.whenLabel('2026-10-20', TODAY)],
+  [{ text: 'Today', tone: 'now' }, { text: 'Tomorrow', tone: 'now' }, { text: 'In 5 days', tone: 'soon' }, { text: 'In 35 days', tone: 'later' }, { text: 'Yesterday', tone: 'past' }, { text: '7 days ago', tone: 'past' }]);
+assert.deepEqual(B.onDate(all, '2026-10-30'), [ticketsSoon]);
+assert.equal(B.onDate(all, 'garbage').length, 8, 'not a date: the list is left alone');
+assert.equal(B.onDate(all, "2026-10-30' OR 1=1").length, 8);
 console.log('bookings admin tests ok');

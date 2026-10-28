@@ -85,6 +85,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3h.5 | "Longest waiting": each row has a bar (fills over 24 hours) and a label, Under 1 h, 1 to 4 h or Over 4 h | | |
 | 3h.6 | Phone: nothing scrolls sideways, the week columns stay readable (Tmrw, short status) | | |
 
+## 3i. Bookings as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3i.1 | Bookings: four coloured tiles (Needs attention, Waiting for you, Upcoming, Completed) are the views; the open one has a violet ring; Confirmed, Cancelled and All are small buttons under them | | |
+| 3i.2 | "The next 14 days": a column per day, green when everything is ready, orange when something needs preparing; hover shows "30 Oct: 3 trips, 7 guests, 2 to prepare"; clicking a day lists that day's live trips with a "Trips on ..." chip and Show all clears it | | |
+| 3i.3 | "All bookings by status": one bar and a list with counts and percentages; each line opens that view | | |
+| 3i.4 | Every booking shows how near it is (Today, Tomorrow, In 5 days, 2 days ago) and has a coloured edge for its status | | |
+| 3i.5 | Phone: nothing scrolls sideways, there is one "+ Booking" button (in the top bar) | | |
+
 ## 3f. Keyboard and screen reader (do this with a person; 20 minutes)
 
 Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) or TalkBack (Android) for the second half.

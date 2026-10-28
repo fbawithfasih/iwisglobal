@@ -6,7 +6,7 @@ import EmptyState from '../../components/EmptyState.astro';
 import { resolveEnv } from '../../lib/env';
 import { isAdminAuthenticated } from '../../lib/requireAdmin';
 import { updateBookingStatus } from '../../lib/crm';
-import { BOOKING_VIEWS, bookingCounts, loadBookingsAndTours, bookingReasons, searchBookings, viewBookings, type BookingViewKey } from '../../lib/bookingsAdmin';
+import { BOOKING_VIEWS, bookingCounts, loadBookingsAndTours, bookingReasons, searchBookings, viewBookings, outlook, statusMix, whenLabel, onDate, type BookingViewKey } from '../../lib/bookingsAdmin';
 import { todayIst } from '../../lib/availability';
 import { computeTicketsToBuy, ticketsOutstanding } from '../../lib/entryTickets';
 import { formatTravelDate, formatMoneyMinor } from '../../lib/format';
@@ -62,9 +62,38 @@ const statusClass = (status: string) =>
 
 const today = todayIst();
 const counts = bookingCounts(allBookings, today, needsTickets);
-const bookings = searchBookings(viewBookings(allBookings, view, today, needsTickets), q, tourName);
+const date = /^\d{4}-\d{2}-\d{2}$/.test(Astro.url.searchParams.get('date') ?? '') ? (Astro.url.searchParams.get('date') as string) : '';
+// Picking a day in the outlook lists every live trip on that day, whatever the view says.
+const bookings = date
+  ? searchBookings(onDate(allBookings.filter((b) => b.status === 'confirmed' || b.status === AWAITING_STATUS), date), q, tourName)
+  : searchBookings(viewBookings(allBookings, view, today, needsTickets), q, tourName);
 const reasonsOf = (b: (typeof allBookings)[number]) => bookingReasons(b, today, ticketsNeeded.has(b.id));
 const viewHref = (key: string) => `/admin?view=${key}${q ? `&q=${encodeURIComponent(q)}` : ''}`;
+const dateHref = (ymd: string) => `/admin?date=${ymd}${q ? `&q=${encodeURIComponent(q)}` : ''}`;
+const days = outlook(allBookings, today, needsTickets, 14);
+const maxDay = Math.max(1, ...days.map((d) => d.count));
+const next14 = days.reduce((t, d) => t + d.count, 0);
+const prep14 = days.reduce((t, d) => t + d.toPrepare, 0);
+const mix = statusMix(allBookings);
+const mixParts = [
+  { key: 'confirmed', label: 'Confirmed', n: mix.confirmed, bar: 'bg-sky-500', dot: 'bg-sky-500' },
+  { key: 'completed', label: 'Completed', n: mix.completed, bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
+  { key: 'awaiting', label: 'Waiting for you', n: mix.awaiting, bar: 'bg-violet-500', dot: 'bg-violet-500' },
+  { key: 'cancelled', label: 'Cancelled', n: mix.cancelled, bar: 'bg-rose-400', dot: 'bg-rose-400' },
+];
+const dayName = (ymd: string, i: number) => (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : new Intl.DateTimeFormat('en-GB', { weekday: 'short', timeZone: 'UTC' }).format(new Date(`${ymd}T00:00:00Z`)));
+const dayShort = (ymd: string) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${ymd}T00:00:00Z`));
+const tipFor = (d: (typeof days)[number], i: number) => (d.count === 0 ? `${dayName(d.day, i)} ${dayShort(d.day)}: no trips` : `${dayName(d.day, i)} ${dayShort(d.day)}: ${d.count} ${d.count === 1 ? 'trip' : 'trips'}, ${d.pax} guests${d.toPrepare ? `, ${d.toPrepare} to prepare` : ', all ready'}`);
+// The four big tiles are the four views that matter most; the other views stay as small buttons under them.
+const tiles = [
+  { key: 'attention', label: 'Needs attention', hint: 'Tickets, balances and trips waiting for you.', tone: 'warn' },
+  { key: 'awaiting', label: 'Waiting for you', hint: 'Custom trips to confirm.', tone: 'brand' },
+  { key: 'upcoming', label: 'Upcoming', hint: 'Confirmed trips still to run.', tone: 'info' },
+  { key: 'completed', label: 'Completed', hint: 'Trips that have run.', tone: 'success' },
+] as const;
+const tileKeys = new Set<string>(tiles.map((t) => t.key));
+const whenClass = { now: 'badge-warn', soon: 'badge-info', later: 'badge-neutral', past: 'badge-neutral' } as const;
+const accent: Record<string, string> = { confirmed: 'border-l-sky-500', completed: 'border-l-emerald-500', [AWAITING_STATUS]: 'border-l-violet-500', cancelled: 'border-l-rose-400' };
 const emptyText = q
   ? `No bookings match "${q}" in this view.`
   : view === 'attention'
@@ -72,22 +101,97 @@ const emptyText = q
     : 'No bookings in this view yet.';
 ---
 <AdminLayout title="Bookings">
-  <h1 class="text-2xl font-semibold mb-4">Bookings</h1>
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">Bookings</h1>
+      <p class="text-sm text-stone-600">{mix.total} {mix.total === 1 ? 'booking' : 'bookings'} in all · {counts.upcoming} upcoming · {counts.attention > 0 ? `${counts.attention} need attention` : 'nothing needs attention'}</p>
+    </div>
+    <a href="/admin/bookings/new" class="btn-primary hidden min-h-11 items-center rounded px-4 text-sm text-white md:inline-flex">+ New booking</a>
+  </div>
+
+  <section aria-label="Views" class="mb-6">
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {tiles.map((t) => {
+        const n = counts[t.key];
+        const active = !date && view === t.key;
+        return (
+          <a href={viewHref(t.key)} aria-current={active ? 'page' : undefined} class={`block rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${n === 0 && t.key === 'attention' ? 'tint-success' : `tint-${t.tone}`} ${active ? 'ring-2 ring-violet-500 ring-offset-2' : ''}`}>
+            <span class="block text-4xl font-semibold leading-none text-stone-900">{n}</span>
+            <span class="mt-2 block font-medium text-stone-800">{t.label}</span>
+            <span class="block text-xs text-stone-600">{n === 0 && t.key === 'attention' ? '✓ All clear.' : t.hint}</span>
+          </a>
+        );
+      })}
+    </div>
+    <nav aria-label="More views" class="mt-3 flex flex-wrap gap-2 text-sm">
+      {BOOKING_VIEWS.filter((v) => !tileKeys.has(v.key)).map((v) => (
+        <a href={viewHref(v.key)} aria-current={!date && view === v.key ? 'page' : undefined} class={`rounded-full px-3 py-1 ${!date && view === v.key ? 'btn-primary text-white' : 'border border-violet-200 bg-white'}`}>
+          {v.label}
+          {counts[v.key] > 0 && v.key !== 'all' && <span class="ml-1 opacity-80">{counts[v.key]}</span>}
+        </a>
+      ))}
+    </nav>
+  </section>
+
+  {db && mix.total > 0 && (
+    <div class="mb-6 grid gap-4 lg:grid-cols-5">
+      <section aria-labelledby="outlook" class="rounded-xl border border-violet-100 bg-white p-4 lg:col-span-3">
+        <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="outlook" class="text-lg font-semibold">The next 14 days</h2>
+          <p class="text-sm text-stone-600">{next14 === 0 ? 'No trips yet' : `${next14} ${next14 === 1 ? 'trip' : 'trips'}${prep14 ? `, ${prep14} still to prepare` : ', all ready'}`}</p>
+        </div>
+        <div id="outlook-cols" class="grid gap-1 sm:gap-1.5" style="grid-template-columns: repeat(14, minmax(0, 1fr))">
+          {days.map((d, i) => (
+            <a href={d.count > 0 ? dateHref(d.day) : undefined} data-tip={tipFor(d, i)} aria-label={tipFor(d, i)} aria-current={date === d.day ? 'date' : undefined}
+               class={`ol flex min-h-11 flex-col items-center rounded-md border px-0.5 pb-1 pt-0.5 text-center transition ${date === d.day ? 'border-violet-400 bg-violet-50' : 'border-transparent'} ${d.count > 0 ? 'hover:bg-violet-50' : 'cursor-default'}`}>
+              <span class="text-xs font-semibold leading-none text-stone-900 sm:text-sm">{d.count}</span>
+              <span class="mt-1 flex h-16 w-full items-end justify-center sm:h-20" aria-hidden="true">
+                <span class={`block w-3/4 rounded-t ${d.count === 0 ? 'bg-violet-100' : d.toPrepare ? 'bg-orange-400' : 'bg-emerald-500'}`} style={`height:${d.count === 0 ? 3 : Math.max(12, Math.round((d.count / maxDay) * 100))}%`}></span>
+              </span>
+              <span class="mt-1 text-[10px] leading-tight text-stone-700 sm:text-[11px]">{i === 0 ? 'Today' : dayShort(d.day).split(' ')[0]}</span>
+              <span class="hidden text-[10px] leading-tight text-stone-500 sm:block">{i === 0 ? '' : dayShort(d.day).split(' ')[1]}</span>
+            </a>
+          ))}
+        </div>
+        <p class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-violet-100 pt-3 text-xs text-stone-600">
+          <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-emerald-500"></span>Everything ready</span>
+          <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-orange-400"></span>Something to prepare</span>
+          <span>Pick a day to list its trips.</span>
+        </p>
+      </section>
+
+      <section aria-labelledby="mix" class="rounded-xl border border-violet-100 bg-white p-4 lg:col-span-2">
+        <h2 id="mix" class="mb-3 text-lg font-semibold">All bookings by status</h2>
+        <div class="flex h-4 w-full gap-0.5 overflow-hidden rounded-full" role="img" aria-label={mixParts.map((p) => `${p.label} ${p.n}`).join(', ')}>
+          {mixParts.filter((p) => p.n > 0).map((p) => <span class={`${p.bar} block`} style={`flex:${p.n} 1 0`} data-tip={`${p.label}: ${p.n} of ${mix.total}`}></span>)}
+        </div>
+        <ul class="mt-3 space-y-1.5 text-sm">
+          {mixParts.map((p) => (
+            <li>
+              <a href={viewHref(p.key === 'awaiting' ? 'awaiting' : p.key)} class="flex items-center justify-between gap-2 rounded-md px-2 py-1 hover:bg-violet-50">
+                <span class="inline-flex items-center gap-2"><span class={`h-2.5 w-2.5 rounded-sm ${p.dot}`}></span>{p.label}</span>
+                <span><span class="font-semibold text-stone-900">{p.n}</span> <span class="text-xs text-stone-600">{mix.total ? Math.round((p.n / mix.total) * 100) : 0}%</span></span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  )}
 
   <form method="get" action="/admin" class="mb-4 flex gap-2">
     <input type="hidden" name="view" value={view} />
+    {date && <input type="hidden" name="date" value={date} />}
     <input type="search" name="q" value={q} placeholder="Search name, email, phone, tour or booking id" aria-label="Search bookings" class="min-w-0 flex-1 rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm" />
     <button type="submit" class="btn-secondary px-4 py-2 text-sm">Search</button>
   </form>
 
-  <nav aria-label="Booking views" class="flex flex-wrap gap-2 mb-6 text-sm">
-    {BOOKING_VIEWS.map((v) => (
-      <a href={viewHref(v.key)} aria-current={view === v.key ? 'page' : undefined} class={`px-3 py-1 rounded ${view === v.key ? 'btn-primary text-white' : 'bg-white border border-violet-200'}`}>
-        {v.label}
-        {counts[v.key] > 0 && v.key !== 'all' && <span class="ml-1 opacity-80">{counts[v.key]}</span>}
-      </a>
-    ))}
-  </nav>
+  {date && (
+    <p class="mb-3 inline-flex items-center gap-2 rounded-full badge-brand px-3 py-1 text-sm" role="status">
+      Trips on {formatTravelDate(date)}
+      <a href={viewHref(view)} class="font-semibold underline" aria-label="Clear the day filter">Show all</a>
+    </p>
+  )}
 
   {bookings.length === 0 ? (
     <EmptyState message={emptyText} />
@@ -97,9 +201,9 @@ const emptyText = q
     <ul class="md:hidden space-y-3">
       {bookings.map((b) => (
         <li>
-          <a href={`/admin/bookings/${b.id}`} class="block rounded-xl border border-violet-100 bg-white p-4">
+          <a href={`/admin/bookings/${b.id}`} class={`block rounded-xl border border-l-4 border-violet-100 bg-white p-4 transition hover:shadow-md ${accent[b.status] ?? 'border-l-stone-300'}`}>
             <span class="flex items-start justify-between gap-3">
-              <span class="font-semibold text-stone-900">{formatTravelDate(b.travel_date)}</span>
+              <span class="font-semibold text-stone-900">{formatTravelDate(b.travel_date)} <span class={`${whenClass[whenLabel(b.travel_date, today).tone]} ml-1 rounded-full px-2 py-0.5 align-middle text-[11px] font-medium`}>{whenLabel(b.travel_date, today).text}</span></span>
               <span class={`shrink-0 px-2 py-0.5 rounded text-xs ${statusClass(b.status)}`}>{statusLabel(b.status)}</span>
             </span>
             <span class="block text-sm text-stone-700 mt-1">{tourName(b.tour_id)}</span>
@@ -137,8 +241,8 @@ const emptyText = q
         </thead>
         <tbody>
           {bookings.map((b) => (
-            <tr class="border-t border-stone-100">
-              <td class="px-4 py-2 whitespace-nowrap">{formatTravelDate(b.travel_date)}</td>
+            <tr class={`border-t border-stone-100 border-l-4 hover:bg-violet-50/50 ${accent[b.status] ?? 'border-l-stone-300'}`}>
+              <td class="px-4 py-2 whitespace-nowrap">{formatTravelDate(b.travel_date)}<span class={`${whenClass[whenLabel(b.travel_date, today).tone]} mt-0.5 block w-fit rounded-full px-2 py-0.5 text-[11px] font-medium`}>{whenLabel(b.travel_date, today).text}</span></td>
               <td class="px-4 py-2">{tourName(b.tour_id)}</td>
               <td class="px-4 py-2">
                 <a href={`/admin/bookings/${b.id}`} class="text-brand-700 hover:underline">{b.traveler_name}</a>
@@ -169,4 +273,26 @@ const emptyText = q
     </div>
     </>
   )}
+  <div id="viz-tip" role="tooltip" hidden class="pointer-events-none fixed z-50 max-w-xs rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-stone-800 shadow-lg"></div>
 </AdminLayout>
+
+<script is:inline>
+  (function () {
+    // One tooltip for the outlook and the status bar. The text is set with textContent, never as HTML.
+    var tip = document.getElementById('viz-tip');
+    if (!tip) return;
+    document.querySelectorAll('[data-tip]').forEach(function (el) {
+      var show = function (x, y) {
+        tip.textContent = el.getAttribute('data-tip');
+        tip.hidden = false;
+        var w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 12)) + 'px';
+        tip.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, y - h - 12)) + 'px';
+      };
+      el.addEventListener('pointermove', function (e) { show(e.clientX, e.clientY); });
+      el.addEventListener('focus', function () { var b = el.getBoundingClientRect(); show(b.left + b.width / 2, b.top); });
+      el.addEventListener('pointerleave', function () { tip.hidden = true; });
+      el.addEventListener('blur', function () { tip.hidden = true; });
+    });
+  })();
+</script>
