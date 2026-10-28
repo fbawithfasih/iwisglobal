@@ -79,6 +79,11 @@ export function isSilentMessage(m: Pick<WaMessage, 'kind' | 'meta'>): boolean {
   return m.kind === 'unsupported' && /^(edit|edited|revoke|revoked|delete|deleted)$/i.test(m.meta?.unsupportedType ?? '');
 }
 
+// The same rule in SQL, for queries over wa_messages (alias `m` unless given): true for a message that needs no reply.
+// Used wherever "is the guest waiting for an answer" is worked out, so a reaction never counts as a waiting guest.
+export const silentMessageSql = (alias = 'm'): string =>
+  `(${alias}.kind = 'reaction' OR (${alias}.kind = 'unsupported' AND lower(COALESCE(json_extract(${alias}.meta_json, '$.unsupportedType'), '')) IN ('edit','edited','revoke','revoked','delete','deleted')))`;
+
 // Plain-words label for what Meta could not pass on.
 export function unsupportedLabel(type: string | undefined): string {
   const t = (type ?? '').toLowerCase();

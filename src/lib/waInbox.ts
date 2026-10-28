@@ -9,7 +9,7 @@
 //   staff       a person is handling the chat; no new drafts
 //   opted_out   the guest asked us to stop; no drafts, no alerts
 import type { D1Like } from './db';
-import type { WaMessage } from './whatsapp';
+import { silentMessageSql, type WaMessage } from './whatsapp';
 import { isValidHolder } from './authz';
 
 export type ChatState = 'agent' | 'handed_off' | 'staff' | 'opted_out';
@@ -180,7 +180,9 @@ export interface InboxRow {
   handled_by: string;
   last_in: string | null;
   last_reply: string | null;
-  // The guest has written and nobody has replied since.
+  // The latest guest message that needs an answer: a reaction, or an edit or deletion of an earlier message, does not.
+  last_needs_reply: string | null;
+  // The guest has written (something that needs an answer) and nobody has replied since.
   waiting: boolean;
   waitingMs: number;
   // Time left to reply freely; negative when the 24-hour window has closed.
@@ -204,17 +206,19 @@ export async function listInbox(db: D1Like, filter: InboxFilter, now: Date = new
     .prepare(
       `SELECT c.id, c.profile_name, c.state, c.handoff_reason, c.handled_by,
          (SELECT MAX(m.sent_at) FROM wa_messages m WHERE m.conversation_id = c.id AND m.direction = 'in') AS last_in,
+         (SELECT MAX(m.sent_at) FROM wa_messages m WHERE m.conversation_id = c.id AND m.direction = 'in' AND NOT ${silentMessageSql('m')}) AS last_needs_reply,
          (SELECT MAX(m.sent_at) FROM wa_messages m WHERE m.conversation_id = c.id AND m.direction != 'in') AS last_reply
        FROM wa_conversations c ${where}
        ORDER BY c.last_message_at DESC LIMIT 200`
     )
     .bind(...args)
-    .all<Pick<InboxRow, 'id' | 'profile_name' | 'state' | 'handoff_reason' | 'handled_by' | 'last_in' | 'last_reply'>>();
+    .all<Pick<InboxRow, 'id' | 'profile_name' | 'state' | 'handoff_reason' | 'handled_by' | 'last_in' | 'last_reply' | 'last_needs_reply'>>();
 
   const rows: InboxRow[] = results.map((r) => {
     const lastIn = r.last_in ? Date.parse(r.last_in) : null;
-    const waiting = lastIn !== null && (!r.last_reply || Date.parse(r.last_reply) < lastIn);
-    const waitingMs = waiting && lastIn !== null ? now.getTime() - lastIn : 0;
+    const needsReply = r.last_needs_reply ? Date.parse(r.last_needs_reply) : null;
+    const waiting = needsReply !== null && (!r.last_reply || Date.parse(r.last_reply) < needsReply);
+    const waitingMs = waiting && needsReply !== null ? now.getTime() - needsReply : 0;
     const windowLeftMs = lastIn !== null ? WINDOW_MS - (now.getTime() - lastIn) : null;
     let tone: InboxRow['tone'] = 'none';
     if (waiting && windowLeftMs !== null && windowLeftMs < WINDOW_RED_MS) tone = 'red';
