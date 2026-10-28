@@ -187,6 +187,17 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3s.4 | "Ask for a review": each trip shows "Trip was N days ago" (orange after 14 days); Email, WhatsApp and Skip still work; an email result shows a green or red message | | |
 | 3s.5 | 320 px: no sideways scroll; every bar and button reachable by keyboard | | |
 
+## 3t. Campaigns as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3t.1 | Campaigns: four tiles: Drafts, Scheduled or sending (orange while one is going out), Emails sent (with how many campaigns finished), Need a look (red when a campaign has a recorded error, failed sends or delivery to watch; green with a tick when none) | | |
+| 3t.2 | "Emails sent per campaign": a bar per campaign that has sent (latest eight), the count in words, a tooltip with sent, delivered, bounced, spam and clicks | | |
+| 3t.3 | Each campaign card: status, created and scheduled time, a progress bar ("30 of 100 sent"), a delivery label with delivered, bounced and spam counts and percentages and link clicks; failed and skipped counts; a recorded error in red | | |
+| 3t.4 | Delivery label: healthy normally; "keep an eye on it" from 0.1 percent spam complaints or 2 percent bounces or any failed send; "problem" from 0.3 percent complaints or 5 percent bounces | | |
+| 3t.5 | Order: sending, scheduled, drafts, sent, cancelled; newest first inside each. "New campaign" and "Email subscribers" still work; the campaign page itself is unchanged | | |
+| 3t.6 | 320 px: no sideways scroll; bars and cards reachable by keyboard | | |
+
 ## 3o. OpenAI Ads pixel
 
 | # | Check | Who | Result |
