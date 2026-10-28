@@ -1,5 +1,6 @@
 ---
 import { canAccessPath } from '../lib/authz';
+import { takeFlash } from '../lib/flash';
 
 interface Props {
   title: string;
@@ -8,6 +9,8 @@ const { title } = Astro.props;
 
 const path = Astro.url.pathname;
 const me = Astro.locals.admin;
+// A one-time "Saved" style message left by the action the person just did (src/lib/flash.ts).
+const flash = takeFlash(Astro.cookies);
 const isReport = path.startsWith('/admin/leads/report');
 
 // One list drives the sidebar (desktop) and the slide-over drawer (phone): they are the same element.
@@ -150,6 +153,7 @@ const itemClass = (active: boolean) =>
       .tint-success { background: var(--success-soft); border-color: var(--success-bg) !important; }
       .tint-warn { background: var(--warn-soft); border-color: var(--warn-bg) !important; }
       .tint-danger { background: var(--danger-soft); border-color: var(--danger-bg) !important; }
+      #toast[hidden] { display: none; } /* the flex utility on the toast would otherwise beat the hidden attribute */
       .notice { border: 1px solid; border-radius: 0.75rem; padding: 0.75rem; font-size: 0.875rem; }
       .notice-info { background: var(--info-soft); border-color: var(--info-bg); color: var(--info-ink); }
       .notice-success { background: var(--success-soft); border-color: var(--success-bg); color: var(--success-ink); }
@@ -246,6 +250,27 @@ const itemClass = (active: boolean) =>
         </main>
       </div>
     </div>
+    <div class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
+      <div id="toast" data-flash={flash ?? ''} role="status" aria-live="polite" hidden class="notice notice-success pointer-events-auto flex max-w-md items-center gap-3 shadow-lg">
+        <span aria-hidden="true">&#10003;</span>
+        <span data-toast-text class="font-medium"></span>
+        <button type="button" data-toast-close class="-my-2 -mr-2 min-h-11 min-w-11 rounded px-2 text-sm underline">Dismiss</button>
+      </div>
+    </div>
+    <script>
+      // Shows the one-time message the last action left, then hides it after a few seconds (or on Dismiss or Esc).
+      // The text goes into a live region that already exists, so a screen reader announces it.
+      const toast = document.getElementById('toast');
+      const message = toast?.dataset.flash;
+      if (toast && message) {
+        const text = toast.querySelector<HTMLElement>('[data-toast-text]')!;
+        const hide = () => { toast.hidden = true; };
+        window.setTimeout(() => { text.textContent = message; toast.hidden = false; }, 50);
+        window.setTimeout(hide, 5000);
+        toast.querySelector('[data-toast-close]')?.addEventListener('click', hide);
+        document.addEventListener('keydown', (e) => e.key === 'Escape' && !toast.hidden && hide());
+      }
+    </script>
     <dialog id="confirm-dialog" aria-labelledby="confirm-title" class="w-[min(28rem,calc(100vw-2rem))] rounded-xl border border-violet-200 bg-white p-0 text-stone-800 shadow-xl backdrop:bg-black/40">
       <form method="dialog" class="space-y-3 p-5">
         <h2 id="confirm-title" class="text-base font-semibold text-stone-900">Are you sure?</h2>

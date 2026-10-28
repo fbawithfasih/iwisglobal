@@ -61,6 +61,10 @@ One dialog for all of them (in `AdminLayout`). Put these on the button (or its f
 Cancel and Esc change nothing and return the cursor to the button. Erasing a person, deleting a WhatsApp chat and removing a
 team member keep their own typed-word field because the server checks that word.
 
+## 5b. Confirmation after a save
+
+A handler that finished an action calls `setFlash(Astro.cookies, 'saved')` (keys in `src/lib/flash.ts`) just before it redirects; the layout shows that fixed message once as a live region ("Saved", "Message sent"), hides it after about 5 seconds, and a refresh does not show it again. Only set it when the action really succeeded; an error keeps using the page's own error message. Add a new message to `FLASH_MESSAGES` rather than passing free text.
+
 ## 6. Keyboard and screen readers
 
 Skip link to main content; visible focus ring everywhere (white inside the sidebar); the phone menu, the bell panel and the
