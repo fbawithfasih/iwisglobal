@@ -147,6 +147,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3n.5 | Everything still works: Switch on and off (asks first to switch off), Save pricing, Refresh content, Test a booking, Cancel and refund (asks first), and the green message after each | | |
 | 3n.6 | The old Summary is now under "Technical details" and still shows destination, currency, last refresh, key and secret state (present or missing only) and the server | | |
 
+## 3o. OpenAI Ads pixel
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3o.1 | From an EU, UK or Swiss address, on a first visit nothing from `bzrcdn.openai.com` is requested; after Accept the pixel loads once; after Reject it never loads | | |
+| 3o.2 | Elsewhere (for example India) the pixel loads by default and not when the visitor has chosen Reject in Cookie settings | | |
+| 3o.3 | The cookie banner and the privacy page (all four languages) name OpenAI next to Google, Meta and Metricool | | |
+| 3o.4 | In OpenAI Ads, the data source shows the pixel as receiving page views (allow a few minutes) | | |
+| 3o.5 | Private pages (sign-in, account, private offers) do not load it | | |
+
 ## 3f. Keyboard and screen reader (do this with a person; 20 minutes)
 
 Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) or TalkBack (Android) for the second half.
