@@ -23,7 +23,8 @@ function build(files: string[]) {
 const { raw, db } = build(SCHEMAS);
 const asha = 'asha@example.com';
 const ravi = 'ravi@example.com';
-const NOW = new Date('2026-10-27T12:00:00.000Z');
+// Taken from the real clock: sendStaffMessage checks WhatsApp's 24-hour window against the real time, so a fixed date here would stop working a day later.
+const NOW = new Date();
 const ago = (min: number) => new Date(NOW.getTime() - min * 60_000).toISOString();
 const chat = (id: string, o: { state?: string; by?: string; lastIn?: number; name?: string } = {}) => {
   raw.prepare(`INSERT INTO wa_conversations (id, profile_name, state, last_message_at, created_at, handled_by) VALUES (?, ?, ?, ?, ?, ?)`).run(id, o.name ?? id, o.state ?? 'agent', ago(o.lastIn ?? 10), ago(500), o.by ?? '');
