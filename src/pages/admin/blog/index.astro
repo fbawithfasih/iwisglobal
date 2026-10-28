@@ -72,11 +72,11 @@ const posts = db ? await listBlogPosts(db) : [];
                 <StatusBadge tone={p.status === 'published' ? 'ok' : 'muted'}>{p.status}</StatusBadge>
               </td>
               <td class="px-4 py-2 flex items-center gap-3">
-                <a href={`/admin/blog/${p.id}/edit`} class="text-stone-500 hover:underline">Edit</a>
+                <a href={`/admin/blog/${p.id}/edit`} class="text-stone-500 hover:underline" aria-label={`Edit ${p.title}`}>Edit</a>
                 <form method="POST">
                   <input type="hidden" name="postId" value={p.id} />
                   <input type="hidden" name="status" value={p.status === 'published' ? 'draft' : 'published'} />
-                  <button type="submit" class="text-stone-500 hover:underline" data-confirm={p.status === 'published' ? `Unpublish "${p.title}"? It will disappear from the blog and can't be found in search.` : undefined} data-confirm-label="Unpublish">
+                  <button type="submit" class="text-stone-500 hover:underline" aria-label={`${p.status === 'published' ? 'Unpublish' : 'Publish'} ${p.title}`} data-confirm={p.status === 'published' ? `Unpublish "${p.title}"? It will disappear from the blog and can't be found in search.` : undefined} data-confirm-label="Unpublish">
                     {p.status === 'published' ? 'Unpublish' : 'Publish'}
                   </button>
                 </form>

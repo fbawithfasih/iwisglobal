@@ -59,14 +59,14 @@ const cardBtn = 'inline-flex min-h-11 items-center justify-center rounded border
             {t.featured && <span class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-brand-100 text-brand-700">Featured</span>}
           </p>
           <div class="flex flex-wrap gap-2 mt-3">
-            <a href={`/admin/tours/${t.id}/edit`} class={cardBtn}>Edit</a>
+            <a href={`/admin/tours/${t.id}/edit`} class={cardBtn} aria-label={`Edit ${t.title}`}>Edit</a>
             {t.status === 'published' && (
-              <a href={`/tours/${t.slug}`} target="_blank" rel="noopener" class={cardBtn}>View on site ↗</a>
+              <a href={`/tours/${t.slug}`} target="_blank" rel="noopener" class={cardBtn} aria-label={`View ${t.title} on the site (opens in a new tab)`}>View on site ↗</a>
             )}
             <form method="POST">
               <input type="hidden" name="tourId" value={t.id} />
               <input type="hidden" name="status" value={t.status === 'published' ? 'draft' : 'published'} />
-              <button type="submit" class={cardBtn} data-confirm={t.status === 'published' ? `Unpublish "${t.title}"? It will disappear from the website and can't be booked.` : undefined} data-confirm-label="Unpublish">
+              <button type="submit" class={cardBtn} aria-label={`${t.status === 'published' ? 'Unpublish' : 'Publish'} ${t.title}`} data-confirm={t.status === 'published' ? `Unpublish "${t.title}"? It will disappear from the website and can't be booked.` : undefined} data-confirm-label="Unpublish">
                 {t.status === 'published' ? 'Unpublish' : 'Publish'}
               </button>
             </form>
@@ -97,11 +97,11 @@ const cardBtn = 'inline-flex min-h-11 items-center justify-center rounded border
                 <StatusBadge tone={statusTone(t.status)}>{t.status}</StatusBadge>
               </td>
               <td class="px-4 py-2 flex items-center gap-3">
-                <a href={`/admin/tours/${t.id}/edit`} class="text-stone-500 hover:underline">Edit</a>
+                <a href={`/admin/tours/${t.id}/edit`} class="text-stone-500 hover:underline" aria-label={`Edit ${t.title}`}>Edit</a>
                 <form method="POST">
                   <input type="hidden" name="tourId" value={t.id} />
                   <input type="hidden" name="status" value={t.status === 'published' ? 'draft' : 'published'} />
-                  <button type="submit" class="text-stone-500 hover:underline" data-confirm={t.status === 'published' ? `Unpublish "${t.title}"? It will disappear from the website and can't be booked.` : undefined} data-confirm-label="Unpublish">
+                  <button type="submit" class="text-stone-500 hover:underline" aria-label={`${t.status === 'published' ? 'Unpublish' : 'Publish'} ${t.title}`} data-confirm={t.status === 'published' ? `Unpublish "${t.title}"? It will disappear from the website and can't be booked.` : undefined} data-confirm-label="Unpublish">
                     {t.status === 'published' ? 'Unpublish' : 'Publish'}
                   </button>
                 </form>

@@ -41,7 +41,7 @@ const highlights = db ? await listAgraHighlights(db) : [];
               <span class="shrink-0 text-xs text-stone-500">#{h.sortOrder}</span>
             </div>
             <p class="text-stone-600 line-clamp-2 mt-0.5">{h.description}</p>
-            <a href={`/admin/agra-highlights/${h.id}/edit`} class="mt-2 inline-flex min-h-11 items-center rounded border border-violet-200 bg-white px-4 text-stone-800">Edit</a>
+            <a href={`/admin/agra-highlights/${h.id}/edit`} class="mt-2 inline-flex min-h-11 items-center rounded border border-violet-200 bg-white px-4 text-stone-800" aria-label={`Edit ${h.name}`}>Edit</a>
           </div>
         </li>
       ))}
@@ -73,7 +73,7 @@ const highlights = db ? await listAgraHighlights(db) : [];
               <td class="px-4 py-2 text-stone-600 max-w-xs truncate">{h.description}</td>
               <td class="px-4 py-2">{h.sortOrder}</td>
               <td class="px-4 py-2">
-                <a href={`/admin/agra-highlights/${h.id}/edit`} class="text-stone-500 hover:underline">Edit</a>
+                <a href={`/admin/agra-highlights/${h.id}/edit`} class="text-stone-500 hover:underline" aria-label={`Edit ${h.name}`}>Edit</a>
               </td>
             </tr>
           ))}
