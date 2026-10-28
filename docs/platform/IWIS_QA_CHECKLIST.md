@@ -219,6 +219,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3v.4 | Live posts first (newest first), then drafts; Edit, View on site (live posts only, opens a new tab) and Publish / Unpublish work as before (Unpublish asks first) | | |
 | 3v.5 | 320 px: no sideways scroll; bars and buttons reachable by keyboard | | |
 
+## 3w. Lead report as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3w.1 | Lead report: the date range sits at the top right and still works; four tiles: Leads (and how many channels), Bookings (with the percentage of leads booked), Top channel (with its leads and bookings), No spend entered (orange when a channel with leads has no spend entered, green with a tick when none) | | |
+| 3w.2 | "From lead to booking": four bars (Leads, Quote sent, Deposit paid, Booked) with the count, the share of all leads and the share of the step before; the numbers match the By channel table totals | | |
+| 3w.3 | "Leads by channel": a bar per channel with leads, booked and the first-reply time; the green part of each bar is the share that booked; hover or focus shows the same in a tooltip | | |
+| 3w.4 | The tables (By channel, By campaign, Email campaigns, Marketing spend) are all still there with every column; adding and removing a spend entry still works, with a green or red message | | |
+| 3w.5 | With no leads in the range the charts are hidden and the tiles say so; 320 px: no sideways scroll except inside the tables, which scroll in their own box | | |
+
 ## 3o. OpenAI Ads pixel
 
 | # | Check | Who | Result |
