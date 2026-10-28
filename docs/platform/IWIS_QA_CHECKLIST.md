@@ -115,6 +115,17 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3k.4 | Each chat in the list has an initial in a violet circle, a coloured edge for its state, a pastel state label; messages we sent are tinted green, guest messages are white | | |
 | 3k.5 | Everything else still works: Take it, Hand over, Send, drafts, templates, Delete this chat | | |
 
+## 3l. Custom trips as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3l.1 | Custom trips: a status pill (Live for guests / Off) and four tiles: Switch (green when on, orange while things are missing), Vehicles offered, Stops offered, Fees to check (red while any offered stop has ticket fees not checked for over 30 days); each tile jumps to its section | | |
+| 3l.2 | "Ticket fees: how recent": one bar per stop, green within 30 days, orange within 90, red older or never checked; a stop with no fees says "No ticket fee"; clicking a stop jumps to its fees | | |
+| 3l.3 | "Vehicle rates": Agra day and Delhi return bars per vehicle, "Not offered" on the ones hidden from guests, the guide rate underneath | | |
+| 3l.4 | "How much of a day each stop takes": visit and drive stacked against the day length | | |
+| 3l.5 | All the forms still save (switch, guide and limits, vehicles, stops, fees) and the green message shows after each | | |
+| 3l.6 | At 320 px wide nothing scrolls sideways | | |
+
 ## 3f. Keyboard and screen reader (do this with a person; 20 minutes)
 
 Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) or TalkBack (Android) for the second half.
