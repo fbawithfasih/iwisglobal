@@ -105,6 +105,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3j.4 | "How fast we reply": typical wait, how many were answered within the hour, and a warning when many enquiries have no reply recorded (the card must not look green when most are unanswered) | | |
 | 3j.5 | Each lead card has a coloured edge for its stage, an initial in a violet circle, and pastel stage and hot/warm/cold pills | | |
 
+## 3k. WhatsApp as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3k.1 | WhatsApp: four coloured tiles are the chat filters (Needs a person, Mine, Staff handling, All chats); the open one has a ring; Needs a person turns green with a tick at zero | | |
+| 3k.2 | "Overview" (open when no chat is open, folded when one is): "Messages per day" grouped columns for the last 14 days, guests violet and us orange, hover readout, table view; the numbers leave out reactions, edits and deletions | | |
+| 3k.3 | "Waiting for a reply" by Under 1 h, 1 to 4 h, Over 4 h, and "Reply windows" (open, closing under 2 h, closed); the totals match the chats shown with a Waiting line | | |
+| 3k.4 | Each chat in the list has an initial in a violet circle, a coloured edge for its state, a pastel state label; messages we sent are tinted green, guest messages are white | | |
+| 3k.5 | Everything else still works: Take it, Hand over, Send, drafts, templates, Delete this chat | | |
+
 ## 3f. Keyboard and screen reader (do this with a person; 20 minutes)
 
 Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) or TalkBack (Android) for the second half.

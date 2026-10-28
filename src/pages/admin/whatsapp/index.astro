@@ -16,6 +16,8 @@ import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
 import { sendDraft, sendStaffMessage, sendStaffTemplate, discardDraft, draftWaitingMessage, type DraftRow } from '../../../lib/waDraft';
 import { listInbox, inboxCounts, inboxSignature, takeChat, handOverChat, giveBack, formatDuration, WINDOW_MS, type InboxFilter } from '../../../lib/waInbox';
+import { messageFlow, waitBuckets, windowBuckets, FLOW_DAYS, type MessageDay } from '../../../lib/waInsights';
+import { todayIst } from '../../../lib/availability';
 import { actorLabel } from '../../../lib/authz';
 import { listStaff } from '../../../lib/staff';
 import { ownerLabel } from '../../../lib/leadsAdmin';
@@ -106,7 +108,21 @@ const overdue = db ? await auditOverdue(db) : 0;
 const waitingForPerson = counts.handed_off ?? 0;
 const tabParam = Astro.url.searchParams.get('tab');
 const tab: InboxFilter = tabParam === 'attention' || tabParam === 'staff' || tabParam === 'mine' || tabParam === 'all' ? tabParam : waitingForPerson > 0 ? 'attention' : 'all';
-const conversations = db ? await listInbox(db, tab, new Date(), me) : [];
+// The list for the open tab, every chat (for the pictures) and the messages per day load together, one round trip.
+const now = new Date();
+const [conversations, allChats, flow] = db
+  ? await Promise.all([
+      listInbox(db, tab, now, me),
+      tab === 'all' ? Promise.resolve(null) : listInbox(db, 'all', now, me),
+      messageFlow(db, todayIst()).catch((err) => { console.error('whatsapp: message flow failed', err instanceof Error ? err.message : 'error'); return null as MessageDay[] | null; }),
+    ])
+  : [[], null, null as MessageDay[] | null];
+const everyChat = allChats ?? conversations;
+const waits = waitBuckets(everyChat);
+const windows = windowBuckets(everyChat);
+const waitingNow = waits.calm + waits.soon + waits.late;
+const waitMax = Math.max(1, waits.calm, waits.soon, waits.late);
+const flowTotals = flow ? { guest: flow.reduce((t, d) => t + d.guest, 0), ours: flow.reduce((t, d) => t + d.ours, 0) } : null;
 // On a phone the list and the open chat are separate screens; ?c= opens the chat.
 const chatOpen = Astro.url.searchParams.has('c');
 const selectedId = Astro.url.searchParams.get('c') ?? conversations[0]?.id ?? '';
@@ -141,17 +157,32 @@ const autoReply = db
 const error = Astro.url.searchParams.get('err');
 const who = (c: { id: string; profile_name: string | null }) => c.profile_name || `+${c.id}`;
 const stateLabel: Record<string, { text: string; style: string }> = {
-  agent: { text: 'Agent drafting', style: 'bg-stone-200 text-stone-700' },
-  handed_off: { text: 'Needs a person', style: 'bg-brand-100 text-amber-900' },
-  staff: { text: 'Staff handling', style: 'bg-violet-100 text-violet-800' },
-  opted_out: { text: 'Opted out', style: 'bg-red-100 text-red-800' },
+  agent: { text: 'Agent drafting', style: 'badge-neutral' },
+  handed_off: { text: 'Needs a person', style: 'badge-warn' },
+  staff: { text: 'Staff handling', style: 'badge-brand' },
+  opted_out: { text: 'Opted out', style: 'badge-danger' },
 };
-const tabs: { id: InboxFilter; label: string; count?: number }[] = [
-  { id: 'attention', label: 'Needs a person', count: waitingForPerson },
-  { id: 'mine', label: 'Mine', count: counts.mine ?? 0 },
-  { id: 'staff', label: 'Staff handling', count: counts.staff ?? 0 },
-  { id: 'all', label: 'All' },
+const totalChats = Object.entries(counts).filter(([k]) => k !== 'mine').reduce((t, [, n]) => t + n, 0);
+const tabs: { id: InboxFilter; label: string; count: number; tone: 'warn' | 'brand' | 'info' | 'success'; hint: string }[] = [
+  { id: 'attention', label: 'Needs a person', count: waitingForPerson, tone: 'warn', hint: 'The agent handed these over.' },
+  { id: 'mine', label: 'Mine', count: counts.mine ?? 0, tone: 'brand', hint: 'Chats you are handling.' },
+  { id: 'staff', label: 'Staff handling', count: counts.staff ?? 0, tone: 'info', hint: 'A person has taken these over.' },
+  { id: 'all', label: 'All chats', count: totalChats, tone: 'success', hint: 'Every conversation.' },
 ];
+const edge: Record<string, string> = { agent: 'border-l-stone-300', handed_off: 'border-l-amber-400', staff: 'border-l-violet-500', opted_out: 'border-l-rose-400' };
+const initial = (name: string | null) => ((name ?? '').trim()[0] ?? '#').toUpperCase();
+const waitBars = [
+  { key: 'late', label: 'Over 4 h', n: waits.late, bar: 'bg-rose-500', cls: 'badge-danger' },
+  { key: 'soon', label: '1 to 4 h', n: waits.soon, bar: 'bg-orange-400', cls: 'badge-warn' },
+  { key: 'calm', label: 'Under 1 h', n: waits.calm, bar: 'bg-emerald-500', cls: 'badge-success' },
+] as const;
+const windowBars = [
+  { label: 'Open, over 2 h left', n: windows.plenty, bar: 'bg-emerald-500' },
+  { label: 'Closing, under 2 h left', n: windows.closing, bar: 'bg-orange-400' },
+  { label: 'Closed (templates only)', n: windows.closed, bar: 'bg-stone-400' },
+] as const;
+const windowMax = Math.max(1, windows.plenty, windows.closing, windows.closed);
+const dayShort = (ymd: string) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${ymd}T00:00:00Z`));
 const toneStyle = { red: 'text-red-700', amber: 'text-amber-700', none: 'text-stone-600' } as const;
 const directionLabel: Record<string, string> = { in: 'Guest', out: 'Sent from the site', echo: 'Staff (app)' };
 const reasonLabel: Record<string, string> = {
@@ -178,17 +209,18 @@ const toolLog = (d: DraftRow): { name: string; result: string }[] => {
 const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' && x.sent_at > m.sent_at);
 ---
 <AdminLayout title="WhatsApp">
-  <h1 class="text-2xl font-semibold mb-2">WhatsApp</h1>
-  <p class="text-stone-500 text-sm mb-1">
-    Every message on the business number, with a drafted reply under each guest message. Nothing is sent until you press Send.
-  </p>
-  <p class="text-sm mb-6">
-    Automatic replies:
-    <span class={`ml-1 rounded px-2 py-0.5 text-xs font-medium ${autoReply === 'on' ? 'bg-green-100 text-green-800' : 'bg-stone-200 text-stone-700'}`}>{autoReply === 'on' ? 'On' : 'Off'}</span>
-    <a href="/admin/whatsapp/auto" class="ml-2 text-brand-800 underline">Settings</a>
-    <a href="/admin/whatsapp/launch" class="ml-2 text-brand-800 underline">Launch readiness</a>
-    <a href="/admin/whatsapp/knowledge" class="ml-4 text-brand-800 underline">Knowledge base</a>
-  </p>
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">WhatsApp</h1>
+      <p class="text-sm text-stone-600">{totalChats} {totalChats === 1 ? 'chat' : 'chats'} · {waitingNow > 0 ? `${waitingNow} waiting for a reply` : 'nobody waiting for a reply'}. Every message on the business number, with a drafted reply under each guest message. Nothing is sent until you press Send.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2 text-sm">
+      <span class={`rounded-full px-3 py-1 text-xs font-medium ${autoReply === 'on' ? 'badge-success' : 'badge-neutral'}`}>Automatic replies: {autoReply === 'on' ? 'On' : 'Off'}</span>
+      <a href="/admin/whatsapp/auto" class="rounded border border-violet-200 bg-white px-3 py-2">Settings</a>
+      <a href="/admin/whatsapp/launch" class="rounded border border-violet-200 bg-white px-3 py-2">Launch readiness</a>
+      <a href="/admin/whatsapp/knowledge" class="rounded border border-violet-200 bg-white px-3 py-2">Knowledge base</a>
+    </div>
+  </div>
   <div id="push-box" class="mb-6 max-w-xl rounded-xl border border-violet-100 bg-white p-3 text-sm" data-key={env.VAPID_PUBLIC_KEY ?? ''}>
     <p class="font-medium text-stone-800">Phone alerts</p>
     <p id="push-status" class="mt-1 text-stone-600">Checking…</p>
@@ -209,17 +241,83 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
   <div id="live" data-sig={signature} class="hidden mb-4 rounded-xl bg-violet-50 p-3 text-sm text-violet-900" role="status">
     New messages arrived. <a href="" class="font-semibold underline">Show them</a>
   </div>
-  <nav class="mb-4 flex flex-wrap gap-2" aria-label="Chat filters">
-    {tabs.map((t) => (
-      <a
-        href={`/admin/whatsapp?tab=${t.id}`}
-        aria-current={t.id === tab ? 'page' : undefined}
-        class={`min-h-11 inline-flex items-center rounded-full px-4 text-sm font-medium ${t.id === tab ? 'bg-brand-800 text-white' : 'border border-violet-200 bg-white text-stone-700 hover:bg-stone-50'}`}
-      >
-        {t.label}{t.count ? ` (${t.count})` : ''}
-      </a>
-    ))}
-  </nav>
+  <section aria-label="Chat filters" class="mb-6">
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {tabs.map((t) => {
+        const clear = t.count === 0 && t.id === 'attention';
+        return (
+          <a href={`/admin/whatsapp?tab=${t.id}`} aria-current={t.id === tab ? 'page' : undefined} class={`block rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${clear ? 'tint-success' : `tint-${t.tone}`} ${t.id === tab ? 'ring-2 ring-violet-500 ring-offset-2' : ''}`}>
+            <span class="block text-4xl font-semibold leading-none text-stone-900">{t.count}</span>
+            <span class="mt-2 block font-medium text-stone-800">{t.label}</span>
+            <span class="block text-xs text-stone-600">{clear ? '✓ All clear.' : t.hint}</span>
+          </a>
+        );
+      })}
+    </div>
+  </section>
+
+  {db && (
+    <details open={!chatOpen} class="mb-6">
+      <summary class="mb-3 cursor-pointer text-lg font-semibold">Overview <span class="text-sm font-normal text-stone-600">messages per day, who is waiting, reply windows</span></summary>
+    <div class="grid items-start gap-4 lg:grid-cols-5">
+      <section aria-labelledby="flow" class="viz rounded-xl border border-violet-100 bg-white p-4 lg:col-span-3">
+        <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="flow" class="text-lg font-semibold">Messages per day</h2>
+          {flowTotals && <p class="text-sm text-stone-600">Last {FLOW_DAYS} days: <span class="font-semibold text-stone-900">{flowTotals.guest}</span> from guests, <span class="font-semibold text-stone-900">{flowTotals.ours}</span> from us</p>}
+        </div>
+        {!flow ? (
+          <p class="notice notice-warn" role="alert">Could not load the message counts. Try again in a moment.</p>
+        ) : (
+          <>
+            <div id="flow-chart"></div>
+            <p class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-700">
+              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm" style="background:var(--s1)"></span>From guests</span>
+              <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm" style="background:var(--s2)"></span>From us (this site and the phone app)</span>
+            </p>
+            <details class="mt-2 text-sm">
+              <summary class="cursor-pointer text-stone-700">Show as a table</summary>
+              <div class="mt-2 max-h-56 overflow-auto">
+                <table class="w-full text-left text-xs">
+                  <caption class="sr-only">Messages per day, last {FLOW_DAYS} days</caption>
+                  <thead class="text-stone-600"><tr><th scope="col" class="py-1 pr-3">Day</th><th scope="col" class="py-1 pr-3">From guests</th><th scope="col" class="py-1">From us</th></tr></thead>
+                  <tbody>{[...flow].reverse().map((d) => <tr class="border-t border-violet-50"><th scope="row" class="py-1 pr-3 font-normal">{dayShort(d.day)}</th><td class="py-1 pr-3">{d.guest}</td><td class="py-1">{d.ours}</td></tr>)}</tbody>
+                </table>
+              </div>
+            </details>
+            <p class="mt-2 text-xs text-stone-600">Counted by India day. Reactions, edits and deletions are not counted.</p>
+          </>
+        )}
+      </section>
+
+      <section aria-labelledby="waiting" class="rounded-xl border border-violet-100 bg-white p-4 lg:col-span-2">
+        <h2 id="waiting" class="mb-1 text-lg font-semibold">Waiting for a reply</h2>
+        <p class="mb-3 text-xs text-stone-600">Guests who wrote last, by how long they have waited.</p>
+        {waitingNow === 0 ? (
+          <p class="rounded-lg tint-success border px-3 py-2 text-sm text-stone-800">✓ Nobody is waiting for a reply.</p>
+        ) : (
+          <ul class="space-y-2">
+            {waitBars.map((w) => (
+              <li>
+                <span class="flex items-center justify-between text-sm"><span class="inline-flex items-center gap-2"><span class={`${w.cls} rounded-full px-2 py-0.5 text-[11px] font-medium`}>{w.label}</span></span><span class="font-semibold text-stone-900">{w.n}</span></span>
+                <span class="mt-1 block h-2.5 rounded-full bg-stone-100" aria-hidden="true"><span class={`block h-full rounded-full ${w.bar}`} style={`width:${w.n === 0 ? 0 : Math.max(6, Math.round((w.n / waitMax) * 100))}%`}></span></span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <h3 class="mb-1 mt-5 text-sm font-semibold text-stone-800">Reply windows</h3>
+        <p class="mb-2 text-xs text-stone-600">WhatsApp lets us write freely for 24 hours after a guest's last message.</p>
+        <ul class="space-y-2">
+          {windowBars.map((w) => (
+            <li>
+              <span class="flex items-center justify-between text-sm"><span class="text-stone-800">{w.label}</span><span class="font-semibold text-stone-900">{w.n}</span></span>
+              <span class="mt-1 block h-2 rounded-full bg-stone-100" aria-hidden="true"><span class={`block h-full rounded-full ${w.bar}`} style={`width:${w.n === 0 ? 0 : Math.max(6, Math.round((w.n / windowMax) * 100))}%`}></span></span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+    </details>
+  )}
 
   {conversations.length === 0 && !selected ? (
     <EmptyState message={tab === 'all' ? 'No messages yet' : 'Nothing here right now'} hint={tab === 'all' ? 'Once the webhook is connected in Meta, chats appear here.' : undefined} />
@@ -231,11 +329,11 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
             <a
               href={`/admin/whatsapp?tab=${tab}&c=${c.id}`}
               aria-current={c.id === selectedId ? 'page' : undefined}
-              class={`block rounded-xl border p-3 text-sm ${c.id === selectedId ? 'border-brand-700 bg-violet-50' : 'border-violet-100 bg-white hover:bg-stone-50'}`}
+              class={`block rounded-xl border border-l-4 p-3 text-sm transition hover:shadow-md ${edge[c.state] ?? 'border-l-stone-300'} ${c.id === selectedId ? 'border-brand-700 bg-violet-50' : 'border-violet-100 bg-white'}`}
             >
               <span class="flex items-center justify-between gap-2">
-                <span class="font-semibold">{who(c)}</span>
-                <span class={`rounded px-2 py-0.5 text-xs ${stateLabel[c.state]?.style ?? ''}`}>{stateLabel[c.state]?.text ?? c.state}</span>
+                <span class="flex min-w-0 items-center gap-2"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full badge-brand text-xs font-semibold" aria-hidden="true">{initial(c.profile_name)}</span><span class="truncate font-semibold">{who(c)}</span></span>
+                <span class={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${stateLabel[c.state]?.style ?? ''}`}>{stateLabel[c.state]?.text ?? c.state}</span>
               </span>
               {who(c) !== `+${c.id}` && <span class="block text-stone-500">+{c.id}</span>}
               {c.handled_by && <span class="block text-xs text-stone-600">Handled by <span class="font-semibold">{ownerLabel(c.handled_by, staffNames)}</span></span>}
@@ -255,7 +353,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
         {selected && (
           <div class="mb-3 flex flex-wrap items-center gap-3">
             <h2 class="text-lg font-semibold">{who(selected)}</h2>
-            <span class={`rounded px-2 py-0.5 text-xs ${stateLabel[selected.state]?.style ?? ''}`}>{stateLabel[selected.state]?.text ?? selected.state}</span>
+            <span class={`rounded-full px-2.5 py-0.5 text-xs font-medium ${stateLabel[selected.state]?.style ?? ''}`}>{stateLabel[selected.state]?.text ?? selected.state}</span>
             {selected.state !== 'opted_out' && (
               <form method="POST" class="flex gap-2">
                 <input type="hidden" name="c" value={selectedId} />
@@ -338,7 +436,7 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
             const open = draft && draft.status === 'draft' && !repliedAfter(m);
             return (
               <li>
-                <div class={`max-w-xl rounded-xl p-3 text-sm ${m.direction === 'in' ? 'bg-white border border-violet-100' : 'ml-auto bg-violet-100'}`}>
+                <div class={`max-w-xl rounded-xl p-3 text-sm ${m.direction === 'in' ? 'bg-white border border-violet-100' : 'ml-auto border border-emerald-100 bg-emerald-50'}`}>
                   <p class="text-xs text-stone-500 mb-1">{directionLabel[m.direction] ?? m.direction}{m.sent_by && ` by ${ownerLabel(m.sent_by, staffNames)}`}{m.kind === 'template' && ' (template)'} · {formatDateTimeIst(m.sent_at)}{m.direction !== 'in' && ` · ${m.status}`}</p>
                   {(() => {
                     const meta = metaOf(m);
@@ -426,6 +524,64 @@ const repliedAfter = (m: Message) => messages.some((x) => x.direction !== 'in' &
   )}
 </AdminLayout>
 
+{flow && <script type="application/json" id="flow-data" set:html={JSON.stringify(flow)} />}
+<div id="viz-tip" role="tooltip" hidden class="pointer-events-none fixed z-50 max-w-xs rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-stone-800 shadow-lg"></div>
+<style is:global>
+  .viz { --s1: #6250d6; --s2: #eb6834; }
+  #flow-chart svg { display: block; width: 100%; height: auto; }
+  #flow-chart .hit { fill: transparent; cursor: pointer; }
+  #flow-chart .hit:hover { fill: #6250d6; fill-opacity: 0.07; }
+  @media (prefers-reduced-motion: no-preference) {
+    #flow-chart .col { transform-origin: bottom; transform-box: fill-box; animation: wa-grow 0.45s ease-out both; }
+    @keyframes wa-grow { from { transform: scaleY(0.1); opacity: 0.4; } to { transform: scaleY(1); opacity: 1; } }
+  }
+</style>
+<script is:inline>
+  (function () {
+    // Messages per day: grouped columns (guests violet, us orange) from the 14 days in the page, with a hover readout.
+    var holder = document.getElementById('flow-chart');
+    var dataEl = document.getElementById('flow-data');
+    var tip = document.getElementById('viz-tip');
+    if (!holder || !dataEl || !tip) return;
+    var days = JSON.parse(dataEl.textContent);
+    var NS = 'http://www.w3.org/2000/svg', C1 = '#6250d6', C2 = '#eb6834';
+    var el = function (name, attrs, parent) { var n = document.createElementNS(NS, name); for (var k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; };
+    var fmt = function (ymd) { return new Date(ymd + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }); };
+    var longFmt = function (ymd) { return new Date(ymd + 'T00:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }); };
+    var bar = function (x, y, w, h) { var r = Math.min(4, w / 2, h); return 'M' + x + ',' + (y + h) + 'V' + (y + r) + 'Q' + x + ',' + y + ' ' + (x + r) + ',' + y + 'H' + (x + w - r) + 'Q' + (x + w) + ',' + y + ' ' + (x + w) + ',' + (y + r) + 'V' + (y + h) + 'Z'; };
+    var W = 640, H = 220, L = 30, R = 6, T = 10, B = 26;
+    var max = Math.max(3, Math.max.apply(null, days.map(function (r) { return Math.max(r.guest, r.ours); })));
+    var top = max <= 4 ? max : Math.ceil(max / 2) * 2;
+    var y = function (v) { return T + (H - T - B) * (1 - v / top); };
+    var gw = (W - L - R) / days.length, bw = Math.min(16, gw * 0.34);
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Messages per day over the last ' + days.length + ' days, from guests and from us. The same numbers are in the table below.' }, holder);
+    [0, top / 2, top].forEach(function (v) {
+      el('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: v === 0 ? '#a8a29e' : '#e7e5e4', 'stroke-width': 1 }, svg);
+      var t = el('text', { x: L - 6, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: '#57534e' }, svg); t.textContent = Math.round(v);
+    });
+    days.forEach(function (r, i) {
+      var gx = L + gw * i, cx = gx + gw / 2, g = el('g', {}, svg);
+      var hit = el('rect', { class: 'hit', x: gx, y: T, width: gw, height: H - T - B }, g);
+      [[r.guest, C1, cx - bw - 1], [r.ours, C2, cx + 1]].forEach(function (s) { if (s[0] > 0) el('path', { class: 'col', d: bar(s[2], y(s[0]), bw, y(0) - y(s[0])), fill: s[1], 'pointer-events': 'none' }, g); });
+      if ((days.length - 1 - i) % 2 === 0) { var lab = el('text', { x: cx, y: H - 8, 'text-anchor': 'middle', 'font-size': 11, fill: '#57534e' }, svg); lab.textContent = i === days.length - 1 ? 'Today' : fmt(r.day); }
+      hit.addEventListener('pointermove', function (e) {
+        tip.textContent = '';
+        [{ v: longFmt(r.day) }, { k: C1, v: r.guest, l: r.guest === 1 ? 'message from guests' : 'messages from guests' }, { k: C2, v: r.ours, l: r.ours === 1 ? 'message from us' : 'messages from us' }].forEach(function (l) {
+          var p = document.createElement('p');
+          if (l.k) { var k = document.createElement('span'); k.style.cssText = 'display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;background:' + l.k; p.appendChild(k); }
+          var v = document.createElement('span'); v.textContent = l.v; v.style.fontWeight = '600'; p.appendChild(v);
+          if (l.l) { var t = document.createElement('span'); t.textContent = ' ' + l.l; t.style.color = '#57534e'; p.appendChild(t); }
+          tip.appendChild(p);
+        });
+        tip.hidden = false;
+        var w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, e.clientX + 12)) + 'px';
+        tip.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, e.clientY - h - 12)) + 'px';
+      });
+      hit.addEventListener('pointerleave', function () { tip.hidden = true; });
+    });
+  })();
+</script>
 <script>
   // Phone alerts: register the service worker, ask permission, save this device's subscription.
   const box = document.getElementById('push-box');
