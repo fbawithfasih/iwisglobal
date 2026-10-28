@@ -48,6 +48,8 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/booking-driver.ts" --b
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/booking-driver.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/pickup.ts" --bundle --platform=node --format=esm --outfile="$OUT/pickup.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/pickup.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/booked-client.ts" --bundle --platform=node --format=esm --outfile="$OUT/booked-client.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
+ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/booked-client.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/today.ts" --bundle --platform=node --format=esm --outfile="$OUT/today.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/today.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/overview.ts" --bundle --platform=node --format=esm --outfile="$OUT/overview.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
