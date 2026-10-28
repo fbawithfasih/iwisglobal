@@ -209,6 +209,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3u.5 | The lead for the guest moves to Booked after a full or balance payment, and links to the booking | | |
 | 3u.6 | An offer made with `"internal": true` creates no booking when paid; an offer with two different days in its date label and no `travelDate` creates none and emails you about it | | |
 
+## 3v. Blog as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3v.1 | Blog: four tiles: Published, Drafts, To update (published posts not updated for 180 days; green with a tick when none), To finish (published posts missing a cover photo, a title up to 60 characters, a description of 70 to 160 characters or a link to a tour; green with a tick when none) | | |
+| 3v.2 | "Posts published per month": the last six months, a bar and the count for each month (empty months shown), hover or focus shows "Oct 26: 2 posts published"; drafts are not counted | | |
+| 3v.3 | Post cards: cover thumbnail (or "No photo"), title, status, category, published date, reading time, "Updated N days ago", "Worth a refresh" after 180 days, a four-step check bar and the "Add: ..." labels for what is missing | | |
+| 3v.4 | Live posts first (newest first), then drafts; Edit, View on site (live posts only, opens a new tab) and Publish / Unpublish work as before (Unpublish asks first) | | |
+| 3v.5 | 320 px: no sideways scroll; bars and buttons reachable by keyboard | | |
+
 ## 3o. OpenAI Ads pixel
 
 | # | Check | Who | Result |

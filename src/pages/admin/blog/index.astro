@@ -2,13 +2,13 @@
 export const prerender = false;
 
 import EmptyState from '../../../components/EmptyState.astro';
-import PageHeader from '../../../components/PageHeader.astro';
 import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
 import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { listBlogPosts, updateBlogPost, getBlogPostById, deleteBlogPost } from '../../../lib/blog';
+import { wordCount, readMinutes, daysSince, updatedLabel, postHealth, monthlyCounts, blogSummary, barWidth, STALE_DAYS } from '../../../lib/blogAdmin';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
@@ -47,47 +47,134 @@ if (Astro.request.method === 'POST' && db) {
 }
 
 const posts = db ? await listBlogPosts(db) : [];
+const now = Date.now();
+const sum = blogSummary(posts, now);
+const months = monthlyCounts(posts, now, 6);
+const monthMax = Math.max(1, ...months.map((m) => m.n));
+const categoryLabel: Record<string, string> = { news: 'News', 'travel-tips': 'Travel tips', seasonal: 'Seasonal' };
+const dateLabel = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+// Live posts first (newest first, as listBlogPosts returns them), then drafts.
+const shown = [...posts].sort((a, b) => Number(b.status === 'published') - Number(a.status === 'published'));
+const cardBtn = 'inline-flex min-h-11 items-center justify-center rounded border border-violet-200 bg-white px-3 text-sm text-stone-800';
+const tiles = [
+  { label: 'Published', n: sum.published, hint: 'Live on the blog and in search.', tone: 'success' },
+  { label: 'Drafts', n: sum.drafts, hint: 'Hidden until you publish them.', tone: sum.drafts ? 'info' : 'brand' },
+  { label: 'To update', n: sum.stale, hint: sum.stale ? `Published posts not touched for ${STALE_DAYS} days.` : `✓ Nothing older than ${STALE_DAYS} days.`, tone: sum.stale ? 'warn' : 'success' },
+  { label: 'To finish', n: sum.toFinish, hint: sum.toFinish ? 'Published posts missing a photo, title, description or tour link.' : '✓ Every live post is complete.', tone: sum.toFinish ? 'danger' : 'success' },
+] as const;
 ---
 <AdminLayout title="Blog">
-  <PageHeader title="Blog" count={posts.length} href="/admin/blog/new" action="+ New post" />
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">Blog</h1>
+      <p class="text-sm text-stone-600">{posts.length} {posts.length === 1 ? 'post' : 'posts'} · {sum.published} live{sum.drafts ? ` · ${sum.drafts} ${sum.drafts === 1 ? 'draft' : 'drafts'}` : ''}</p>
+    </div>
+    <a href="/admin/blog/new" class="btn-primary inline-flex min-h-11 items-center rounded px-4 text-sm text-white">+ New post</a>
+  </div>
 
   {posts.length === 0 ? (
     <EmptyState message="No blog posts yet" hint="Posts you publish show on the blog and in search." href="/admin/blog/new" action="+ New post" />
   ) : (
-    <div class="bg-white rounded-xl border border-violet-100 overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-stone-50 text-left">
-          <tr>
-            <th class="px-4 py-2">Title</th>
-            <th class="px-4 py-2">Category</th>
-            <th class="px-4 py-2">Status</th>
-            <th class="px-4 py-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {posts.map((p) => (
-            <tr class="border-t border-stone-100">
-              <td class="px-4 py-2">
-                <a href={`/admin/blog/${p.id}/edit`} class="text-brand-700 hover:underline">{p.title}</a>
-              </td>
-              <td class="px-4 py-2 text-stone-600">{p.category}</td>
-              <td class="px-4 py-2">
-                <StatusBadge tone={p.status === 'published' ? 'ok' : 'muted'}>{p.status}</StatusBadge>
-              </td>
-              <td class="px-4 py-2 flex items-center gap-3">
-                <a href={`/admin/blog/${p.id}/edit`} class="text-stone-500 hover:underline" aria-label={`Edit ${p.title}`}>Edit</a>
-                <form method="POST">
-                  <input type="hidden" name="postId" value={p.id} />
-                  <input type="hidden" name="status" value={p.status === 'published' ? 'draft' : 'published'} />
-                  <button type="submit" class="text-stone-500 hover:underline" aria-label={`${p.status === 'published' ? 'Unpublish' : 'Publish'} ${p.title}`} data-confirm={p.status === 'published' ? `Unpublish "${p.title}"? It will disappear from the blog and can't be found in search.` : undefined} data-confirm-label="Unpublish">
-                    {p.status === 'published' ? 'Unpublish' : 'Publish'}
-                  </button>
-                </form>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+    <section aria-label="Overview" class="mb-6">
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {tiles.map((t) => (
+          <div class={`rounded-xl border p-4 tint-${t.tone}`}>
+            <span class="block text-4xl font-semibold leading-none text-stone-900">{t.n}</span>
+            <span class="mt-2 block font-medium text-stone-800">{t.label}</span>
+            <span class="block text-xs text-stone-600">{t.hint}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section aria-labelledby="cadence" class="mb-6 rounded-xl border border-violet-100 bg-white p-4">
+      <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="cadence" class="text-lg font-semibold">Posts published per month</h2>
+        <p class="text-sm text-stone-600">The last six months, by the day each post first went live.</p>
+      </div>
+      <ul class="space-y-2">
+        {months.map((m) => (
+          <li class="flex items-center gap-3 text-sm" data-tip={`${m.label}: ${m.n} ${m.n === 1 ? 'post' : 'posts'} published`} tabindex="0">
+            <span class="w-16 shrink-0 text-stone-700">{m.label}</span>
+            <span class="block h-2.5 flex-1 rounded-full bg-stone-100" aria-hidden="true"><span class="block h-full rounded-full bg-violet-500" style={`width:${barWidth(m.n, monthMax)}%`}></span></span>
+            <span class="w-6 shrink-0 text-right font-semibold text-stone-900">{m.n}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <h2 class="mb-3 text-lg font-semibold">All posts</h2>
+    <ul class="grid gap-3 lg:grid-cols-2">
+      {shown.map((p) => {
+        const h = postHealth(p);
+        const words = wordCount(p.body);
+        const age = daysSince(p.updatedAt, now);
+        const live = p.status === 'published';
+        return (
+          <li class={`rounded-xl border border-l-4 border-violet-100 bg-white p-4 text-sm transition hover:shadow-md ${live ? 'border-l-emerald-500' : 'border-l-stone-300'}`}>
+            <div class="flex gap-3">
+              {(p.imageThumb ?? p.image) ? <img src={(p.imageThumb ?? p.image) as string} alt="" loading="lazy" width="72" height="72" class="h-[72px] w-[72px] shrink-0 rounded-lg object-cover" /> : <span class="badge-neutral flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-lg text-xs" aria-hidden="true">No photo</span>}
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-3">
+                  <a href={`/admin/blog/${p.id}/edit`} class="text-base font-semibold text-stone-900 hover:underline">{p.title}</a>
+                  <StatusBadge tone={live ? 'ok' : 'muted'}>{p.status}</StatusBadge>
+                </div>
+                <p class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-stone-600">
+                  <span class="badge-brand rounded-full px-2 py-0.5 text-[11px] font-medium">{categoryLabel[p.category] ?? p.category}</span>
+                  <span>{p.datePublished ? `Published ${dateLabel(p.datePublished)}` : 'Not published yet'}</span>
+                  <span>· {readMinutes(words)} min read ({words} words)</span>
+                </p>
+                <p class="mt-0.5 text-xs text-stone-600">
+                  {updatedLabel(age)}{live && age >= STALE_DAYS && <span class="badge-warn ml-2 rounded px-1.5 py-0.5 text-[11px]">Worth a refresh</span>}
+                </p>
+              </div>
+            </div>
+            <div class="mt-3 flex items-center gap-2">
+              <span class="flex flex-1 gap-1" role="img" aria-label={`Post ${h.done} of ${h.total} checks passed`}>
+                {Array.from({ length: h.total }, (_, k) => <span class={`h-1.5 flex-1 rounded-full ${k < h.done ? (h.missing.length ? 'bg-orange-400' : 'bg-emerald-500') : 'bg-stone-200'}`}></span>)}
+              </span>
+              <span class={`text-xs font-medium ${h.missing.length ? 'text-orange-800' : 'text-emerald-800'}`}>{h.missing.length ? `${h.done} of ${h.total} checks` : '✓ Post complete'}</span>
+            </div>
+            {h.missing.length > 0 && <p class="mt-1.5">{h.missing.map((m) => <span class="badge-warn mr-1 rounded px-1.5 py-0.5 text-[11px]">Add: {m.toLowerCase()}</span>)}</p>}
+            <div class="mt-3 flex flex-wrap gap-2">
+              <a href={`/admin/blog/${p.id}/edit`} class={cardBtn} aria-label={`Edit ${p.title}`}>Edit</a>
+              {live && <a href={`/blog/${p.slug}`} target="_blank" rel="noopener" class={cardBtn} aria-label={`View ${p.title} on the site (opens in a new tab)`}>View on site ↗</a>}
+              <form method="POST">
+                <input type="hidden" name="postId" value={p.id} />
+                <input type="hidden" name="status" value={live ? 'draft' : 'published'} />
+                <button type="submit" class={cardBtn} aria-label={`${live ? 'Unpublish' : 'Publish'} ${p.title}`} data-confirm={live ? `Unpublish "${p.title}"? It will disappear from the blog and can't be found in search.` : undefined} data-confirm-label="Unpublish">
+                  {live ? 'Unpublish' : 'Publish'}
+                </button>
+              </form>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+    </>
   )}
+
+  <div id="viz-tip" role="tooltip" hidden class="pointer-events-none fixed z-50 max-w-xs rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-stone-800 shadow-lg"></div>
 </AdminLayout>
+
+<script is:inline>
+  (function () {
+    // One tooltip for the monthly bars. The text is set with textContent, never as HTML.
+    var tip = document.getElementById('viz-tip');
+    if (!tip) return;
+    document.querySelectorAll('[data-tip]').forEach(function (el) {
+      var show = function (x, y) {
+        tip.textContent = el.getAttribute('data-tip');
+        tip.hidden = false;
+        var w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 12)) + 'px';
+        tip.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, y - h - 12)) + 'px';
+      };
+      el.addEventListener('pointermove', function (e) { show(e.clientX, e.clientY); });
+      el.addEventListener('focus', function () { var b = el.getBoundingClientRect(); show(b.left + b.width / 2, b.top); });
+      el.addEventListener('pointerleave', function () { tip.hidden = true; });
+      el.addEventListener('blur', function () { tip.hidden = true; });
+    });
+  })();
+</script>
