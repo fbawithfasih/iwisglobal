@@ -147,6 +147,17 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3n.5 | Everything still works: Switch on and off (asks first to switch off), Save pricing, Refresh content, Test a booking, Cancel and refund (asks first), and the green message after each | | |
 | 3n.6 | The old Summary is now under "Technical details" and still shows destination, currency, last refresh, key and secret state (present or missing only) and the server | | |
 
+## 3p. Offers as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3p.1 | Offers: four tiles: Running, Ending soon (orange while a running offer ends within 7 days, green with a tick when none), Scheduled, Bookings with an offer (with the coupon and automatic split) | | |
+| 3p.2 | "Which offers guests use": one bar per offer, busiest first, with the booking count in words; Ended, Scheduled and Off offers carry a status label, not just a paler colour; hover or focus shows a short tooltip | | |
+| 3p.3 | Each offer card: status, a timing pill (Ends in N days, Last day today, Starts tomorrow, Ended N days ago, No end date, Switched off), the value, code or "Automatic", tours, booking window and conditions, uses, and "Nobody has used it yet" on a running offer with no bookings | | |
+| 3p.4 | Running offers are listed first, the one ending soonest on top, then Scheduled, Ended, Off | | |
+| 3p.5 | Edit still opens the offer; creating, editing and deleting an offer work as before; no money totals appear on the page | | |
+| 3p.6 | 320 px: no sideways scroll; keyboard focus reaches every bar and Edit button | | |
+
 ## 3o. OpenAI Ads pixel
 
 | # | Check | Who | Result |
