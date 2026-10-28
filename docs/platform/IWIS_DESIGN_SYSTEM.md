@@ -21,7 +21,7 @@ and `src/components/`.
 | `--brand-300` | #a78bfa | borders and focus rings on dark only, never text |
 | `--bg` / `--surface` | #f7f5ff / #ffffff | page background / cards |
 | `--text` / `--text-muted` | #1e1b2e / #64748b | body text / secondary text (stone-500 is raised to 5.3:1 for AA) |
-| `--info-*`, `--success-*`, `--warn-*`, `--danger-*` | each has `-bg` (pill and border fill), `-soft` (quiet tile or notice background) and `-ink` (dark text): blue #dbeafe/#eff6ff/#1e3a8a, green #d1fae5/#ecfdf5/#065f46, orange #ffedd5/#fff7ed/#9a3412, rose #ffe4e6/#fff1f2/#9f1239 | the four pastel meanings. Ink on its fills is 6.4:1 or better; body text on the soft fills is 16:1 |
+| `--info-*`, `--success-*`, `--warn-*`, `--danger-*` | each has `-bg` (pill and border fill), `-soft` (quiet tile or notice background) and `-ink` (dark text): blue #bfdbfe/#dbeafe/#1e3a8a, green #a7f3d0/#d1fae5/#065f46, orange #fed7aa/#ffedd5/#9a3412, rose #fecdd3/#ffe4e6/#9f1239 | the four pastel meanings. Ink on its fills is 5.4:1 or better (6.4:1 on the soft fills) |
 | `--radius-sm` / `-md` / `-lg` | 6 / 10 / 16 px | corners |
 | `--motion` | 180 ms | transitions (switched off for people who ask for reduced motion) |
 
