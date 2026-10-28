@@ -126,6 +126,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3l.5 | All the forms still save (switch, guide and limits, vehicles, stops, fees) and the green message shows after each | | |
 | 3l.6 | At 320 px wide nothing scrolls sideways | | |
 
+## 3m. Tours as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3m.1 | Tours: four tiles (Published, Drafts, Featured, Listings to finish); the last is red while a published tour is missing a photo, summary, description, three highlights, two itinerary steps or a price, and green when none is | | |
+| 3m.2 | "How each tour is selling": a bar per tour for bookings in the last 90 days (cancelled ones left out, ones waiting for you counted), with guests and the average rating from approved reviews; clicking a tour opens Bookings searched for it | | |
+| 3m.3 | Each tour card has its photo (or "No photo"), price, bookings and rating, five or six segments for how complete the listing is with the missing items named, and a coloured edge (green published, grey draft) | | |
+| 3m.4 | Edit, View on site and Publish / Unpublish still work (Unpublish asks first) and the green message shows afterwards | | |
+| 3m.5 | At 320 px wide nothing scrolls sideways | | |
+
 ## 3f. Keyboard and screen reader (do this with a person; 20 minutes)
 
 Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) or TalkBack (Android) for the second half.
