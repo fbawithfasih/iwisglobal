@@ -169,6 +169,14 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3q.5 | Order: unreadable first, then balance to collect, then waiting (oldest first), then paid, then closed | | |
 | 3q.6 | The payments table is still there per offer (kind, amount, status, payer, paid at, Razorpay id, emails); at 320 px it scrolls inside its box and can be reached with the keyboard; the page itself does not scroll sideways | | |
 
+## 3r. Sitemap dates
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3r.1 | After the next deploy, `/sitemap-0.xml` has a `<lastmod>` on blog posts, tours, guides, attractions and on /blog, /tours, /guides and /agra, and none on pages with no real date (home, terms, privacy) | | |
+| 3r.2 | A blog post edited in the admin and then deployed shows its new date in the sitemap | | |
+| 3r.3 | Search Console, Sitemaps: the sitemap is read without errors | | |
+
 ## 3o. OpenAI Ads pixel
 
 | # | Check | Who | Result |
