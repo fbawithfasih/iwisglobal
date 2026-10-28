@@ -74,3 +74,46 @@ export async function loadBookingsAndTours(db: D1Like): Promise<{ bookings: Book
   const [bookings, tours] = await Promise.all([listBookings(db, {}), listTourTicketInfo(db)]);
   return { bookings, tours };
 }
+
+export interface OutlookDay { day: string; count: number; pax: number; toPrepare: number }
+
+/** The next `days` days (today first): how many live trips start each day, how many guests, and how many of those still need something. */
+export function outlook(rows: BookingRow[], today: string, ticketsNeeded: (b: BookingRow) => boolean, days = 14): OutlookDay[] {
+  const out: OutlookDay[] = Array.from({ length: days }, (_, i) => ({ day: new Date(Date.parse(`${today}T00:00:00Z`) + i * DAY).toISOString().slice(0, 10), count: 0, pax: 0, toPrepare: 0 }));
+  const byDay = new Map(out.map((d) => [d.day, d]));
+  for (const b of rows) {
+    if (b.status !== 'confirmed' && b.status !== AWAITING_STATUS) continue;
+    const d = byDay.get(b.travel_date);
+    if (!d) continue;
+    d.count += 1;
+    d.pax += b.travelers;
+    if (bookingReasons(b, today, ticketsNeeded(b)).length > 0 || !b.pickup_time || !b.guide_assigned || !b.driver_name) d.toPrepare += 1;
+  }
+  return out;
+}
+
+export interface StatusMix { confirmed: number; completed: number; awaiting: number; cancelled: number; total: number }
+
+export function statusMix(rows: BookingRow[]): StatusMix {
+  const m: StatusMix = { confirmed: 0, completed: 0, awaiting: 0, cancelled: 0, total: 0 };
+  for (const b of rows) {
+    const k = b.status === AWAITING_STATUS ? 'awaiting' : b.status === 'confirmed' || b.status === 'completed' || b.status === 'cancelled' ? b.status : null;
+    if (k) m[k] += 1;
+    m.total += 1;
+  }
+  return m;
+}
+
+/** "Today", "Tomorrow", "In 5 days", "3 days ago", with how near it is so the page can colour it. */
+export function whenLabel(travelDate: string, today: string): { text: string; tone: 'now' | 'soon' | 'later' | 'past' } {
+  const d = daysUntil(travelDate, today);
+  if (d === 0) return { text: 'Today', tone: 'now' };
+  if (d === 1) return { text: 'Tomorrow', tone: 'now' };
+  if (d > 1) return { text: `In ${d} days`, tone: d <= 7 ? 'soon' : 'later' };
+  return { text: d === -1 ? 'Yesterday' : `${-d} days ago`, tone: 'past' };
+}
+
+/** Bookings whose trip is on one day; anything that is not a real date leaves the list alone. */
+export function onDate(rows: BookingRow[], ymd: string): BookingRow[] {
+  return /^\d{4}-\d{2}-\d{2}$/.test(ymd) ? rows.filter((b) => b.travel_date === ymd) : rows;
+}
