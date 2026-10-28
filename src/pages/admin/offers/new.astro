@@ -5,6 +5,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { auditContext, recordAudit } from '../../../lib/audit';
 import OfferForm from '../../../components/OfferForm.astro';
 import { resolveEnv } from '../../../lib/env';
+import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { createOffer, parseOfferForm, type OfferInput } from '../../../lib/offers';
 import { listTours } from '../../../lib/tours';
@@ -28,6 +29,7 @@ if (Astro.request.method === 'POST') {
     try {
       await createOffer(db, parsed.input);
       await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'offer.create', resource: 'offer', summary: 'Created an offer or coupon' });
+      setFlash(Astro.cookies, 'created');
       return Astro.redirect('/admin/offers');
     } catch (err: any) {
       error = err?.message || 'Could not save the offer.';

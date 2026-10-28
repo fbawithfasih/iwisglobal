@@ -4,6 +4,7 @@ export const prerender = false;
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
+import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { LEAD_STAGES, CHANNELS, CHANNEL_LABELS } from '../../../lib/contacts';
 import { STAGE_LABELS } from '../../../lib/leadsAdmin';
@@ -35,10 +36,12 @@ if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   const action = String(form.get('_action') ?? '');
   const str = (k: string) => String(form.get(k) ?? '');
+  let saved = false; // set only by actions that change the campaign, so a no-op never says "Saved"
   const here = (extra = '') => Astro.redirect(`/admin/campaigns/${id}?lang=${lang}${extra}`);
   try {
     if (action === 'rename' && editable) {
       await db.prepare(`UPDATE campaigns SET name = ?, updated_at = ? WHERE id = ?`).bind(str('name').slice(0, 120), new Date().toISOString(), id).run();
+      saved = true;
     } else if (action === 'segment' && editable) {
       const split = (k: string) => str(k).split(',').map((s) => s.trim()).filter(Boolean);
       const seg = {
@@ -50,6 +53,7 @@ if (Astro.request.method === 'POST') {
         pastBooker: form.get('pastBooker') === 'on',
       };
       await db.prepare(`UPDATE campaigns SET segment_json = ?, updated_at = ? WHERE id = ?`).bind(JSON.stringify(seg), new Date().toISOString(), id).run();
+      saved = true;
     } else if (action === 'content' && editable) {
       const c: CampaignContent = {
         ...EMPTY_CONTENT(lang),
@@ -59,6 +63,7 @@ if (Astro.request.method === 'POST') {
         reviewed: lang === 'en' || form.get('reviewed') === 'on' ? 1 : 0,
       };
       await saveContent(db, id, c);
+      saved = true;
     } else if (action === 'translate' && editable) {
       const err = await translateContent(env, db, id, lang);
       return here(err ? `&notice=${encodeURIComponent(err)}` : '&notice=' + encodeURIComponent('Draft translation saved. Read it, fix anything, and tick "approved" when it is right.'));
@@ -78,14 +83,17 @@ if (Astro.request.method === 'POST') {
       const iso = when ? new Date(`${when}:00+05:30`) : null;
       if (iso && !Number.isNaN(iso.getTime()) && iso.getTime() > Date.now()) {
         await schedule(db, id, iso.toISOString());
+        saved = true;
         await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'campaign.schedule', resource: 'campaign', resourceId: id, summary: `Scheduled for ${iso.toISOString()}` });
       }
       else notice = 'Choose a time in the future.';
     } else if (action === 'unschedule') {
       await schedule(db, id, null);
+      saved = true;
       await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'campaign.unschedule', resource: 'campaign', resourceId: id, summary: 'Removed the schedule' });
     } else if (action === 'cancel') {
       await cancelCampaign(db, id);
+      saved = true;
       await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'campaign.cancel', resource: 'campaign', resourceId: id, summary: 'Cancelled the campaign' });
     } else if (action === 'next') {
       const r = await sendNextChunk(env, db, id);
@@ -96,7 +104,10 @@ if (Astro.request.method === 'POST') {
     console.error('campaign action failed', err instanceof Error ? err.message : 'error');
     notice = 'That did not work. Please try again.';
   }
-  if (problems.length === 0 && !notice) return here();
+  if (problems.length === 0 && !notice) {
+    if (saved) setFlash(Astro.cookies, 'saved');
+    return here();
+  }
   campaign = (await getCampaign(db, id)) ?? campaign;
 }
 

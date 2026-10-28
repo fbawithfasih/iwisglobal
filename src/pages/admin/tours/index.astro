@@ -6,6 +6,7 @@ import PageHeader from '../../../components/PageHeader.astro';
 import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
+import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { listTours, setTourStatus } from '../../../lib/tours';
 import { resolveFromPrice } from '../../../lib/currency';
@@ -23,6 +24,7 @@ if (Astro.request.method === 'POST' && db) {
   const status = String(form.get('status') ?? '') as 'published' | 'draft';
   if (id && (status === 'published' || status === 'draft')) {
     await setTourStatus(db, id, status);
+    setFlash(Astro.cookies, status === 'published' ? 'published' : 'unpublished');
   }
   return Astro.redirect('/admin/tours');
 }

@@ -6,6 +6,7 @@ import PageHeader from '../../../components/PageHeader.astro';
 import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
+import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { listBlogPosts, updateBlogPost, getBlogPostById, deleteBlogPost } from '../../../lib/blog';
 
@@ -23,6 +24,7 @@ if (Astro.request.method === 'POST' && db) {
 
   if (id && action === 'delete') {
     await deleteBlogPost(db, id);
+    setFlash(Astro.cookies, 'deleted');
   } else if (id) {
     const status = String(form.get('status') ?? '') as 'published' | 'draft';
     const existing = await getBlogPostById(db, id);
@@ -38,6 +40,7 @@ if (Astro.request.method === 'POST' && db) {
         imageIsIllustration: existing.imageIsIllustration,
         status,
       });
+      setFlash(Astro.cookies, status === 'published' ? 'published' : 'unpublished');
     }
   }
   return Astro.redirect('/admin/blog');

@@ -4,6 +4,7 @@ export const prerender = false;
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import PhoneInput from '../../../components/PhoneInput';
 import { resolveEnv } from '../../../lib/env';
+import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { insertManualBooking } from '../../../lib/crm';
 import { computeTotal } from '../../../lib/catalog';
@@ -63,6 +64,7 @@ if (Astro.request.method === 'POST' && db) {
       paymentType: 'full',
     });
 
+    setFlash(Astro.cookies, 'booking_created');
     return Astro.redirect(`/admin/bookings/${id}`);
   }
 }

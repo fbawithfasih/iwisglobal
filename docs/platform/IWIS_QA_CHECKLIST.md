@@ -103,6 +103,7 @@ Pre-checked on 28 Oct 2026 by a scripted keyboard run in a real browser (3f.1 to
 | 3g.3 | Lead page (stage, note, follow-up, take, assign, done) and WhatsApp (send reply, template, take over, hand over, give back, discard): the same short message | | |
 | 3g.4 | A failed action shows its error, never "Saved" | | |
 | 3g.5 | The booking page does not scroll sideways on a phone (the Driver box fits the screen) | | |
+| 3g.6 | Same message on the other pages: create or publish/unpublish a tour, blog post, offer or highlight ("Created", "Published", "Saved", "Deleted"); add a lead or take one on Leads; create a manual booking; approve or hide a review; create a campaign and save its name, audience or wording. Nothing shows when a form is refused or nothing changed | | |
 
 ## 4. Bookings
 

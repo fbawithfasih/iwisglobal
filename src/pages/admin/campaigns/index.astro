@@ -6,6 +6,7 @@ import PageHeader from '../../../components/PageHeader.astro';
 import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
+import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { createCampaign, type CampaignRow } from '../../../lib/campaigns';
 import { formatDateTimeIst } from '../../../lib/format';
@@ -21,6 +22,7 @@ if (Astro.request.method === 'POST' && db) {
   const form = await Astro.request.formData();
   if (String(form.get('_action') ?? '') === 'create') {
     const id = await createCampaign(db, String(form.get('name') ?? '').trim(), 'admin');
+    setFlash(Astro.cookies, 'campaign_created');
     return Astro.redirect(`/admin/campaigns/${id}`);
   }
   return Astro.redirect('/admin/campaigns');

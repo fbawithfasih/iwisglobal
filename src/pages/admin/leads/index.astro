@@ -3,6 +3,7 @@ export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
+import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { recordLead, scoreBucket, CHANNELS, CHANNEL_LABELS, LEAD_STAGES, type Channel } from '../../../lib/contacts';
 import { VIEWS, STAGE_LABELS, listLeadsView, ownerLabel, takeLead, viewCounts, waitingLabel, waitingTooLong, type ViewKey } from '../../../lib/leadsAdmin';
@@ -26,6 +27,7 @@ if (Astro.request.method === 'POST' && db) {
   const form = await Astro.request.formData();
   if (String(form.get('_action') ?? '') === 'take') {
     await takeLead(db, String(form.get('id') ?? ''), me).catch(() => null);
+    setFlash(Astro.cookies, 'taken');
     return Astro.redirect(safeBack(form.get('back')));
   }
   if (String(form.get('_action') ?? '') === 'add') {
@@ -50,6 +52,7 @@ if (Astro.request.method === 'POST' && db) {
       });
       // Someone who adds a lead from a call or a visit is the one handling it.
       await takeLead(db, res.leadId, me).catch(() => null);
+      setFlash(Astro.cookies, 'lead_added');
       return Astro.redirect(`/admin/leads/${res.leadId}`);
     }
   }

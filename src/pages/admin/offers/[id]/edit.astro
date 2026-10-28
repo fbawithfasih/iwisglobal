@@ -5,6 +5,7 @@ import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import { auditContext, recordAudit } from '../../../../lib/audit';
 import OfferForm from '../../../../components/OfferForm.astro';
 import { resolveEnv } from '../../../../lib/env';
+import { setFlash } from '../../../../lib/flash';
 import { isAdminAuthenticated } from '../../../../lib/requireAdmin';
 import { getOffer, updateOffer, deleteOffer, parseOfferForm, type OfferInput } from '../../../../lib/offers';
 import { listTours } from '../../../../lib/tours';
@@ -26,6 +27,7 @@ if (Astro.request.method === 'POST') {
     // Bookings keep their own copy of the offer name and amount saved.
     await deleteOffer(db, id);
     await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'offer.delete', resource: 'offer', resourceId: id, summary: 'Deleted an offer or coupon' });
+    setFlash(Astro.cookies, 'deleted');
     return Astro.redirect('/admin/offers');
   }
   const parsed = parseOfferForm(form);
@@ -36,6 +38,7 @@ if (Astro.request.method === 'POST') {
     try {
       await updateOffer(db, id, parsed.input);
       await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: 'offer.update', resource: 'offer', resourceId: id, summary: 'Changed an offer or coupon' });
+      setFlash(Astro.cookies, 'saved');
       return Astro.redirect('/admin/offers');
     } catch (err: any) {
       error = err?.message || 'Could not save the offer.';
