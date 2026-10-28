@@ -5,7 +5,6 @@
 export const prerender = false;
 
 import EmptyState from '../../../components/EmptyState.astro';
-import PageHeader from '../../../components/PageHeader.astro';
 import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { canDo } from '../../../lib/authz';
@@ -18,6 +17,7 @@ import { syncHotelContent } from '../../../lib/hotelContent';
 import { checkHotelSettingsForm } from '../../../lib/hotelAdminForm';
 import { cancelHotelBookingAndRefund, previewHotelRefund, STUCK_PAID_MS, isTestPayment } from '../../../lib/hotelPayment';
 import { formatDateTimeIst, formatMoneyMinor } from '../../../lib/format';
+import { setupChecklist, refreshFreshness, bookingMix, type RefreshState } from '../../../lib/hotelsAdmin';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
@@ -116,18 +116,110 @@ const note = Astro.url.searchParams.get('note');
 const btn = 'min-h-11 rounded px-4 text-sm font-medium';
 const field = 'w-full min-h-11 rounded border border-violet-200 bg-white px-2 py-1.5 text-sm';
 const label = 'block text-xs text-stone-500 mb-1';
+
+// The pictures at the top: what is left before it can go live, how fresh the loaded content is, how the paid bookings stand.
+const checklist = settings ? setupChecklist({ enabled: settings.enabled, markupPercent: settings.markupPercent, fxEurInr: settings.fxEurInr, fxEurUsd: settings.fxEurUsd, hotelCount, keysConfigured }) : [];
+const stepsDone = checklist.filter((i) => i.done).length;
+const fresh = refreshFreshness(sync?.last_run ?? null, sync?.last_error ?? null, nowMs);
+const mix = bookingMix(bookings.map((b) => ({ status: b.status, stuck: bookingView(b).stuck })));
+const refundsDue = bookings.filter((b) => bookingView(b).refundDue).length;
+const needYou = mix.stuck + refundsDue;
+const freshText: Record<RefreshState, string> = { never: 'Never loaded', error: 'Last refresh failed', fresh: 'Up to date', soon: 'Refresh soon', old: 'Out of date' };
+const freshClass: Record<RefreshState, string> = { never: 'badge-danger', error: 'badge-danger', fresh: 'badge-success', soon: 'badge-warn', old: 'badge-danger' };
+const freshBar: Record<RefreshState, string> = { never: 'bg-rose-500', error: 'bg-rose-500', fresh: 'bg-emerald-500', soon: 'bg-orange-400', old: 'bg-rose-500' };
+const mixParts = [
+  { label: 'Booked', n: mix.booked, bar: 'bg-emerald-500' },
+  { label: 'Cancelled', n: mix.cancelled, bar: 'bg-stone-400' },
+  { label: 'Paid, waiting', n: mix.waiting, bar: 'bg-sky-500' },
+  { label: 'Paid, stuck', n: mix.stuck, bar: 'bg-orange-400' },
+  { label: 'Failed', n: mix.failed, bar: 'bg-rose-500' },
+];
 ---
 <AdminLayout title="Hotels">
-  <PageHeader title="Hotels" class="mb-2" />
-  <p class="text-stone-500 text-sm mb-1">
-    Settings for the hotel booking page. Guests see nothing until you switch it on below.
-  </p>
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">Hotels</h1>
+      <p class="text-sm text-stone-600">Settings for the hotel booking page. Guests see nothing until you switch it on below.</p>
+    </div>
+    {settings && <p class={`rounded-full px-4 py-1.5 text-sm font-medium ${settings.enabled ? 'badge-success' : 'badge-warn'}`} role="status">{settings.enabled ? '✓ Live for guests' : 'Off: guests do not see it'}</p>}
+  </div>
   {error && <p class="notice notice-danger my-3" role="alert">{error}</p>}
-  {note && <p class="my-3 rounded-xl bg-green-50 p-3 text-sm text-green-800" role="status">{note}</p>}
+  {note && <p class="notice notice-success my-3" role="status">{note}</p>}
 
   {settings && (
     <>
-      <section class="mt-6 rounded-xl border border-violet-100 bg-white p-4">
+      <section aria-label="At a glance" class="mt-2">
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <a href="#switch" class={`block rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${settings.enabled ? 'tint-success' : stepsDone >= checklist.length - 1 ? 'tint-info' : 'tint-warn'}`}>
+            <span class="block text-4xl font-semibold leading-none text-stone-900">{settings.enabled ? 'On' : 'Off'}</span>
+            <span class="mt-2 block font-medium text-stone-800">Switch</span>
+            <span class="block text-xs text-stone-600">{settings.enabled ? '✓ The /hotels page is public.' : `${stepsDone} of ${checklist.length} steps done before it can go live.`}</span>
+          </a>
+          <a href="#content" class={`block rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${fresh.state === 'fresh' ? 'tint-success' : fresh.state === 'soon' ? 'tint-warn' : 'tint-danger'}`}>
+            <span class="block text-4xl font-semibold leading-none text-stone-900">{hotelCount}</span>
+            <span class="mt-2 block font-medium text-stone-800">Hotels loaded</span>
+            <span class="block text-xs text-stone-600">{freshText[fresh.state]}{fresh.days !== null ? ` · ${fresh.days === 0 ? 'today' : `${fresh.days} d ago`}` : ''}</span>
+          </a>
+          <a href="#bookings" class="block rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md tint-brand">
+            <span class="block text-4xl font-semibold leading-none text-stone-900">{mix.booked}</span>
+            <span class="mt-2 block font-medium text-stone-800">Hotel bookings</span>
+            <span class="block text-xs text-stone-600">{mix.total} paid in all, {mix.cancelled} cancelled.</span>
+          </a>
+          <a href="#bookings" class={`block rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${needYou ? 'tint-danger' : 'tint-success'}`}>
+            <span class="block text-4xl font-semibold leading-none text-stone-900">{needYou}</span>
+            <span class="mt-2 block font-medium text-stone-800">Need you</span>
+            <span class="block text-xs text-stone-600">{needYou ? 'Paid but not confirmed, or failed with no refund recorded.' : '✓ No stuck payments or refunds due.'}</span>
+          </a>
+        </div>
+      </section>
+
+      <div class="mt-6 grid items-start gap-4 lg:grid-cols-3">
+        <section aria-labelledby="setup" class="rounded-xl border border-violet-100 bg-white p-4">
+          <h2 id="setup" class="mb-1 text-lg font-semibold">Before it can go live</h2>
+          <div class="mb-3 flex items-center gap-2">
+            <span class="flex flex-1 gap-1" role="img" aria-label={`${stepsDone} of ${checklist.length} steps done`}>
+              {checklist.map((i) => <span class={`h-1.5 flex-1 rounded-full ${i.done ? 'bg-emerald-500' : 'bg-stone-200'}`}></span>)}
+            </span>
+            <span class="text-xs font-medium text-stone-700">{stepsDone} of {checklist.length}</span>
+          </div>
+          <ul class="space-y-2 text-sm">
+            {checklist.map((i) => (
+              <li class="flex gap-2">
+                <span class={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold ${i.done ? 'badge-success' : 'badge-warn'}`} aria-hidden="true">{i.done ? '✓' : '!'}</span>
+                <span><span class={i.done ? 'text-stone-700' : 'font-medium text-stone-900'}>{i.label}</span><span class="sr-only">{i.done ? ', done' : ', still to do'}</span>{!i.done && <span class="block text-xs text-stone-600">{i.hint}</span>}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section id="content" aria-labelledby="freshPic" class="scroll-mt-4 rounded-xl border border-violet-100 bg-white p-4">
+          <h2 id="freshPic" class="mb-1 text-lg font-semibold">Hotel content</h2>
+          <p class="mb-3 text-xs text-stone-600">Names, photos and facilities loaded from Hotelbeds. The bar fills over 30 days.</p>
+          <p class="flex items-center justify-between text-sm"><span class="text-stone-800">{hotelCount} hotels</span><span class={`${freshClass[fresh.state]} rounded-full px-2 py-0.5 text-[11px] font-medium`}>{freshText[fresh.state]}</span></p>
+          <span class="mt-1 block h-2.5 rounded-full bg-stone-100" aria-hidden="true"><span class={`block h-full rounded-full ${freshBar[fresh.state]}`} style={`width:${fresh.days === null ? 100 : Math.max(4, Math.min(100, Math.round((fresh.days / 30) * 100)))}%`}></span></span>
+          <p class="mt-2 text-xs text-stone-700">Last refresh: {sync?.last_run ? formatDateTimeIst(sync.last_run) : 'never'}{sync?.last_count != null ? ` · ${sync.last_count} loaded` : ''}</p>
+          {sync?.last_error && <p class="mt-2 rounded-lg tint-danger border px-3 py-2 text-xs text-stone-900" role="alert">Last refresh error: {sync.last_error}</p>}
+        </section>
+
+        <section aria-labelledby="mixPic" class="rounded-xl border border-violet-100 bg-white p-4">
+          <h2 id="mixPic" class="mb-1 text-lg font-semibold">Hotel bookings by status</h2>
+          <p class="mb-3 text-xs text-stone-600">Bookings that got past checkout, newest {bookings.length} shown.</p>
+          {mix.total === 0 ? (
+            <p class="text-sm text-stone-700">No hotel bookings yet.</p>
+          ) : (
+            <>
+              <div class="flex h-4 w-full gap-0.5 overflow-hidden rounded-full" role="img" aria-label={mixParts.map((p) => `${p.label} ${p.n}`).join(', ')}>
+                {mixParts.filter((p) => p.n > 0).map((p) => <span class={`${p.bar} block`} style={`flex:${p.n} 1 0`}></span>)}
+              </div>
+              <ul class="mt-3 space-y-1.5 text-sm">
+                {mixParts.map((p) => <li class="flex items-center justify-between"><span class="inline-flex items-center gap-2"><span class={`h-2.5 w-2.5 rounded-sm ${p.bar}`}></span>{p.label}</span><span class="font-semibold text-stone-900">{p.n}</span></li>)}
+              </ul>
+            </>
+          )}
+        </section>
+      </div>
+
+      <section id="switch" class="mt-6 scroll-mt-4 rounded-xl border border-violet-100 bg-white p-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="text-lg font-semibold">
@@ -145,9 +237,9 @@ const label = 'block text-xs text-stone-500 mb-1';
         </div>
       </section>
 
-      <section class="mt-6 rounded-xl border border-violet-100 bg-white p-4">
-        <h2 class="text-lg font-semibold mb-2">Summary</h2>
-        <dl class="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+      <details class="mt-6 rounded-xl border border-violet-100 bg-white p-4">
+        <summary class="cursor-pointer text-lg font-semibold">Technical details</summary>
+        <dl class="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
           <div class="flex gap-2"><dt class="text-stone-500">Destination code</dt><dd>{settings.destinationCode}</dd></div>
           <div class="flex gap-2"><dt class="text-stone-500">Contract currency</dt><dd>{settings.contractCurrency}</dd></div>
           <div class="flex gap-2"><dt class="text-stone-500">Hotels loaded</dt><dd>{hotelCount}</dd></div>
@@ -158,7 +250,7 @@ const label = 'block text-xs text-stone-500 mb-1';
           <div class="flex gap-2"><dt class="text-stone-500">Hotelbeds secret</dt><dd>{secretState}</dd></div>
           <div class="flex gap-2"><dt class="text-stone-500">Hotelbeds server</dt><dd>{apiHost}</dd></div>
         </dl>
-      </section>
+      </details>
 
       <section class="mt-6 rounded-xl border border-violet-100 bg-white p-4">
         <h2 class="text-lg font-semibold">Test a booking</h2>
@@ -166,7 +258,7 @@ const label = 'block text-xs text-stone-500 mb-1';
         <a href="/admin/hotels/preview" class={`${btn} inline-flex items-center btn-primary text-white`}>Open the test search</a>
       </section>
 
-      <section class="mt-6 rounded-xl border border-violet-100 bg-white p-4">
+      <section id="bookings" class="mt-6 scroll-mt-4 rounded-xl border border-violet-100 bg-white p-4">
         <h2 class="text-lg font-semibold mb-2">Hotel bookings</h2>
         {bookings.length === 0 && <EmptyState message="No hotel bookings yet" hint="Bookings made on the hotel pages appear here." />}
         {bookings.length > 0 && (
@@ -177,9 +269,9 @@ const label = 'block text-xs text-stone-500 mb-1';
                 {bookings.map((b) => {
                   const v = bookingView(b);
                   return (
-                    <tr class={`border-t border-stone-100 align-top ${v.flagged ? 'bg-red-50' : ''}`}>
+                    <tr class={`border-t border-stone-100 align-top ${v.flagged ? 'bg-rose-50' : ''}`}>
                       <td class="py-2 pr-3"><StatusBadge tone={b.status === 'booked' ? 'ok' : b.status === 'cancelled' ? 'muted' : 'danger'}>{v.stuck ? 'paid, stuck' : b.status}</StatusBadge></td>
-                      <td class="pr-3">{v.hotel}{isTestPayment(b.payment_id) && <span class="ml-2 rounded bg-brand-100 px-1.5 py-0.5 text-xs font-medium text-amber-900">TEST, no payment</span>}<p class="text-xs text-stone-500">{b.hb_reference || 'no Hotelbeds reference'}</p></td>
+                      <td class="pr-3">{v.hotel}{isTestPayment(b.payment_id) && <span class="badge-warn ml-2 rounded px-1.5 py-0.5 text-xs font-medium">TEST, no payment</span>}<p class="text-xs text-stone-500">{b.hb_reference || 'no Hotelbeds reference'}</p></td>
                       <td class="pr-3 whitespace-nowrap">{v.dates}<p class="text-xs text-stone-500">{formatDateTimeIst(b.created_at)}</p></td>
                       <td class="pr-3">{b.holder_name}<p class="text-xs text-stone-500">{b.email}</p></td>
                       <td class="pr-3 text-right whitespace-nowrap">{money(b.sell_total, b.currency)}</td>
