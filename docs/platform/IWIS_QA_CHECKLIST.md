@@ -177,6 +177,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3r.2 | A blog post edited in the admin and then deployed shows its new date in the sitemap | | |
 | 3r.3 | Search Console, Sitemaps: the sitemap is read without errors | | |
 
+## 3s. Reviews as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3s.1 | Reviews: four tiles: To check (orange, with how long the oldest has waited; green with a tick when none), On the website (with how many are hidden), Average rating (approved reviews only), Ready to ask (orange when trips are over 14 days old) | | |
+| 3s.2 | "How guests rate us": five bars (5 stars down to 1) with the count in numbers; hover or focus shows "N stars: X reviews"; the counts add up to the approved reviews | | |
+| 3s.3 | Review cards: stars, status label, guest, tour, trip date, comment; Approve and Hide still work (asks nothing, shows the green message) | | |
+| 3s.4 | "Ask for a review": each trip shows "Trip was N days ago" (orange after 14 days); Email, WhatsApp and Skip still work; an email result shows a green or red message | | |
+| 3s.5 | 320 px: no sideways scroll; every bar and button reachable by keyboard | | |
+
 ## 3o. OpenAI Ads pixel
 
 | # | Check | Who | Result |
