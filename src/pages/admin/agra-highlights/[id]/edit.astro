@@ -3,6 +3,7 @@ export const prerender = false;
 
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../../lib/env';
+import { setFlash } from '../../../../lib/flash';
 import { isAdminAuthenticated } from '../../../../lib/requireAdmin';
 import { getAgraHighlightById, updateAgraHighlight, deleteAgraHighlight } from '../../../../lib/agraHighlights';
 import { uploadAgraHighlightImage } from '../../../../lib/images';
@@ -23,6 +24,7 @@ if (Astro.request.method === 'POST') {
 
   if (form.get('_action') === 'delete') {
     await deleteAgraHighlight(db, id);
+    setFlash(Astro.cookies, 'deleted');
     return Astro.redirect('/admin/agra-highlights');
   }
 
@@ -49,6 +51,7 @@ if (Astro.request.method === 'POST') {
         image,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
       });
+      setFlash(Astro.cookies, 'saved');
       return Astro.redirect('/admin/agra-highlights');
     } catch (err: any) {
       error = err?.message || 'Failed to update item.';

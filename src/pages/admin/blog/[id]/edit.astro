@@ -3,6 +3,7 @@ export const prerender = false;
 
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../../lib/env';
+import { setFlash } from '../../../../lib/flash';
 import { isAdminAuthenticated } from '../../../../lib/requireAdmin';
 import { getBlogPostById, updateBlogPost, deleteBlogPost, type BlogCategory, type BlogStatus } from '../../../../lib/blog';
 import { uploadBlogImage } from '../../../../lib/images';
@@ -23,6 +24,7 @@ if (Astro.request.method === 'POST') {
 
   if (form.get('_action') === 'delete') {
     await deleteBlogPost(db, id);
+    setFlash(Astro.cookies, 'deleted');
     return Astro.redirect('/admin/blog');
   }
 
@@ -52,6 +54,7 @@ if (Astro.request.method === 'POST') {
 
       const imageIsIllustration = form.get('imageIsIllustration') === 'on';
       await updateBlogPost(db, id, { title, description, body, category, authorName, image, imageThumb, imageIsIllustration, status });
+      setFlash(Astro.cookies, 'saved');
       return Astro.redirect('/admin/blog');
     } catch (err: any) {
       error = err?.message || 'Failed to update post.';

@@ -3,6 +3,7 @@ export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
+import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { createAgraHighlight, listAgraHighlights } from '../../../lib/agraHighlights';
 import { uploadAgraHighlightImage } from '../../../lib/images';
@@ -39,6 +40,7 @@ if (Astro.request.method === 'POST' && db) {
         image,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
       });
+      setFlash(Astro.cookies, 'created');
       return Astro.redirect('/admin/agra-highlights');
     } catch (err: any) {
       error = err?.message || 'Failed to create item.';

@@ -10,6 +10,7 @@ import PageHeader from '../../../components/PageHeader.astro';
 import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
+import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { getBookingById, listReviewCandidates, markReviewRequested } from '../../../lib/crm';
 import { listTours } from '../../../lib/tours';
@@ -37,7 +38,9 @@ if (Astro.request.method === 'POST' && db) {
   const form = await Astro.request.formData();
   const action = String(form.get('_action') ?? '');
   if (action === 'status') {
-    await setReviewStatus(db, String(form.get('reviewId') ?? ''), String(form.get('status') ?? ''));
+    const next = String(form.get('status') ?? '');
+    await setReviewStatus(db, String(form.get('reviewId') ?? ''), next);
+    setFlash(Astro.cookies, next === 'approved' ? 'approved' : next === 'hidden' ? 'hidden' : 'status');
     return Astro.redirect('/admin/reviews');
   }
   const booking = await getBookingById(db, String(form.get('bookingId') ?? ''));
@@ -53,7 +56,10 @@ if (Astro.request.method === 'POST' && db) {
     }
   }
   // "Skip": take it off the list without asking.
-  if (action === 'skip') await markReviewRequested(db, booking.id);
+  if (action === 'skip') {
+    await markReviewRequested(db, booking.id);
+    setFlash(Astro.cookies, 'saved');
+  }
   return Astro.redirect('/admin/reviews');
 }
 

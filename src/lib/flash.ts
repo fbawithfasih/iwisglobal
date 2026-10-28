@@ -21,6 +21,15 @@ export const FLASH_MESSAGES = {
   handed_over: 'Chat handed over',
   given_back: 'Given back to the agent',
   discarded: 'Draft discarded',
+  created: 'Created',
+  deleted: 'Deleted',
+  published: 'Published',
+  unpublished: 'Unpublished',
+  approved: 'Review approved',
+  hidden: 'Review hidden',
+  booking_created: 'Booking created',
+  campaign_created: 'Campaign created',
+  lead_added: 'Lead added',
 } as const;
 
 export type FlashKey = keyof typeof FLASH_MESSAGES;

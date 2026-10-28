@@ -63,7 +63,7 @@ team member keep their own typed-word field because the server checks that word.
 
 ## 5b. Confirmation after a save
 
-A handler that finished an action calls `setFlash(Astro.cookies, 'saved')` (keys in `src/lib/flash.ts`) just before it redirects; the layout shows that fixed message once as a live region ("Saved", "Message sent"), hides it after about 5 seconds, and a refresh does not show it again. Only set it when the action really succeeded; an error keeps using the page's own error message. Add a new message to `FLASH_MESSAGES` rather than passing free text.
+A handler that finished an action calls `setFlash(Astro.cookies, 'saved')` (keys in `src/lib/flash.ts`) just before it redirects; the layout shows that fixed message once as a live region ("Saved", "Message sent"), hides it after about 5 seconds, and a refresh does not show it again. Only set it when the action really succeeded; an error keeps using the page's own error message. Add a new message to `FLASH_MESSAGES` rather than passing free text. Pages that already show their own in-page result (Hotels, Custom trips, Team, WhatsApp auto-reply settings, Knowledge) keep it and do not also set a flash.
 
 ## 6. Keyboard and screen readers
 

@@ -3,6 +3,7 @@ export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
+import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { createBlogPost, type BlogCategory, type BlogStatus } from '../../../lib/blog';
 import { uploadBlogImage } from '../../../lib/images';
@@ -41,6 +42,7 @@ if (Astro.request.method === 'POST' && db) {
 
       const imageIsIllustration = form.get('imageIsIllustration') === 'on';
       await createBlogPost(db, { title, description, body, category, authorName, image, imageThumb, imageIsIllustration, status });
+      setFlash(Astro.cookies, 'created');
       return Astro.redirect('/admin/blog');
     } catch (err: any) {
       error = err?.message || 'Failed to create post.';
