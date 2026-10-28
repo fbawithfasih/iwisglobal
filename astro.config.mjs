@@ -5,6 +5,7 @@ import sitemap from '@astrojs/sitemap';
 import cloudflare from '@astrojs/cloudflare';
 import { readdirSync, readFileSync } from 'node:fs';
 import { LOCALIZED_STATIC, LOCALE_PREFIXES, localizedPath } from './src/lib/localizedPaths.mjs';
+import { toLastmod, frontmatterDate, newest, lastmodFor } from './src/lib/sitemapLastmod.mjs';
 
 // @astrojs/sitemap only lists routes it can enumerate without running the
 // app — a dynamic route like /guides/[slug] never appears automatically.
@@ -82,18 +83,34 @@ async function queryD1(sql) {
 // Shared by tours and blog_posts — both are D1-backed with the same
 // id/slug/status shape. Live sitemaps once shipped with zero tour/blog URLs
 // unnoticed, so an empty result is reported too.
+// Also returns each row's updated_at by slug, for the sitemap's <lastmod>.
 async function fetchD1Slugs(sql) {
   const rows = await queryD1(sql);
-  if (!rows) return [];
+  if (!rows) return { slugs: [], dates: new Map() };
   const slugs = rows.map((r) => r.slug).filter(Boolean);
   if (slugs.length === 0) console.error(`::error::Sitemap D1 slug query returned no published slugs (${sql})`);
-  return slugs;
+  return { slugs, dates: new Map(rows.filter((r) => r.slug).map((r) => [r.slug, toLastmod(r.updated_at)])) };
 }
 
-const tourSlugs = await fetchD1Slugs("SELECT slug FROM tours WHERE status = 'published'");
+const tours = await fetchD1Slugs("SELECT slug, updated_at FROM tours WHERE status = 'published'");
+const tourSlugs = tours.slugs;
 // /blog/[slug] posts are D1-backed too (schema_blog_posts.sql) — same gap,
 // same fix as tours.
-const blogSlugs = await fetchD1Slugs("SELECT slug FROM blog_posts WHERE status = 'published'");
+const blogs = await fetchD1Slugs("SELECT slug, updated_at FROM blog_posts WHERE status = 'published'");
+const blogSlugs = blogs.slugs;
+
+// <lastmod> for the sitemap, only where the site has a real date (see src/lib/sitemapLastmod.mjs): blog posts and tours from
+// updated_at, guides and attractions from their markdown dateModified, and each list page from its newest entry.
+const markdownDates = (dir, slugs) =>
+  new Map(slugs.map((s) => [s, toLastmod(frontmatterDate(readFileSync(new URL(`./src/content/${dir}/${s}.md`, import.meta.url), 'utf8')))]));
+const guideDates = markdownDates('guides', guideSlugs);
+const attractionDates = markdownDates('attractions', attractionSlugs);
+const lastmodDates = new Map();
+for (const [prefix, dates] of [['/tours', tours.dates], ['/blog', blogs.dates], ['/guides', guideDates], ['/agra', attractionDates]]) {
+  for (const [slug, d] of dates) if (d) lastmodDates.set(`${prefix}/${slug}`, d);
+  const latest = newest([...dates.values()]);
+  if (latest) lastmodDates.set(prefix, latest);
+}
 // /reviews is indexable once a review is approved (it's noindex while empty),
 // so it's in the sitemap only then. Checked at each build, like the slugs.
 const reviewsRows = await queryD1("SELECT 1 AS found FROM tour_reviews WHERE status = 'approved' LIMIT 1");
@@ -115,7 +132,11 @@ export default defineConfig({
         !/^https:\/\/www\.iwisglobal\.com\/(admin|account|auth|login|signup|forgot-password|reset-password|booking|review)(\/|$)/.test(page) &&
         (hasApprovedReviews || !/^https:\/\/www\.iwisglobal\.com\/((es|fr|de)\/)?reviews(\/|$)/.test(page)),
       // Match src/middleware.ts, which 301s trailing-slash paths to bare ones.
-      serialize: (item) => ({ ...item, url: item.url.replace(/(?<=\.com\/.+)\/$/, '') }),
+      serialize: (item) => {
+        const url = item.url.replace(/(?<=\.com\/.+)\/$/, '');
+        const lastmod = lastmodFor(url, lastmodDates);
+        return { ...item, url, ...(lastmod ? { lastmod } : {}) };
+      },
       // Every language version of every page: the English URL plus /es, /fr, /de.
       i18n: { defaultLocale: 'en', locales: { en: 'en', es: 'es', fr: 'fr', de: 'de' } },
       customPages: [
