@@ -6,7 +6,6 @@
 export const prerender = false;
 
 import EmptyState from '../../../components/EmptyState.astro';
-import PageHeader from '../../../components/PageHeader.astro';
 import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
@@ -16,6 +15,8 @@ import { getBookingById, listReviewCandidates, markReviewRequested } from '../..
 import { listTours } from '../../../lib/tours';
 import { formatTravelDate, formatDateTimeIst } from '../../../lib/format';
 import { waHref } from '../../../lib/contact';
+import { todayIst } from '../../../lib/availability';
+import { ratingCounts, reviewSummary, askMix, daysSinceTrip, tripAgeLabel, barWidth, ASK_OVERDUE_DAYS } from '../../../lib/reviewsAdmin';
 import {
   listReviews,
   setReviewStatus,
@@ -67,33 +68,79 @@ const reviews = db ? await listReviews(db) : [];
 const candidates = db ? await listReviewCandidates(db) : [];
 const tourNames = new Map((db ? await listTours(db) : []).map((t) => [t.id, t.title]));
 const sent = Astro.url.searchParams.get('sent');
-const pendingCount = reviews.filter((r) => r.status === 'pending').length;
 const statusTone = { pending: 'warn', approved: 'ok', hidden: 'muted' } as const;
+const edge = { pending: 'border-l-orange-400', approved: 'border-l-emerald-500', hidden: 'border-l-stone-300' } as const;
 const btn = 'min-h-11 rounded px-4 text-sm font-medium';
+
+// The pictures at the top. Counts and ratings only.
+const today = todayIst();
+const sum = reviewSummary(reviews, Date.now());
+const counts = ratingCounts(reviews);
+const countsMax = Math.max(1, ...counts);
+const ask = askMix(candidates.map((b) => ({ travelDate: b.travel_date })), today);
+const tiles = [
+  { label: 'To check', n: sum.pending, hint: sum.pending ? `Oldest has waited ${sum.oldestPendingDays ?? 0} ${sum.oldestPendingDays === 1 ? 'day' : 'days'}.` : '✓ Nothing waiting for you.', tone: sum.pending ? 'warn' : 'success' },
+  { label: 'On the website', n: sum.approved, hint: sum.hidden ? `${sum.hidden} hidden.` : 'Approved reviews guests can read.', tone: 'success' },
+  { label: 'Average rating', n: sum.average === null ? '–' : sum.average.toFixed(1), hint: sum.average === null ? 'No approved reviews yet.' : 'Of the approved reviews, out of 5.', tone: 'brand' },
+  { label: 'Ready to ask', n: ask.total, hint: ask.total ? (ask.overdue ? `${ask.overdue} trips are over ${ASK_OVERDUE_DAYS} days old: ask soon.` : 'Finished trips nobody has asked yet.') : '✓ Everyone has been asked.', tone: ask.overdue ? 'warn' : ask.total ? 'info' : 'success' },
+] as const;
 ---
 <AdminLayout title="Reviews">
-  <PageHeader title="Reviews" class="mb-2" />
+  <div class="mb-5">
+    <h1 class="text-2xl font-semibold">Reviews</h1>
+    <p class="text-sm text-stone-600">{sum.total} {sum.total === 1 ? 'review' : 'reviews'}{sum.pending ? ` · ${sum.pending} to check` : ''}{ask.total ? ` · ${ask.total} ready to ask` : ''}</p>
+  </div>
   {sent && REVIEW_REQUEST_MESSAGES[sent] && (
-    <p class={`mb-4 ${REVIEW_REQUEST_MESSAGES[sent].ok ? 'text-green-700' : 'text-red-600'}`}>{REVIEW_REQUEST_MESSAGES[sent].text}</p>
+    <p class={`notice mb-4 ${REVIEW_REQUEST_MESSAGES[sent].ok ? 'notice-success' : 'notice-danger'}`} role={REVIEW_REQUEST_MESSAGES[sent].ok ? 'status' : 'alert'}>{REVIEW_REQUEST_MESSAGES[sent].text}</p>
   )}
 
-  <h2 class="text-lg font-semibold mt-6 mb-1">Guest reviews {pendingCount > 0 && <StatusBadge tone="warn" class="ml-1">{pendingCount} to check</StatusBadge>}</h2>
-  <p class="text-stone-500 text-sm mb-4">
+  <section aria-label="Overview" class="mb-6">
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {tiles.map((t) => (
+        <div class={`rounded-xl border p-4 tint-${t.tone}`}>
+          <span class="block text-4xl font-semibold leading-none text-stone-900">{t.n}</span>
+          <span class="mt-2 block font-medium text-stone-800">{t.label}</span>
+          <span class="block text-xs text-stone-600">{t.hint}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  {sum.approved > 0 && (
+    <section aria-labelledby="stars" class="mb-6 rounded-xl border border-violet-100 bg-white p-4">
+      <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="stars" class="text-lg font-semibold">How guests rate us</h2>
+        <p class="text-sm text-stone-600">The {sum.approved} approved {sum.approved === 1 ? 'review' : 'reviews'} on the website.</p>
+      </div>
+      <ul class="space-y-2">
+        {[5, 4, 3, 2, 1].map((star) => (
+          <li class="flex items-center gap-3 text-sm" data-tip={`${star} ${star === 1 ? 'star' : 'stars'}: ${counts[star - 1]} ${counts[star - 1] === 1 ? 'review' : 'reviews'}`} tabindex="0">
+            <span class="w-14 shrink-0 text-stone-700"><span aria-hidden="true" class="text-amber-500">★</span> {star} <span class="sr-only">{star === 1 ? 'star' : 'stars'}</span></span>
+            <span class="block h-2.5 flex-1 rounded-full bg-stone-100" aria-hidden="true"><span class="block h-full rounded-full bg-violet-500" style={`width:${barWidth(counts[star - 1], countsMax)}%`}></span></span>
+            <span class="w-8 shrink-0 text-right font-semibold text-stone-900">{counts[star - 1]}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <h2 class="text-lg font-semibold mt-6 mb-1">Guest reviews {sum.pending > 0 && <StatusBadge tone="warn" class="ml-1">{sum.pending} to check</StatusBadge>}</h2>
+  <p class="mb-4 max-w-3xl text-sm text-stone-600">
     Approved reviews show on the tour page and on /reviews. Approve every genuine review, good or bad. Hide only
     abuse, personal details, or text that isn't about the tour.
   </p>
   {reviews.length === 0 ? (
     <EmptyState class="mb-10" message="No guest reviews yet" hint="Reviews guests send appear here for you to check before they show on the site." />
   ) : (
-    <ul class="space-y-3 mb-10">
+    <ul class="mb-10 grid gap-3 lg:grid-cols-2">
       {reviews.map((r) => (
-        <li class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
+        <li class={`rounded-xl border border-l-4 border-violet-100 bg-white p-4 text-sm ${edge[r.status as keyof typeof edge] ?? 'border-l-stone-300'}`}>
           <div class="flex flex-wrap items-center justify-between gap-2">
             <p class="text-lg text-amber-500" role="img" aria-label={`${r.rating} out of 5`}>{'★'.repeat(r.rating)}<span class="text-stone-300">{'★'.repeat(5 - r.rating)}</span></p>
             <StatusBadge tone={statusTone[r.status as keyof typeof statusTone] ?? 'muted'}>{r.status}</StatusBadge>
           </div>
-          <p class="text-stone-500">{r.displayName} · {tourNames.get(r.tourId) ?? r.tourId} · traveled {formatTravelDate(r.travelDate)}</p>
-          {r.comment ? <p class="mt-2 whitespace-pre-line text-stone-800">{r.comment}</p> : <p class="mt-2 italic text-stone-400">No written review</p>}
+          <p class="text-stone-600">{r.displayName} · {tourNames.get(r.tourId) ?? r.tourId} · traveled {formatTravelDate(r.travelDate)}</p>
+          {r.comment ? <p class="mt-2 whitespace-pre-line text-stone-800">{r.comment}</p> : <p class="mt-2 italic text-stone-600">No written review</p>}
           <p class="mt-1 text-xs text-stone-600">
             {r.updatedAt !== r.createdAt ? `Edited ${formatDateTimeIst(r.updatedAt)}` : `Sent ${formatDateTimeIst(r.createdAt)}`} ·
             <a href={`/admin/bookings/${r.bookingId}`} class="hover:underline">booking</a>
@@ -122,19 +169,22 @@ const btn = 'min-h-11 rounded px-4 text-sm font-medium';
   )}
 
   <h2 class="text-lg font-semibold mb-1">Ask for a review</h2>
-  <p class="text-stone-500 text-sm mb-4">
+  <p class="mb-4 max-w-3xl text-sm text-stone-600">
     Trips that have happened and haven't been asked yet, oldest first. "Email" sends the "How was your tour?" email;
     "WhatsApp" opens the chat with the guest's review link filled in. Either one takes the trip off this list.
   </p>
   {candidates.length === 0 ? (
-    <p class="text-stone-500">Nobody's due for a review request right now.</p>
+    <p class="notice notice-success" role="status">✓ Nobody's due for a review request right now.</p>
   ) : (
-    <ul class="space-y-3">
-      {candidates.map((b) => (
-        <li class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
-          <p class="font-semibold text-base"><a href={`/admin/bookings/${b.id}`} class="hover:underline">{b.traveler_name}</a></p>
+    <ul class="grid gap-3 lg:grid-cols-2">
+      {candidates.map((b) => {
+        const age = daysSinceTrip(b.travel_date, today);
+        return (
+        <li class={`rounded-xl border border-l-4 border-violet-100 bg-white p-4 text-sm ${age > ASK_OVERDUE_DAYS ? 'border-l-orange-400' : 'border-l-sky-500'}`}>
+          <p class="flex flex-wrap items-center gap-2"><a href={`/admin/bookings/${b.id}`} class="text-base font-semibold text-stone-900 hover:underline">{b.traveler_name}</a>
+            <span class={`rounded-full px-2 py-0.5 text-[11px] font-medium ${age > ASK_OVERDUE_DAYS ? 'badge-warn' : 'badge-neutral'}`}>{tripAgeLabel(age)}</span></p>
           <p class="text-stone-700">{tourNames.get(b.tour_id) ?? b.tour_id}</p>
-          <p class="text-stone-500">Traveled {formatTravelDate(b.travel_date)}</p>
+          <p class="text-stone-600">Traveled {formatTravelDate(b.travel_date)}</p>
           <div class="mt-3 flex flex-wrap gap-2">
             {b.traveler_email && (
               <form method="POST">
@@ -157,7 +207,31 @@ const btn = 'min-h-11 rounded px-4 text-sm font-medium';
             </form>
           </div>
         </li>
-      ))}
+        );
+      })}
     </ul>
   )}
+
+  <div id="viz-tip" role="tooltip" hidden class="pointer-events-none fixed z-50 max-w-xs rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-stone-800 shadow-lg"></div>
 </AdminLayout>
+
+<script is:inline>
+  (function () {
+    // One tooltip for the rating bars. The text is set with textContent, never as HTML.
+    var tip = document.getElementById('viz-tip');
+    if (!tip) return;
+    document.querySelectorAll('[data-tip]').forEach(function (el) {
+      var show = function (x, y) {
+        tip.textContent = el.getAttribute('data-tip');
+        tip.hidden = false;
+        var w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 12)) + 'px';
+        tip.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, y - h - 12)) + 'px';
+      };
+      el.addEventListener('pointermove', function (e) { show(e.clientX, e.clientY); });
+      el.addEventListener('focus', function () { var b = el.getBoundingClientRect(); show(b.left + b.width / 2, b.top); });
+      el.addEventListener('pointerleave', function () { tip.hidden = true; });
+      el.addEventListener('blur', function () { tip.hidden = true; });
+    });
+  })();
+</script>
