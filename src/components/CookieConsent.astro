@@ -76,13 +76,18 @@ const { t } = pageI18n(Astro);
     window.fbq('track', 'PageView');
   };
 
-  // OpenAI Ads pixel (the dataset created in OpenAI Ads; pixel IDs are public by design). OpenAI's standard
-  // loader, run only after consent, like the Meta Pixel. Page views are sent by the pixel itself. Set debug to
-  // true only while testing the setup in OpenAI Ads: it logs to the browser console.
+  // OpenAI Ads pixel (the data source created in OpenAI Ads Manager; pixel IDs are public by design). OpenAI's
+  // standard loader, run only after consent, like the Meta Pixel. Unlike Meta's, it does not report page views by
+  // itself, so one page_viewed event is sent per page load. Set debug to true only while testing the setup in Ads
+  // Manager: it logs to the browser console.
   const OPENAI_PIXEL_ID = 'AG2t5xN1b69gQk9Eds3Le8';
+  const oai = (...args: unknown[]) => (window as unknown as { oaiq?: (...a: unknown[]) => void }).oaiq?.(...args);
   const loadOpenAiPixel = () => {
     const w = window as unknown as { oaiq?: any };
-    if (w.oaiq) return;
+    if (w.oaiq) {
+      oai('consent', true); // asked again on this page after an earlier Reject
+      return;
+    }
     const q: any = function (...args: unknown[]) {
       q.q.push(args);
     };
@@ -92,7 +97,29 @@ const { t } = pageI18n(Astro);
     s.async = true;
     s.src = 'https://bzrcdn.openai.com/sdk/oaiq.min.js';
     document.head.appendChild(s);
-    w.oaiq('init', { pixelId: OPENAI_PIXEL_ID, debug: false });
+    oai('init', { pixelId: OPENAI_PIXEL_ID, debug: false });
+    oai('measure', 'page_viewed', { type: 'contents', contents: [{ id: location.pathname, name: document.title.slice(0, 120), content_type: 'page' }] });
+  };
+
+  // The events the site already queues for Meta, sent to OpenAI with its own names and shapes (amounts are whole
+  // minor units, as OpenAI asks: 12000.00 rupees is 1200000). Anything not listed here is not sent to OpenAI.
+  const minor = (value: unknown) => (Number.isFinite(Number(value)) ? Math.round(Number(value) * 100) : undefined);
+  const sendOpenAi = (name: string, params: Record<string, unknown> = {}, options: { eventID?: string } = {}) => {
+    const eventOptions = options.eventID ? { event_id: String(options.eventID) } : {};
+    const ids = Array.isArray(params.content_ids) ? (params.content_ids as unknown[]).map(String) : [];
+    const money = minor(params.value) !== undefined && params.currency ? { amount: minor(params.value), currency: String(params.currency).toUpperCase() } : {};
+    if (name === 'Purchase') {
+      oai('measure', 'order_created', { type: 'contents', ...money, contents: ids.map((id) => ({ id, content_type: 'product' })) }, eventOptions);
+    } else if (name === 'InitiateCheckout') {
+      oai('measure', 'checkout_started', { type: 'contents', ...money, contents: ids.map((id) => ({ id, content_type: 'product', ...(Number.isInteger(params.num_items) ? { quantity: params.num_items } : {}) })) }, eventOptions);
+    } else if (name === 'ViewContent') {
+      oai('measure', 'contents_viewed', { type: 'contents', contents: ids.map((id) => ({ id, name: String(params.content_name ?? '').slice(0, 120) || undefined, content_type: 'product' })) }, eventOptions);
+    } else if (name === 'Lead') {
+      oai('measure', 'lead_created', { type: 'customer_action' }, eventOptions);
+    } else if (name === 'Contact') {
+      // A tap on the WhatsApp button is interest, not a finished enquiry, so it is not counted as a lead.
+      oai('measure', 'custom', { type: 'custom' }, { custom_event_name: 'whatsapp_clicked', ...(options.eventID ? { event_id: String(options.eventID) } : {}) });
+    }
   };
 
   // Metricool's web tracker (their standard snippet), run only after consent.
@@ -110,8 +137,16 @@ const { t } = pageI18n(Astro);
   // Send whatever pages queued, and anything queued later.
   const sendQueued = () => {
     const queue = window.iwisPixelQueue || [];
-    for (const [name, params, options] of queue) window.fbq('track', name, params || {}, options || {});
-    window.iwisPixelQueue = { push: ([name, params, options]: QueuedEvent) => window.fbq('track', name, params || {}, options || {}) } as any;
+    for (const [name, params, options] of queue) {
+      window.fbq('track', name, params || {}, options || {});
+      sendOpenAi(name, params, options);
+    }
+    window.iwisPixelQueue = {
+      push: ([name, params, options]: QueuedEvent) => {
+        window.fbq('track', name, params || {}, options || {});
+        sendOpenAi(name, params, options);
+      },
+    } as any;
   };
 
   // Tells the Google tag the visitor's choice.
@@ -128,7 +163,7 @@ const { t } = pageI18n(Astro);
     const names = document.cookie
       .split('; ')
       .map((c) => c.split('=')[0])
-      .filter((name) => name === '_fbp' || name === '_fbc' || name === '_ga' || name.startsWith('_ga_') || name.startsWith('_gcl_'));
+      .filter((name) => name === '_fbp' || name === '_fbc' || name === '_ga' || name.startsWith('_ga_') || name.startsWith('_gcl_') || name === '__oppref' || name === '__obref');
     const domain = location.hostname.replace(/^www\./, '');
     for (const name of names) {
       document.cookie = `${name}=; Max-Age=0; Path=/`;
@@ -157,6 +192,7 @@ const { t } = pageI18n(Astro);
         apply(choice);
       } else {
         window.fbq?.('consent', 'revoke');
+        oai('consent', false); // OpenAI's pixel stops sending and removes its own two cookies
         clearTrackingCookies();
       }
     })
