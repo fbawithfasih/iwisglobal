@@ -8,7 +8,7 @@ import type { D1Like } from './db';
 import { callAnthropic, AI_GUIDE_MODEL } from './aiGuide';
 import { listTours, type ParsedTour } from './tours';
 import { retrieve, SITE_URL, type KbEntry } from './waKnowledge';
-import { sendText, sendTemplate, storeMessage, type WaMessage } from './whatsapp';
+import { sendText, sendTemplate, storeMessage, silentMessageSql, type WaMessage } from './whatsapp';
 import { findTemplate, renderTemplate, cleanTemplateName } from './waTemplates';
 import { runTools, type ToolLog, type ToolRequest } from './waTools';
 import { attributeSend, onAdminSend, markHandedOff, takeOver } from './waInbox';
@@ -595,7 +595,7 @@ export async function draftWaitingMessage(env: Record<string, any>, db: D1Like, 
   const waiting = await db
     .prepare(
       `SELECT m.wa_message_id, m.kind, m.body, m.sent_at FROM wa_messages m
-       WHERE m.conversation_id = ? AND m.direction = 'in'
+       WHERE m.conversation_id = ? AND m.direction = 'in' AND NOT ${silentMessageSql('m')}
          AND NOT EXISTS (SELECT 1 FROM wa_drafts d WHERE d.message_id = m.wa_message_id)
          AND NOT EXISTS (SELECT 1 FROM wa_messages o WHERE o.conversation_id = m.conversation_id AND o.direction != 'in' AND o.sent_at > m.sent_at)
        ORDER BY m.sent_at DESC LIMIT 1`

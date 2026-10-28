@@ -128,6 +128,7 @@ Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) o
 | 6.1 | A test message from your phone appears in the inbox within a minute | | |
 | 6.2 | Take it, reply, and the reply shows your name as sender | | |
 | 6.3 | A chat the agent handed over shows on Needs attention | | |
+| 6.x | A guest reacts to a message with an emoji (or edits or deletes a message): the chat does not show "Waiting", is not counted on Today or in the bell, and no reply is asked for. A real message, photo or voice note still does | | |
 
 ## 7. Public site (guests)
 
