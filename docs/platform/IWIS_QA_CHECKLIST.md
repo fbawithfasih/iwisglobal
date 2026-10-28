@@ -119,6 +119,7 @@ Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) o
 | 5.2 | Take it: it shows your name; another person cannot take it from you | | |
 | 5.3 | Hand over to another person; the history shows who did it | | |
 | 5.4 | Export respects people who unsubscribed | | |
+| 5.x | A guest who already has a booking (trip ahead, or ended in the last 60 days) writes on WhatsApp, Instagram, Facebook or email: no new lead and no "New lead" email; the message shows on their booked lead's timeline ("Contact via WhatsApp"). A contact form from the same guest still opens a lead | | |
 
 ## 6. WhatsApp
 

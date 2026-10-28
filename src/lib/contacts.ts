@@ -414,6 +414,11 @@ export async function recordLead(db: D1Like, input: LeadInput): Promise<LeadResu
     .bind(up.personId, cutoff)
     .first<{ id: string }>();
 
+  // A guest who already has a booking and writes to us (WhatsApp, an Instagram or Facebook message, an email) is a
+  // client talking to us, not a new enquiry: the message joins their booked lead and nobody gets a "New lead" alert.
+  // Forms, lead ads and calls still open a lead, because they are a deliberate new enquiry.
+  const joined = open ?? (input.type && CLIENT_CONVERSATION_TYPES.has(input.type) ? await findBookedClientLead(db, up.personId, occurredAt) : null);
+
   const email = input.identifiers.find((i) => i.type === 'email' && normaliseEmail(i.value))?.value.trim() ?? '';
   const phoneIdent = input.identifiers.find((i) => (i.type === 'phone' || i.type === 'wa_id') && normaliseIdentifier(i.type, i.value));
   const phone = phoneIdent ? (phoneIdent.type === 'wa_id' ? `+${normaliseIdentifier('wa_id', phoneIdent.value)}` : phoneIdent.value.trim()) : '';
@@ -422,8 +427,8 @@ export async function recordLead(db: D1Like, input: LeadInput): Promise<LeadResu
 
   let leadId: string;
   let createdLead = false;
-  if (open) {
-    leadId = open.id;
+  if (joined) {
+    leadId = joined.id;
     await db
       .prepare(
         `UPDATE leads SET last_activity_at = ?, updated_at = ?,
@@ -471,6 +476,25 @@ export async function recordLead(db: D1Like, input: LeadInput): Promise<LeadResu
     by: input.createdBy ?? '',
   });
   return { leadId, personId: up.personId, createdPerson: up.created, createdLead, duplicate: false };
+}
+
+// Kinds of contact that are a conversation, as opposed to a form, a lead ad or a call someone chose to make.
+const CLIENT_CONVERSATION_TYPES = new Set(['message', 'email']);
+// A booked guest's messages stay on their booking while the trip is ahead or ended less than this many days ago.
+// After that a message from them is treated as a fresh enquiry (a returning guest).
+export const BOOKED_CLIENT_DAYS = 60;
+
+async function findBookedClientLead(db: D1Like, personId: string, occurredAt: string): Promise<{ id: string } | null> {
+  const from = new Date(Date.parse(occurredAt) - BOOKED_CLIENT_DAYS * 86_400_000).toISOString().slice(0, 10);
+  return db
+    .prepare(
+      `SELECT l.id FROM leads l LEFT JOIN bookings b ON b.id = l.booking_id
+        WHERE l.person_id = ? AND l.status IN ('booked','converted')
+          AND (b.id IS NULL OR (b.status <> 'cancelled' AND b.travel_date >= ?))
+        ORDER BY COALESCE(b.travel_date, l.created_at) DESC LIMIT 1`
+    )
+    .bind(personId, from)
+    .first<{ id: string }>();
 }
 
 async function personName(db: D1Like, personId: string): Promise<string> {
