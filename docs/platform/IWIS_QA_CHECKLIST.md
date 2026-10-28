@@ -136,6 +136,17 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3m.4 | Edit, View on site and Publish / Unpublish still work (Unpublish asks first) and the green message shows afterwards | | |
 | 3m.5 | At 320 px wide nothing scrolls sideways | | |
 
+## 3n. Hotels as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3n.1 | Hotels: a status pill (Live for guests / Off) and four tiles: Switch (steps done out of 6 while off), Hotels loaded (with how old the content is), Hotel bookings, Need you (red while a payment is stuck or a failed booking has no refund recorded, green with a tick when none) | | |
+| 3n.2 | "Before it can go live": six steps (keys, content, markup, EUR to INR, EUR to USD, switched on), each ticked or with what to do; the meter matches the tile | | |
+| 3n.3 | "Hotel content": hotels loaded, how fresh (green within 7 days, orange within 30, red older, never, or the last refresh failed), the last error shown in red when there is one; no key or secret appears anywhere | | |
+| 3n.4 | "Hotel bookings by status": one bar and a list (Booked, Cancelled, Paid waiting, Paid stuck, Failed) that adds up to the table below | | |
+| 3n.5 | Everything still works: Switch on and off (asks first to switch off), Save pricing, Refresh content, Test a booking, Cancel and refund (asks first), and the green message after each | | |
+| 3n.6 | The old Summary is now under "Technical details" and still shows destination, currency, last refresh, key and secret state (present or missing only) and the server | | |
+
 ## 3f. Keyboard and screen reader (do this with a person; 20 minutes)
 
 Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) or TalkBack (Android) for the second half.
