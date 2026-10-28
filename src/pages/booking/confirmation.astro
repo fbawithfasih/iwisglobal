@@ -9,6 +9,7 @@ import { getSessionCustomerId } from '../../lib/requireCustomer';
 import { CURRENCY_SYMBOLS, type Currency } from '../../lib/currency';
 import { chosenAddOnNames, computeTicketsToBuy } from '../../lib/entryTickets';
 import { canOfferSignup } from '../../lib/marketing';
+import { telHref } from '../../lib/contact';
 
 export const prerender = false;
 
@@ -152,6 +153,9 @@ const heading = { confirmed: c.headConfirmed, completed: c.headCompleted, cancel
             <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.date}</dt><dd class="text-right">{showDate(booking.travel_date)}</dd></div>
             {booking.pickup_time && status === 'confirmed' && (
               <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.pickup}</dt><dd class="text-right font-semibold">{booking.pickup_time}</dd></div>
+            )}
+            {booking.driver_name && status === 'confirmed' && (
+              <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.driver}</dt><dd class="text-right font-semibold">{booking.driver_name}{booking.driver_phone && <> · <a href={telHref(booking.driver_phone)} class="text-brand-800 underline">{booking.driver_phone}</a></>}</dd></div>
             )}
             <div class="flex justify-between gap-4"><dt class="text-stone-500">{c.travelers}</dt><dd>{booking.travelers}</dd></div>
             {addOnNames.length > 0 && (

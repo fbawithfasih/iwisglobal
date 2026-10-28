@@ -11,6 +11,8 @@ import { actorLabel } from '../../../lib/authz';
 import { listStaff } from '../../../lib/staff';
 import { formatDateTimeIst } from '../../../lib/format';
 import { telHref, waHref } from '../../../lib/contact';
+import { chatLinks } from '../../../lib/waDirect';
+import { normalisePhone } from '../../../lib/whatsapp';
 import PhoneInput from '../../../components/PhoneInput';
 
 const env = resolveEnv(Astro.locals);
@@ -72,6 +74,7 @@ let next: string | null = null;
 let counts: Record<string, number> = {};
 let waiting = 0;
 let staffNames: Record<string, string> = {};
+let inboxLinks = new Map<string, string>(); // phone -> the guest's chat in the WhatsApp inbox, for those who have one
 if (db) {
   try {
     // All four are independent, so they go to the database together (one round trip, not four in a row).
@@ -87,6 +90,7 @@ if (db) {
     next = page.next;
     counts = viewTotals;
     waiting = tooLong;
+    inboxLinks = await chatLinks(db, rows.map((r) => r.phone)).catch(() => inboxLinks);
   } catch (err) {
     failed = true;
     console.error('admin leads: list failed', err instanceof Error ? err.message : 'error');
@@ -175,7 +179,8 @@ const back = Astro.url.pathname + Astro.url.search;
     <ul class="space-y-3">
       {rows.map((l) => {
         const bucket = scoreBucket(l.score ?? 0);
-        const wa = l.phone ? waHref(l.phone) : null;
+        const inboxChat = l.phone ? inboxLinks.get(normalisePhone(l.phone)) : undefined;
+        const wa = inboxChat ?? (l.phone ? waHref(l.phone) : null);
         const wait = waitingLabel(l);
         const closed = l.status === 'booked' || l.status === 'converted' || l.status === 'lost' || l.status === 'spam';
         return (
@@ -197,7 +202,7 @@ const back = Astro.url.pathname + Astro.url.search;
             {l.message && <p class="mt-1 line-clamp-2 whitespace-pre-line text-stone-700">{l.message}</p>}
             <div class="mt-3 flex flex-wrap gap-2">
               {l.phone && <a href={telHref(l.phone)} class={contactBtn}>Call</a>}
-              {wa && <a href={wa} target="_blank" rel="noopener noreferrer" class={contactBtn}>WhatsApp</a>}
+              {wa && <a href={wa} {...(inboxChat ? {} : { target: '_blank', rel: 'noopener noreferrer' })} class={contactBtn}>WhatsApp</a>}
               {l.email && <a href={`mailto:${l.email}`} class={contactBtn}>Email</a>}
               <a href={`/admin/leads/${l.id}`} class={contactBtn}>Open</a>
               {l.owner === '' && !closed && (

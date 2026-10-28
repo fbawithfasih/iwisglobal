@@ -11,7 +11,7 @@ const n = t.newsletter;
   <p class="mt-2 text-sm text-violet-200">{n.intro}</p>
   <label class="sr-only" for="newsletter-email">{n.email}</label>
   <div class="mt-3 flex gap-2">
-    <input id="newsletter-email" name="email" type="email" required maxlength="200" autocomplete="email" placeholder={n.email} class="min-w-0 flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-violet-300 focus:border-white focus:outline-none" />
+    <input id="newsletter-email" name="email" type="email" required maxlength="200" autocomplete="email" placeholder={n.email} class="w-0 min-w-0 flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-violet-300 focus:border-white focus:outline-none" />
     <button type="submit" class="shrink-0 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-brand-900 hover:bg-violet-100">{n.button}</button>
   </div>
   <label class="mt-2 flex items-start gap-2 text-xs text-violet-200">
