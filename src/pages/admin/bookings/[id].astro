@@ -27,6 +27,7 @@ import { formatTravelDate, formatMoneyMinor, formatDateTimeIst } from '../../../
 import { telHref, waHref } from '../../../lib/contact';
 import PhoneInput from '../../../components/PhoneInput';
 import { sendPickupDetails, pickupText } from '../../../lib/waPickup';
+import { sendWithinWindow, chatLink } from '../../../lib/waDirect';
 import { setFlash, type FlashKey } from '../../../lib/flash';
 import type { PickupFacts } from '../../../lib/waTemplates';
 import { computeTicketsToBuy, ASI_BOOKING_URL } from '../../../lib/entryTickets';
@@ -153,7 +154,7 @@ if (Astro.request.method === 'POST') {
     const result = done.ok ? (action === 'confirm_custom' ? 'confirmed' : 'refunded') : 'error';
     if (done.ok) await recordAudit(db, auditContext(Astro.request, Astro.locals), { action: action === 'confirm_custom' ? 'booking.confirm_custom' : 'booking.cancel_refund', resource: 'booking', resourceId: id, summary: action === 'confirm_custom' ? 'Confirmed a custom trip' : 'Cancelled a custom trip and refunded the deposit' });
     return Astro.redirect(`/admin/bookings/${id}?custom=${result}${done.ok ? '' : `&msg=${encodeURIComponent(done.error)}`}`);
-  } else if (action === 'balance_link' || action === 'balance_email' || action === 'balance_whatsapp') {
+  } else if (action === 'balance_link' || action === 'balance_email' || action === 'balance_whatsapp' || action === 'balance_whatsapp_phone') {
     // Pay-the-balance link (src/lib/balancePayment.ts): make or reuse the private
     // link, then show it, email it, or open WhatsApp with it.
     const made = await createBalanceLink(db, id);
@@ -178,30 +179,47 @@ if (Astro.request.method === 'POST') {
       });
       return Astro.redirect(`/admin/bookings/${id}?balance=${sent ? 'emailed' : 'email_failed'}`);
     }
-    if (action === 'balance_whatsapp') {
+    if (action === 'balance_whatsapp' || action === 'balance_whatsapp_phone') {
       const first = b.traveler_name.trim().split(/\s+/)[0] || 'there';
-      const wa = waHref(
-        b.traveler_phone,
-        fmt(getDictionary(bLocale).balance.waMessage, {
-          name: first,
-          amount: formatMoneyMinor(made.amountMinor, made.currency),
-          date: formatTravelDate(b.travel_date, intlLocale(bLocale)),
-          url,
-        })
-      );
+      const message = fmt(getDictionary(bLocale).balance.waMessage, {
+        name: first,
+        amount: formatMoneyMinor(made.amountMinor, made.currency),
+        date: formatTravelDate(b.travel_date, intlLocale(bLocale)),
+        url,
+      });
+      // Through the WhatsApp Business API so the message and the reply stay in the backend inbox. Only when the guest has
+      // not written in 24 hours (WhatsApp then allows templates only) does the admin offer to open it on a phone instead.
+      if (action === 'balance_whatsapp') {
+        const sent = await sendWithinWindow(env, db, b.traveler_phone, message, actorLabel(Astro.locals.admin));
+        if (sent.ok) {
+          await addBookingNote(db, id, 'Balance payment link sent on WhatsApp.', actorLabel(Astro.locals.admin));
+          return Astro.redirect(`/admin/bookings/${id}?balance=wa_sent`);
+        }
+        return Astro.redirect(`/admin/bookings/${id}?balance=error&msg=${encodeURIComponent(sent.error ?? 'Could not send.')}${sent.windowClosed ? '&phone=balance' : ''}`);
+      }
+      const wa = waHref(b.traveler_phone, message);
       if (!wa) return Astro.redirect(`/admin/bookings/${id}?balance=error&msg=${encodeURIComponent('This booking has no phone number.')}`);
       return Astro.redirect(wa, 303);
     }
     return Astro.redirect(`/admin/bookings/${id}?balance=link`);
-  } else if (action === 'review_email' || action === 'review_whatsapp') {
+  } else if (action === 'review_email' || action === 'review_whatsapp' || action === 'review_whatsapp_phone') {
     const current = await getBookingById(db, id);
     if (!current) return Astro.redirect('/admin');
     if (action === 'review_email') {
       return Astro.redirect(`/admin/bookings/${id}?review=${await requestReview(env, db, current)}`);
     }
-    // WhatsApp: create the private link, record the request, open the chat.
-    const wa = waHref(current.traveler_phone, reviewWhatsappMessage(current.traveler_name, reviewUrl(SITE_URL, await ensureReviewToken(db, current))));
-    if (!wa || !canBeReviewed(current, todayIst())) return Astro.redirect(`/admin/bookings/${id}?review=too_early`);
+    // WhatsApp: create the private link and record the request. Sent through the Business API (it stays in the backend inbox);
+    // only when WhatsApp's 24-hour window is closed does the admin offer to open it on a phone instead.
+    if (!current.traveler_phone || !canBeReviewed(current, todayIst())) return Astro.redirect(`/admin/bookings/${id}?review=too_early`);
+    const reviewText = reviewWhatsappMessage(current.traveler_name, reviewUrl(SITE_URL, await ensureReviewToken(db, current)));
+    if (action === 'review_whatsapp') {
+      const sent = await sendWithinWindow(env, db, current.traveler_phone, reviewText, actorLabel(Astro.locals.admin));
+      if (!sent.ok) return Astro.redirect(`/admin/bookings/${id}?review=wa_error&msg=${encodeURIComponent(sent.error ?? 'Could not send.')}${sent.windowClosed ? '&phone=review' : ''}`);
+      await markReviewRequested(db, id);
+      return Astro.redirect(`/admin/bookings/${id}?review=wa_sent`);
+    }
+    const wa = waHref(current.traveler_phone, reviewText);
+    if (!wa) return Astro.redirect(`/admin/bookings/${id}?review=too_early`);
     await markReviewRequested(db, id);
     return Astro.redirect(wa, 303);
   }
@@ -243,6 +261,7 @@ const balanceResult = Astro.url.searchParams.get('balance');
 const balanceMessages: Record<string, { text: string; ok: boolean }> = {
   link: { text: 'Balance link ready. Copy it below, or email or WhatsApp it.', ok: true },
   emailed: { text: 'Balance link emailed to the guest.', ok: true },
+  wa_sent: { text: 'Balance link sent on WhatsApp. It is in the WhatsApp inbox.', ok: true },
   email_failed: { text: 'The email did not send (check RESEND_API_KEY). Copy the link or use WhatsApp.', ok: false },
   no_email: { text: 'This booking has no email address. Use WhatsApp or copy the link.', ok: false },
   error: { text: Astro.url.searchParams.get('msg') ?? 'Something went wrong.', ok: false },
@@ -251,6 +270,13 @@ const hotelModes: Record<string, string> = { own: 'Guest has their own hotel', l
 const reviewOpen = canBeReviewed(booking, todayIst());
 const review = await getReviewForBooking(db, id);
 const reviewResult = Astro.url.searchParams.get('review');
+const reviewMessages: Record<string, { text: string; ok: boolean }> = {
+  ...REVIEW_REQUEST_MESSAGES,
+  wa_sent: { text: 'Review request sent on WhatsApp. It is in the WhatsApp inbox.', ok: true },
+  wa_error: { text: Astro.url.searchParams.get('msg') ?? 'Could not send the review request.', ok: false },
+};
+// Offered only after a WhatsApp send was refused because the guest has not written in 24 hours.
+const phoneFallback = Astro.url.searchParams.get('phone');
 
 // Pickup details for the customer on WhatsApp, built only from what's been
 // filled in under Itinerary / logistics (nothing when all three are empty).
@@ -273,7 +299,9 @@ const pickupNotice: Record<string, { text: string; ok: boolean }> = {
   error: { text: Astro.url.searchParams.get('msg') ?? 'Could not send the pickup details.', ok: false },
 };
 const pickupWa = pickupMessage && booking.traveler_phone ? waHref(booking.traveler_phone, pickupMessage) : null;
-const contactWa = booking.traveler_phone ? waHref(booking.traveler_phone) : null;
+const guestChat = await chatLink(db, booking.traveler_phone);
+// The plain WhatsApp button opens the guest's chat in the backend inbox when there is one, and only otherwise the phone app.
+const contactWa = guestChat ?? (booking.traveler_phone ? waHref(booking.traveler_phone) : null);
 const contactBtn = 'inline-flex min-h-11 items-center rounded border border-violet-200 bg-white px-3 text-sm text-stone-800';
 const actionBtn = 'min-h-11 rounded btn-primary text-white px-4 text-sm';
 // Add-on names for display. IDs gained a "<TOUR_ID>_" prefix when a tour is
@@ -310,7 +338,7 @@ const addOnNames = booking.add_on_ids
       {(booking.traveler_phone || booking.traveler_email) && (
         <div class="flex flex-wrap gap-2 pt-2">
           {booking.traveler_phone && <a href={telHref(booking.traveler_phone)} class={contactBtn}>Call</a>}
-          {contactWa && <a href={contactWa} target="_blank" rel="noopener noreferrer" class={contactBtn}>WhatsApp</a>}
+          {contactWa && <a href={contactWa} {...(guestChat ? {} : { target: '_blank', rel: 'noopener noreferrer' })} class={contactBtn}>WhatsApp</a>}
           {booking.traveler_email && <a href={`mailto:${booking.traveler_email}`} class={contactBtn}>Email</a>}
         </div>
       )}
@@ -333,6 +361,12 @@ const addOnNames = booking.add_on_ids
         <h2 class="font-semibold mb-2">Balance payment</h2>
         {balanceResult && balanceMessages[balanceResult] && (
           <p class={`rounded px-3 py-2 ${balanceMessages[balanceResult].ok ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>{balanceMessages[balanceResult].text}</p>
+        )}
+        {phoneFallback === 'balance' && (
+          <form method="POST" target="_blank" onsubmit="setTimeout(() => location.href = location.pathname, 1000)">
+            <input type="hidden" name="_action" value="balance_whatsapp_phone" />
+            <button type="submit" class="text-xs text-stone-500 underline">Or open it in WhatsApp on this phone instead</button>
+          </form>
         )}
         {owed > 0 ? (
           <>
@@ -536,8 +570,14 @@ const addOnNames = booking.add_on_ids
         <span class="px-2 py-0.5 rounded text-xs bg-stone-100 text-stone-700">Requested {fmtTime(booking.review_requested_at)}</span>
       ) : null}
     </div>
-    {reviewResult && REVIEW_REQUEST_MESSAGES[reviewResult] && (
-      <p class={`mb-3 ${REVIEW_REQUEST_MESSAGES[reviewResult].ok ? 'text-green-700' : 'text-red-600'}`}>{REVIEW_REQUEST_MESSAGES[reviewResult].text}</p>
+    {reviewResult && reviewMessages[reviewResult] && (
+      <p class={`mb-3 ${reviewMessages[reviewResult].ok ? 'text-green-700' : 'text-red-600'}`} role={reviewMessages[reviewResult].ok ? 'status' : 'alert'}>{reviewMessages[reviewResult].text}</p>
+    )}
+    {phoneFallback === 'review' && contactWa && (
+      <form method="POST" target="_blank" class="mb-3" onsubmit="setTimeout(() => location.href = location.pathname, 1000)">
+        <input type="hidden" name="_action" value="review_whatsapp_phone" />
+        <button type="submit" class="text-xs text-stone-500 underline">Or open it in WhatsApp on this phone instead</button>
+      </form>
     )}
     {review && (
       <div class="mb-4 rounded-lg bg-stone-50 p-3">
@@ -557,7 +597,7 @@ const addOnNames = booking.add_on_ids
           </button>
         </form>
         {contactWa && (
-          <form method="POST" target="_blank" onsubmit="setTimeout(() => location.reload(), 1000)">
+          <form method="POST">
             <input type="hidden" name="_action" value="review_whatsapp" />
             <button type="submit" class="min-h-11 rounded bg-emerald-700 px-4 text-sm font-medium text-white">Request on WhatsApp</button>
           </form>

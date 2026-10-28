@@ -104,6 +104,10 @@ Pre-checked on 28 Oct 2026 by a scripted keyboard run in a real browser (3f.1 to
 | 3g.4 | A failed action shows its error, never "Saved" | | |
 | 3g.5 | The booking page does not scroll sideways on a phone (the Driver box fits the screen) | | |
 | 3g.6 | Same message on the other pages: create or publish/unpublish a tour, blog post, offer or highlight ("Created", "Published", "Saved", "Deleted"); add a lead or take one on Leads; create a manual booking; approve or hide a review; create a campaign and save its name, audience or wording. Nothing shows when a form is refused or nothing changed | | |
+| 3g.7 | Booking page, balance link and review request "on WhatsApp": if the guest wrote in the last 24 hours the message is sent from the backend and shows in the WhatsApp inbox ("Balance link sent on WhatsApp", "Review request sent on WhatsApp"); if not, a red message says why and a small "Or open it in WhatsApp on this phone instead" link appears | | |
+| 3g.8 | The plain WhatsApp button (booking page, lead page, Leads list) opens the guest's chat in the inbox when one exists, and the phone app only when there is none | | |
+| 3g.9 | Guest side (My bookings and the booking confirmation page): once a driver is saved on a confirmed booking, the driver's name and a tappable phone number show under the pickup time, in all four languages | | |
+| 3g.10 | At 320 px wide no public page and no admin page scrolls sideways (the footer newsletter box and the Custom trips fees table were the last two) | | |
 
 ## 4. Bookings
 

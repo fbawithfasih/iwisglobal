@@ -14,6 +14,7 @@ import { canBeReviewed, ensureReviewToken, reviewedBookingIds, reviewUrl, SITE_U
 import { CURRENCY_SYMBOLS, type Currency } from '../../lib/currency';
 import { linkGuestBookings, createEmailVerificationLink } from '../../lib/emailVerification';
 import { sendEmailVerificationEmail } from '../../lib/email';
+import { telHref } from '../../lib/contact';
 
 const env = resolveEnv(Astro.locals);
 const { locale, t } = pageI18n(Astro);
@@ -241,6 +242,9 @@ const sections = [
                   </p>
                   {section.canChange && b.pickup_time && (
                     <p class="text-sm text-stone-800 mt-1"><span class="text-stone-500">{a.pickup}</span> <span class="font-semibold">{b.pickup_time}</span></p>
+                  )}
+                  {section.canChange && b.driver_name && (
+                    <p class="text-sm text-stone-800 mt-1"><span class="text-stone-500">{a.driver}</span> <span class="font-semibold">{b.driver_name}</span>{b.driver_phone && <> · <a href={telHref(b.driver_phone)} class="text-brand-800 underline">{b.driver_phone}</a></>}</p>
                   )}
                   {b.status !== 'cancelled' && addOns.length > 0 && (
                     <p class="text-sm text-stone-600 mt-1"><span class="text-stone-500">{a.addOns}</span> {addOns.join(', ')}</p>
