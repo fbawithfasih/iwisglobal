@@ -27,6 +27,7 @@ import { formatTravelDate, formatMoneyMinor, formatDateTimeIst } from '../../../
 import { telHref, waHref } from '../../../lib/contact';
 import PhoneInput from '../../../components/PhoneInput';
 import { sendPickupDetails, pickupText } from '../../../lib/waPickup';
+import { setFlash, type FlashKey } from '../../../lib/flash';
 import type { PickupFacts } from '../../../lib/waTemplates';
 import { computeTicketsToBuy, ASI_BOOKING_URL } from '../../../lib/entryTickets';
 import { uploadTicketFile } from '../../../lib/images';
@@ -204,6 +205,9 @@ if (Astro.request.method === 'POST') {
     await markReviewRequested(db, id);
     return Astro.redirect(wa, 303);
   }
+  const flashKey: Partial<Record<string, FlashKey>> = { status: 'status', itinerary: 'itinerary', note: 'note', tickets_purchased: 'saved' };
+  const confirmation = flashKey[String(form.get('_action') ?? '')];
+  if (confirmation) setFlash(Astro.cookies, confirmation);
   return Astro.redirect(`/admin/bookings/${id}`);
 }
 
@@ -286,7 +290,7 @@ const addOnNames = booking.add_on_ids
   <h1 class="text-2xl font-semibold mt-2 mb-6">{booking.traveler_name} — {isCustom ? 'Custom Agra tour' : tour?.title ?? booking.tour_id}</h1>
 
   <div class="grid md:grid-cols-2 gap-6">
-    <div class="bg-white rounded-xl border border-violet-100 p-6 space-y-2 text-sm">
+    <div class="min-w-0 bg-white rounded-xl border border-violet-100 p-6 space-y-2 text-sm">
       <h2 class="font-semibold mb-2">Booking details</h2>
       <p><span class="text-stone-500">Date:</span> {formatTravelDate(booking.travel_date)}</p>
       <p><span class="text-stone-500">Travelers:</span> {booking.travelers}</p>
@@ -409,7 +413,7 @@ const addOnNames = booking.add_on_ids
       </div>
     )}
 
-    <div class="bg-white rounded-xl border border-violet-100 p-6 space-y-3 text-sm">
+    <div class="min-w-0 bg-white rounded-xl border border-violet-100 p-6 space-y-3 text-sm">
       <h2 class="font-semibold mb-2">Itinerary / logistics</h2>
       <form method="POST" class="space-y-3">
         <input type="hidden" name="_action" value="itinerary" />
@@ -425,7 +429,7 @@ const addOnNames = booking.add_on_ids
           <label for="vehicle" class="block text-stone-500 mb-1">Vehicle</label>
           <input id="vehicle" name="vehicle" value={booking.vehicle} class="w-full rounded border border-violet-200 px-3 py-2" placeholder="e.g. Innova, plate no." />
         </div>
-        <fieldset class="space-y-3 rounded-lg border border-violet-100 p-3">
+        <fieldset class="min-w-0 space-y-3 rounded-lg border border-violet-100 p-3">
           <legend class="px-1 font-medium text-stone-800">Driver (the guest's first contact at pickup)</legend>
           <div>
             <label for="driverName" class="block text-stone-500 mb-1">Driver name</label>
@@ -567,7 +571,7 @@ const addOnNames = booking.add_on_ids
     <h2 class="font-semibold mb-3">Notes</h2>
     <form method="POST" class="flex gap-2 mb-4">
       <input type="hidden" name="_action" value="note" />
-      <input name="note" placeholder="Add a note…" class="flex-1 rounded border border-violet-200 px-3 py-2" required />
+      <input name="note" aria-label="Note" placeholder="Add a note…" class="min-w-0 flex-1 rounded border border-violet-200 px-3 py-2" required />
       <button type="submit" class={actionBtn}>Add</button>
     </form>
     {notes.length === 0 ? (

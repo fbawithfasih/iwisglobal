@@ -14,6 +14,7 @@ import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
 import { erasePerson, personEmails, startDoubleOptIn, unsubscribePerson } from '../../../lib/marketing';
 import { telHref, waHref } from '../../../lib/contact';
+import { setFlash, type FlashKey } from '../../../lib/flash';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
@@ -93,7 +94,12 @@ if (Astro.request.method === 'POST') {
     console.error('admin lead action failed', err instanceof Error ? err.message : 'error');
     error = 'That did not save. Please try again.';
   }
-  if (!error) return Astro.redirect(`/admin/leads/${id}`);
+  if (!error) {
+    const flashKey: Partial<Record<string, FlashKey>> = { stage: 'stage', note: 'note', contacted: 'stage', followup: 'followup', take: 'taken', assign: 'assigned', done: 'done' };
+    const confirmation = flashKey[action];
+    if (confirmation) setFlash(Astro.cookies, confirmation);
+    return Astro.redirect(`/admin/leads/${id}`);
+  }
 }
 
 const d = await getLeadDetail(db, id).catch(() => null);

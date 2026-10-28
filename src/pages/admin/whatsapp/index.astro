@@ -10,6 +10,7 @@ import EmptyState from '../../../components/EmptyState.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { auditContext, recordAudit } from '../../../lib/audit';
 import { resolveEnv } from '../../../lib/env';
+import { setFlash, type FlashKey } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { formatDateTimeIst } from '../../../lib/format';
 import type { D1Like } from '../../../lib/db';
@@ -91,6 +92,11 @@ if (Astro.request.method === 'POST' && db) {
   const postedTab = String(form.get('tab') ?? '');
   if (postedTab) query.set('tab', postedTab);
   if (error) query.set('err', error);
+  else {
+    const flashKey: Partial<Record<string, FlashKey>> = { send: 'sent', reply: 'sent', template: 'template', discard: 'discarded', takeover: 'chat_taken', handover: 'handed_over', giveback: 'given_back' };
+    const confirmation = flashKey[String(form.get('_action') ?? '')];
+    if (confirmation) setFlash(Astro.cookies, confirmation);
+  }
   return Astro.redirect(`/admin/whatsapp?${query}`);
 }
 

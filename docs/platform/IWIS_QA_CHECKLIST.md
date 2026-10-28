@@ -94,6 +94,16 @@ Pre-checked on 28 Oct 2026 by a scripted keyboard run in a real browser (3f.1 to
 | 3f.10 | VoiceOver / TalkBack: status pills are read as words (published, draft, scheduled), not colours | | |
 | 3f.11 | Anything that traps the cursor, hides it, or cannot be reached: write it down here with the page | | |
 
+## 3g. "Saved" messages
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3g.1 | Booking page: Save itinerary, Update status and Add note each show a short green message at the bottom ("Itinerary saved", "Status updated", "Note added"); it hides itself after about 5 seconds, or with Dismiss or Esc | | |
+| 3g.2 | Reload the page: the message does not come back | | |
+| 3g.3 | Lead page (stage, note, follow-up, take, assign, done) and WhatsApp (send reply, template, take over, hand over, give back, discard): the same short message | | |
+| 3g.4 | A failed action shows its error, never "Saved" | | |
+| 3g.5 | The booking page does not scroll sideways on a phone (the Driver box fits the screen) | | |
+
 ## 4. Bookings
 
 | # | Check | Who | Result |
