@@ -2,7 +2,6 @@
 export const prerender = false;
 
 import EmptyState from '../../../components/EmptyState.astro';
-import PageHeader from '../../../components/PageHeader.astro';
 import StatusBadge from '../../../components/StatusBadge.astro';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { resolveEnv } from '../../../lib/env';
@@ -10,6 +9,7 @@ import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { createCampaign, type CampaignRow } from '../../../lib/campaigns';
 import { formatDateTimeIst } from '../../../lib/format';
+import { loadCampaignStats, emptyStats, progressPercent, rate, deliveryHealth, campaignSummary, sortCampaigns, barWidth, type CampaignStats, type Health } from '../../../lib/campaignsAdmin';
 import type { D1Like } from '../../../lib/db';
 
 const env = resolveEnv(Astro.locals);
@@ -46,27 +46,142 @@ if (db) {
     failed = true;
   }
 }
+let stats = new Map<string, CampaignStats>();
+if (db && !failed) stats = await loadCampaignStats(db).catch(() => new Map<string, CampaignStats>());
 const tone = { draft: 'muted', scheduled: 'info', sending: 'warn', sent: 'ok', cancelled: 'danger' } as const;
+const edge: Record<string, string> = { draft: 'border-l-stone-300', scheduled: 'border-l-sky-500', sending: 'border-l-orange-400', sent: 'border-l-emerald-500', cancelled: 'border-l-rose-400' };
+const statOf = (id: string) => stats.get(id) ?? emptyStats();
+const rows = sortCampaigns(campaigns.map((c) => ({ c, status: c.status, createdAt: c.created_at })));
+const sum = campaignSummary(campaigns.map((c) => ({ status: c.status, lastError: c.last_error ?? '', stats: statOf(c.id) })));
+const healthText: Record<Health, string> = { none: 'Nothing sent yet', good: 'Delivery looks healthy', watch: 'Delivery: keep an eye on it', bad: 'Delivery problem' };
+const healthClass: Record<Health, string> = { none: 'badge-neutral', good: 'badge-success', watch: 'badge-warn', bad: 'badge-danger' };
+const sentRows = rows.filter((r) => statOf(r.c.id).sent > 0).slice(0, 8);
+const sentMax = Math.max(1, ...sentRows.map((r) => statOf(r.c.id).sent));
+const tiles = [
+  { label: 'Drafts', n: sum.draft, hint: 'Nothing is sent until you approve it.', tone: 'info' },
+  { label: 'Scheduled or sending', n: sum.scheduled + sum.sending, hint: sum.sending ? `${sum.sending} going out now.` : sum.scheduled ? 'Waiting for their send time.' : 'None in motion.', tone: sum.sending ? 'warn' : 'info' },
+  { label: 'Emails sent', n: sum.emailsSent, hint: `${sum.sent} ${sum.sent === 1 ? 'campaign' : 'campaigns'} finished.`, tone: 'brand' },
+  { label: 'Need a look', n: sum.needsLook, hint: sum.needsLook ? 'An error, failed sends, or delivery to watch.' : '✓ Nothing to check.', tone: sum.needsLook ? 'danger' : 'success' },
+] as const;
+const field = 'min-w-60 flex-1 rounded border border-violet-200 bg-white px-3 py-2';
 ---
 <AdminLayout title="Campaigns">
-  <PageHeader title="Email campaigns" count={campaigns.length} href="/admin/leads/subscribers" action="Email subscribers" />
-  {failed && <p class="notice notice-danger mb-4">The campaign tables are not in the database yet (schema_campaigns.sql).</p>}
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">Email campaigns</h1>
+      <p class="text-sm text-stone-600">{campaigns.length} {campaigns.length === 1 ? 'campaign' : 'campaigns'}{sum.emailsSent ? ` · ${sum.emailsSent} emails sent` : ''}</p>
+    </div>
+    <a href="/admin/leads/subscribers" class="inline-flex min-h-11 items-center rounded border border-violet-200 bg-white px-4 text-sm text-stone-800">Email subscribers</a>
+  </div>
+  {failed && <p class="notice notice-danger mb-4" role="alert">The campaign tables are not in the database yet (schema_campaigns.sql).</p>}
+
+  {campaigns.length > 0 && (
+    <section aria-label="Overview" class="mb-6">
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {tiles.map((t) => (
+          <div class={`rounded-xl border p-4 tint-${t.tone}`}>
+            <span class="block text-4xl font-semibold leading-none text-stone-900">{t.n}</span>
+            <span class="mt-2 block font-medium text-stone-800">{t.label}</span>
+            <span class="block text-xs text-stone-600">{t.hint}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
+
   <form method="POST" class="mb-6 flex flex-wrap gap-2 rounded-xl border border-violet-100 bg-white p-4 text-sm">
     <input type="hidden" name="_action" value="create" />
-    <input name="name" required placeholder="Campaign name (only you see this)" class="min-w-60 flex-1 rounded border border-violet-200 px-3 py-2" />
+    <label for="cname" class="sr-only">Campaign name</label>
+    <input id="cname" name="name" required placeholder="Campaign name (only you see this)" class={field} />
     <button class="min-h-11 rounded btn-primary px-4 text-white">New campaign</button>
   </form>
-  {campaigns.length === 0 ? <EmptyState message="No campaigns yet" hint="Name a campaign above to start one. Nothing is sent until you approve it." /> : (
-    <ul class="space-y-3">
-      {campaigns.map((c) => (
-        <li class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
-          <div class="flex items-start justify-between gap-3">
-            <a href={`/admin/campaigns/${c.id}`} class="text-base font-semibold text-brand-700 hover:underline">{c.name}</a>
-            <StatusBadge tone={tone[c.status as keyof typeof tone] ?? 'muted'}>{c.status}</StatusBadge>
-          </div>
-          <p class="mt-1 text-xs text-stone-500">Created {formatDateTimeIst(c.created_at)}{c.scheduled_at && c.status === 'scheduled' ? ` · scheduled ${formatDateTimeIst(c.scheduled_at)}` : ''}{c.total > 0 ? ` · ${c.sent} of ${c.total} sent` : ''}</p>
-        </li>
-      ))}
-    </ul>
+
+  {sentRows.length > 0 && (
+    <section aria-labelledby="sentPic" class="mb-6 rounded-xl border border-violet-100 bg-white p-4">
+      <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="sentPic" class="text-lg font-semibold">Emails sent per campaign</h2>
+        <p class="text-sm text-stone-600">The latest campaigns that have sent. Pick one to open it.</p>
+      </div>
+      <ul class="space-y-2.5">
+        {sentRows.map(({ c }) => {
+          const st = statOf(c.id);
+          return (
+            <li>
+              <a href={`/admin/campaigns/${c.id}`} data-tip={`${c.name}: ${st.sent} sent, ${st.delivered} delivered, ${st.bounced} bounced, ${st.complained} spam complaints, ${st.clicks} link clicks`} class="block rounded-md px-1 py-0.5 hover:bg-violet-50">
+                <span class="flex items-center justify-between gap-3 text-sm">
+                  <span class="truncate text-stone-900">{c.name}</span>
+                  <span class="shrink-0 text-stone-700"><span class="font-semibold text-stone-900">{st.sent}</span> <span class="text-xs">sent</span></span>
+                </span>
+                <span class="mt-1 block h-2.5 rounded-full bg-stone-100" aria-hidden="true"><span class="block h-full rounded-full bg-violet-500" style={`width:${barWidth(st.sent, sentMax)}%`}></span></span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   )}
+
+  {campaigns.length === 0 ? <EmptyState message="No campaigns yet" hint="Name a campaign above to start one. Nothing is sent until you approve it." /> : (
+    <>
+    <h2 class="mb-3 text-lg font-semibold">All campaigns</h2>
+    <ul class="grid gap-3 lg:grid-cols-2">
+      {rows.map(({ c }) => {
+        const st = statOf(c.id);
+        const health = deliveryHealth(st);
+        const total = st.queued + st.sent + st.failed + st.skipped;
+        return (
+          <li class={`rounded-xl border border-l-4 border-violet-100 bg-white p-4 text-sm transition hover:shadow-md ${edge[c.status] ?? 'border-l-stone-300'}`}>
+            <div class="flex items-start justify-between gap-3">
+              <a href={`/admin/campaigns/${c.id}`} class="text-base font-semibold text-brand-700 hover:underline">{c.name}</a>
+              <StatusBadge tone={tone[c.status as keyof typeof tone] ?? 'muted'}>{c.status}</StatusBadge>
+            </div>
+            <p class="mt-1 text-xs text-stone-600">Created {formatDateTimeIst(c.created_at)}{c.scheduled_at && c.status === 'scheduled' ? ` · scheduled ${formatDateTimeIst(c.scheduled_at)}` : ''}</p>
+            {total > 0 && (
+              <div class="mt-3">
+                <span class="flex items-center gap-2">
+                  <span class="block h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100" role="img" aria-label={`${progressPercent(st)}% of the recipients handled`}><span class={`block h-full rounded-full ${c.status === 'sent' ? 'bg-emerald-500' : 'bg-orange-400'}`} style={`width:${progressPercent(st)}%`}></span></span>
+                  <span class="text-xs font-medium text-stone-700">{st.sent} of {total} sent</span>
+                </span>
+                {st.sent > 0 && (
+                  <p class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-700">
+                    <span class={`${healthClass[health]} rounded-full px-2 py-0.5 text-[11px] font-medium`}>{healthText[health]}</span>
+                    <span>{st.delivered} delivered</span>
+                    <span>{st.bounced} bounced ({rate(st.bounced, st.sent)}%)</span>
+                    <span>{st.complained} spam ({rate(st.complained, st.sent)}%)</span>
+                    <span>{st.clicks} {st.clicks === 1 ? 'click' : 'clicks'}</span>
+                  </p>
+                )}
+                {(st.failed > 0 || st.skipped > 0) && <p class="mt-1 text-xs text-stone-600">{st.failed} failed, {st.skipped} skipped.</p>}
+              </div>
+            )}
+            {c.last_error && c.last_error.trim() !== '' && <p class="notice notice-danger mt-3" role="alert">{c.last_error}</p>}
+          </li>
+        );
+      })}
+    </ul>
+    </>
+  )}
+
+  <div id="viz-tip" role="tooltip" hidden class="pointer-events-none fixed z-50 max-w-xs rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-stone-800 shadow-lg"></div>
 </AdminLayout>
+
+<script is:inline>
+  (function () {
+    // One tooltip for the sent bars. The text is set with textContent, never as HTML.
+    var tip = document.getElementById('viz-tip');
+    if (!tip) return;
+    document.querySelectorAll('[data-tip]').forEach(function (el) {
+      var show = function (x, y) {
+        tip.textContent = el.getAttribute('data-tip');
+        tip.hidden = false;
+        var w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 12)) + 'px';
+        tip.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, y - h - 12)) + 'px';
+      };
+      el.addEventListener('pointermove', function (e) { show(e.clientX, e.clientY); });
+      el.addEventListener('focus', function () { var b = el.getBoundingClientRect(); show(b.left + b.width / 2, b.top); });
+      el.addEventListener('pointerleave', function () { tip.hidden = true; });
+      el.addEventListener('blur', function () { tip.hidden = true; });
+    });
+  })();
+</script>
