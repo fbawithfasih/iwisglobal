@@ -31,5 +31,5 @@ Checked against Google Search Central's "Optimizing your website for generative 
 4. Named authors: posts and guides are credited to "IWIS Global". A real guide's name and credentials would be a stronger signal; never an
    invented person.
 5. Tour pages: they need what the posts have (first-hand detail, a photo set, a "who this is for", real itinerary times) to compete.
-6. New or edited posts reach the sitemap only on the next deploy. Option: a nightly redeploy from GitHub Actions.
+6. New or edited posts reach the sitemap at the next deploy. Done: `.github/workflows/deploy.yml` now also deploys main every night at 20:30 UTC (02:00 India), so the sitemap and its dates are never more than a day behind.
 7. Not measured here: Core Web Vitals (the public PageSpeed API was rate-limited). Check the Core Web Vitals report in Search Console.

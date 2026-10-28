@@ -7,9 +7,17 @@ name: Deploy to Cloudflare Pages
 # Direct Uploads project."). This workflow replicates what native Git
 # integration would do (build + deploy on every push to main) without
 # migrating the live project, its custom domain, or its D1/R2 bindings.
+#
+# It also runs every night (02:00 India time) from the same main branch. The
+# sitemap is built at deploy time from the database (src/lib/sitemapLastmod.mjs),
+# so without this a blog post published or edited in the admin would only reach
+# the sitemap, and its lastmod date, at the next code change. The nightly run
+# deploys exactly what is already on main; nothing else changes.
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '30 20 * * *'
   workflow_dispatch:
 
 jobs:

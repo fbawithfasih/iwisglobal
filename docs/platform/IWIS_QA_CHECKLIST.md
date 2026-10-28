@@ -176,6 +176,7 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3r.1 | After the next deploy, `/sitemap-0.xml` has a `<lastmod>` on blog posts, tours, guides, attractions and on /blog, /tours, /guides and /agra, and none on pages with no real date (home, terms, privacy) | | |
 | 3r.2 | A blog post edited in the admin and then deployed shows its new date in the sitemap | | |
 | 3r.3 | Search Console, Sitemaps: the sitemap is read without errors | | |
+| 3r.4 | The next morning, GitHub Actions shows a "Deploy to Cloudflare Pages" run triggered by the schedule (about 20:30 UTC) that finished green; a blog post published the day before is in `/sitemap-0.xml` | | |
 
 ## 3s. Reviews as a picture
 
