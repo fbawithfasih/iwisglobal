@@ -95,6 +95,16 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3i.4 | Every booking shows how near it is (Today, Tomorrow, In 5 days, 2 days ago) and has a coloured edge for its status | | |
 | 3i.5 | Phone: nothing scrolls sideways, there is one "+ Booking" button (in the top bar) | | |
 
+## 3j. Leads as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3j.1 | Leads: four coloured tiles (Needs attention, New and unanswered, Follow-ups due, Mine) are the views; green with a tick at zero; the open one has a violet ring; the other views are small buttons under them | | |
+| 3j.2 | "Pipeline": open leads per stage as bars; clicking a stage lists those leads (All open view with that stage); hover shows the count | | |
+| 3j.3 | "Where enquiries come from": last 30 days by channel, spam left out; clicking a channel lists its leads | | |
+| 3j.4 | "How fast we reply": typical wait, how many were answered within the hour, and a warning when many enquiries have no reply recorded (the card must not look green when most are unanswered) | | |
+| 3j.5 | Each lead card has a coloured edge for its stage, an initial in a violet circle, and pastel stage and hot/warm/cold pills | | |
+
 ## 3f. Keyboard and screen reader (do this with a person; 20 minutes)
 
 Keyboard only (put the mouse away). On the phone, switch on VoiceOver (iPhone) or TalkBack (Android) for the second half.

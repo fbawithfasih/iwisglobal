@@ -459,3 +459,60 @@ export async function importLeadRows(db: D1Like, rows: ImportRow[], batchId: str
 }
 
 export { OPEN_STAGES, canonicalStage };
+
+// ---- The pictures at the top of the Leads page: where open leads sit in the pipeline, where enquiries came from, how fast we reply.
+
+/** The stages a lead passes through while it is open, in order. */
+export const PIPELINE_STAGES = ['new', 'contacted', 'qualified', 'quote_sent', 'deposit_paid'] as const;
+export const INSIGHT_DAYS = 30;
+
+export interface ResponseSpeed {
+  /** Enquiries that came in during the window, spam left out. */
+  total: number;
+  /** Of those, how many have had a first reply. */
+  answered: number;
+  /** Of those, how many got it within the hour. */
+  withinHour: number;
+  /** Middle first-reply time in minutes among the answered ones, or null when none. */
+  medianMinutes: number | null;
+}
+
+export interface LeadInsights {
+  /** Open leads at each pipeline stage. */
+  pipeline: Record<(typeof PIPELINE_STAGES)[number], number>;
+  /** Enquiries by channel over the last 30 days, most first. */
+  channels: { channel: string; count: number }[];
+  speed: ResponseSpeed;
+}
+
+export function summariseSpeed(rows: { created_at: string; first_response_at: string | null }[]): ResponseSpeed {
+  const waits: number[] = [];
+  for (const r of rows) {
+    if (!r.first_response_at) continue;
+    const ms = Date.parse(r.first_response_at) - Date.parse(r.created_at);
+    if (Number.isFinite(ms)) waits.push(Math.max(0, ms) / 60_000);
+  }
+  waits.sort((a, b) => a - b);
+  const mid = waits.length ? (waits.length % 2 ? waits[(waits.length - 1) / 2] : (waits[waits.length / 2 - 1] + waits[waits.length / 2]) / 2) : null;
+  return { total: rows.length, answered: waits.length, withinHour: waits.filter((m) => m <= 60).length, medianMinutes: mid === null ? null : Math.round(mid) };
+}
+
+/** "12 min", "3 h 20 min", "2 days": a reply time people can read. */
+export function minutesLabel(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 24 * 60) return `${Math.floor(minutes / 60)} h${minutes % 60 ? ` ${minutes % 60} min` : ''}`;
+  const d = Math.round(minutes / (24 * 60));
+  return `${d} ${d === 1 ? 'day' : 'days'}`;
+}
+
+export async function loadLeadInsights(db: D1Like, nowIso = new Date().toISOString()): Promise<LeadInsights> {
+  const since = new Date(Date.parse(nowIso) - INSIGHT_DAYS * 86_400_000).toISOString();
+  const [stages, channels, recent] = await Promise.all([
+    db.prepare(`SELECT status, COUNT(*) AS n FROM leads GROUP BY status`).bind().all<{ status: string; n: number }>(),
+    db.prepare(`SELECT channel, COUNT(*) AS n FROM leads WHERE created_at >= ? AND status != 'spam' GROUP BY channel ORDER BY n DESC`).bind(since).all<{ channel: string; n: number }>(),
+    db.prepare(`SELECT created_at, first_response_at FROM leads WHERE created_at >= ? AND status != 'spam' ORDER BY created_at DESC LIMIT 2000`).bind(since).all<{ created_at: string; first_response_at: string | null }>(),
+  ]);
+  const pipeline = { new: 0, contacted: 0, qualified: 0, quote_sent: 0, deposit_paid: 0 };
+  for (const r of stages.results) if (r.status in pipeline) pipeline[r.status as keyof typeof pipeline] += r.n;
+  return { pipeline, channels: channels.results.map((r) => ({ channel: r.channel, count: r.n })), speed: summariseSpeed(recent.results) };
+}

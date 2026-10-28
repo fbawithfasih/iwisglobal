@@ -6,7 +6,7 @@ import { resolveEnv } from '../../../lib/env';
 import { setFlash } from '../../../lib/flash';
 import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import { recordLead, scoreBucket, CHANNELS, CHANNEL_LABELS, LEAD_STAGES, type Channel } from '../../../lib/contacts';
-import { VIEWS, STAGE_LABELS, listLeadsView, ownerLabel, takeLead, viewCounts, waitingLabel, waitingTooLong, type ViewKey } from '../../../lib/leadsAdmin';
+import { VIEWS, STAGE_LABELS, PIPELINE_STAGES, INSIGHT_DAYS, listLeadsView, loadLeadInsights, minutesLabel, ownerLabel, takeLead, viewCounts, waitingLabel, waitingTooLong, type LeadInsights, type ViewKey } from '../../../lib/leadsAdmin';
 import { actorLabel } from '../../../lib/authz';
 import { listStaff } from '../../../lib/staff';
 import { formatDateTimeIst } from '../../../lib/format';
@@ -74,17 +74,20 @@ let next: string | null = null;
 let counts: Record<string, number> = {};
 let waiting = 0;
 let staffNames: Record<string, string> = {};
+let insights: LeadInsights | null = null;
 let inboxLinks = new Map<string, string>(); // phone -> the guest's chat in the WhatsApp inbox, for those who have one
 if (db) {
   try {
     // All four are independent, so they go to the database together (one round trip, not four in a row).
     const nowIso = new Date().toISOString();
-    const [staff, page, viewTotals, tooLong] = await Promise.all([
+    const [staff, page, viewTotals, tooLong, ins] = await Promise.all([
       listStaff(db).catch(() => []),
       listLeadsView(db, { view, channel, stage, q: search, cursor, me }),
       viewCounts(db, nowIso, me),
       waitingTooLong(db),
+      loadLeadInsights(db).catch((err) => { console.error('admin leads: insights failed', err instanceof Error ? err.message : 'error'); return null; }),
     ]);
+    insights = ins;
     staffNames = Object.fromEntries(staff.map((s) => [s.email, s.name || s.email]));
     rows = page.rows;
     next = page.next;
@@ -104,19 +107,51 @@ const base = (extra: Record<string, string>) => {
   return `/admin/leads?${p.toString()}`;
 };
 const stageClass = (s: string) =>
-  s === 'booked' || s === 'converted' ? 'bg-green-100 text-green-800' :
-  s === 'lost' || s === 'spam' ? 'bg-red-100 text-red-800' :
-  s === 'deposit_paid' || s === 'quote_sent' ? 'bg-brand-100 text-brand-700' :
-  s === 'contacted' || s === 'qualified' ? 'bg-blue-100 text-blue-800' :
-  'bg-stone-100 text-stone-700';
-const bucketClass = { hot: 'bg-red-100 text-red-800', warm: 'bg-brand-100 text-brand-700', cold: 'bg-stone-100 text-stone-600' } as const;
+  s === 'booked' || s === 'converted' ? 'badge-success' :
+  s === 'lost' || s === 'spam' ? 'badge-danger' :
+  s === 'deposit_paid' || s === 'quote_sent' ? 'badge-brand' :
+  s === 'contacted' || s === 'qualified' ? 'badge-info' :
+  'badge-neutral';
+const bucketClass = { hot: 'badge-danger', warm: 'badge-warn', cold: 'badge-neutral' } as const;
+// The coloured edge of a lead card follows its stage, the same colours as the pills.
+const edge = (s: string) =>
+  s === 'booked' || s === 'converted' ? 'border-l-emerald-500' :
+  s === 'lost' || s === 'spam' ? 'border-l-rose-400' :
+  s === 'deposit_paid' || s === 'quote_sent' ? 'border-l-violet-500' :
+  s === 'contacted' || s === 'qualified' ? 'border-l-sky-500' :
+  'border-l-amber-400';
+const initial = (name: string) => (name.trim()[0] ?? '?').toUpperCase();
+const tiles = [
+  { key: 'attention', label: 'Needs attention', hint: 'New enquiries and follow-ups that have come due.', tone: 'warn' },
+  { key: 'unanswered', label: 'New and unanswered', hint: 'Nobody has replied yet.', tone: 'danger' },
+  { key: 'followups', label: 'Follow-ups due', hint: 'Open leads whose follow-up date has come.', tone: 'info' },
+  { key: 'mine', label: 'Mine', hint: 'Open leads you are handling.', tone: 'brand' },
+] as const;
+const tileKeys = new Set<string>(tiles.map((t) => t.key));
+const open = counts.open ?? 0;
+// The pipeline: open leads per stage. The funnel bars share one violet ramp, darker the closer to booking.
+const pipe = insights?.pipeline;
+const pipeMax = Math.max(1, ...PIPELINE_STAGES.map((k) => pipe?.[k] ?? 0));
+const pipeShade = ['bg-violet-200', 'bg-violet-300', 'bg-violet-400', 'bg-violet-500', 'bg-violet-700'];
+const channelsTop = (insights?.channels ?? []).slice(0, 6);
+const channelRest = (insights?.channels ?? []).slice(6).reduce((t, c) => t + c.count, 0);
+const channelMax = Math.max(1, ...channelsTop.map((c) => c.count));
+const speed = insights?.speed;
+// The verdict counts the enquiries nobody has answered too, so a good median among a few replies cannot look like good service.
+const coverage = speed && speed.total ? speed.answered / speed.total : 1;
+const unanswered = speed ? speed.total - speed.answered : 0;
+const speedTone = !speed || speed.answered === 0 ? 'info' : coverage < 0.5 ? 'danger' : coverage < 0.8 ? 'warn' : (speed.medianMinutes ?? 0) <= 60 ? 'success' : (speed.medianMinutes ?? 0) <= 240 ? 'warn' : 'danger';
+const speedPct = speed && speed.total ? Math.round((speed.withinHour / speed.total) * 100) : 0;
 const contactBtn = 'inline-flex min-h-11 items-center rounded border border-violet-200 bg-white px-3 text-sm text-stone-800';
 const field = 'rounded border border-violet-200 px-3 py-2';
 const back = Astro.url.pathname + Astro.url.search;
 ---
 <AdminLayout title="Leads">
-  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-semibold">Leads</h1>
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold">Leads</h1>
+      <p class="text-sm text-stone-600">{open} open · {counts.attention ?? 0 ? `${counts.attention} need attention` : 'nothing needs attention'}</p>
+    </div>
     <div class="flex flex-wrap gap-2 text-sm">
       <a href="/admin/leads/import" class="rounded border border-violet-200 bg-white px-3 py-2">Import CSV</a>
       <a href="/admin/leads/export" class="rounded border border-violet-200 bg-white px-3 py-2">Export CSV</a>
@@ -134,13 +169,94 @@ const back = Astro.url.pathname + Astro.url.search;
     <p class="notice notice-warn mb-4">{waiting} new {waiting === 1 ? 'lead has' : 'leads have'} waited more than an hour for a first reply.</p>
   )}
 
-  <nav class="mb-4 flex flex-wrap gap-2 text-sm" aria-label="Saved views">
-    {VIEWS.map((v) => (
-      <a href={`/admin/leads?view=${v.key}`} class={`rounded-full border px-3 py-1.5 ${v.key === view ? 'border-brand-700 btn-primary text-white' : 'border-violet-200 bg-white text-stone-700'}`}>
-        {v.label}{counts[v.key] ? ` (${counts[v.key]})` : ''}
-      </a>
-    ))}
-  </nav>
+  <section aria-label="Views" class="mb-6">
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {tiles.map((t) => {
+        const n = counts[t.key] ?? 0;
+        const active = view === t.key;
+        const clear = n === 0 && t.key !== 'mine';
+        return (
+          <a href={`/admin/leads?view=${t.key}`} aria-current={active ? 'page' : undefined} class={`block rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${clear ? 'tint-success' : `tint-${t.tone}`} ${active ? 'ring-2 ring-violet-500 ring-offset-2' : ''}`}>
+            <span class="block text-4xl font-semibold leading-none text-stone-900">{n}</span>
+            <span class="mt-2 block font-medium text-stone-800">{t.label}</span>
+            <span class="block text-xs text-stone-600">{clear ? '✓ All clear.' : t.hint}</span>
+          </a>
+        );
+      })}
+    </div>
+    <nav class="mt-3 flex flex-wrap gap-2 text-sm" aria-label="More views">
+      {VIEWS.filter((v) => !tileKeys.has(v.key)).map((v) => (
+        <a href={`/admin/leads?view=${v.key}`} aria-current={v.key === view ? 'page' : undefined} class={`rounded-full border px-3 py-1.5 ${v.key === view ? 'border-brand-700 btn-primary text-white' : 'border-violet-200 bg-white text-stone-700'}`}>
+          {v.label}{counts[v.key] ? ` (${counts[v.key]})` : ''}
+        </a>
+      ))}
+    </nav>
+  </section>
+
+  {insights && (
+    <div class="mb-6 grid items-start gap-4 lg:grid-cols-3">
+      <section aria-labelledby="pipeline" class="rounded-xl border border-violet-100 bg-white p-4">
+        <h2 id="pipeline" class="mb-1 text-lg font-semibold">Pipeline</h2>
+        <p class="mb-3 text-xs text-stone-600">Open leads by stage. Pick a stage to list them.</p>
+        <ul class="space-y-2">
+          {PIPELINE_STAGES.map((k, i) => {
+            const n = pipe?.[k] ?? 0;
+            return (
+              <li>
+                <a href={base({ view: 'open', stage: k, channel: '', cursor: '' })} data-tip={`${STAGE_LABELS[k]}: ${n} open ${n === 1 ? 'lead' : 'leads'}`} aria-current={stage === k ? 'true' : undefined} class={`vz block rounded-md px-1 py-0.5 hover:bg-violet-50 ${stage === k ? 'bg-violet-50' : ''}`}>
+                  <span class="flex items-center justify-between text-sm"><span class="text-stone-800">{STAGE_LABELS[k]}</span><span class="font-semibold text-stone-900">{n}</span></span>
+                  <span class="mt-1 block h-2.5 rounded-full bg-stone-100" aria-hidden="true"><span class={`block h-full rounded-full ${pipeShade[i]}`} style={`width:${n === 0 ? 0 : Math.max(6, Math.round((n / pipeMax) * 100))}%`}></span></span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section aria-labelledby="sources" class="rounded-xl border border-violet-100 bg-white p-4">
+        <h2 id="sources" class="mb-1 text-lg font-semibold">Where enquiries come from</h2>
+        <p class="mb-3 text-xs text-stone-600">Last {INSIGHT_DAYS} days, spam left out. Pick a channel to list its leads.</p>
+        {channelsTop.length === 0 ? (
+          <p class="text-sm text-stone-600">No enquiries in the last {INSIGHT_DAYS} days.</p>
+        ) : (
+          <ul class="space-y-2">
+            {channelsTop.map((c) => (
+              <li>
+                <a href={base({ view: 'all', channel: c.channel, stage: '', cursor: '' })} data-tip={`${CHANNEL_LABELS[c.channel] ?? c.channel}: ${c.count} ${c.count === 1 ? 'enquiry' : 'enquiries'}`} class={`vz block rounded-md px-1 py-0.5 hover:bg-violet-50 ${channel === c.channel ? 'bg-violet-50' : ''}`}>
+                  <span class="flex items-center justify-between text-sm"><span class="truncate text-stone-800">{CHANNEL_LABELS[c.channel] ?? c.channel}</span><span class="font-semibold text-stone-900">{c.count}</span></span>
+                  <span class="mt-1 block h-2.5 rounded-full bg-stone-100" aria-hidden="true"><span class="block h-full rounded-full bg-violet-500" style={`width:${Math.max(6, Math.round((c.count / channelMax) * 100))}%`}></span></span>
+                </a>
+              </li>
+            ))}
+            {channelRest > 0 && <li class="px-1 text-sm text-stone-600">Other channels: {channelRest}</li>}
+          </ul>
+        )}
+      </section>
+
+      <section aria-labelledby="speed" class={`rounded-xl border p-4 tint-${speedTone}`}>
+        <h2 id="speed" class="mb-1 text-lg font-semibold">How fast we reply</h2>
+        <p class="mb-3 text-xs text-stone-700">First reply to enquiries from the last {INSIGHT_DAYS} days.</p>
+        {!speed || speed.total === 0 ? (
+          <p class="text-sm text-stone-700">No enquiries in the last {INSIGHT_DAYS} days.</p>
+        ) : speed.answered === 0 ? (
+          <p class="text-sm text-stone-800">None of the {speed.total} enquiries has had a reply recorded yet.</p>
+        ) : (
+          <>
+            <p class="text-4xl font-semibold leading-none text-stone-900">{minutesLabel(speed.medianMinutes ?? 0)}</p>
+            <p class="mt-1 text-sm text-stone-800">typical wait among the {speed.answered} replied</p>
+            <div class="mt-4">
+              <div class="flex items-baseline justify-between text-sm"><span class="text-stone-800">Replied within an hour</span><span class="font-semibold text-stone-900">{speed.withinHour} of {speed.total} ({speedPct}%)</span></div>
+              <div class="mt-1 h-2.5 rounded-full bg-white/70" role="img" aria-label={`${speedPct} percent replied within an hour`}><div class="h-full rounded-full bg-violet-600" style={`width:${speedPct}%`}></div></div>
+              <p class="mt-3 text-xs text-stone-700">
+                {unanswered > 0 ? `⚠ ${unanswered} of ${speed.total} ${unanswered === 1 ? 'enquiry has' : 'enquiries have'} no reply recorded. ` : '✓ Every enquiry has a reply. '}
+                {speedTone === 'success' ? 'A typical reply comes within the hour.' : (speed.medianMinutes ?? 0) > 240 ? 'A typical reply takes over four hours.' : (speed.medianMinutes ?? 0) > 60 ? 'A typical reply takes over an hour.' : ''}
+              </p>
+            </div>
+          </>
+        )}
+      </section>
+    </div>
+  )}
 
   <form method="GET" class="mb-4 grid gap-2 text-sm sm:grid-cols-5">
     <input type="hidden" name="view" value={view} />
@@ -184,12 +300,15 @@ const back = Astro.url.pathname + Astro.url.search;
         const wait = waitingLabel(l);
         const closed = l.status === 'booked' || l.status === 'converted' || l.status === 'lost' || l.status === 'spam';
         return (
-          <li class="rounded-xl border border-violet-100 bg-white p-4 text-sm">
+          <li class={`rounded-xl border border-l-4 border-violet-100 bg-white p-4 text-sm transition hover:shadow-md ${edge(l.status)}`}>
             <div class="flex items-start justify-between gap-3">
-              <a href={`/admin/leads/${l.id}`} class="text-base font-semibold text-brand-700 hover:underline">{l.name}</a>
+              <span class="flex min-w-0 items-center gap-2.5">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full badge-brand text-sm font-semibold" aria-hidden="true">{initial(l.name)}</span>
+                <a href={`/admin/leads/${l.id}`} class="truncate text-base font-semibold text-brand-700 hover:underline">{l.name}</a>
+              </span>
               <div class="flex shrink-0 flex-wrap justify-end gap-1">
-                <span class={`rounded px-2 py-0.5 text-xs ${stageClass(l.status)}`}>{STAGE_LABELS[l.status] ?? l.status}</span>
-                {l.status !== 'booked' && l.status !== 'lost' && l.status !== 'spam' && <span class={`rounded px-2 py-0.5 text-xs ${bucketClass[bucket]}`}>{bucket}</span>}
+                <span class={`rounded-full px-2.5 py-0.5 text-xs font-medium ${stageClass(l.status)}`}>{STAGE_LABELS[l.status] ?? l.status}</span>
+                {l.status !== 'booked' && l.status !== 'lost' && l.status !== 'spam' && <span class={`rounded-full px-2.5 py-0.5 text-xs font-medium ${bucketClass[bucket]}`}>{bucket}</span>}
               </div>
             </div>
             <p class="mt-0.5 text-xs text-stone-500">
@@ -218,4 +337,26 @@ const back = Astro.url.pathname + Astro.url.search;
   {next && (
     <p class="mt-6"><a href={base({ cursor: next })} class="rounded border border-violet-200 bg-white px-4 py-2 text-sm">Older leads</a></p>
   )}
+  <div id="viz-tip" role="tooltip" hidden class="pointer-events-none fixed z-50 max-w-xs rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-stone-800 shadow-lg"></div>
 </AdminLayout>
+
+<script is:inline>
+  (function () {
+    // One tooltip for the pipeline and the channel bars. The text is set with textContent, never as HTML.
+    var tip = document.getElementById('viz-tip');
+    if (!tip) return;
+    document.querySelectorAll('[data-tip]').forEach(function (el) {
+      var show = function (x, y) {
+        tip.textContent = el.getAttribute('data-tip');
+        tip.hidden = false;
+        var w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 12)) + 'px';
+        tip.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, y - h - 12)) + 'px';
+      };
+      el.addEventListener('pointermove', function (e) { show(e.clientX, e.clientY); });
+      el.addEventListener('focus', function () { var b = el.getBoundingClientRect(); show(b.left + b.width / 2, b.top); });
+      el.addEventListener('pointerleave', function () { tip.hidden = true; });
+      el.addEventListener('blur', function () { tip.hidden = true; });
+    });
+  })();
+</script>
