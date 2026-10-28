@@ -158,6 +158,17 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3p.5 | Edit still opens the offer; creating, editing and deleting an offer work as before; no money totals appear on the page | | |
 | 3p.6 | 320 px: no sideways scroll; keyboard focus reaches every bar and Edit button | | |
 
+## 3q. Private offers as a picture
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3q.1 | Private offers: four tiles: Waiting for payment (orange when one has waited 7+ days), Balance to collect, Paid in full, Need you (red when a paid receipt email did not go out or an offer cannot be read, green with a tick when none) | | |
+| 3q.2 | "Where the offers stand": one bar and a legend (Paid in full, Booking amount paid, Waiting for payment, Closed, Unreadable) that adds up to the number of offers | | |
+| 3q.3 | Each offer is a card with its guest, a status label, "Created N days ago", a "Waiting N days" label after 7 days, the chosen option, a paid-percent bar with the paid amount and balance once a payment is in, and Copy link (the button says Copied) | | |
+| 3q.4 | A paid payment whose receipt email shows "not sent yet" or "sending / interrupted" puts a red message on that card and counts in Need you | | |
+| 3q.5 | Order: unreadable first, then balance to collect, then waiting (oldest first), then paid, then closed | | |
+| 3q.6 | The payments table is still there per offer (kind, amount, status, payer, paid at, Razorpay id, emails); at 320 px it scrolls inside its box and can be reached with the keyboard; the page itself does not scroll sideways | | |
+
 ## 3o. OpenAI Ads pixel
 
 | # | Check | Who | Result |

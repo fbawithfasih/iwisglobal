@@ -11,6 +11,7 @@ import { isAdminAuthenticated } from '../../../lib/requireAdmin';
 import type { D1Like } from '../../../lib/db';
 import { readOffer, listPaid } from '../../../lib/offerData';
 import { offerState } from '../../../lib/offerPricing';
+import { offerStage, ageDays, ageLabel, receiptProblems, paidPercent, offerMix, WAITING_NUDGE_DAYS, type OfferStage } from '../../../lib/privateOffersAdmin';
 
 const env = resolveEnv(Astro.locals);
 if (!(await isAdminAuthenticated(Astro.cookies, env.ADMIN_SESSION_SECRET, Astro.locals))) {
@@ -27,6 +28,7 @@ interface PaymentView {
   paidAt: string;
   emails: string;
   paymentId: string;
+  receiptSentAt: string;
 }
 interface OfferView {
   id: string;
@@ -39,6 +41,10 @@ interface OfferView {
   balance?: string;
   paidCount: number;
   payments: PaymentView[];
+  stage: OfferStage;
+  age: number;
+  paidPct: number;
+  problems: number;
 }
 
 const STATUS_LABEL: Record<string, string> = { unpaid: 'Unpaid', deposit_paid: 'Booking amount paid', paid_in_full: 'Paid in full' };
@@ -48,6 +54,7 @@ const when = (iso: unknown) => {
 };
 const text = (v: unknown) => (typeof v === 'string' ? v : '');
 
+const nowMs = Date.now();
 const offers: OfferView[] = [];
 let loadError = false;
 if (db) {
@@ -75,6 +82,7 @@ if (db) {
             payer: [text(p.payer_name), text(p.payer_email)].filter(Boolean).join(' / '),
             paidAt: status === 'paid' ? when(p.updated_at) : '',
             paymentId: text(p.payment_id),
+            receiptSentAt: sent,
             emails: status !== 'paid' ? '' : sent === '' ? 'not sent yet' : sent.startsWith('pending:') ? 'sending / interrupted' : `sent ${when(sent) || sent}`,
           };
         });
@@ -90,9 +98,13 @@ if (db) {
           balance: state.status === 'unpaid' ? '' : fmt(state.balanceMinor),
           paidCount: payments.filter((p) => p.status === 'paid').length,
           payments,
+          stage: offerStage(state.status, offer.status !== 'open'),
+          age: ageDays(offer.createdAt, nowMs),
+          paidPct: paidPercent(state.paidMinor, state.totalMinor),
+          problems: receiptProblems(payments),
         });
       } catch {
-        offers.push({ id, ok: false, paidCount: 0, payments: [] });
+        offers.push({ id, ok: false, paidCount: 0, payments: [], stage: 'unreadable', age: 0, paidPct: 0, problems: 0 });
       }
     }
   } catch {
@@ -101,69 +113,109 @@ if (db) {
 }
 const th = 'px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-stone-500';
 const td = 'px-3 py-2 align-top text-sm';
+
+// The pictures at the top: where each offer stands, and who needs a person. Counts only.
+const mix = offerMix(offers.map((o) => ({ stage: o.stage, ageDays: o.age, receiptProblems: o.problems })));
+const stageText: Record<OfferStage, string> = { waiting: 'Waiting for payment', deposit: 'Booking amount paid', paid: 'Paid in full', closed: 'Closed', unreadable: 'Unreadable' };
+const stageBadge: Record<OfferStage, string> = { waiting: 'badge-info', deposit: 'badge-warn', paid: 'badge-success', closed: 'badge-neutral', unreadable: 'badge-danger' };
+const stageEdge: Record<OfferStage, string> = { waiting: 'border-l-sky-500', deposit: 'border-l-orange-400', paid: 'border-l-emerald-500', closed: 'border-l-stone-300', unreadable: 'border-l-rose-500' };
+const stageBar: Record<OfferStage, string> = { waiting: 'bg-sky-500', deposit: 'bg-orange-400', paid: 'bg-emerald-500', closed: 'bg-stone-400', unreadable: 'bg-rose-500' };
+const ORDER: Record<OfferStage, number> = { unreadable: 0, deposit: 1, waiting: 2, paid: 3, closed: 4 };
+// Offers that need a decision first (unreadable, then balance still to collect), then waiting, then finished.
+const shown = [...offers].sort((a, b) => ORDER[a.stage] - ORDER[b.stage] || b.age - a.age);
+const parts = (['paid', 'deposit', 'waiting', 'closed', 'unreadable'] as OfferStage[]).map((k) => ({ k, label: stageText[k], n: k === 'paid' ? mix.paid : k === 'deposit' ? mix.deposit : k === 'waiting' ? mix.waiting : k === 'closed' ? mix.closed : mix.unreadable })).filter((x) => x.n > 0);
+const tiles = [
+  { label: 'Waiting for payment', n: mix.waiting, hint: mix.waitingLong ? `${mix.waitingLong} waiting ${WAITING_NUDGE_DAYS}+ days: worth a nudge.` : 'Sent, no payment yet.', tone: mix.waitingLong ? 'warn' : 'info' },
+  { label: 'Balance to collect', n: mix.deposit, hint: 'Booking amount paid, the rest is still due.', tone: mix.deposit ? 'warn' : 'success' },
+  { label: 'Paid in full', n: mix.paid, hint: 'Nothing more to collect.', tone: 'success' },
+  { label: 'Need you', n: mix.needYou, hint: mix.needYou ? 'A receipt email did not go out, or an offer cannot be read.' : '✓ Every receipt was sent.', tone: mix.needYou ? 'danger' : 'success' },
+] as const;
 ---
 <AdminLayout title="Private offers">
-  <h1 class="text-2xl font-semibold mb-2">Private offers</h1>
-  <p class="text-stone-500 text-sm mb-1">
-    Offers cannot be edited once created; to change terms, create a new offer.
-  </p>
-  <p class="text-stone-500 text-sm mb-4">Created with <code>scripts/offer-seed.mjs</code>. Each guest has their own secret link.</p>
+  <div class="mb-5">
+    <h1 class="text-2xl font-semibold">Private offers</h1>
+    <p class="text-sm text-stone-600">{mix.total} {mix.total === 1 ? 'offer' : 'offers'}{mix.waiting ? ` · ${mix.waiting} waiting for payment` : ''}</p>
+  </div>
+  <p class="mb-1 max-w-3xl text-sm text-stone-600">Offers cannot be edited once created; to change terms, create a new offer.</p>
+  <p class="mb-5 max-w-3xl text-sm text-stone-600">Created with <code>scripts/offer-seed.mjs</code>. Each guest has their own secret link.</p>
   {!db && <p class="notice notice-danger my-3" role="alert">Database not available.</p>}
   {loadError && <p class="notice notice-danger my-3" role="alert">Could not load private offers. Has schema_private_offers.sql been applied?</p>}
   {db && !loadError && offers.length === 0 && <EmptyState message="No private offers yet" hint="A private offer is a price made for one guest, sent as a private link." />}
 
-  {offers.map((o) => (
-    <section class="mb-5 rounded-xl border border-violet-100 bg-white p-4">
-      {!o.ok ? (
-        <p class="text-sm text-red-700">unreadable offer {o.id}</p>
-      ) : (
-        <>
-          <div class="overflow-x-auto">
-            <table class="min-w-full">
-              <thead>
-                <tr>
-                  <th class={th}>Created</th><th class={th}>Customer</th><th class={th}>Status</th>
-                  <th class={th}>Option</th><th class={th}>Paid</th><th class={th}>Balance</th><th class={th}>Payments received</th><th class={th}></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class={td}>{o.created}</td>
-                  <td class={`${td} font-medium`}>{o.customer}</td>
-                  <td class={td}>{o.statusLabel}</td>
-                  <td class={td}>{o.chosen || '-'}</td>
-                  <td class={td}>{o.paid || '-'}</td>
-                  <td class={td}>{o.balance || '-'}</td>
-                  <td class={td}>{o.paidCount}</td>
-                  <td class={td}>
-                    <button type="button" data-copy-link={`https://www.iwisglobal.com/offer/${o.id}`} class="min-h-11 rounded border border-violet-200 bg-white px-3 text-sm">Copy link</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+  {offers.length > 0 && (
+    <>
+    <section aria-label="Overview" class="mb-6">
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {tiles.map((t) => (
+          <div class={`rounded-xl border p-4 tint-${t.tone}`}>
+            <span class="block text-4xl font-semibold leading-none text-stone-900">{t.n}</span>
+            <span class="mt-2 block font-medium text-stone-800">{t.label}</span>
+            <span class="block text-xs text-stone-600">{t.hint}</span>
           </div>
-          {o.payments.length > 0 && (
-            <div class="mt-3 overflow-x-auto">
-              <table class="min-w-full border-t border-violet-100">
-                <thead>
-                  <tr><th class={th}>Kind</th><th class={th}>Amount</th><th class={th}>Status</th><th class={th}>Payer</th><th class={th}>Paid at</th><th class={th}>Razorpay payment id</th><th class={th}>Emails</th></tr>
-                </thead>
-                <tbody>
-                  {o.payments.map((p) => (
-                    <tr class="border-t border-stone-100">
-                      <td class={td}>{p.kind}</td><td class={td}>{p.amount}</td><td class={td}>{p.status}</td>
-                      <td class={td}>{p.payer || '-'}</td><td class={td}>{p.paidAt || '-'}</td><td class={td}>{p.paymentId || '-'}</td><td class={td}>{p.emails || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      )}
+        ))}
+      </div>
     </section>
-  ))}
 
+    <section aria-labelledby="mixPic" class="mb-6 rounded-xl border border-violet-100 bg-white p-4">
+      <h2 id="mixPic" class="mb-1 text-lg font-semibold">Where the offers stand</h2>
+      <p class="mb-3 text-xs text-stone-600">Each offer is in exactly one place; the list adds up to {mix.total}.</p>
+      <div class="flex h-3 overflow-hidden rounded-full bg-stone-100" role="img" aria-label={parts.map((x) => `${x.label} ${x.n}`).join(', ')}>
+        {parts.map((x) => <span class={stageBar[x.k]} style={`width:${(x.n / mix.total) * 100}%`}></span>)}
+      </div>
+      <ul class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        {parts.map((x) => <li class="flex items-center gap-2"><span class={`h-2.5 w-2.5 rounded-full ${stageBar[x.k]}`} aria-hidden="true"></span><span class="text-stone-700">{x.label}</span> <span class="font-semibold text-stone-900">{x.n}</span></li>)}
+      </ul>
+    </section>
+    </>
+  )}
+
+  <ul class="space-y-3">
+    {shown.map((o) => (
+      <li class={`rounded-xl border border-l-4 border-violet-100 bg-white p-4 ${stageEdge[o.stage]}`}>
+        {!o.ok ? (
+          <p class="text-sm text-red-700"><span class="badge-danger mr-2 rounded-full px-2 py-0.5 text-[11px] font-medium">Unreadable</span>unreadable offer {o.id}</p>
+        ) : (
+          <>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="flex flex-wrap items-center gap-2"><span class="text-base font-semibold text-stone-900">{o.customer}</span> <span class={`${stageBadge[o.stage]} rounded-full px-2 py-0.5 text-[11px] font-medium`}>{o.statusLabel}</span></p>
+                <p class="mt-0.5 text-xs text-stone-600">{ageLabel(o.age)} · {o.created}{o.stage === 'waiting' && o.age >= WAITING_NUDGE_DAYS && <span class="badge-warn ml-2 rounded px-1.5 py-0.5 text-[11px]">Waiting {o.age} days</span>}</p>
+              </div>
+              <button type="button" data-copy-link={`https://www.iwisglobal.com/offer/${o.id}`} class="min-h-11 rounded border border-violet-200 bg-white px-4 text-sm text-stone-800">Copy link</button>
+            </div>
+            {o.chosen && <p class="mt-2 text-sm text-stone-700">{o.chosen}</p>}
+            {(o.stage === 'deposit' || o.stage === 'paid') && (
+              <div class="mt-2">
+                <span class="flex items-center gap-2">
+                  <span class="block h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100" role="img" aria-label={`${o.paidPct}% of the trip total paid`}><span class={`block h-full rounded-full ${o.stage === 'paid' ? 'bg-emerald-500' : 'bg-orange-400'}`} style={`width:${o.paidPct}%`}></span></span>
+                  <span class="text-xs font-medium text-stone-700">{o.paidPct}% paid</span>
+                </span>
+                <p class="mt-1 text-sm text-stone-700">Paid <span class="font-semibold text-stone-900">{o.paid}</span>{o.balance && o.stage === 'deposit' ? <> · balance <span class="font-semibold text-stone-900">{o.balance}</span></> : ''} · {o.paidCount} {o.paidCount === 1 ? 'payment' : 'payments'} received</p>
+              </div>
+            )}
+            {o.problems > 0 && <p class="notice notice-danger mt-3" role="alert">{o.problems === 1 ? 'One paid receipt email did not go out' : `${o.problems} paid receipt emails did not go out`}. See the Emails column below.</p>}
+            {o.payments.length > 0 && (
+              <div class="mt-3 overflow-x-auto" tabindex="0" role="region" aria-label={`Payments from ${o.customer}`}>
+                <table class="min-w-full border-t border-violet-100">
+                  <thead>
+                    <tr><th class={th}>Kind</th><th class={th}>Amount</th><th class={th}>Status</th><th class={th}>Payer</th><th class={th}>Paid at</th><th class={th}>Razorpay payment id</th><th class={th}>Emails</th></tr>
+                  </thead>
+                  <tbody>
+                    {o.payments.map((p) => (
+                      <tr class="border-t border-stone-100">
+                        <td class={td}>{p.kind}</td><td class={td}>{p.amount}</td><td class={td}>{p.status}</td>
+                        <td class={td}>{p.payer || '-'}</td><td class={td}>{p.paidAt || '-'}</td><td class={td}>{p.paymentId || '-'}</td><td class={td}>{p.emails || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </li>
+    ))}
+  </ul>
   <script>
     document.querySelectorAll<HTMLButtonElement>('[data-copy-link]').forEach((btn) => {
       btn.addEventListener('click', async () => {
