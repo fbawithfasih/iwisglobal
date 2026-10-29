@@ -14,6 +14,11 @@ Plan: `/root/.claude/plans/spicy-noodling-stroustrup.md` (12 weeks from 29 Oct 2
 - "Free cancellation up to 24h" is the real policy. Ad lines added: headline `Kostenlos stornieren bis 24h` (28) and description `Online buchen, sofort bestätigt. Kostenlos stornieren bis 24 Stunden vor der Abholung.` (86).
 - Every ad now has 15 headlines and 4 descriptions, all within the 30 and 90 character limits.
 
+## The two German guests (confirmed by the owner, 29 Oct 2026)
+- Jan Hendrik Petersen: private offer paid in euro (250), travels 16 Nov 2026.
+- Dzemal Elezagic: same-day Agra tour paid in rupees (20,397 INR), travelled 29 Oct 2026. A German guest paying in INR is a data point for the euro-pricing decision (plan step A6).
+Both go on the "ask for a Google and Tripadvisor review" list; Elezagic is ready from 30 Oct.
+
 ## Decisions
 - **No proofreading before launch** (owner's call). Risk: the German pages are machine translated. Keep `docs/german-review/de-round-1.csv`; when a German reader is available, send it back and the corrections go in one pull request. Until then, watch the Germany enquiries for confusion.
 - **No Keyword Planner numbers** (owner could not fetch them). Start with manual CPC and a cap of 1.00 euro per click, 10 euro a day. This is a guess, not data. After the first 100 clicks, use the real average CPC in the Google Ads campaign view to move the cap.
