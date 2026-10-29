@@ -7,6 +7,8 @@ const GUIDE_ORDER = [
   'how-to-avoid-taj-mahal-scams',
   'best-time-to-visit-taj-mahal',
   'taj-mahal-opening-hours-closed-friday',
+  'delhi-to-agra-one-day-car-or-gatimaan-express',
+  'add-agra-day-to-india-trip',
   'is-one-day-enough-taj-mahal',
   'what-not-to-bring-taj-mahal',
   'taj-mahal-tripod-photography-rules',
