@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { pageI18n } from '../i18n/dictionaries';
+
+// The provider details every page of this site already shows in /about, /contact and the terms (registered address,
+// GSTIN, phone, email, grievance officer). Kept short and factual: the wording has not been reviewed by a lawyer. Dynamic
+// for the same reason as /terms: BaseLayout's nav and footer depend on the per-request language.
+export const prerender = false;
+const { t } = pageI18n(Astro);
+const p = t.impressumPage;
+---
+
+<BaseLayout title={p.title} description={p.description}>
+  <section class="max-w-2xl mx-auto px-6 py-12 md:py-16 [&_h2]:mt-8 [&_h2]:mb-2 [&_h2]:border-l-4 [&_h2]:border-brand-500 [&_h2]:pl-3 [&_h2]:font-serif [&_h2]:text-xl [&_h2]:text-brand-900">
+    <h1 class="text-3xl md:text-4xl font-serif font-semibold mb-2">{p.h1}</h1>
+    <p class="mb-2 text-stone-600">{p.intro}</p>
+
+    <h2>{p.operatorTitle}</h2>
+    <p class="text-stone-700">{p.operator}</p>
+
+    <h2>{p.addressTitle}</h2>
+    <p class="text-stone-700" set:html={t.aboutPage.k5} />
+
+    <h2>{p.contactTitle}</h2>
+    <p class="text-stone-700">
+      {p.phoneLabel}: <a href="tel:+916399226633" class="text-brand-800 underline">+91 6399226633</a><br />
+      {p.emailLabel}: <a href="mailto:info@iwisglobal.com" class="text-brand-800 underline">info@iwisglobal.com</a>
+    </p>
+
+    <h2>{p.taxTitle}</h2>
+    <p class="text-stone-700">{p.tax}</p>
+
+    <h2>{p.personTitle}</h2>
+    <p class="text-stone-700">{p.person}</p>
+
+    <h2>{p.seeAlso}</h2>
+    <ul class="list-disc pl-5 text-stone-700 space-y-1">
+      <li><a href="/terms" class="text-brand-800 underline">{t.footer.terms}</a></li>
+      <li><a href="/privacy" class="text-brand-800 underline">{t.footer.privacy}</a></li>
+      <li><a href="/cancellation-refund-policy" class="text-brand-800 underline">{t.footer.cancellation}</a></li>
+    </ul>
+  </section>
+</BaseLayout>

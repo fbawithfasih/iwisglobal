@@ -22,6 +22,7 @@ export const LOCALIZED_STATIC = [
   '/no-commission-pledge',
   '/terms',
   '/privacy',
+  '/impressum',
   '/cancellation-refund-policy',
   '/shipping-policy',
   '/reviews',

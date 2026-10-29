@@ -230,6 +230,15 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3w.4 | The tables (By channel, By campaign, Email campaigns, Marketing spend) are all still there with every column; adding and removing a spend entry still works, with a green or red message | | |
 | 3w.5 | With no leads in the range the charts are hidden and the tiles say so; 320 px: no sideways scroll except inside the tables, which scroll in their own box | | |
 
+## 3x. Impressum and the German push files
+
+| # | Check | Who | Result |
+|---|---|---|---|
+| 3x.1 | `/impressum`, `/de/impressum`, `/fr/impressum` and `/es/impressum` open and are titled Legal notice / Impressum / Mentions légales / Aviso legal; they show the provider, the Agra address, phone, email, GSTIN and the responsible person, and links to terms, privacy and cancellation | | |
+| 3x.2 | The footer of every page links to it in the visitor's language (label "Impressum" on the German site) | | |
+| 3x.3 | The page is in `/sitemap-0.xml` in all four languages | | |
+| 3x.4 | `docs/google-ads/iwis-de-ads.csv` imports into Google Ads without a character-limit error (headlines 30, descriptions 90) | | |
+
 ## 3o. OpenAI Ads pixel
 
 | # | Check | Who | Result |
