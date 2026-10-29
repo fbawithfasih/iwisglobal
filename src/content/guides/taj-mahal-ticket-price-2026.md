@@ -3,7 +3,7 @@ title: "Taj Mahal Ticket Price 2026: The Full Cost"
 description: "Taj Mahal tickets: foreign entry is ₹1,100, but most guides leave out the ₹200 mausoleum ticket. The full cost stack, sourced from ASI's own ticketing page."
 authorName: "IWIS Global"
 datePublished: 2026-09-21
-dateModified: 2026-09-27
+dateModified: 2026-10-29
 ---
 
 Foreign tourists pay **₹1,100** for Taj Mahal complex entry, plus a separate **₹200** ticket to enter the main mausoleum chamber — **₹1,300 total** per adult. Indian nationals pay ₹50 (complex) + ₹200 (mausoleum); SAARC/BIMSTEC nationals pay ₹540 + ₹200. Children under 15 enter free, for both tickets. Source: [ASI's official ticketing page](https://www.tajmahal.gov.in/ticketing.aspx), checked 27 September 2026.
@@ -35,9 +35,7 @@ ASI's [Dos and Don'ts page](https://www.tajmahal.gov.in/dos-and-donts.aspx) says
 
 ## Online vs. counter: is there a price difference?
 
-ASI's own ticketing page doesn't list a separate online-vs-counter price differential — tickets are sold both through [asiagracircle.in](https://www.asiagracircle.in) and directly on [tajmahal.gov.in](https://www.tajmahal.gov.in). If you've seen a source claiming a specific online convenience fee, treat it as unverified until ASI's page confirms it — third-party operators sometimes reference one, but it wasn't on the official page as of September 2026.
-
-<!-- TODO(fasih): confirm directly with ASI Agra Circle if a current online booking surcharge exists. -->
+A small one. ASI's [visiting-hours page](https://www.tajmahal.gov.in/visiting-hours.aspx) says tourists who buy tickets online get a discount of ₹50 per foreign ticket (₹5 per Indian ticket). Tickets are sold online through [asiagracircle.in](https://www.asiagracircle.in) and [tajmahal.gov.in](https://www.tajmahal.gov.in), and at the monument's West and East gate counters (1 hour before sunrise to 45 minutes before sunset); the South gate is exit-only for now. Foreign and domestic visitors queue separately, with signs. ASI's page lists no extra online service fee, so if an operator adds one, it is that operator's own markup.
 
 ## What this means for booking a tour
 
@@ -47,4 +45,4 @@ For the monument itself — history, hours, and what to expect on arrival — se
 
 ---
 
-**Prices checked on 27 September 2026** against [tajmahal.gov.in/ticketing.aspx](https://www.tajmahal.gov.in/ticketing.aspx) (Archaeological Survey of India). ASI updates pricing periodically; verify before relying on this for a specific trip date.
+**Prices checked on 27 September 2026; online discount and gates added 29 October 2026** against [tajmahal.gov.in/ticketing.aspx](https://www.tajmahal.gov.in/ticketing.aspx) and [tajmahal.gov.in/visiting-hours.aspx](https://www.tajmahal.gov.in/visiting-hours.aspx) (Archaeological Survey of India). ASI updates pricing periodically; verify before relying on this for a specific trip date.
