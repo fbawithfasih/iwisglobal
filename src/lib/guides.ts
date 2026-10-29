@@ -6,6 +6,7 @@ const GUIDE_ORDER = [
   'taj-mahal-ticket-price-2026',
   'how-to-avoid-taj-mahal-scams',
   'best-time-to-visit-taj-mahal',
+  'taj-mahal-opening-hours-closed-friday',
   'is-one-day-enough-taj-mahal',
   'what-not-to-bring-taj-mahal',
   'taj-mahal-tripod-photography-rules',

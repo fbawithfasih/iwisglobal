@@ -1,9 +1,20 @@
 ---
-title: "Der beste Monat für einen Besuch des Taj Mahal"
-description: "November bis Februar ist am kühlsten, aber nicht immer am klarsten. Temperatur Monat für Monat, Luftverschmutzung und Sonnenaufgangszeiten – nicht nur „im Winter ist es am besten“."
+title: "Beste Reisezeit Taj Mahal: Monat für Monat"
+description: "Wann ist die beste Reisezeit für das Taj Mahal? Temperatur, Luftqualität und Sonnenaufgang Monat für Monat – mit klarer Empfehlung."
 ---
 
-**November bis Februar** bietet die angenehmsten Tagestemperaturen (Höchstwerte von etwa 22–29 °C), aber auch die schlechteste Luftqualität des Jahres, mit Morgennebel, der häufig genug ist, um die Sicht bei Sonnenaufgang zu verzögern. **März** ist ein Mittelweg: wärmer, aber klarer. Es gibt hier einen echten Zielkonflikt, keine einzelne „beste“ Antwort. Es kommt darauf an, ob Sie auf Komfort oder auf freie Sicht optimieren.
+**Kurzantwort:** Für die meisten Reisenden ist **Februar bis Anfang März** die beste Reisezeit für das Taj Mahal: Es ist weder so kalt und dunstig wie im Dezember und Januar noch so heiß wie ab April. Wer vor allem angenehme Temperaturen will, reist von **November bis Februar**, nimmt dafür aber die schlechteste Luftqualität des Jahres und häufigen Morgennebel in Kauf. **März** ist ein Mittelweg: wärmer, aber klarer. Eine einzige „beste“ Antwort gibt es nicht – es kommt darauf an, ob Sie auf Komfort oder auf freie Sicht setzen.
+
+## Auf einen Blick
+
+| Was ist Ihnen wichtig? | Beste Zeit |
+|---|---|
+| Kühlste Temperaturen | Dezember–Januar |
+| Klarere Luft, noch mild | März |
+| Beide Extreme vermeiden | Februar–Anfang März |
+| Hitze und Schwüle stören nicht | Mai–August |
+
+Wichtig für die Planung: Das Taj Mahal ist **freitags geschlossen** (Details in unserem Ratgeber zu den [Öffnungszeiten](/guides/taj-mahal-opening-hours-closed-friday)), und der Eintritt kostet 1.300 ₹ pro Erwachsenem ([Eintrittspreise 2026](/guides/taj-mahal-ticket-price-2026)).
 
 ## Temperatur Monat für Monat
 
@@ -56,15 +67,18 @@ Die Sonnenaufgangszeit bestimmt direkt die Abholzeit bei einer [Sonnenaufgangsto
 
 Ein Sonnenaufgangsbesuch beginnt im Winter also fast zwei Stunden später als im Sommer. Das Taj Mahal selbst öffnet 30 Minuten vor Sonnenaufgang.
 
-## Wann sollten Sie also tatsächlich reisen?
+## Häufige Fragen
 
-| Priorität | Beste Zeit |
-|---|---|
-| Kühlste Temperaturen | Dezember–Januar |
-| Klarere Luft, noch mild | März |
-| Beide Extreme vermeiden | Februar–Anfang März |
-| Die Hitze stört nicht | Mai–August (heiß, schwül) |
+**Ist der Winter für Deutsche die beste Reisezeit?** Wer Hitze meiden will, ja: Dezember und Januar sind am kühlsten. Rechnen Sie aber mit Dunst, Nebel am Morgen und im Januar mit der schlechtesten Luft des Jahres. Februar bis Anfang März ist für viele der beste Kompromiss.
+
+**Lohnt sich ein Besuch im Sommer?** Mai bis August ist heiß und schwül; ab April sind über 40 °C normal. Planen Sie dann den frühen Morgen und vermeiden Sie die Mittagszeit.
+
+**Wie früh muss ich am Taj Mahal sein?** Das Monument öffnet 30 Minuten vor Sonnenaufgang. Im Januar ist das gegen 06:40 Uhr, im Juni gegen 04:50 Uhr (indische Zeit).
+
+**Gibt es einen Tag, an dem das Taj Mahal geschlossen ist?** Ja, jeden Freitag. Planen Sie Agra für einen anderen Wochentag.
+
+**Kann ich Agra an einem Tag von Delhi aus sehen?** Ja, das ist die beliebteste Art. Unsere [private Tagestour von Delhi nach Agra](/tours/same-day-agra-from-delhi) holt Sie am Hotel ab, Eintritt ist im Preis enthalten, und auf Wunsch gibt es einen deutschsprachigen Guide (1.500 ₹ Aufpreis). Ob ein Tag reicht, lesen Sie in [Reicht ein Tag für das Taj Mahal?](/guides/is-one-day-enough-taj-mahal).
 
 ---
 
-**Geprüft am 27. September 2026.** Temperaturdaten: IMD-Normalwerte 1991–2020 über Wikipedia. Luftqualität: historische Daten von IQAir (2019 – oben als Ersatzbedarf durch aktuelle Werte gekennzeichnet). Sonnenaufgang: timeanddate.com (Zeiten für 2026).
+**Geprüft am 27. September 2026, ergänzt am 29. Oktober 2026.** Temperaturdaten: IMD-Normalwerte 1991–2020 über Wikipedia. Luftqualität: historische Daten von IQAir (2019 – oben als möglicherweise nicht mehr aktuell gekennzeichnet). Sonnenaufgang: timeanddate.com (Zeiten für 2026). Öffnung 30 Minuten vor Sonnenaufgang und Freitagsschließung: [tajmahal.gov.in](https://www.tajmahal.gov.in/visiting-hours.aspx).
