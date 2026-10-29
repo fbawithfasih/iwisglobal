@@ -41,7 +41,7 @@ Both go on the "ask for a Google and Tripadvisor review" list; Elezagic is ready
 4. Wait up to 24 hours; the status should change to "Recording conversions".
 
 ## To do on the site (not built yet)
-- Say the German-guide price on the tour pages, in the German texts: "Deutschsprachiger Guide: 1.500 INR Aufpreis". Needs a copy change in `src/i18n/de.ts` and the tour data; not done in this PR.
+- Done: tour pages now say "German-speaking guide available: ₹1,500 extra. Message us when you book." (in all four languages, under the key facts). Assumed to be per booking; the guest asks by message, there is no checkout option for it yet.
 - Tag the German guests. There is no tag field on bookings yet; for now use a note on the lead.
 
 ## Do not

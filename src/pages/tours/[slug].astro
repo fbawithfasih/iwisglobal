@@ -107,6 +107,9 @@ const whatsappBarRef = `BOOKBAR-TOURS-${tour.slug.toUpperCase()}`;
 const fromPriceLabel = `${CURRENCY_SYMBOLS[fromPrice.currency]}${fromPrice.amount.toLocaleString(fromPrice.currency === 'USD' ? 'en-US' : 'en-IN')}`;
 const reviewCount = (n: number) => fmt(n === 1 ? tp.reviewOne : tp.reviewMany, { n });
 
+// Extra for a German-speaking guide on a standard tour, quoted in rupees whatever currency the page shows.
+const GERMAN_GUIDE_EXTRA_LABEL = '₹1,500';
+
 // Key-facts tiles under the title. Each is shown only when the tour data
 // backs it, so nothing here claims more than the tour actually offers.
 const factTiles: { icon: IconName; label: string; value: string }[] = [
@@ -337,6 +340,9 @@ const itinerarySites = sitesInText(tour.itinerary.map((st) => st.activity).join(
           </li>
         ))}
       </ul>
+      {tour.guideLanguage && tour.guideLanguage !== 'de' && (
+        <p class="-mt-3 mb-6 text-sm text-stone-600">{fmt(tp.germanGuideNote, { price: GERMAN_GUIDE_EXTRA_LABEL })}</p>
+      )}
 
       <div class="mb-8 rounded-2xl bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 p-6 text-white shadow-lg shadow-brand-900/20">
         <div class="flex flex-wrap items-end justify-between gap-4">

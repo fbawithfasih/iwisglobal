@@ -405,6 +405,7 @@ export const en = {
       privateValue: "Private, just your group",
       guide: "Guide",
       guideValue: "{lang}-speaking",
+      germanGuideNote: "German-speaking guide available: {price} extra. Message us when you book.",
       pickup: "Hotel pickup",
       included: "Included",
       cancellation: "Cancellation",
