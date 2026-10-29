@@ -48,8 +48,10 @@ Both go on the "ask for a Google and Tripadvisor review" list; Elezagic is ready
 add Austria and Switzerland before week 6; buy links or post in forums as an ad.
 
 ## German pages (plan step B)
-Done in this repo (29 Oct 2026), all with a link to the matching tour and the German-guide and free-cancellation facts:
+Done in this repo (29 Oct 2026; 4 and 5 added the same day), all with a link to the matching tour and the German-guide and free-cancellation facts:
 1. `/de/guides/best-time-to-visit-taj-mahal`: "Beste Reisezeit Taj Mahal: Monat für Monat" (upgraded, short answer first, FAQ).
 2. `/de/guides/taj-mahal-ticket-price-2026`: "Taj Mahal Eintrittspreis 2026: Gesamtkosten" (upgraded; new: ASI's 50 INR online discount, gates, FAQ). The English guide had said there was no online price difference; ASI's visiting-hours page says there is, so the English guide is corrected too.
 3. `/guides/taj-mahal-opening-hours-closed-friday` and `/de/guides/...`: new guide, "Taj Mahal Öffnungszeiten: Freitag geschlossen".
-Not done yet: Delhi to Agra in one day (car or Gatimaan), "add the Agra day to your India tour", India visa and arrival checklist. Texts are machine-assisted German and not proofread (owner's decision); a German reader should still go over them.
+4. `/guides/delhi-to-agra-one-day-car-or-gatimaan-express` (+ `/de/`): "Delhi nach Agra an einem Tag: Auto oder Zug?".
+5. `/guides/add-agra-day-to-india-trip` (+ `/de/`): "Indien-Reise: Agra-Tag privat dazubuchen", a table of which of our tours fits where the traveller is.
+6. `/guides/india-visa-arrival-checklist` (+ `/de/`): "Indien: Visum und Anreise, kurze Checkliste", built from the official Indian e-Visa, fee-table, e-Arrival and visa-on-arrival pages (checked 29 Oct 2026). Visa rules change: re-check it every few months (next: January 2027), especially the fees and whether the e-Arrival card is mandatory (the official page says to submit it within 72 hours; "mandatory since 1 April 2026" comes from secondary sources). Texts are machine-assisted German and not proofread (owner's decision); a German reader should still go over them.

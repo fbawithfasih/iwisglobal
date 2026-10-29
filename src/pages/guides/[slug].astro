@@ -138,3 +138,15 @@ const faqJsonLd = faqs.length > 0
     <a slot="action" href="/tours" class="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-700 px-5 font-semibold text-white shadow-md shadow-brand-900/20 transition hover:bg-brand-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300" set:html={t.guidePage.k7} />
   </MobileActionBar>
 </BaseLayout>
+
+<style is:global>
+  /* Comparison tables stay inside a 320px screen: long words (German compounds) wrap instead of widening the page. */
+  .prose table {
+    width: 100%;
+    table-layout: fixed;
+  }
+  .prose th,
+  .prose td {
+    overflow-wrap: anywhere;
+  }
+</style>
