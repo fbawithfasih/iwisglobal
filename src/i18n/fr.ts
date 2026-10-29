@@ -404,6 +404,7 @@ export const fr: Dictionary = {
       privateValue: "Privé, rien que votre groupe",
       guide: "Guide",
       guideValue: "parlant {lang}",
+      germanGuideNote: "Guide germanophone disponible : {price} de supplément. Écrivez-nous lors de la réservation.",
       pickup: "Prise en charge à l'hôtel",
       included: "Incluse",
       cancellation: "Annulation",
