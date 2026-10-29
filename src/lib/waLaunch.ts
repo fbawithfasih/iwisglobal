@@ -112,9 +112,10 @@ export async function runSelfChecks(env: Record<string, any>, db: D1Like, origin
       return 0;
     }
   };
-  const forged = await status({ method: 'POST', body: '{"entry":[]}', headers: { 'x-hub-signature-256': 'sha256=' + '0'.repeat(64) } });
+  // JSON like Meta's own posts: a body with no content type goes out as text/plain, and the site's cross-site form guard answers that with 403 before the webhook runs.
+  const forged = await status({ method: 'POST', body: '{"entry":[]}', headers: { 'content-type': 'application/json', 'x-hub-signature-256': 'sha256=' + '0'.repeat(64) } });
   add('forged', forged === 401, forged === 401 ? 'A wrongly signed request was refused (401).' : forged === 503 ? 'The webhook says the app secret is not configured (503).' : `Expected 401, got ${forged || 'no answer'}.`);
-  const unsigned = await status({ method: 'POST', body: '{"entry":[]}' });
+  const unsigned = await status({ method: 'POST', body: '{"entry":[]}', headers: { 'content-type': 'application/json' } });
   add('unsigned', unsigned === 401, unsigned === 401 ? 'An unsigned request was refused (401).' : `Expected 401, got ${unsigned || 'no answer'}.`);
   const handshake = await status({ method: 'GET' }, `${hook}?hub.mode=subscribe&hub.verify_token=wrong-token&hub.challenge=1`);
   add('handshake', handshake === 403, handshake === 403 ? 'A wrong verify token was refused (403).' : `Expected 403, got ${handshake || 'no answer'}.`);
