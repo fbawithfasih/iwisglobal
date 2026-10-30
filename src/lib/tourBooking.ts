@@ -9,6 +9,7 @@ import { sendAdminBookingNotificationEmail, sendBookingConfirmationEmail } from 
 import { chosenAddOnNames } from './entryTickets';
 import { FOUNDING_GUEST_OFFER_ID } from './offers';
 import { sendMetaEvent, type MetaContext } from './metaCapi';
+import { sendOpenAiEvent } from './openaiCapi';
 
 // Records a paid tour booking. Called by the browser after Razorpay's checkout (src/pages/api/verify-payment.ts) and
 // by Razorpay's payment webhook (src/pages/api/webhooks/razorpay.ts), so a booking is never lost when the guest's
@@ -156,6 +157,12 @@ export async function finalizeTourBooking(env: Record<string, any>, db: D1Like, 
       contentIds: [v.tourId],
       numItems: v.travelers,
     },
+    i.meta?.consent ? i.meta : v.meta
+  );
+  // And OpenAI's copy of the same purchase (order_created, same id and amount as the browser's). Same consent.
+  await sendOpenAiEvent(
+    env,
+    { id: v.paymentId, type: 'order_created', sourceUrl: 'https://www.iwisglobal.com/booking/confirmation', amountMinor: v.amountCharged, currency: v.currency, contentIds: [v.tourId], quantity: v.travelers, email, externalId: i.customerId ? String(i.customerId) : undefined },
     i.meta?.consent ? i.meta : v.meta
   );
   return 'inserted';

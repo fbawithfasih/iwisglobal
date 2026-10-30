@@ -48,6 +48,7 @@ const { t } = pageI18n(Astro);
       gtag?: (...args: unknown[]) => void;
       _fbq?: any;
       iwisPixelQueue?: QueuedEvent[];
+      iwisOpenAiUser?: (email: string) => void;
     }
   }
 
@@ -98,7 +99,29 @@ const { t } = pageI18n(Astro);
     s.src = 'https://bzrcdn.openai.com/sdk/oaiq.min.js';
     document.head.appendChild(s);
     oai('init', { pixelId: OPENAI_PIXEL_ID, debug: false });
+    applyOpenAiUser();
     oai('measure', 'page_viewed', { type: 'contents', contents: [{ id: location.pathname, name: document.title.slice(0, 120), content_type: 'page' }] });
+  };
+
+  // A visitor who has just given their email (the enquiry form) is passed to the OpenAI pixel as a SHA-256 hash, made
+  // here in the browser as OpenAI documents (trimmed, lower case). The address itself is never sent to OpenAI by the
+  // pixel. Held in memory until the pixel is loaded, so nothing leaves before consent.
+  let openAiEmail = '';
+  const applyOpenAiUser = async () => {
+    if (!openAiEmail || !(window as unknown as { oaiq?: unknown }).oaiq) return;
+    try {
+      const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(openAiEmail));
+      const hex = Array.from(new Uint8Array(bytes)).map((b) => b.toString(16).padStart(2, '0')).join('');
+      oai('init', { user: { email_sha256: hex } });
+    } catch {
+      /* the pixel just keeps matching without it */
+    }
+  };
+  window.iwisOpenAiUser = (email: string) => {
+    const e = String(email || '').trim().toLowerCase();
+    if (!e.includes('@')) return;
+    openAiEmail = e;
+    applyOpenAiUser();
   };
 
   // The events the site already queues for Meta, sent to OpenAI with its own names and shapes (amounts are whole

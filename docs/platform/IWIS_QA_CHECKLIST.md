@@ -252,6 +252,11 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3o.7 | A tap on the WhatsApp button sends the custom event `whatsapp_clicked`, not `lead_created` | | |
 | 3o.8 | After Reject in Cookie settings, no more events are sent and the `__oppref` / `__obref` cookies are gone | | |
 | 3o.9 | In OpenAI Ads Manager, create conversion events from the base events Lead created, Order created, Checkout started, Contents viewed and the custom `whatsapp_clicked`, then link them to the campaign (owner step) | | |
+| 3o.10 | Server copy (Conversions API, `src/lib/openaiCapi.ts`): with `OPENAI_ADS_API_KEY` set in Cloudflare Pages, a paid tour booking and a website enquiry from a visitor who accepted cookies each send one `order_created` / `lead_created` from the server, with the same id as the browser's copy (the payment id; the enquiry's event id). In OpenAI Ads, the event shows once, not twice (owner step: check Events for duplicates after the first real booking) | | |
+| 3o.11 | Without the key, or for a visitor who rejected cookies (or has not yet accepted, in the EU, UK and Switzerland), nothing is sent from the server and the booking or enquiry still succeeds | | |
+| 3o.12 | The server event carries no readable personal data: the email address and our customer or contact id go only as SHA-256 hashes (`emails_sha256`, `external_ids_sha256`), plus OpenAI's click references (`oppref`, `obref` from the pixel's cookies), the visitor's IP address and browser string, and id, type, time, page, amount, currency, tour id and number of travellers. No name or phone | | |
+| 3o.13 | After a first real booking or enquiry, OpenAI Ads Manager, Conversions, Diagnostics: the warning "No recent server-to-server events" clears, and "Some events are missing user data" shows email coverage above 0% for the server events (the browser page views stay without it, as the visitor is anonymous) | | |
+| 3o.14 | The privacy page (all four languages) says OpenAI also receives a hashed email address, IP address and browser details from our server, and nothing if cookies are rejected (include in the lawyer review) | | |
 
 ## 3f. Keyboard and screen reader (do this with a person; 20 minutes)
 

@@ -8,6 +8,7 @@ import { notifyNewLead } from '../../lib/leadsAdmin';
 import { consentVersionId, startDoubleOptIn } from '../../lib/marketing';
 import type { D1Like } from '../../lib/db';
 import { metaContextFromRequest, sendMetaEvent } from '../../lib/metaCapi';
+import { sendOpenAiEvent } from '../../lib/openaiCapi';
 
 export const prerender = false;
 
@@ -124,6 +125,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
       await sendMetaEvent(
         env,
         { name: 'Lead', eventId, sourceUrl: `https://www.iwisglobal.com${attribution.landingPage || '/contact'}`, email, phone, fullName: name },
+        metaContextFromRequest(request)
+      );
+      // And OpenAI's copy of the browser's lead_created (same event id). Same consent.
+      await sendOpenAiEvent(
+        env,
+        { id: eventId, type: 'lead_created', sourceUrl: `https://www.iwisglobal.com${attribution.landingPage || '/contact'}`, email, externalId: result.personId ? String(result.personId) : undefined },
         metaContextFromRequest(request)
       );
     }

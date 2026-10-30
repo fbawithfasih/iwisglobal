@@ -121,7 +121,7 @@ assert.equal(metaContextFromRequest(reqFrom('_fbp=fb.1.1.9', 'IN')).consent, tru
 assert.equal(metaContextFromRequest(reqFrom('_fbp=fb.1.1.9', 'FR')).consent, false, 'and inside Europe wait for Accept');
 assert.equal(metaContextFromRequest(reqFrom('cookie_consent=denied; _fbp=fb.1.1.9', 'US')).consent, false, 'a Reject stops them anywhere');
 const ctx = metaContextFromRequest(req('cookie_consent=granted; _fbp=fb.1.1.123; _fbc=fb.1.2.abc'));
-assert.deepEqual(ctx, { consent: true, fbp: 'fb.1.1.123', fbc: 'fb.1.2.abc', ip: '203.0.113.9', userAgent: 'Mozilla/5.0 Test' });
+assert.deepEqual(ctx, { consent: true, fbp: 'fb.1.1.123', fbc: 'fb.1.2.abc', ip: '203.0.113.9', userAgent: 'Mozilla/5.0 Test', oppref: '', obref: '' });
 assert.deepEqual(unpackMeta(packMeta(ctx)), ctx, 'consent and identifiers round-trip through the order note');
 assert.equal(unpackMeta(packMeta(NO_CONSENT)).consent, false);
 assert.ok(packMeta({ ...ctx, fbc: 'f'.repeat(300), userAgent: 'u'.repeat(400) }).length <= 255, 'meta note fits');

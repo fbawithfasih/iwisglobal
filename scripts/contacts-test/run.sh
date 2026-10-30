@@ -98,3 +98,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/admin-search.ts" --bun
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/admin-search.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/notifications.ts" --bundle --platform=node --format=esm --outfile="$OUT/notifications.mjs" --external:node:sqlite --log-level=error --define:import.meta.glob=__glob "--banner:js=const __glob = () => ({});"
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/notifications.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/openai-capi.ts" --bundle --platform=node --format=esm --outfile="$OUT/openai-capi.mjs" --log-level=error
+ROOT="$ROOT" node --no-warnings "$OUT/openai-capi.mjs"
