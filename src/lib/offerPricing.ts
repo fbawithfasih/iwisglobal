@@ -4,7 +4,15 @@
 export type GuideLanguage = 'en' | 'de';
 export type PaymentKind = 'full' | 'deposit' | 'balance';
 export interface OfferOption { id: string; label: string; vehicle: string; totalMinor: number }
-export interface OfferTerms { currency: 'EUR' | 'USD' | 'INR'; options: OfferOption[]; depositPercent: number; germanGuideExtraMinor: number }
+export interface OfferTerms {
+  currency: 'EUR' | 'USD' | 'INR';
+  options: OfferOption[];
+  depositPercent: number;
+  germanGuideExtraMinor: number;
+  // Per-offer switches (content flags): the guest must pay in full to confirm (no booking amount), and/or the guide is English only.
+  fullPaymentOnly?: boolean;
+  englishGuideOnly?: boolean;
+}
 export interface PaidPayment { optionId: string; guideLanguage: GuideLanguage; kind: PaymentKind; amountMinor: number }
 
 export function tripTotalMinor(terms: OfferTerms, optionId: string, lang: GuideLanguage): number | null {
@@ -59,11 +67,13 @@ export function planPayment(
 
     if (mode === 'balance') return fail('deposit_first');
     if (mode !== 'full' && mode !== 'deposit') return fail('bad_mode');
+    if (mode === 'deposit' && terms.fullPaymentOnly === true) return fail('bad_mode');
 
     const optionId = req.optionId;
     if (typeof optionId !== 'string' || !terms.options.some((o) => o.id === optionId)) return fail('bad_option');
     const lang = req.guideLanguage;
     if (lang !== 'en' && lang !== 'de') return fail('bad_language');
+    if (lang === 'de' && terms.englishGuideOnly === true) return fail('bad_language');
 
     const total = tripTotalMinor(terms, optionId, lang);
     if (total === null) return fail('bad_option');

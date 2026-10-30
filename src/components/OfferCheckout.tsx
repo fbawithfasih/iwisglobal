@@ -202,7 +202,7 @@ export default function OfferCheckout({ offerId, title, terms, state, whatsapp, 
   const contactBlock = (
     <>
       <h2 className="font-serif text-xl font-semibold text-brand-900 md:text-2xl">Your details</h2>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
         <div>
           <label htmlFor="offer-name" className="mb-1 block text-sm font-medium text-stone-800">Full name</label>
           <input id="offer-name" className={fieldClass} autoComplete="name" value={name} onChange={(e) => setName(e.target.value)}
@@ -257,7 +257,7 @@ export default function OfferCheckout({ offerId, title, terms, state, whatsapp, 
   }
 
   return (
-    <section aria-label="Choose your option and pay" className="no-print grid gap-8 rounded-3xl border border-brand-100 bg-white p-4 shadow-sm shadow-brand-900/5 min-[300px]:p-6">
+    <section aria-label="Choose your option and pay" className="no-print grid gap-8 [&>*]:min-w-0 rounded-3xl border border-brand-100 bg-white p-4 shadow-sm shadow-brand-900/5 min-[300px]:p-6">
       <div>
         <h2 id="offer-options-title" className="font-serif text-xl font-semibold text-brand-900 md:text-2xl">Choose your option</h2>
         <div role="radiogroup" aria-labelledby="offer-options-title" className="mt-3 grid gap-3 md:grid-cols-2">
@@ -278,33 +278,41 @@ export default function OfferCheckout({ offerId, title, terms, state, whatsapp, 
         </div>
       </div>
 
-      <div>
-        <h2 id="offer-lang-title" className="font-serif text-xl font-semibold text-brand-900 md:text-2xl">Guide language</h2>
-        <div role="radiogroup" aria-labelledby="offer-lang-title" className="mt-2">
-          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-stone-800">
-            <input type="radio" name="offer-lang" checked={lang === 'en'} aria-checked={lang === 'en'} onChange={() => setLang('en')} className="h-5 w-5 accent-brand-700" />
-            English (no extra charge)
-          </label>
-          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-stone-800">
-            <input type="radio" name="offer-lang" checked={lang === 'de'} aria-checked={lang === 'de'} onChange={() => setLang('de')} className="h-5 w-5 accent-brand-700" />
-            {extra > 0 ? `German (+ ${fmt(extra)})` : 'German'}
-          </label>
+      {!terms.englishGuideOnly && (
+        <div>
+          <h2 id="offer-lang-title" className="font-serif text-xl font-semibold text-brand-900 md:text-2xl">Guide language</h2>
+          <div role="radiogroup" aria-labelledby="offer-lang-title" className="mt-2">
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-stone-800">
+              <input type="radio" name="offer-lang" checked={lang === 'en'} aria-checked={lang === 'en'} onChange={() => setLang('en')} className="h-5 w-5 accent-brand-700" />
+              English (no extra charge)
+            </label>
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-stone-800">
+              <input type="radio" name="offer-lang" checked={lang === 'de'} aria-checked={lang === 'de'} onChange={() => setLang('de')} className="h-5 w-5 accent-brand-700" />
+              {extra > 0 ? `German (+ ${fmt(extra)})` : 'German'}
+            </label>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div>
-        <h2 id="offer-mode-title" className="font-serif text-xl font-semibold text-brand-900 md:text-2xl">How would you like to pay?</h2>
-        <div role="radiogroup" aria-labelledby="offer-mode-title" className="mt-2">
-          <label className="flex min-h-11 cursor-pointer items-start gap-3 py-1.5 text-sm text-stone-800">
-            <input type="radio" name="offer-mode" checked={mode === 'full'} aria-checked={mode === 'full'} onChange={() => setMode('full')} className="mt-0.5 h-5 w-5 shrink-0 accent-brand-700" />
-            <span>Pay in full - <strong>{fmt(total)}</strong></span>
-          </label>
-          <label className="flex min-h-11 cursor-pointer items-start gap-3 py-1.5 text-sm text-stone-800">
-            <input type="radio" name="offer-mode" checked={mode === 'deposit'} aria-checked={mode === 'deposit'} onChange={() => setMode('deposit')} className="mt-0.5 h-5 w-5 shrink-0 accent-brand-700" />
-            <span>Pay {terms.depositPercent}% now as the booking amount - <strong>{fmt(deposit)}</strong> (balance {fmt(balance)}, payable on this page before the tour)</span>
-          </label>
+      {terms.fullPaymentOnly ? (
+        <p className="rounded-xl bg-brand-50 p-3 text-sm text-stone-800">
+          Payment in full, <strong>{fmt(total)}</strong>, confirms your booking.
+        </p>
+      ) : (
+        <div>
+          <h2 id="offer-mode-title" className="font-serif text-xl font-semibold text-brand-900 md:text-2xl">How would you like to pay?</h2>
+          <div role="radiogroup" aria-labelledby="offer-mode-title" className="mt-2">
+            <label className="flex min-h-11 cursor-pointer items-start gap-3 py-1.5 text-sm text-stone-800">
+              <input type="radio" name="offer-mode" checked={mode === 'full'} aria-checked={mode === 'full'} onChange={() => setMode('full')} className="mt-0.5 h-5 w-5 shrink-0 accent-brand-700" />
+              <span>Pay in full - <strong>{fmt(total)}</strong></span>
+            </label>
+            <label className="flex min-h-11 cursor-pointer items-start gap-3 py-1.5 text-sm text-stone-800">
+              <input type="radio" name="offer-mode" checked={mode === 'deposit'} aria-checked={mode === 'deposit'} onChange={() => setMode('deposit')} className="mt-0.5 h-5 w-5 shrink-0 accent-brand-700" />
+              <span>Pay {terms.depositPercent}% now as the booking amount - <strong>{fmt(deposit)}</strong> (balance {fmt(balance)}, payable on this page before the tour)</span>
+            </label>
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         {contactBlock}
