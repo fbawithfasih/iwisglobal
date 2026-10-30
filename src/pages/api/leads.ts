@@ -130,7 +130,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       // And OpenAI's copy of the browser's lead_created (same event id). Same consent.
       await sendOpenAiEvent(
         env,
-        { id: eventId, type: 'lead_created', sourceUrl: `https://www.iwisglobal.com${attribution.landingPage || '/contact'}` },
+        { id: eventId, type: 'lead_created', sourceUrl: `https://www.iwisglobal.com${attribution.landingPage || '/contact'}`, email, externalId: result.personId ? String(result.personId) : undefined },
         metaContextFromRequest(request)
       );
     }

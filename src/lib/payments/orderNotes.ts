@@ -74,17 +74,34 @@ export function attributionFromBody(v: unknown): OrderAttribution {
   return { source: s(o.source, 40), medium: s(o.medium, 40), campaign: s(o.campaign, 60), landingPage: s(o.landingPage, 80), gclid: s(o.gclid, 120), fbclid: !!s(o.fbclid, 500) };
 }
 
-// Consent and Meta's browser identifiers for the Conversions API (src/lib/metaCapi.ts). Only kept for a visitor who
-// accepted cookies; otherwise the note says "no consent" and nothing is sent to Meta for this booking.
+// Consent and the browser identifiers for the Conversions APIs (src/lib/metaCapi.ts, src/lib/openaiCapi.ts). Only kept
+// for a visitor who accepted cookies; otherwise the note says "no consent" and nothing is sent for this booking.
+// OpenAI's click references (o, r) must reach OpenAI exactly as the pixel wrote them, so they are never shortened:
+// one that cannot fit is dropped, and the longer, less important fields (browser string, then Meta's ids) give way first.
+const MAX_OPPREF = 120;
+const MAX_OBREF = 64;
+
 export function packMeta(m: MetaContext | undefined): string {
   if (!m?.consent) return '{"k":0}';
-  return pack({ k: 1, b: s(m.fbp, 120), c: s(m.fbc, 300), i: s(m.ip, 45), u: s(m.userAgent, 400) });
+  const o: Record<string, string | number> = { k: 1, b: s(m.fbp, 120), c: s(m.fbc, 300), i: s(m.ip, 45), u: s(m.userAgent, 400) };
+  const oppref = s(m.oppref, 300);
+  const obref = s(m.obref, 100);
+  if (oppref && oppref.length <= MAX_OPPREF) o.o = oppref;
+  if (obref && obref.length <= MAX_OBREF) o.r = obref;
+  let out = JSON.stringify(o);
+  for (const key of ['u', 'c', 'b', 'i']) {
+    if (out.length <= MAX_NOTE) break;
+    const over = out.length - MAX_NOTE;
+    o[key] = String(o[key]).slice(0, Math.max(0, String(o[key]).length - over - 1));
+    out = JSON.stringify(o);
+  }
+  return out.slice(0, MAX_NOTE);
 }
 
 export function unpackMeta(note: unknown): MetaContext {
   const v = parse(note);
   if (v.k !== 1) return { consent: false, fbp: '', fbc: '', ip: '', userAgent: '' };
-  return { consent: true, fbp: s(v.b, 120), fbc: s(v.c, 300), ip: s(v.i, 45), userAgent: s(v.u, 400) };
+  return { consent: true, fbp: s(v.b, 120), fbc: s(v.c, 300), ip: s(v.i, 45), userAgent: s(v.u, 400), oppref: s(v.o, MAX_OPPREF), obref: s(v.r, MAX_OBREF) };
 }
 
 // GA4's client id and session id share the gaClientId note ("<client id>|<session id>"), because the order has no

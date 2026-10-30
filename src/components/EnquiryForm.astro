@@ -89,6 +89,8 @@ const input = 'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 te
         btn.classList.add('hidden');
         // Conversion events for Google (a key event to import into Google Ads) and Meta (sent only after cookie consent).
         if (window.gtag) window.gtag('event', 'generate_lead', { lead_source: 'enquiry_form' });
+        // The OpenAI pixel gets the address as a hash, set before the Lead event so it can be matched (CookieConsent.astro).
+        if (window.iwisOpenAiUser) window.iwisOpenAiUser(email);
         (window.iwisPixelQueue = window.iwisPixelQueue || []).push(['Lead', { content_name: 'Enquiry form' }, { eventID: eventId }]);
       }).catch(function () {
         show('enquiry-error', true);

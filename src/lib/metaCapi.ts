@@ -23,6 +23,9 @@ export interface MetaContext {
   fbc: string;
   ip: string;
   userAgent: string;
+  // OpenAI Ads' click references, from the pixel's own first-party cookies __oppref and __obref (src/lib/openaiCapi.ts).
+  oppref?: string;
+  obref?: string;
 }
 
 export const NO_CONSENT: MetaContext = { consent: false, fbp: '', fbc: '', ip: '', userAgent: '' };
@@ -38,10 +41,12 @@ export function metaContextFromRequest(request: Request): MetaContext {
     fbc: get('_fbc').slice(0, 300),
     ip: (request.headers.get('cf-connecting-ip') ?? '').slice(0, 45),
     userAgent: (request.headers.get('user-agent') ?? '').slice(0, 400),
+    oppref: get('__oppref').slice(0, 300),
+    obref: get('__obref').slice(0, 100),
   };
 }
 
-async function sha256(value: string): Promise<string> {
+export async function sha256(value: string): Promise<string> {
   const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }

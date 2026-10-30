@@ -162,7 +162,7 @@ export async function finalizeTourBooking(env: Record<string, any>, db: D1Like, 
   // And OpenAI's copy of the same purchase (order_created, same id and amount as the browser's). Same consent.
   await sendOpenAiEvent(
     env,
-    { id: v.paymentId, type: 'order_created', sourceUrl: 'https://www.iwisglobal.com/booking/confirmation', amountMinor: v.amountCharged, currency: v.currency, contentIds: [v.tourId], quantity: v.travelers },
+    { id: v.paymentId, type: 'order_created', sourceUrl: 'https://www.iwisglobal.com/booking/confirmation', amountMinor: v.amountCharged, currency: v.currency, contentIds: [v.tourId], quantity: v.travelers, email, externalId: i.customerId ? String(i.customerId) : undefined },
     i.meta?.consent ? i.meta : v.meta
   );
   return 'inserted';
