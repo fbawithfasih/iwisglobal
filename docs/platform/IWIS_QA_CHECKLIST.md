@@ -206,6 +206,9 @@ Automated checks (run on every pull request, no action needed): type check with 
 | 3u.1 | Pay a test private offer in full: one booking appears in Bookings with the guest's name, email and phone, the travel day, the number of travellers, the amount paid, source "private_offer" and the tour shown as "Private offer" | | |
 | 3u.2 | Pay a booking amount, then the balance on the same offer: still one booking; "Amount paid" goes from the booking amount to the full amount and it shows as full; status and pickup time you set are kept | | |
 | 3u.3 | The booking page for it shows no "Balance payment" box (the balance is paid on the guest's offer link) and says "booking amount", not "25% deposit" | | |
+| 3u.4 | An offer whose content has `"fullPaymentOnly": true` shows no "How would you like to pay?" choice, only "Payment in full, US$..., confirms your booking" and a Pay button for the full amount; a request for a booking amount sent straight to `/api/offer/order` is refused (409 `bad_mode`) | | |
+| 3u.5 | An offer with `"englishGuideOnly": true` shows no "Guide language" choice, and a request for a German guide sent straight to `/api/offer/order` is refused (409 `bad_language`). An offer without the switches shows both choices as before | | |
+| 3u.6 | On a 390 px and a 320 px phone the offer page does not scroll sideways (long option names wrap; the phone field fits) | | |
 | 3u.4 | It appears on Today on its travel day and in review requests after the trip ("Private offer" as the tour) | | |
 | 3u.5 | The lead for the guest moves to Booked after a full or balance payment, and links to the booking | | |
 | 3u.6 | An offer made with `"internal": true` creates no booking when paid; an offer with two different days in its date label and no `travelDate` creates none and emails you about it | | |

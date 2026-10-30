@@ -100,3 +100,5 @@ npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/notifications.ts" --bu
 ROOT="$ROOT" node --experimental-sqlite --no-warnings "$OUT/notifications.mjs"
 npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/openai-capi.ts" --bundle --platform=node --format=esm --outfile="$OUT/openai-capi.mjs" --log-level=error
 ROOT="$ROOT" node --no-warnings "$OUT/openai-capi.mjs"
+npx --prefix "$ROOT" esbuild "$ROOT/scripts/contacts-test/offer-switches.ts" --bundle --platform=node --format=esm --outfile="$OUT/offer-switches.mjs" --log-level=error
+ROOT="$ROOT" node --no-warnings "$OUT/offer-switches.mjs"

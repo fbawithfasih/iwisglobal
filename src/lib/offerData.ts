@@ -25,6 +25,10 @@ export interface OfferContent {
   travelDate?: string;
   // An internal test offer: paying it never creates a booking.
   internal?: boolean;
+  // The guest must pay in full to confirm: no booking-amount choice, and the server refuses one.
+  fullPaymentOnly?: boolean;
+  // The guide speaks English only: no German choice, and the server refuses one.
+  englishGuideOnly?: boolean;
 }
 
 export interface OfferRow {
@@ -85,6 +89,8 @@ function readContent(text: unknown): OfferContent | null {
   if (c.pdf !== undefined && typeof c.pdf !== 'boolean') return null;
   if (c.travelDate !== undefined && !isStr(c.travelDate)) return null;
   if (c.internal !== undefined && typeof c.internal !== 'boolean') return null;
+  if (c.fullPaymentOnly !== undefined && typeof c.fullPaymentOnly !== 'boolean') return null;
+  if (c.englishGuideOnly !== undefined && typeof c.englishGuideOnly !== 'boolean') return null;
   const content: OfferContent = {
     title: c.title as string,
     summary: c.summary as string,
@@ -101,6 +107,8 @@ function readContent(text: unknown): OfferContent | null {
   if (c.pdf !== undefined) content.pdf = c.pdf as boolean;
   if (c.travelDate !== undefined) content.travelDate = c.travelDate as string;
   if (c.internal !== undefined) content.internal = c.internal as boolean;
+  if (c.fullPaymentOnly !== undefined) content.fullPaymentOnly = c.fullPaymentOnly as boolean;
+  if (c.englishGuideOnly !== undefined) content.englishGuideOnly = c.englishGuideOnly as boolean;
   return content;
 }
 
@@ -149,7 +157,7 @@ export async function readOffer(db: D1Like, id: unknown): Promise<OfferRow | nul
     customerPhone: row.customer_phone,
     currency: cur,
     content,
-    terms: { currency: cur, options, depositPercent: dp, germanGuideExtraMinor: extra },
+    terms: { currency: cur, options, depositPercent: dp, germanGuideExtraMinor: extra, fullPaymentOnly: content.fullPaymentOnly === true, englishGuideOnly: content.englishGuideOnly === true },
     createdAt: row.created_at,
   };
 }

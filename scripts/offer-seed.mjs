@@ -62,6 +62,9 @@ function validate(o) {
   if (c.pdf !== undefined && typeof c.pdf !== 'boolean') fail('content.pdf must be a boolean');
   if (c.travelDate !== undefined && !(isStr(c.travelDate) && /^\d{4}-\d{2}-\d{2}$/.test(c.travelDate))) fail('content.travelDate must look like 2026-11-16');
   if (c.internal !== undefined && typeof c.internal !== 'boolean') fail('content.internal must be a boolean');
+  for (const k of ['fullPaymentOnly', 'englishGuideOnly']) {
+    if (c[k] !== undefined && typeof c[k] !== 'boolean') fail(`content.${k} must be a boolean`);
+  }
 }
 
 const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
@@ -102,6 +105,8 @@ const content = {
 if (c.pdf !== undefined) content.pdf = c.pdf;
 if (c.travelDate !== undefined) content.travelDate = c.travelDate;
 if (c.internal !== undefined) content.internal = c.internal;
+if (c.fullPaymentOnly !== undefined) content.fullPaymentOnly = c.fullPaymentOnly;
+if (c.englishGuideOnly !== undefined) content.englishGuideOnly = c.englishGuideOnly;
 
 const sql =
   `INSERT INTO private_offers (id, status, customer_name, customer_email, customer_phone, currency, content_json, options_json, deposit_percent, german_guide_extra_minor, created_at) VALUES (` +
