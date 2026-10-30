@@ -50,5 +50,7 @@ export function resolveEnv(locals: unknown): Record<string, any> {
     META_CAPI_TOKEN: runtimeEnv.META_CAPI_TOKEN ?? import.meta.env.META_CAPI_TOKEN,
     META_PIXEL_ID: runtimeEnv.META_PIXEL_ID ?? import.meta.env.META_PIXEL_ID,
     META_CAPI_TEST_CODE: runtimeEnv.META_CAPI_TEST_CODE ?? import.meta.env.META_CAPI_TEST_CODE,
+    OPENAI_ADS_API_KEY: runtimeEnv.OPENAI_ADS_API_KEY ?? import.meta.env.OPENAI_ADS_API_KEY,
+    OPENAI_ADS_PIXEL_ID: runtimeEnv.OPENAI_ADS_PIXEL_ID ?? import.meta.env.OPENAI_ADS_PIXEL_ID,
   };
 }
